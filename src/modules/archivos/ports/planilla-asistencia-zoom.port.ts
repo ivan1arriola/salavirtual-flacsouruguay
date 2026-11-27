@@ -23,6 +23,6 @@ export interface PlanillasAsistenciaZoomPort {
       marcador: string;
       resumen: FilasPlanillaZoom;
       sesiones: FilasPlanillaZoom;
-    }>
+    }>,
   ): Promise<Readonly<{ webViewUrl: string | null; creada: boolean }>>;
 }

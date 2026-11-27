@@ -6,7 +6,7 @@
     "auth.ts!",
     // Las pruebas arquitectónicas leen estas fachadas y sus componentes desde el sistema de archivos.
     "src/modules/asistencia/presentation.ts",
-    "src/modules/reuniones/presentation.ts"
+    "src/modules/reuniones/presentation.ts",
   ],
   "project": [
     "src/**/*.{ts,tsx}!",
@@ -17,5 +17,5 @@
     "test/**/*.{ts,tsx}",
   ],
   "ignoreExportsUsedInFile": true,
-  "ignore": ["scripts/legacy-meetings/**"]
+  "ignore": ["scripts/legacy-meetings/**"],
 }

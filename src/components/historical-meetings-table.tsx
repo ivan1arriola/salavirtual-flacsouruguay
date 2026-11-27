@@ -16,7 +16,7 @@ export function HistoricalMeetingsTable({
   busqueda,
   pagina,
   totalPaginas,
-  total
+  total,
 }: Readonly<{
   meetings: readonly HistoricalMeetingVisible[];
   busqueda: string;
@@ -96,7 +96,11 @@ export function HistoricalMeetingsTable({
       )}
       {totalPaginas > 1 ? (
         <nav className="settings-history__pagination" aria-label="Páginas de registros Zoom">
-          {pagina > 1 ? <Link href={enlacePagina(pagina - 1)}>Anterior</Link> : <span>Anterior</span>}
+          {pagina > 1 ? (
+            <Link href={enlacePagina(pagina - 1)}>Anterior</Link>
+          ) : (
+            <span>Anterior</span>
+          )}
           <span>
             Página {pagina} de {totalPaginas}
           </span>

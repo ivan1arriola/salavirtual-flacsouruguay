@@ -6,7 +6,7 @@ import {
   probarCredencialGoogle,
   probarDelegacionGoogle,
   probarDestinoDrive,
-  validarScopesGoogle
+  validarScopesGoogle,
 } from "../src/modules/configuracion/google-workspace-test.adapter";
 
 type ServiceAccountJson = Readonly<{
@@ -30,7 +30,7 @@ async function probarPreview(
   serviceAccountEmail: string,
   privateKey: string,
   subject: string,
-  meetCode: string
+  meetCode: string,
 ): Promise<{ spaceName: string; memberCount: number }> {
   const auth = new JWT({
     email: serviceAccountEmail,
@@ -38,15 +38,15 @@ async function probarPreview(
     scopes: [
       "https://www.googleapis.com/auth/meetings.space.settings",
       "https://www.googleapis.com/auth/meetings.space.readonly",
-      "https://www.googleapis.com/auth/meetings.space.created"
+      "https://www.googleapis.com/auth/meetings.space.created",
     ],
-    subject
+    subject,
   });
 
   const space = await auth.request<{ name?: string }>({
     url: `https://meet.googleapis.com/v2/spaces/${encodeURIComponent(meetCode)}`,
     method: "GET",
-    timeout: 30_000
+    timeout: 30_000,
   });
   if (!space.data.name) {
     throw new Error("Meet no devolvió el nombre interno del espacio.");
@@ -55,12 +55,12 @@ async function probarPreview(
   const members = await auth.request<{ members?: readonly unknown[] }>({
     url: `https://meet.googleapis.com/v2/${space.data.name}/members?pageSize=20`,
     method: "GET",
-    timeout: 30_000
+    timeout: 30_000,
   });
 
   return {
     spaceName: space.data.name,
-    memberCount: Array.isArray(members.data.members) ? members.data.members.length : 0
+    memberCount: Array.isArray(members.data.members) ? members.data.members.length : 0,
   };
 }
 
@@ -95,8 +95,8 @@ async function main() {
       serviceAccountSubject: true,
       driveDestinationId: true,
       activa: true,
-      version: true
-    }
+      version: true,
+    },
   });
   if (!current) {
     throw new Error("No existe la configuración principal de Google Workspace.");
@@ -108,7 +108,7 @@ async function main() {
   const credential = {
     serviceAccountEmail: parsed.client_email,
     privateKey: parsed.private_key,
-    subject: current.serviceAccountSubject
+    subject: current.serviceAccountSubject,
   };
 
   await probarCredencialGoogle(credential);
@@ -127,7 +127,12 @@ async function main() {
 
   let preview: { spaceName: string; memberCount: number } | null = null;
   if (previewSubject && meetCode) {
-    preview = await probarPreview(parsed.client_email, parsed.private_key, previewSubject, meetCode);
+    preview = await probarPreview(
+      parsed.client_email,
+      parsed.private_key,
+      previewSubject,
+      meetCode,
+    );
   }
 
   const summary = {
@@ -142,7 +147,7 @@ async function main() {
     previewMembers: preview?.memberCount ?? null,
     currentServiceAccount: current.serviceAccountEmail,
     currentVersion: current.version,
-    apply
+    apply,
   };
 
   if (!apply) {
@@ -153,7 +158,7 @@ async function main() {
   const previous = {
     serviceAccountEmail: current.serviceAccountEmail,
     privateKeyCifrada: current.privateKeyCifrada,
-    version: current.version
+    version: current.version,
   };
 
   try {
@@ -163,13 +168,13 @@ async function main() {
       data: {
         serviceAccountEmail: parsed.client_email,
         privateKeyCifrada: encrypted,
-        version: { increment: 1 }
-      }
+        version: { increment: 1 },
+      },
     });
 
     const stored = await db.configuracionGoogleWorkspace.findUnique({
       where: { id: "principal" },
-      select: { serviceAccountEmail: true, privateKeyCifrada: true, version: true }
+      select: { serviceAccountEmail: true, privateKeyCifrada: true, version: true },
     });
     if (!stored?.privateKeyCifrada || stored.serviceAccountEmail !== parsed.client_email) {
       throw new Error("La base no confirmó la nueva cuenta de servicio.");
@@ -188,11 +193,11 @@ async function main() {
           ...summary,
           applied: true,
           newVersion: stored.version,
-          inputFileDeleted: deleteFile
+          inputFileDeleted: deleteFile,
         },
         null,
-        2
-      )
+        2,
+      ),
     );
   } catch (error) {
     await db.configuracionGoogleWorkspace.update({
@@ -200,8 +205,8 @@ async function main() {
       data: {
         serviceAccountEmail: previous.serviceAccountEmail,
         privateKeyCifrada: previous.privateKeyCifrada,
-        version: previous.version
-      }
+        version: previous.version,
+      },
     });
     throw error;
   }

@@ -22,21 +22,21 @@ export const invitarUsuarioSchema = z
       .trim()
       .max(180)
       .optional()
-      .transform((value) => value || null)
+      .transform((value) => value || null),
   })
   .superRefine(({ rol, programaId, programaNuevo }, context) => {
     if (rol === "DOCENTE" && Boolean(programaId) === Boolean(programaNuevo)) {
       context.addIssue({
         code: "custom",
         message: "Para un docente elegí un programa existente o creá uno nuevo.",
-        path: ["programaId"]
+        path: ["programaId"],
       });
     }
     if (rol !== "DOCENTE" && (programaId || programaNuevo)) {
       context.addIssue({
         code: "custom",
         message: "Los programas solo corresponden al rol Docente.",
-        path: ["programaId"]
+        path: ["programaId"],
       });
     }
   });
@@ -45,7 +45,7 @@ export function puedeInvitarUsuarios(
   actor: Readonly<{
     rol: "ADMINISTRACION" | "ASISTENTE_TECNICO" | "DOCENTE";
     activo: boolean;
-  }>
+  }>,
 ): boolean {
   return actor.activo && actor.rol === "ADMINISTRACION";
 }

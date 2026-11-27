@@ -2,11 +2,13 @@ import { readFileSync } from "node:fs";
 import postcss, { type Declaration, type Rule } from "postcss";
 import { describe, expect, it } from "vitest";
 
-const stylesheet = postcss.parse(readFileSync(new URL("../app/brand.css", import.meta.url), "utf8"));
+const stylesheet = postcss.parse(
+  readFileSync(new URL("../app/brand.css", import.meta.url), "utf8"),
+);
 
 function declarationsFor(selector: string): Map<string, string> {
   const rule = stylesheet.nodes.find(
-    (node): node is Rule => node.type === "rule" && node.selector === selector
+    (node): node is Rule => node.type === "rule" && node.selector === selector,
   );
   if (!rule) {
     return new Map();
@@ -15,7 +17,7 @@ function declarationsFor(selector: string): Map<string, string> {
   return new Map(
     rule.nodes
       .filter((node): node is Declaration => node.type === "decl")
-      .map(({ prop, value }) => [prop, value])
+      .map(({ prop, value }) => [prop, value]),
   );
 }
 
@@ -43,7 +45,7 @@ describe("design token stylesheet contract", () => {
 
   it("provides a shared font family and a documented type scale", () => {
     expect(rootDeclarations.get("--font-sans")).toBe(
-      'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
+      'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
     );
     expect(declarationsFor("body").get("font-family")).toBe("var(--font-sans)");
 
@@ -54,7 +56,7 @@ describe("design token stylesheet contract", () => {
       ["--text-lg", "1.125rem"],
       ["--text-xl", "1.25rem"],
       ["--text-2xl", "1.5rem"],
-      ["--text-3xl", "1.875rem"]
+      ["--text-3xl", "1.875rem"],
     ]) {
       expect(rootDeclarations.get(token)).toBe(value);
     }
@@ -73,7 +75,7 @@ describe("design token stylesheet contract", () => {
       ["--radius-md", "6px"],
       ["--radius-lg", "8px"],
       ["--radius-full", "9999px"],
-      ["--border-width", "1px"]
+      ["--border-width", "1px"],
     ]) {
       expect(rootDeclarations.get(token)).toBe(value);
     }
@@ -83,13 +85,13 @@ describe("design token stylesheet contract", () => {
     expect(rootDeclarations.get("--focus-ring-color")).toBe("#2c4777");
 
     const focusRules = stylesheet.nodes.filter(
-      (node): node is Rule => node.type === "rule" && node.selector.includes(":focus-visible")
+      (node): node is Rule => node.type === "rule" && node.selector.includes(":focus-visible"),
     );
     const hasTokenizedFocusOutline = focusRules.some((rule) => {
       const declarations = new Map(
         rule.nodes
           .filter((node): node is Declaration => node.type === "decl")
-          .map(({ prop, value }) => [prop, value])
+          .map(({ prop, value }) => [prop, value]),
       );
       return (
         declarations.get("outline") === "3px solid var(--focus-ring-color)" &&

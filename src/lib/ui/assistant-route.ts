@@ -9,7 +9,11 @@ export function assistantSlug(name: string): string {
   );
 }
 
-export function assistantPathSegment(name: string, userId: string, needsDisambiguation = false): string {
+export function assistantPathSegment(
+  name: string,
+  userId: string,
+  needsDisambiguation = false,
+): string {
   const slug = assistantSlug(name);
   return needsDisambiguation ? `${slug}--${userId}` : slug;
 }

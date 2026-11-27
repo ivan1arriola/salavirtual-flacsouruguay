@@ -21,28 +21,29 @@ function textoConfirmacion(detalle: ConfirmacionCoberturaDetalle) {
     case "convocatoria":
       return {
         titulo: "Abrir convocatoria",
-        descripcion: "La reunión aparecerá en Agenda abierta y se notificará a los asistentes disponibles."
+        descripcion:
+          "La reunión aparecerá en Agenda abierta y se notificará a los asistentes disponibles.",
       };
     case "desasignacion":
       return {
         titulo: "Desasignar asistente",
-        descripcion: `Se quitará a ${detalle.nombre} del monitoreo. El encuentro seguirá requiriendo cobertura y quedará pendiente. Solo se notificará a la persona afectada.`
+        descripcion: `Se quitará a ${detalle.nombre} del monitoreo. El encuentro seguirá requiriendo cobertura y quedará pendiente. Solo se notificará a la persona afectada.`,
       };
     case "reasignacion":
       return {
         titulo: "Confirmar reasignación",
-        descripcion: `Se sustituirá a ${detalle.anterior} por ${detalle.nombre}. Se notificará a ambas personas, sin convocatoria general.`
+        descripcion: `Se sustituirá a ${detalle.anterior} por ${detalle.nombre}. Se notificará a ambas personas, sin convocatoria general.`,
       };
     case "cancelar":
       return {
         titulo: "Quitar requisito de monitoreo",
         descripcion:
-          "El encuentro seguirá programado, pero dejará de requerir monitoreo y se retirarán las postulaciones activas."
+          "El encuentro seguirá programado, pero dejará de requerir monitoreo y se retirarán las postulaciones activas.",
       };
     case "aprobacion":
       return {
         titulo: "Aprobar registro",
-        descripcion: `Se aprobará el registro de ${detalle.nombre}: ${detalle.minutos} minutos, ${detalle.moneda} ${detalle.importe}. Las horas y el importe se incluirán en las liquidaciones del período.`
+        descripcion: `Se aprobará el registro de ${detalle.nombre}: ${detalle.minutos} minutos, ${detalle.moneda} ${detalle.importe}. Las horas y el importe se incluirán en las liquidaciones del período.`,
       };
   }
 }
@@ -50,7 +51,7 @@ function textoConfirmacion(detalle: ConfirmacionCoberturaDetalle) {
 export function ConfirmacionCobertura({
   detalle,
   onCerrar,
-  onConfirmar
+  onConfirmar,
 }: Readonly<{
   detalle: ConfirmacionCoberturaDetalle;
   onCerrar: () => void;

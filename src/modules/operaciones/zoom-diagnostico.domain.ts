@@ -18,14 +18,14 @@ export type IncidenciaSerieZoom = Readonly<{
 
 /** Diagnóstico global: nunca modifica la serie ni infiere una cuenta o ID que faltan. */
 export function auditarSeriesZoom(
-  reuniones: readonly ReunionZoomAuditable[]
+  reuniones: readonly ReunionZoomAuditable[],
 ): readonly IncidenciaSerieZoom[] {
   const series = reuniones.reduce<Record<string, ReunionZoomAuditable[]>>(
     (grupos, reunion) => ({
       ...grupos,
-      [reunion.solicitudId]: [...(grupos[reunion.solicitudId] ?? []), reunion]
+      [reunion.solicitudId]: [...(grupos[reunion.solicitudId] ?? []), reunion],
     }),
-    {}
+    {},
   );
   return Object.entries(series).flatMap(([solicitudId, encuentros]) => {
     const primero = encuentros[0];
@@ -39,7 +39,7 @@ export function auditarSeriesZoom(
         ? ["SIN_REUNION" as const]
         : []),
       ...(ids.size > 1 ? ["IDS_DISTINTOS" as const] : []),
-      ...(cuentas.size > 1 ? ["CUENTAS_DISTINTAS" as const] : [])
+      ...(cuentas.size > 1 ? ["CUENTAS_DISTINTAS" as const] : []),
     ];
     return motivos.length
       ? [
@@ -48,8 +48,8 @@ export function auditarSeriesZoom(
             titulo: primero.titulo,
             inicio: primero.inicio,
             motivos,
-            encuentros: encuentros.length
-          }
+            encuentros: encuentros.length,
+          },
         ]
       : [];
   });
@@ -63,7 +63,7 @@ export type SolapeCuentaZoom = Readonly<{
 
 /** Intervalos semiabiertos: una clase que termina a las 10:00 libera la cuenta a las 10:00. */
 export function detectarSolapesCuentasZoom(
-  reuniones: readonly ReunionZoomAuditable[]
+  reuniones: readonly ReunionZoomAuditable[],
 ): readonly SolapeCuentaZoom[] {
   const ordenadas = reuniones.reduce<ReunionZoomAuditable[]>((acumuladas, reunion) => {
     const indice = acumuladas.findIndex(({ inicio }) => inicio > reunion.inicio);
@@ -78,7 +78,9 @@ export function detectarSolapesCuentasZoom(
           .slice(indice + 1)
           .filter(
             (segunda) =>
-              segunda.inicio < primera.fin && segunda.cuentaId === cuentaId && primera.inicio < segunda.fin
+              segunda.inicio < primera.fin &&
+              segunda.cuentaId === cuentaId &&
+              primera.inicio < segunda.fin,
           )
           .map((segunda) => ({ cuentaId, primera, segunda }))
       : [];
@@ -90,12 +92,12 @@ export type ReunionZoomRemota = Readonly<{ meetingId: string; inicio: Date | nul
 /** Contrasta únicamente reuniones administradas en Sala Virtual; no incorpora clases externas. */
 export function compararAgendaZoom(
   locales: readonly ReunionZoomAuditable[],
-  remotas: readonly ReunionZoomRemota[]
+  remotas: readonly ReunionZoomRemota[],
 ): Readonly<{ verificadas: number; ausentes: readonly ReunionZoomAuditable[] }> {
   const idsRemotos = new Set(remotas.map(({ meetingId }) => meetingId));
   const verificadas = locales.filter(({ meetingId }) => meetingId && idsRemotos.has(meetingId));
   return {
     verificadas: verificadas.length,
-    ausentes: locales.filter(({ meetingId }) => meetingId && !idsRemotos.has(meetingId))
+    ausentes: locales.filter(({ meetingId }) => meetingId && !idsRemotos.has(meetingId)),
   };
 }

@@ -16,7 +16,7 @@ export async function vincularOcurrenciaZoom(
   deps: Readonly<{ repo: Pick<ZoomArchivoRepositoryPort, "vincularOcurrencia"> }>,
   actor: ActorVincularZoom,
   ocurrenciaId: string,
-  eventoId: string
+  eventoId: string,
 ): Promise<ResultadoVincularOcurrenciaZoom> {
   // Autorizar antes de tocar datos: quien no administra tampoco aprende si la ocurrencia existe.
   if (actor.rol !== "ADMINISTRACION") {
@@ -26,7 +26,7 @@ export async function vincularOcurrenciaZoom(
     return await deps.repo.vincularOcurrencia(
       ocurrenciaId,
       eventoId,
-      actor.id === null ? null : { id: actor.id }
+      actor.id === null ? null : { id: actor.id },
     );
   } catch (error) {
     if ((error as { code?: unknown } | null)?.code === "P2002") {
@@ -41,10 +41,14 @@ export async function desvincularOcurrenciaZoom(
   deps: Readonly<{ repo: Pick<ZoomArchivoRepositoryPort, "desvincularOcurrencia"> }>,
   actor: ActorVincularZoom,
   ocurrenciaId: string,
-  eventoId: string
+  eventoId: string,
 ): Promise<ResultadoDesvinculo | Readonly<{ tipo: "PROHIBIDO" }>> {
   if (actor.rol !== "ADMINISTRACION") {
     return { tipo: "PROHIBIDO" };
   }
-  return deps.repo.desvincularOcurrencia(ocurrenciaId, eventoId, actor.id === null ? null : { id: actor.id });
+  return deps.repo.desvincularOcurrencia(
+    ocurrenciaId,
+    eventoId,
+    actor.id === null ? null : { id: actor.id },
+  );
 }

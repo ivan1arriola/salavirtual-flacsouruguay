@@ -26,14 +26,16 @@ describe("flujo administrativo de desvinculación", () => {
 
   it("ofrece quitar la asignación desde la tabla del asistente", () => {
     const buttonPath = filePath(
-      "src/modules/asistencia/presentation/components/assistant-unassign-button.tsx"
+      "src/modules/asistencia/presentation/components/assistant-unassign-button.tsx",
     );
     expect(existsSync(buttonPath)).toBe(true);
     if (!existsSync(buttonPath)) {
       return;
     }
     const button = readFileSync(buttonPath, "utf8");
-    const table = source("src/modules/asistencia/presentation/components/assistant-meetings-table.tsx");
+    const table = source(
+      "src/modules/asistencia/presentation/components/assistant-meetings-table.tsx",
+    );
     expect(button).toContain("Quitar asignación");
     expect(button).toContain('method: "POST"');
     expect(button).toContain("router.refresh()");
@@ -41,7 +43,9 @@ describe("flujo administrativo de desvinculación", () => {
   });
 
   it("separa la gestión de la tarjeta y conserva la acción de desasignación sin cancelar el monitoreo", () => {
-    const actions = source("src/modules/asistencia/presentation/components/coverage-assistance-actions.tsx");
+    const actions = source(
+      "src/modules/asistencia/presentation/components/coverage-assistance-actions.tsx",
+    );
     const page = source("src/bootstrap/ui/asistencia/asistencia-tecnica-page.server.tsx");
     const css = source("app/(gestion)/operations.css");
 
@@ -72,7 +76,7 @@ describe("flujo administrativo de desvinculación", () => {
 
   it("permite darse de baja desde Mi agenda antes de comenzar el monitoreo", () => {
     const buttonPath = filePath(
-      "src/modules/asistencia/presentation/components/assistant-self-unassign-button.tsx"
+      "src/modules/asistencia/presentation/components/assistant-self-unassign-button.tsx",
     );
     expect(existsSync(buttonPath)).toBe(true);
     if (!existsSync(buttonPath)) {
@@ -96,7 +100,9 @@ describe("flujo administrativo de desvinculación", () => {
   });
 
   it("muestra el historial operativo en el detalle administrativo", () => {
-    const historyPath = filePath("src/modules/asistencia/presentation/components/assistant-history.tsx");
+    const historyPath = filePath(
+      "src/modules/asistencia/presentation/components/assistant-history.tsx",
+    );
     expect(existsSync(historyPath)).toBe(true);
     if (!existsSync(historyPath)) {
       return;

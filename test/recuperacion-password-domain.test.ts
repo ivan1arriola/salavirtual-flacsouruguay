@@ -5,14 +5,16 @@ import {
   restablecerPasswordSchema,
   solicitudRecuperacionPasswordSchema,
   tokenRecuperacionVigente,
-  usuarioIdDesdeIdentifierRecuperacion
+  usuarioIdDesdeIdentifierRecuperacion,
 } from "../src/modules/usuarios/recuperacion-password.domain";
 
 describe("recuperación de contraseña", () => {
   it("normaliza el correo de la solicitud", () => {
-    expect(solicitudRecuperacionPasswordSchema.parse({ email: " Usuario@FLACSO.EDU.UY " })).toEqual({
-      email: "usuario@flacso.edu.uy"
-    });
+    expect(solicitudRecuperacionPasswordSchema.parse({ email: " Usuario@FLACSO.EDU.UY " })).toEqual(
+      {
+        email: "usuario@flacso.edu.uy",
+      },
+    );
   });
 
   it("guarda un hash del token y no el token original", () => {
@@ -41,16 +43,16 @@ describe("recuperación de contraseña", () => {
       restablecerPasswordSchema.safeParse({
         token: "a".repeat(43),
         passwordNueva: "segura123",
-        confirmarPassword: "segura123"
-      }).success
+        confirmarPassword: "segura123",
+      }).success,
     ).toBe(true);
 
     expect(
       restablecerPasswordSchema.safeParse({
         token: "a".repeat(43),
         passwordNueva: "segura123",
-        confirmarPassword: "distinta123"
-      }).success
+        confirmarPassword: "distinta123",
+      }).success,
     ).toBe(false);
   });
 });

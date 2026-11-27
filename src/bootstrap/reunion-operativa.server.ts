@@ -11,5 +11,5 @@ export {
   type RegistroAsistenciaOperativoView,
   type ReunionOperativaActor,
   type ReunionOperativaResult,
-  type ReunionOperativaView
+  type ReunionOperativaView,
 } from "@/src/modules/reuniones/reunion-operativa.service";

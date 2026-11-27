@@ -9,7 +9,7 @@ import {
   parseAuthConfig,
   resolverRedireccionAutorizada,
   type PerfilGoogle,
-  type CuentaGoogleVinculada
+  type CuentaGoogleVinculada,
 } from "@/src/modules/identity/domain";
 
 describe("identity domain", () => {
@@ -31,7 +31,7 @@ describe("identity domain", () => {
       activo: true,
       fusionadoEnId: null,
       nombre: "Docente Test",
-      email: "docente@flacso.edu.uy"
+      email: "docente@flacso.edu.uy",
     };
 
     expect(evaluarAccesoLocal(usuario, true)?.id).toBe("usr-1");
@@ -44,7 +44,7 @@ describe("identity domain", () => {
     const perfil: PerfilGoogle = {
       subject: "sub-123",
       email: "docente@flacso.edu.uy",
-      emailVerificado: true
+      emailVerificado: true,
     };
     const cuenta: CuentaGoogleVinculada = {
       providerAccountId: "sub-123",
@@ -56,8 +56,8 @@ describe("identity domain", () => {
         activo: true,
         fusionadoEnId: null,
         nombre: "Docente Test",
-        email: "docente@flacso.edu.uy"
-      }
+        email: "docente@flacso.edu.uy",
+      },
     };
 
     expect(evaluarAccesoGoogle(perfil, cuenta)?.id).toBe("usr-1");
@@ -71,11 +71,11 @@ describe("identity domain", () => {
     const config = parseAuthConfig({
       AUTH_SECRET: "a".repeat(64),
       AUTH_TRUST_HOST: "true",
-      APP_BASE_URL: "http://localhost:3000"
+      APP_BASE_URL: "http://localhost:3000",
     });
     expect(config.trustHost).toBe(true);
     expect(resolverRedireccionAutorizada("/reuniones", "http://localhost:3000")).toBe(
-      "http://localhost:3000/reuniones"
+      "http://localhost:3000/reuniones",
     );
   });
 });

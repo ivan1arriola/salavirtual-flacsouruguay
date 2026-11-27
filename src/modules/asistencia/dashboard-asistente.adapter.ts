@@ -6,10 +6,14 @@ import { claveMesUtc3, resumirAsistencias } from "./resumen-personal.domain";
 
 const ACTIVE_ASSIGNMENTS = ["ASIGNADO", "ACEPTADO"] as const;
 
-export async function obtenerDashboardAsistente(db: PrismaClient, usuarioId: string, ahora = new Date()) {
+export async function obtenerDashboardAsistente(
+  db: PrismaClient,
+  usuarioId: string,
+  ahora = new Date(),
+) {
   const assistant = await db.asistenteTecnico.findUnique({
     where: { usuarioId },
-    select: { id: true }
+    select: { id: true },
   });
   if (!assistant) {
     return null;
@@ -25,9 +29,9 @@ export async function obtenerDashboardAsistente(db: PrismaClient, usuarioId: str
             estado: "PROGRAMADA",
             OR: [
               { finAsistenciaTecnicaAt: { gte: ahora } },
-              { finAsistenciaTecnicaAt: null, finProgramadoAt: { gte: ahora } }
-            ]
-          }
+              { finAsistenciaTecnicaAt: null, finProgramadoAt: { gte: ahora } },
+            ],
+          },
         },
         orderBy: { instancia: { inicioProgramadoAt: "asc" } },
         take: 8,
@@ -35,10 +39,10 @@ export async function obtenerDashboardAsistente(db: PrismaClient, usuarioId: str
           instancia: {
             include: {
               solicitud: { include: { docentePrograma: { include: { programa: true } } } },
-              eventosProveedor: { include: { proveedor: true, cuentaProveedor: true } }
-            }
-          }
-        }
+              eventosProveedor: { include: { proveedor: true, cuentaProveedor: true } },
+            },
+          },
+        },
       }),
       db.asignacionAsistenciaTecnica.count({
         where: {
@@ -48,36 +52,38 @@ export async function obtenerDashboardAsistente(db: PrismaClient, usuarioId: str
             estado: "PROGRAMADA",
             OR: [
               { finAsistenciaTecnicaAt: { gte: ahora } },
-              { finAsistenciaTecnicaAt: null, finProgramadoAt: { gte: ahora } }
-            ]
-          }
-        }
+              { finAsistenciaTecnicaAt: null, finProgramadoAt: { gte: ahora } },
+            ],
+          },
+        },
       }),
       db.instanciaSala.findMany({
         where: {
           requiereAsistenciaTecnica: true,
           finProgramadoAt: { gte: ahora },
           estado: "PROGRAMADA",
-          asignaciones: { none: { estado: { in: [...ACTIVE_ASSIGNMENTS] } } }
+          asignaciones: { none: { estado: { in: [...ACTIVE_ASSIGNMENTS] } } },
         },
-        select: { id: true }
+        select: { id: true },
       }),
       db.postulacionAsistenciaTecnica.findMany({
         where: { asistenteTecnicoId: assistant.id, instancia: { finProgramadoAt: { gte: ahora } } },
-        select: { instanciaSalaId: true, estado: true }
+        select: { instanciaSalaId: true, estado: true },
       }),
       obtenerAsistenciasPersonales(db, usuarioId, "MES_ACTUAL", ahora),
-      obtenerAsistenciasPersonales(db, usuarioId, "HISTORICO", ahora)
+      obtenerAsistenciasPersonales(db, usuarioId, "HISTORICO", ahora),
     ]);
 
   const openIds = new Set(openMeetings.map(({ id }) => id));
   const respondedOpen = new Set(
     interests
       .filter(({ instanciaSalaId }) => openIds.has(instanciaSalaId))
-      .map(({ instanciaSalaId }) => instanciaSalaId)
+      .map(({ instanciaSalaId }) => instanciaSalaId),
   );
   const previousMonth = claveMesAnteriorUtc3(ahora);
-  const previousMeetings = history.filter(({ inicioAt }) => claveMesUtc3(inicioAt) === previousMonth);
+  const previousMeetings = history.filter(
+    ({ inicioAt }) => claveMesUtc3(inicioAt) === previousMonth,
+  );
   const proximasCoberturas = upcomingAssignments.map((assignment) => {
     const meeting = assignment.instancia;
     const meet = seleccionarEventoProveedorActivo(meeting);
@@ -93,8 +99,11 @@ export async function obtenerDashboardAsistente(db: PrismaClient, usuarioId: str
       inicioEncuentroAt: meeting.inicioProgramadoAt,
       finEncuentroAt: meeting.finProgramadoAt,
       modalidad: meeting.modalidadOverride ?? meeting.solicitud.modalidad,
-      sala: meet?.cuentaProveedor?.emailOrganizador ?? meet?.cuentaProveedor?.nombre ?? "Sin cuenta asignada",
-      joinUrl: meet?.joinUrl ?? null
+      sala:
+        meet?.cuentaProveedor?.emailOrganizador ??
+        meet?.cuentaProveedor?.nombre ??
+        "Sin cuenta asignada",
+      joinUrl: meet?.joinUrl ?? null,
     };
   });
 
@@ -107,6 +116,6 @@ export async function obtenerDashboardAsistente(db: PrismaClient, usuarioId: str
     pendientesRespuesta: Math.max(0, openMeetings.length - respondedOpen.size),
     respondidas: respondedOpen.size,
     mesActual: resumirAsistencias(currentMeetings),
-    mesAnterior: resumirAsistencias(previousMeetings)
+    mesAnterior: resumirAsistencias(previousMeetings),
   };
 }

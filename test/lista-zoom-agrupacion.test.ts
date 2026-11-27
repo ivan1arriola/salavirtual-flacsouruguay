@@ -3,7 +3,7 @@ import {
   TAMANO_PALETA_CUENTAS,
   agruparPorDia,
   colorCuentaZoom,
-  cuentasPresentes
+  cuentasPresentes,
 } from "../src/modules/reuniones/lista-zoom-agrupacion.domain";
 
 describe("colorCuentaZoom", () => {
@@ -45,7 +45,7 @@ describe("colorCuentaZoom", () => {
       "zoom@flacso.edu.uy",
       "eventos@flacso.edu.uy",
       "academica@flacso.edu.uy",
-      "Sala Principal"
+      "Sala Principal",
     ];
 
     for (const cuenta of muestras) {
@@ -93,7 +93,7 @@ describe("agruparPorDia", () => {
       { id: "ayer", inicio: new Date("2026-11-03T14:00:00-03:00") },
       { id: "hoy", inicio: new Date("2026-11-04T20:00:00-03:00") },
       { id: "manana", inicio: new Date("2026-11-05T09:00:00-03:00") },
-      { id: "pasado", inicio: new Date("2026-11-06T09:00:00-03:00") }
+      { id: "pasado", inicio: new Date("2026-11-06T09:00:00-03:00") },
     ];
 
     const grupos = agruparPorDia(items, (item) => item.inicio, ahora);
@@ -102,7 +102,7 @@ describe("agruparPorDia", () => {
       { clave: "2026-11-03", relativo: null },
       { clave: "2026-11-04", relativo: "HOY" },
       { clave: "2026-11-05", relativo: "MANANA" },
-      { clave: "2026-11-06", relativo: null }
+      { clave: "2026-11-06", relativo: null },
     ]);
   });
 
@@ -135,7 +135,7 @@ describe("cuentasPresentes", () => {
       undefined,
       "   ",
       "sala01@flacso.edu.uy",
-      "eventos@flacso.edu.uy"
+      "eventos@flacso.edu.uy",
     ] as const;
 
     const resultado = cuentasPresentes(entrada);
@@ -144,23 +144,23 @@ describe("cuentasPresentes", () => {
       {
         correo: "eventos@flacso.edu.uy",
         nombre: "eventos",
-        color: colorCuentaZoom("eventos@flacso.edu.uy")
+        color: colorCuentaZoom("eventos@flacso.edu.uy"),
       },
       {
         correo: "sala01@flacso.edu.uy",
         nombre: "sala01",
-        color: 0
+        color: 0,
       },
       {
         correo: "sala02@flacso.edu.uy",
         nombre: "sala02",
-        color: 1
+        color: 1,
       },
       {
         correo: "sala08@flacso.edu.uy",
         nombre: "sala08",
-        color: 7 % TAMANO_PALETA_CUENTAS
-      }
+        color: 7 % TAMANO_PALETA_CUENTAS,
+      },
     ]);
   });
 });

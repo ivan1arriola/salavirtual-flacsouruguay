@@ -1,7 +1,7 @@
 import {
   extraerCohostEmailsDeInstancia,
   invalidarVerificacionCohosts,
-  registrarVerificacionCohosts
+  registrarVerificacionCohosts,
 } from "@/src/modules/conferencias/api";
 
 export type SincronizarCohostsDeps = Readonly<{
@@ -18,18 +18,18 @@ export type SincronizarCohostsDeps = Readonly<{
   cargarCredencialesEncuentro: (
     db: any,
     descifrar: (v: string) => string,
-    emailOrganizador?: string | null
+    emailOrganizador?: string | null,
   ) => Promise<any>;
   configurarEspacio: (
     credentials: any,
     codigoReunion: string,
-    settings: Readonly<{ cohostEmails?: readonly string[] }>
+    settings: Readonly<{ cohostEmails?: readonly string[] }>,
   ) => Promise<void>;
 }>;
 
 export async function sincronizarCohostsDeInstanciaUseCase(
   dependencies: SincronizarCohostsDeps,
-  instanciaSalaId: string
+  instanciaSalaId: string,
 ): Promise<void> {
   const meeting = await dependencies.db.instanciaSala.findUnique({
     where: { id: instanciaSalaId },
@@ -40,15 +40,15 @@ export async function sincronizarCohostsDeInstanciaUseCase(
           id: true,
           payloadUltimo: true,
           codigoReunion: true,
-          cuentaProveedor: { select: { emailOrganizador: true } }
+          cuentaProveedor: { select: { emailOrganizador: true } },
         },
-        take: 1
+        take: 1,
       },
       cohosts: {
-        select: { cuentaGoogle: { select: { email: true } } }
+        select: { cuentaGoogle: { select: { email: true } } },
       },
-      cohostEmails: { select: { email: true } }
-    }
+      cohostEmails: { select: { email: true } },
+    },
   });
 
   const event = meeting?.eventosProveedor[0];
@@ -60,14 +60,16 @@ export async function sincronizarCohostsDeInstanciaUseCase(
 
   await dependencies.db.eventoProveedor.update({
     where: { id: event.id },
-    data: { payloadUltimo: JSON.parse(JSON.stringify(invalidarVerificacionCohosts(event.payloadUltimo))) }
+    data: {
+      payloadUltimo: JSON.parse(JSON.stringify(invalidarVerificacionCohosts(event.payloadUltimo))),
+    },
   });
 
   try {
     const credentials = await dependencies.cargarCredencialesEncuentro(
       dependencies.db,
       dependencies.descifrar,
-      event.cuentaProveedor?.emailOrganizador
+      event.cuentaProveedor?.emailOrganizador,
     );
     await dependencies.configurarEspacio(credentials, event.codigoReunion, { cohostEmails });
     await dependencies.db.eventoProveedor.update({
@@ -80,25 +82,27 @@ export async function sincronizarCohostsDeInstanciaUseCase(
               event.codigoReunion,
               credentials.subject ?? "",
               cohostEmails,
-              new Date().toISOString()
-            )
-          )
-        )
-      }
+              new Date().toISOString(),
+            ),
+          ),
+        ),
+      },
     });
   } catch (error) {
     await dependencies.db.eventoProveedor.updateMany({
       where: {
         id: event.id,
         reclamoIntegracionAt: null,
-        OR: [{ operacionPendiente: null }, { operacionPendiente: "CONFIGURAR_MEET" }]
+        OR: [{ operacionPendiente: null }, { operacionPendiente: "CONFIGURAR_MEET" }],
       },
       data: {
         estadoIntegracion: "ERROR",
         operacionPendiente: "CONFIGURAR_MEET",
         errorIntegracion:
-          error instanceof Error ? error.message : "No se pudieron verificar los cohosts en Google Meet."
-      }
+          error instanceof Error
+            ? error.message
+            : "No se pudieron verificar los cohosts en Google Meet.",
+      },
     });
     throw error;
   }

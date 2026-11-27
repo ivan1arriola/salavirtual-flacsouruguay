@@ -11,7 +11,7 @@ export function ZoomWebhookConfig({ initialConfigured }: Readonly<{ initialConfi
   const url = useSyncExternalStore(
     subscribeOrigin,
     () => `${window.location.origin}${rutaWebhook}`,
-    () => rutaWebhook
+    () => rutaWebhook,
   );
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ text: string; ok: boolean } | null>(null);
@@ -24,7 +24,7 @@ export function ZoomWebhookConfig({ initialConfigured }: Readonly<{ initialConfi
       const response = await fetch("/api/v1/configuracion/zoom/webhook", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ secretToken })
+        body: JSON.stringify({ secretToken }),
       });
       const result = await response.json().catch(() => ({}));
       if (!response.ok) {
@@ -53,7 +53,10 @@ export function ZoomWebhookConfig({ initialConfigured }: Readonly<{ initialConfi
       setConfigured(false);
       setMessage({ text: "Secret Token eliminado. El webhook dejó de aceptar eventos.", ok: true });
     } catch (error) {
-      setMessage({ text: error instanceof Error ? error.message : "Error al eliminar.", ok: false });
+      setMessage({
+        text: error instanceof Error ? error.message : "Error al eliminar.",
+        ok: false,
+      });
     } finally {
       setSaving(false);
     }
@@ -67,15 +70,16 @@ export function ZoomWebhookConfig({ initialConfigured }: Readonly<{ initialConfi
         <div>
           <h2 id="zoom-webhook-title">Notificaciones de Zoom</h2>
           <p>
-            Eventos de Zoom que Sala Virtual procesa para actualizar clases, grabaciones y la agenda de salas.
+            Eventos de Zoom que Sala Virtual procesa para actualizar clases, grabaciones y la agenda
+            de salas.
           </p>
         </div>
       </div>
       <div className="zoom-webhook-events" aria-labelledby="zoom-webhook-events-title">
         <h3 id="zoom-webhook-events-title">Eventos para activar en Zoom Marketplace</h3>
         <p>
-          Activá estos grupos en Event Subscriptions de la app Zoom. Los eventos opcionales mejoran el
-          diagnóstico en vivo.
+          Activá estos grupos en Event Subscriptions de la app Zoom. Los eventos opcionales mejoran
+          el diagnóstico en vivo.
         </p>
 
         <h4>Estado y archivos (recomendados)</h4>
@@ -110,12 +114,14 @@ export function ZoomWebhookConfig({ initialConfigured }: Readonly<{ initialConfi
           </li>
           <li>
             <code>meeting.participant_joined_waiting_room</code>,{" "}
-            <code>meeting.participant_left_waiting_room</code>, <code>meeting.participant_admitted</code>,{" "}
+            <code>meeting.participant_left_waiting_room</code>,{" "}
+            <code>meeting.participant_admitted</code>,{" "}
             <code>meeting.participant_put_in_waiting_room</code>
             <span>Movimientos y admisiones de la sala de espera.</span>
           </li>
           <li>
-            <code>meeting.participant_jbh_waiting</code> y <code>meeting.participant_jbh_waiting_left</code>
+            <code>meeting.participant_jbh_waiting</code> y{" "}
+            <code>meeting.participant_jbh_waiting_left</code>
             <span>Personas esperando al anfitrión o que abandonan antes de que ingrese.</span>
           </li>
           <li>
@@ -135,12 +141,13 @@ export function ZoomWebhookConfig({ initialConfigured }: Readonly<{ initialConfi
         <p>
           <strong>Scopes:</strong> participantes: <code>meeting:read:participant:admin</code> o{" "}
           <code>meeting:read:participant</code>; pantalla compartida:{" "}
-          <code>meeting:read:participant_sharing:admin</code> o <code>meeting:read:participant_sharing</code>.
+          <code>meeting:read:participant_sharing:admin</code> o{" "}
+          <code>meeting:read:participant_sharing</code>.
         </p>
         <p>
-          <code>meeting.participant_jbh_waiting</code> depende de que la opción de unirse antes que el
-          anfitrión esté deshabilitada y la espera supere el umbral de Zoom; su ausencia no implica que nadie
-          haya esperado.
+          <code>meeting.participant_jbh_waiting</code> depende de que la opción de unirse antes que
+          el anfitrión esté deshabilitada y la espera supere el umbral de Zoom; su ausencia no
+          implica que nadie haya esperado.
         </p>
 
         <h4>Calidad de la reunión (muy recomendado)</h4>
@@ -148,51 +155,54 @@ export function ZoomWebhookConfig({ initialConfigured }: Readonly<{ initialConfi
           <li>
             <code>meeting.alert</code>
             <span>
-              Informa audio o vídeo inestable, mala calidad al compartir pantalla, CPU elevada y problemas de
-              reconexión.
+              Informa audio o vídeo inestable, mala calidad al compartir pantalla, CPU elevada y
+              problemas de reconexión.
             </span>
           </li>
           <li>
-            <code>recording.started</code>, <code>recording.stopped</code>, <code>recording.paused</code>,{" "}
-            <code>recording.resumed</code>
+            <code>recording.started</code>, <code>recording.stopped</code>,{" "}
+            <code>recording.paused</code>, <code>recording.resumed</code>
             <span>Permiten reconstruir el ciclo real de grabación.</span>
           </li>
         </ul>
         <p>
-          <strong>Scopes:</strong> <code>meeting:read:alert:admin</code> o <code>meeting:read:alert</code>{" "}
-          para alertas; <code>cloud_recording:read:recording:admin</code> o{" "}
+          <strong>Scopes:</strong> <code>meeting:read:alert:admin</code> o{" "}
+          <code>meeting:read:alert</code> para alertas;{" "}
+          <code>cloud_recording:read:recording:admin</code> o{" "}
           <code>cloud_recording:read:recording</code> para eventos de grabación.
         </p>
         <p>
           <strong>Requisito de alertas:</strong> cuenta Business o superior y opción{" "}
-          <em>Meeting quality scores and network alerts on Dashboard</em> habilitada en la configuración de
-          Zoom.
+          <em>Meeting quality scores and network alerts on Dashboard</em> habilitada en la
+          configuración de Zoom.
         </p>
 
         <h4>Datos de participantes en vivo (API de Zoom Dashboard)</h4>
         <p>
-          La lista en vivo y las métricas de audio, vídeo y pantalla se consultan directamente a Zoom.
-          Requieren cuenta Business o superior, Dashboard habilitado y uno de estos scopes:{" "}
+          La lista en vivo y las métricas de audio, vídeo y pantalla se consultan directamente a
+          Zoom. Requieren cuenta Business o superior, Dashboard habilitado y uno de estos scopes:{" "}
           <code>dashboard_meetings:read:admin</code> o <code>dashboard:read:admin</code> (granular:{" "}
-          <code>dashboard:read:list_meeting_participants:admin</code>). Las métricas de calidad también
-          requieren habilitar las puntuaciones de calidad en Dashboard.
+          <code>dashboard:read:list_meeting_participants:admin</code>). Las métricas de calidad
+          también requieren habilitar las puntuaciones de calidad en Dashboard.
         </p>
         <p>
-          <strong>Importante:</strong> los webhooks alimentan la cronología y las alertas; no se usan para
-          calcular minutos ni para inventar una lista de asistencia. La asistencia oficial se obtiene del
-          reporte de Zoom al finalizar la reunión. Zoom clasifica esta consulta como HEAVY; Sala Virtual la
-          actualiza cada 30 segundos mientras la consola está abierta.
+          <strong>Importante:</strong> los webhooks alimentan la cronología y las alertas; no se
+          usan para calcular minutos ni para inventar una lista de asistencia. La asistencia oficial
+          se obtiene del reporte de Zoom al finalizar la reunión. Zoom clasifica esta consulta como
+          HEAVY; Sala Virtual la actualiza cada 30 segundos mientras la consola está abierta.
         </p>
 
         <p>
-          <strong>Agenda:</strong> además de estos eventos, Sala Virtual consulta la agenda completa de Zoom
-          cada 30 minutos y desde Centro de operaciones › Zoom › Agenda de Zoom.
+          <strong>Agenda:</strong> además de estos eventos, Sala Virtual consulta la agenda completa
+          de Zoom cada 30 minutos y desde Centro de operaciones › Zoom › Agenda de Zoom.
         </p>
       </div>
       <label className="field">
         <span>Event Notification Endpoint URL</span>
         <input type="text" readOnly value={url} onFocus={(event) => event.currentTarget.select()} />
-        <small>Copiá esta URL en Event Subscriptions y pulsá Validate después de guardar el token.</small>
+        <small>
+          Copiá esta URL en Event Subscriptions y pulsá Validate después de guardar el token.
+        </small>
       </label>
       <form onSubmit={save} className="email-test-form">
         <label className="field">
@@ -202,7 +212,9 @@ export function ZoomWebhookConfig({ initialConfigured }: Readonly<{ initialConfi
             autoComplete="new-password"
             value={secretToken}
             onChange={(event) => setSecretToken(event.target.value)}
-            placeholder={configured ? "Dejá vacío para conservar el actual" : "Pegá el Secret Token de Zoom"}
+            placeholder={
+              configured ? "Dejá vacío para conservar el actual" : "Pegá el Secret Token de Zoom"
+            }
             required={!configured}
             maxLength={512}
           />
@@ -230,9 +242,9 @@ export function ZoomWebhookConfig({ initialConfigured }: Readonly<{ initialConfi
         </div>
       </form>
       <p>
-        Usá el <strong>Secret Token</strong> de Event Subscriptions; es distinto del Client Secret de OAuth.
-        Guardarlo aquí no activa los eventos: también tenés que seleccionarlos y habilitar la suscripción en
-        Zoom.
+        Usá el <strong>Secret Token</strong> de Event Subscriptions; es distinto del Client Secret
+        de OAuth. Guardarlo aquí no activa los eventos: también tenés que seleccionarlos y habilitar
+        la suscripción en Zoom.
       </p>
     </section>
   );

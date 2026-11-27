@@ -30,7 +30,9 @@ export async function GET(_request: Request, context: RouteContext) {
     if (progreso === "PROHIBIDO") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
-    return NextResponse.json(progreso, { headers: { "Cache-Control": "private, no-store, max-age=0" } });
+    return NextResponse.json(progreso, {
+      headers: { "Cache-Control": "private, no-store, max-age=0" },
+    });
   } catch {
     return NextResponse.json({ error: "No se pudo consultar la recuperación." }, { status: 500 });
   }

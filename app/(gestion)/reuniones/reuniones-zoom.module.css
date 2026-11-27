@@ -593,7 +593,10 @@
 }
 @media (max-width: 1250px) {
   .filters {
-    grid-template-columns: minmax(220px, 2fr) minmax(180px, 1fr) minmax(135px, 1fr) minmax(135px, 1fr);
+    grid-template-columns: minmax(220px, 2fr) minmax(180px, 1fr) minmax(135px, 1fr) minmax(
+        135px,
+        1fr
+      );
   }
   .item {
     grid-template-columns: minmax(115px, 150px) minmax(190px, 1fr);

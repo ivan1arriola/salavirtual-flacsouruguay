@@ -9,8 +9,8 @@ describe("perfil personal", () => {
         nombres: "  Ana ",
         apellidos: " ",
         telefono: " 099 123 456 ",
-        imagenUrl: ""
-      })
+        imagenUrl: "",
+      }),
     ).toEqual({ nombres: "Ana", apellidos: null, telefono: "099 123 456", imagenUrl: null });
   });
 
@@ -30,18 +30,21 @@ describe("perfil personal", () => {
 
   it("rechaza contraseñas cortas o confirmaciones diferentes", () => {
     expect(
-      cambioPasswordSchema.safeParse({ passwordNueva: "corta", confirmarPassword: "corta" }).success
+      cambioPasswordSchema.safeParse({ passwordNueva: "corta", confirmarPassword: "corta" })
+        .success,
     ).toBe(false);
     expect(
-      cambioPasswordSchema.safeParse({ passwordNueva: "password-segura", confirmarPassword: "otra-password" })
-        .success
+      cambioPasswordSchema.safeParse({
+        passwordNueva: "password-segura",
+        confirmarPassword: "otra-password",
+      }).success,
     ).toBe(false);
     expect(
       cambioPasswordSchema.safeParse({
         passwordActual: "anterior",
         passwordNueva: "password-segura",
-        confirmarPassword: "password-segura"
-      }).success
+        confirmarPassword: "password-segura",
+      }).success,
     ).toBe(true);
   });
 });

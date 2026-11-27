@@ -5,14 +5,17 @@ import type { Prisma } from "@prisma/client";
  * mismo que la transacción PostgreSQL y evita que dos requests vean la misma
  * capacidad libre antes de insertar sus EventoProveedor.
  */
-export async function bloquearReservaSalas(tx: Prisma.TransactionClient, proveedorId: string): Promise<void> {
+export async function bloquearReservaSalas(
+  tx: Prisma.TransactionClient,
+  proveedorId: string,
+): Promise<void> {
   await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`flacso-meet:salas:${proveedorId}`}))`;
 }
 
 /** Serializes structural changes to one meeting series. */
 export async function bloquearSolicitudSala(
   tx: Prisma.TransactionClient,
-  solicitudId: string
+  solicitudId: string,
 ): Promise<void> {
   await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`flacso-meet:solicitud:${solicitudId}`}))`;
 }

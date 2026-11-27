@@ -6,14 +6,14 @@ import {
   ForbiddenApiError,
   IntegrationApiError,
   NotFoundApiError,
-  ValidationApiError
+  ValidationApiError,
 } from "@/src/lib/http/api-error";
 import {
   crearReunionesSchema,
   diasDeReunion,
   encuentrosComienzanEnFuturo,
   puedeCrearReuniones,
-  resolverAsignacionInicial
+  resolverAsignacionInicial,
 } from "./reuniones.domain";
 import type { RolUsuario } from "../usuarios/roles";
 import { normalizeCohostEmails } from "@/src/modules/conferencias/api";
@@ -24,7 +24,10 @@ import { bloquearReservaSalas } from "./reserva-salas.adapter";
 import { ANTICIPACION_VIRTUAL_MINUTOS } from "./horarios-asistencia.domain";
 import { claveSerieReunion } from "./serie-reunion.domain";
 import { reservarAsistenteDisponible } from "../asistencia/reserva-asistencia.service";
-import { MAX_ZOOM_OCCURRENCES, calcularRecurrenciaZoom } from "../conferencias/domain/zoom-recurrence.domain";
+import {
+  MAX_ZOOM_OCCURRENCES,
+  calcularRecurrenciaZoom,
+} from "../conferencias/domain/zoom-recurrence.domain";
 
 export type ActorReunion = Readonly<{ id: string; rol: RolUsuario }>;
 
@@ -41,14 +44,14 @@ const invitadosEmailsSchema = z.preprocess(
   z
     .array(z.email().transform((email) => email.toLowerCase()))
     .max(100)
-    .default([])
+    .default([]),
 );
 
 export async function crearReuniones(
   db: PrismaClient,
   actor: ActorReunion,
   rawInput: unknown,
-  claveIdempotenciaCreacion?: string
+  claveIdempotenciaCreacion?: string,
 ): Promise<
   Readonly<{
     solicitudId: string;
@@ -67,15 +70,17 @@ export async function crearReuniones(
           ...parsed,
           instancias: parsed.instancias.map((instancia) => ({
             ...instancia,
-            asistenciaInicio: new Date(instancia.inicio.getTime() - ANTICIPACION_VIRTUAL_MINUTOS * 60 * 1000),
-            asistenciaFin: instancia.fin
-          }))
+            asistenciaInicio: new Date(
+              instancia.inicio.getTime() - ANTICIPACION_VIRTUAL_MINUTOS * 60 * 1000,
+            ),
+            asistenciaFin: instancia.fin,
+          })),
         }
       : parsed;
   const invitadosSolicitados = invitadosEmailsSchema.parse(
     rawInput && typeof rawInput === "object" && "invitadosEmails" in rawInput
       ? (rawInput as { invitadosEmails?: unknown }).invitadosEmails
-      : undefined
+      : undefined,
   );
 
   let asistenteTecnicoId: string | null;
@@ -83,10 +88,12 @@ export async function crearReuniones(
     asistenteTecnicoId = resolverAsignacionInicial(
       actor.rol,
       input.requiereAsistenciaTecnica,
-      input.asistenteTecnicoId
+      input.asistenteTecnicoId,
     );
   } catch (error) {
-    throw new ValidationApiError(error instanceof Error ? error.message : "Asignación inicial inválida.");
+    throw new ValidationApiError(
+      error instanceof Error ? error.message : "Asignación inicial inválida.",
+    );
   }
 
   return db.$transaction(async (tx) => {
@@ -102,10 +109,10 @@ export async function crearReuniones(
             orderBy: { ordinal: "asc" },
             select: {
               inicioProgramadoAt: true,
-              eventosProveedor: { select: { id: true } }
-            }
-          }
-        }
+              eventosProveedor: { select: { id: true } },
+            },
+          },
+        },
       });
       if (existente) {
         if (existente.creadaPorUsuarioId !== actor.id) {
@@ -116,9 +123,9 @@ export async function crearReuniones(
           reuniones: existente.instancias.length,
           dias: diasDeReunion(existente.instancias, existente.timezone),
           eventoProveedorIds: existente.instancias.flatMap(({ eventosProveedor }) =>
-            eventosProveedor.map(({ id }) => id)
+            eventosProveedor.map(({ id }) => id),
           ),
-          reutilizada: true
+          reutilizada: true,
         };
       }
     }
@@ -128,18 +135,18 @@ export async function crearReuniones(
     }
     if (input.instancias.length > MAX_ZOOM_OCCURRENCES) {
       throw new ValidationApiError(
-        `Una serie de Zoom no puede superar los ${MAX_ZOOM_OCCURRENCES} encuentros.`
+        `Una serie de Zoom no puede superar los ${MAX_ZOOM_OCCURRENCES} encuentros.`,
       );
     }
     if (input.instancias.length > 1) {
       try {
         calcularRecurrenciaZoom(
           input.instancias.map((i) => ({ inicio: i.inicio, fin: i.fin })),
-          input.timezone
+          input.timezone,
         );
       } catch (err) {
         throw new ValidationApiError(
-          err instanceof Error ? err.message : "Error al calcular la recurrencia de la serie."
+          err instanceof Error ? err.message : "Error al calcular la recurrencia de la serie.",
         );
       }
     }
@@ -150,10 +157,10 @@ export async function crearReuniones(
         where: { id: input.docenteProgramaId },
         include: {
           docente: { select: { usuarioId: true } },
-          programa: { select: { activo: true } }
-        }
+          programa: { select: { activo: true } },
+        },
       }),
-      tx.proveedorReunion.findUnique({ where: { tipo: tipoProveedor } })
+      tx.proveedorReunion.findUnique({ where: { tipo: tipoProveedor } }),
     ]);
     if (!docentePrograma) {
       throw new NotFoundApiError("La asociación docente-programa no existe.");
@@ -172,10 +179,15 @@ export async function crearReuniones(
     await bloquearReservaSalas(tx, proveedor.id);
     const periodosAsistencia = input.instancias.map((instancia) => ({
       inicio: instancia.asistenciaInicio ?? instancia.inicio,
-      fin: instancia.asistenciaFin ?? instancia.fin
+      fin: instancia.asistenciaFin ?? instancia.fin,
     }));
     const reservaAsistente = asistenteTecnicoId
-      ? await reservarAsistenteDisponible(tx, asistenteTecnicoId, input.modalidad, periodosAsistencia)
+      ? await reservarAsistenteDisponible(
+          tx,
+          asistenteTecnicoId,
+          input.modalidad,
+          periodosAsistencia,
+        )
       : null;
     const assistant = reservaAsistente?.assistant ?? null;
 
@@ -183,7 +195,7 @@ export async function crearReuniones(
       tx.cuentaProveedor.findMany({
         where: { proveedorId: proveedor.id, ...CUENTA_ZOOM_ASIGNABLE },
         orderBy: [{ prioridad: "asc" }, { id: "asc" }],
-        select: { id: true, prioridad: true, limiteConcurrente: true }
+        select: { id: true, prioridad: true, limiteConcurrente: true },
       }),
       tx.eventoProveedor.findMany({
         where: {
@@ -193,21 +205,21 @@ export async function crearReuniones(
             estado: { in: ["PROGRAMADA", "EN_CURSO"] },
             OR: input.instancias.map(({ inicio, fin }) => ({
               inicioProgramadoAt: { lt: fin },
-              finProgramadoAt: { gt: inicio }
-            }))
-          }
+              finProgramadoAt: { gt: inicio },
+            })),
+          },
         },
         select: {
           cuentaProveedorId: true,
-          instancia: { select: { inicioProgramadoAt: true, finProgramadoAt: true } }
-        }
-      })
+          instancia: { select: { inicioProgramadoAt: true, finProgramadoAt: true } },
+        },
+      }),
     ]);
 
     // El docente y el asistente asignado se guardan como cohosts por correo.
     const docenteUser = await tx.usuario.findUnique({
       where: { id: docentePrograma.docente.usuarioId },
-      select: { emailPrincipal: true }
+      select: { emailPrincipal: true },
     });
 
     // Zoom no requiere cuenta Google: se guardan siempre los correos como texto.
@@ -220,10 +232,13 @@ export async function crearReuniones(
       fallbackEmails.push(assistant.usuario.emailPrincipal);
     }
 
-    const manualCohostEmails = normalizeCohostEmails([...input.cohostEmailsManual, ...fallbackEmails]);
+    const manualCohostEmails = normalizeCohostEmails([
+      ...input.cohostEmailsManual,
+      ...fallbackEmails,
+    ]);
     const cohostEmailSet = new Set(manualCohostEmails);
     const invitadosEmails = normalizeCohostEmails(invitadosSolicitados).filter(
-      (email) => !cohostEmailSet.has(email)
+      (email) => !cohostEmailSet.has(email),
     );
 
     // Reuniones creadas directamente en Zoom (webhooks y sincronización): también ocupan la sala.
@@ -232,7 +247,7 @@ export async function crearReuniones(
         ? await reservasZoomExternas(tx, {
             cuentaIds: hosts.map(({ id }) => id),
             desde: new Date(Math.min(...input.instancias.map(({ inicio }) => inicio.getTime()))),
-            hasta: new Date(Math.max(...input.instancias.map(({ fin }) => fin.getTime())))
+            hasta: new Date(Math.max(...input.instancias.map(({ fin }) => fin.getTime()))),
           })
         : [];
     const cuentaHostId = elegirCuentaHostParaPeriodos(
@@ -245,20 +260,20 @@ export async function crearReuniones(
                 {
                   cuentaProveedorId,
                   inicio: instancia.inicioProgramadoAt,
-                  fin: instancia.finProgramadoAt
-                }
+                  fin: instancia.finProgramadoAt,
+                },
               ]
-            : []
+            : [],
         ),
-        ...reunionesExternasZoom
+        ...reunionesExternasZoom,
       ],
-      input.instancias
+      input.instancias,
     );
     if (!cuentaHostId) {
       throw new ConflictApiError(
         tipoProveedor === "ZOOM"
           ? "No hay una sala Zoom libre para todas las fechas solicitadas."
-          : "No hay una sala Meet libre para todas las fechas solicitadas."
+          : "No hay una sala Meet libre para todas las fechas solicitadas.",
       );
     }
 
@@ -271,8 +286,8 @@ export async function crearReuniones(
       input.instancias.every(
         (instancia) =>
           instancia.asistenciaInicio?.getTime() === firstAssistance.asistenciaInicio?.getTime() &&
-          instancia.asistenciaFin?.getTime() === firstAssistance.asistenciaFin?.getTime()
-      )
+          instancia.asistenciaFin?.getTime() === firstAssistance.asistenciaFin?.getTime(),
+      ),
     );
     const serieReunionId = randomUUID();
     const solicitud = await tx.solicitudSala.create({
@@ -290,11 +305,13 @@ export async function crearReuniones(
         fechaFinSolicitada: new Date(Math.max(...endTimes)),
         cantidadInstancias: input.instancias.length,
         requiereAsistenciaTecnica: input.requiereAsistenciaTecnica,
-        inicioAsistenciaTecnicaAt: hasSharedAssistanceSchedule ? firstAssistance.asistenciaInicio : null,
+        inicioAsistenciaTecnicaAt: hasSharedAssistanceSchedule
+          ? firstAssistance.asistenciaInicio
+          : null,
         finAsistenciaTecnicaAt: hasSharedAssistanceSchedule ? firstAssistance.asistenciaFin : null,
         requiereGrabacion: input.requiereGrabacion,
-        estado: "REGISTRADA"
-      }
+        estado: "REGISTRADA",
+      },
     });
 
     // Series con más de 1 encuentro comparten UNA reunión de Zoom (mismo enlace y misma sala).
@@ -309,10 +326,10 @@ export async function crearReuniones(
                 serieReunionId,
                 docenteProgramaId: input.docenteProgramaId,
                 titulo: input.titulo,
-                createdAt: solicitud.createdAt
-              })
+                createdAt: solicitud.createdAt,
+              }),
             },
-            select: { id: true }
+            select: { id: true },
           })
         : null;
 
@@ -330,8 +347,8 @@ export async function crearReuniones(
             timezone: input.timezone,
             requiereAsistenciaTecnica: input.requiereAsistenciaTecnica,
             requiereGrabacion: input.requiereGrabacion,
-            proveedorActivoTipo: "ZOOM"
-          }
+            proveedorActivoTipo: "ZOOM",
+          },
         });
         const evento = await tx.eventoProveedor.create({
           data: {
@@ -340,12 +357,14 @@ export async function crearReuniones(
             cuentaProveedorId: cuentaHostId,
             reunionProveedorId: reunionCompartida?.id ?? null,
             operacionPendiente: "PROVISIONAR",
-            ...(invitadosEmails.length > 0 ? { payloadUltimo: { salaVirtual: { invitadosEmails } } } : {})
-          }
+            ...(invitadosEmails.length > 0
+              ? { payloadUltimo: { salaVirtual: { invitadosEmails } } }
+              : {}),
+          },
         });
         if (manualCohostEmails.length > 0) {
           await tx.cohostEmailReunion.createMany({
-            data: manualCohostEmails.map((email) => ({ instanciaSalaId: instancia.id, email }))
+            data: manualCohostEmails.map((email) => ({ instanciaSalaId: instancia.id, email })),
           });
         }
         if (asistenteTecnicoId) {
@@ -356,12 +375,12 @@ export async function crearReuniones(
               asistenteTecnicoId,
               tarifaAsistenciaTecnicaId: tarifa.id,
               tarifaHoraAplicada: tarifa.valorHora,
-              moneda: tarifa.moneda
-            }
+              moneda: tarifa.moneda,
+            },
           });
         }
         return evento.id;
-      })
+      }),
     );
 
     return {
@@ -370,9 +389,9 @@ export async function crearReuniones(
       eventoProveedorIds,
       dias: diasDeReunion(
         input.instancias.map(({ inicio }) => ({ inicioProgramadoAt: inicio })),
-        input.timezone
+        input.timezone,
       ),
-      reutilizada: false
+      reutilizada: false,
     };
   });
 }

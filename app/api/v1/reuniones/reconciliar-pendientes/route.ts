@@ -7,7 +7,7 @@ export const runtime = "nodejs";
 export const maxDuration = 300;
 
 export async function GET(request: Request) {
-  const secret = process.env.CRON_SECRET;
+  const secret = process.env["CRON_SECRET"];
   if (!secret || request.headers.get("authorization") !== "Bearer " + secret) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -21,28 +21,28 @@ export async function GET(request: Request) {
             {
               proveedor: { tipo: "GOOGLE_MEET" },
               externalEventId: { not: null },
-              instancia: { proveedorActivoTipo: "GOOGLE_MEET", conservarGoogleMeet: true }
-            }
-          ]
+              instancia: { proveedorActivoTipo: "GOOGLE_MEET", conservarGoogleMeet: true },
+            },
+          ],
         },
         {
           OR: [
             { reclamoIntegracionAt: null },
-            { reclamoIntegracionAt: { lt: new Date(Date.now() - 10 * 60_000) } }
-          ]
-        }
-      ]
+            { reclamoIntegracionAt: { lt: new Date(Date.now() - 10 * 60_000) } },
+          ],
+        },
+      ],
     },
     orderBy: { updatedAt: "asc" },
     take: 10,
-    select: { id: true }
+    select: { id: true },
   });
   const [resultados, erroresCalendariosZoom] = await Promise.all([
     obtenerServicioConferencias().sincronizarEventosPendientes(pendientes.map(({ id }) => id)),
     reconciliarCalendariosZoom().catch(() => {
       console.warn("[Calendar] Falló la reconciliación de calendarios de coberturas Zoom.");
       return null;
-    })
+    }),
   ]);
   const errores = resultados.filter((result) => result.estado === "ERROR");
   return NextResponse.json(
@@ -51,8 +51,8 @@ export async function GET(request: Request) {
       sincronizados: resultados.filter((result) => result.estado === "SINCRONIZADA").length,
       pendientes: resultados.filter((result) => result.estado !== "SINCRONIZADA").length,
       errores: errores.length,
-      erroresCalendariosZoom
+      erroresCalendariosZoom,
     },
-    { status: errores.length ? 502 : 200 }
+    { status: errores.length ? 502 : 200 },
   );
 }

@@ -5,7 +5,7 @@ import { SettingsOverview } from "../src/components/settings-overview";
 describe("resumen de configuración", () => {
   it.each([
     ["AUSENTES", "Sin credenciales activas y completas"],
-    ["ERROR_COMPROBACION", "No se pudieron comprobar las credenciales"]
+    ["ERROR_COMPROBACION", "No se pudieron comprobar las credenciales"],
   ] as const)("distingue el estado %s", (diagnostico, mensaje) => {
     const html = renderToStaticMarkup(
       <SettingsOverview
@@ -17,9 +17,9 @@ describe("resumen de configuración", () => {
           integrationActive: true,
           totalHosts: 1,
           activePrograms: 0,
-          totalPrograms: 0
+          totalPrograms: 0,
         }}
-      />
+      />,
     );
     expect(html).toContain(mensaje);
   });
@@ -33,9 +33,9 @@ describe("resumen de configuración", () => {
           integrationActive: true,
           totalHosts: 2,
           activePrograms: 0,
-          totalPrograms: 0
+          totalPrograms: 0,
         }}
-      />
+      />,
     );
     expect(html).toContain("No se pudo confirmar la disponibilidad de credenciales");
     expect(html).toContain("Revisar credenciales de Zoom");
@@ -51,9 +51,9 @@ describe("resumen de configuración", () => {
           integrationActive: false,
           totalHosts: 2,
           activePrograms: 0,
-          totalPrograms: 0
+          totalPrograms: 0,
         }}
-      />
+      />,
     );
     expect(html).toContain("Configuración local de Zoom disponible");
     expect(html).toContain("La conexión con Zoom no se verificó aquí");

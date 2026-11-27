@@ -6,7 +6,7 @@ import {
   Clock,
   Sparkles,
   UserCheck,
-  Video
+  Video,
 } from "lucide-react";
 import Link from "next/link";
 import { CopyMeetLinkButton } from "@/src/components/copy-meet-link-button";
@@ -14,7 +14,7 @@ import { MeetingScheduleTimes } from "@/src/components/meeting-schedule-times";
 import { formatDate } from "@/src/lib/ui/format";
 import {
   determinarEstadoTemporal,
-  formatearTiempoHastaReunion
+  formatearTiempoHastaReunion,
 } from "@/src/modules/dashboard/dashboard.domain";
 import type { HeroMeetingDTO } from "@/src/modules/dashboard/types";
 import { getMeetingProviderPresentation } from "@/src/modules/dashboard/meeting-provider.presentation";
@@ -25,7 +25,7 @@ export function LiveMeetingHero({
   emptyStateTitle,
   emptyStateCopy,
   emptyStateActionHref,
-  emptyStateActionLabel
+  emptyStateActionLabel,
 }: Readonly<{
   meeting: HeroMeetingDTO | null;
   role: "DOCENTE" | "ASISTENTE_TECNICO" | "ADMINISTRACION";
@@ -99,7 +99,7 @@ export function LiveMeetingHero({
       ? inicioAsistencia > ahora
         ? formatearTiempoHastaReunion(inicioAsistencia, ahora).replace(
             /^Empieza en/,
-            "Tu asistencia comienza en"
+            "Tu asistencia comienza en",
           )
         : "Tu monitoreo ya comenzó"
       : formatearTiempoHastaReunion(inicio, ahora);
@@ -172,7 +172,9 @@ export function LiveMeetingHero({
             <>
               <a
                 className={
-                  paraAsistente ? "secondary-action hero-meet-action" : "primary-action hero-meet-action"
+                  paraAsistente
+                    ? "secondary-action hero-meet-action"
+                    : "primary-action hero-meet-action"
                 }
                 href={meeting.joinUrl}
                 rel="noreferrer"
@@ -184,11 +186,16 @@ export function LiveMeetingHero({
               <CopyMeetLinkButton url={meeting.joinUrl} />
             </>
           ) : (
-            <span className="status status-warning hero-pending-meet">{provider.pendingLinkLabel}</span>
+            <span className="status status-warning hero-pending-meet">
+              {provider.pendingLinkLabel}
+            </span>
           )}
 
           {role === "ASISTENTE_TECNICO" ? (
-            <Link className="primary-action hero-operation-action" href={`/operacion/${meeting.id}`}>
+            <Link
+              className="primary-action hero-operation-action"
+              href={`/operacion/${meeting.id}`}
+            >
               <Activity size={16} />
               Abrir consola de monitoreo
             </Link>

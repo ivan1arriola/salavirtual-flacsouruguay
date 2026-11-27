@@ -10,7 +10,7 @@ export async function PATCH(request: Request) {
   }
   const actor = await resolveSessionActor(db, {
     id: session.user.id,
-    email: session.user.email
+    email: session.user.email,
   });
   if (!actor?.activo) {
     return NextResponse.json({ error: "La sesion esta desactualizada." }, { status: 401 });
@@ -25,7 +25,7 @@ export async function PATCH(request: Request) {
   if (body.all) {
     const result = await db.notificacion.updateMany({
       where: { usuarioId: actor.id, leidaAt: null },
-      data: { leidaAt: now }
+      data: { leidaAt: now },
     });
     return NextResponse.json({ updated: result.count });
   }
@@ -36,7 +36,7 @@ export async function PATCH(request: Request) {
 
   const result = await db.notificacion.updateMany({
     where: { id: body.notificationId, usuarioId: actor.id, leidaAt: null },
-    data: { leidaAt: now }
+    data: { leidaAt: now },
   });
   return NextResponse.json({ updated: result.count });
 }
@@ -48,7 +48,7 @@ export async function DELETE(request: Request) {
   }
   const actor = await resolveSessionActor(db, {
     id: session.user.id,
-    email: session.user.email
+    email: session.user.email,
   });
   if (!actor?.activo) {
     return NextResponse.json({ error: "La sesion esta desactualizada." }, { status: 401 });
@@ -62,7 +62,7 @@ export async function DELETE(request: Request) {
   }
 
   const result = await db.notificacion.deleteMany({
-    where: { id: body.notificationId, usuarioId: actor.id }
+    where: { id: body.notificationId, usuarioId: actor.id },
   });
   return NextResponse.json({ deleted: result.count });
 }

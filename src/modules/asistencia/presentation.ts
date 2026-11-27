@@ -22,7 +22,7 @@ export {
   puedeAsignarAsistencia,
   puedeGestionarPostulacion,
   reporteDuracionSchema,
-  resolverAccionHistorialAsistente
+  resolverAccionHistorialAsistente,
 } from "./domain";
 
 export type {
@@ -37,13 +37,13 @@ export type {
   PeriodoAsistencia,
   PostulanteEvaluado,
   RegistroAsistenciaPersonal,
-  RegistroHistorialAsistenciaPersonal
+  RegistroHistorialAsistenciaPersonal,
 } from "./domain";
 
 export { AssistantAssignmentControl } from "./presentation/components/assistant-assignment-control";
 export {
   AssistantAssignmentSelect,
-  type ApplicantOption
+  type ApplicantOption,
 } from "./presentation/components/assistant-assignment-select";
 export { AssistantHistory } from "./presentation/components/assistant-history";
 export { AssistantInterestButton } from "./presentation/components/assistant-interest-button";
@@ -51,7 +51,7 @@ export { AssistantMeetingsTable } from "./presentation/components/assistant-meet
 export { AssistantMonthList } from "./presentation/components/assistant-month-list";
 export {
   AssistantOnboardingTour,
-  RESTART_ASSISTANT_TOUR_EVENT
+  RESTART_ASSISTANT_TOUR_EVENT,
 } from "./presentation/components/assistant-onboarding-tour";
 export { AssistantPeriodNav } from "./presentation/components/assistant-period-nav";
 export { AssistantReportConfigForm } from "./presentation/components/assistant-report-config-form";

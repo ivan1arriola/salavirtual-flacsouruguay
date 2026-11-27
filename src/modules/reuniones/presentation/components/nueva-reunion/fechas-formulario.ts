@@ -5,7 +5,7 @@ export function ordenarEncuentros(fechas: readonly MeetingDate[]): MeetingDate[]
   return [...fechas].sort(
     (a, b) =>
       (a.fecha || "9999").localeCompare(b.fecha || "9999") ||
-      (a.horaInicio || "99:99").localeCompare(b.horaInicio || "99:99")
+      (a.horaInicio || "99:99").localeCompare(b.horaInicio || "99:99"),
   );
 }
 
@@ -15,10 +15,10 @@ export function duplicarEncuentro(fecha: MeetingDate, id: number): MeetingDate {
 
 /** La cobertura no cuenta como solapamiento; se comparan los encuentros completos. */
 export function detectarSolapamientos(
-  fechas: readonly MeetingDate[]
+  fechas: readonly MeetingDate[],
 ): readonly (readonly [number, number])[] {
   const validas = ordenarEncuentros(
-    fechas.filter((f) => f.fecha && f.horaInicio && f.horaFin > f.horaInicio)
+    fechas.filter((f) => f.fecha && f.horaInicio && f.horaFin > f.horaInicio),
   );
   const pares: [number, number][] = [];
   for (let i = 0; i < validas.length; i++) {
@@ -38,13 +38,13 @@ const formatoFecha = new Intl.DateTimeFormat("es-UY", {
   timeZone: "America/Montevideo",
   day: "numeric",
   month: "long",
-  year: "numeric"
+  year: "numeric",
 });
 const formatoHora = new Intl.DateTimeFormat("es-UY", {
   timeZone: "America/Montevideo",
   hour: "2-digit",
   minute: "2-digit",
-  hourCycle: "h23"
+  hourCycle: "h23",
 });
 
 /** Fecha ISO de un input date con año de 4 dígitos y día real; los valores intermedios al teclear no lo son. */
@@ -58,7 +58,9 @@ export function fechaIsoValida(valor: string): boolean {
     return false;
   }
   const fecha = new Date(Date.UTC(anio, mes - 1, dia));
-  return fecha.getUTCFullYear() === anio && fecha.getUTCMonth() === mes - 1 && fecha.getUTCDate() === dia;
+  return (
+    fecha.getUTCFullYear() === anio && fecha.getUTCMonth() === mes - 1 && fecha.getUTCDate() === dia
+  );
 }
 
 function describirFecha(fecha: MeetingDate): string {
@@ -75,10 +77,15 @@ function describirFecha(fecha: MeetingDate): string {
   return `${dia}, ${inicio}–${fin}`;
 }
 
-export function resumirFechas(fechas: readonly MeetingDate[]): Readonly<{ primera: string; ultima: string }> {
+export function resumirFechas(
+  fechas: readonly MeetingDate[],
+): Readonly<{ primera: string; ultima: string }> {
   const ordenadas = ordenarEncuentros(fechas.filter((f) => f.fecha));
   return ordenadas.length
-    ? { primera: describirFecha(ordenadas[0]), ultima: describirFecha(ordenadas[ordenadas.length - 1]) }
+    ? {
+        primera: describirFecha(ordenadas[0]),
+        ultima: describirFecha(ordenadas[ordenadas.length - 1]),
+      }
     : { primera: "Pendiente", ultima: "Pendiente" };
 }
 
@@ -86,7 +93,7 @@ export function requiereConfirmacionCambio(
   actual: MeetingDateMode,
   destino: MeetingDateMode,
   fechas: readonly MeetingDate[],
-  regla: RecurrenceState
+  regla: RecurrenceState,
 ): boolean {
   if (actual === destino) {
     return false;
@@ -94,14 +101,16 @@ export function requiereConfirmacionCambio(
   return (
     fechas.some(({ id: _id, ...campos }) => Object.values(campos).some(Boolean)) ||
     (actual === "RECURRENT" &&
-      Object.values(regla).some((valor) => (Array.isArray(valor) ? valor.length > 0 : Boolean(valor))))
+      Object.values(regla).some((valor) =>
+        Array.isArray(valor) ? valor.length > 0 : Boolean(valor),
+      ))
   );
 }
 
 export function fechasAlCambiarModo(
   destino: MeetingDateMode,
   fechas: readonly MeetingDate[],
-  nuevaFecha: () => MeetingDate
+  nuevaFecha: () => MeetingDate,
 ): readonly MeetingDate[] {
   if (destino === "RECURRENT") {
     return [];

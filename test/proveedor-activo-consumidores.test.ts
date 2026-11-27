@@ -19,7 +19,7 @@ const eventoMeet = {
   proveedor: { tipo: "GOOGLE_MEET" },
   codigoReunion: "abc-defg-hij",
   joinUrl: MEET_URL,
-  cuentaProveedor: { emailOrganizador: "sala01@flacso.edu.uy" }
+  cuentaProveedor: { emailOrganizador: "sala01@flacso.edu.uy" },
 };
 const eventoZoom = {
   id: "ev-zoom",
@@ -27,14 +27,14 @@ const eventoZoom = {
   proveedor: { tipo: "ZOOM" },
   codigoReunion: "81234567890",
   joinUrl: ZOOM_URL,
-  cuentaProveedor: { emailOrganizador: "zoom01@flacso.edu.uy" }
+  cuentaProveedor: { emailOrganizador: "zoom01@flacso.edu.uy" },
 };
 
 describe("selector de proveedor activo en consumidores de enlaces", () => {
   it("elige Zoom aunque Meet siga registrado primero (conversión terminada)", () => {
     const activo = seleccionarEventoProveedorActivo({
       proveedorActivoTipo: "ZOOM",
-      eventosProveedor: [eventoMeet, eventoZoom]
+      eventosProveedor: [eventoMeet, eventoZoom],
     });
     expect(activo?.joinUrl).toBe(ZOOM_URL);
   });
@@ -51,8 +51,8 @@ describe("recordatorio de 24 horas con proveedor activo", () => {
           findUnique: vi.fn(async () => ({
             estado: "PROGRAMADA",
             inicioProgramadoAt: inicio,
-            solicitud: { estado: "REGISTRADA" }
-          }))
+            solicitud: { estado: "REGISTRADA" },
+          })),
         },
         usuario: {
           findMany: vi.fn(async () => [
@@ -62,13 +62,13 @@ describe("recordatorio de 24 horas con proveedor activo", () => {
               emailPrincipal: "ana@flacso.edu.uy",
               cuentasGoogle: [],
               emailAliases: [],
-              preferenciasNotificacion: []
-            }
-          ])
+              preferenciasNotificacion: [],
+            },
+          ]),
         },
         recordatorioReunion: { create, update: vi.fn(async () => ({})) },
-        notificacion: { create: vi.fn(async () => ({})) }
-      } as any
+        notificacion: { create: vi.fn(async () => ({})) },
+      } as any,
     };
   }
   const base = {
@@ -84,17 +84,17 @@ describe("recordatorio de 24 horas con proveedor activo", () => {
       titulo: "Seminario",
       modalidad: "VIRTUAL",
       creadaPorUsuarioId: "teacher",
-      docentePrograma: { docente: { usuarioId: "teacher" }, programa: { nombre: "Programa" } }
+      docentePrograma: { docente: { usuarioId: "teacher" }, programa: { nombre: "Programa" } },
     },
     asignaciones: [],
-    invitados: []
+    invitados: [],
   };
 
   it("envía el enlace de Zoom y no consulta cohosts de Meet cuando Zoom está activo", async () => {
     const { db } = dbFake({
       ...base,
       proveedorActivoTipo: "ZOOM",
-      eventosProveedor: [eventoMeet, eventoZoom]
+      eventosProveedor: [eventoMeet, eventoZoom],
     });
     const verificarCohosts = vi.fn(async () => new Set<string>());
     const enviarCorreo = vi.fn(async () => ({ sent: true }));
@@ -114,7 +114,7 @@ describe("recordatorio de 24 horas con proveedor activo", () => {
     const { db } = dbFake({
       ...base,
       proveedorActivoTipo: "GOOGLE_MEET",
-      eventosProveedor: [eventoZoom, eventoMeet]
+      eventosProveedor: [eventoZoom, eventoMeet],
     });
     const verificarCohosts = vi.fn(async () => new Set<string>());
     const enviarCorreo = vi.fn(async () => ({ sent: true }));
@@ -140,7 +140,7 @@ describe("plantillas de correo por proveedor", () => {
       urlMeet: ZOOM_URL,
       proveedor: "ZOOM",
       urlDetalle: "https://salavirtual.flacso.edu.uy/reuniones/req-1",
-      acceso: { estado: "NO_VERIFICABLE", cuentasConfirmadas: [], cuentasSinPermiso: [] }
+      acceso: { estado: "NO_VERIFICABLE", cuentasConfirmadas: [], cuentasSinPermiso: [] },
     });
     expect(correo.text).toContain("Enlace de Zoom: " + ZOOM_URL);
     expect(correo.html).toContain("Ingresar a Zoom");
@@ -148,7 +148,14 @@ describe("plantillas de correo por proveedor", () => {
   });
 
   it("invitaciones y avisos de enlace rotulan Zoom solo si todos los encuentros son Zoom", () => {
-    const zoom = { id: "a", titulo: "Seminario", inicio, fin, urlMeet: ZOOM_URL, proveedor: "ZOOM" as const };
+    const zoom = {
+      id: "a",
+      titulo: "Seminario",
+      inicio,
+      fin,
+      urlMeet: ZOOM_URL,
+      proveedor: "ZOOM" as const,
+    };
     const meet = { id: "b", titulo: "Seminario", inicio, fin, urlMeet: MEET_URL };
 
     const soloZoom = construirCorreoParticipacion("ENLACE_CAMBIADO", [zoom], "INVITADO");
@@ -174,9 +181,9 @@ describe("plantillas de correo por proveedor", () => {
           fin: "12:00",
           meet: "81234567890",
           joinUrl: ZOOM_URL,
-          proveedor: "ZOOM"
-        }
-      ]
+          proveedor: "ZOOM",
+        },
+      ],
     });
     expect(texto).toContain("ID de Zoom: 81234567890");
     expect(texto).toContain(ZOOM_URL);
@@ -194,18 +201,18 @@ describe("plantillas de correo por proveedor", () => {
       finClase: "12:00",
       modalidad: "Virtual",
       programa: "Programa",
-      docente: "Ana"
+      docente: "Ana",
     };
     const zoom = construirHtmlResumenMonitoreo({
       variante: "asignadas",
-      reuniones: [{ ...reunion, meetUrl: ZOOM_URL, proveedor: "ZOOM" }]
+      reuniones: [{ ...reunion, meetUrl: ZOOM_URL, proveedor: "ZOOM" }],
     });
     expect(zoom).toContain("Ingresar a Zoom");
     expect(zoom).toContain("zoom.us/j/81234567890");
 
     const cruzado = construirHtmlResumenMonitoreo({
       variante: "asignadas",
-      reuniones: [{ ...reunion, meetUrl: ZOOM_URL, proveedor: "GOOGLE_MEET" }]
+      reuniones: [{ ...reunion, meetUrl: ZOOM_URL, proveedor: "GOOGLE_MEET" }],
     });
     expect(cruzado).not.toContain("zoom.us");
   });
@@ -221,7 +228,7 @@ describe("invitaciones de serie con proveedor activo", () => {
       cohosts: [],
       cohostEmails: [],
       proveedorActivoTipo: "ZOOM",
-      eventosProveedor: [eventoMeet, eventoZoom]
+      eventosProveedor: [eventoMeet, eventoZoom],
     };
     const db: any = {
       solicitudSala: {
@@ -231,23 +238,23 @@ describe("invitaciones de serie con proveedor activo", () => {
           serieReunionId: "serie1",
           docenteProgramaId: "dp",
           createdAt: new Date("2030-01-01T00:00:00Z"),
-          docentePrograma: { programaId: "programa" }
-        })
+          docentePrograma: { programaId: "programa" },
+        }),
       },
       instanciaSala: { findMany: vi.fn().mockResolvedValue([meeting]) },
       invitadoReunion: { deleteMany: vi.fn(), createMany: vi.fn() },
       auditoria: { create: vi.fn() },
-      $transaction: vi.fn(async (fn: (tx: any) => Promise<unknown>) => fn(db))
+      $transaction: vi.fn(async (fn: (tx: any) => Promise<unknown>) => fn(db)),
     };
     const enviarCorreo = vi.fn().mockResolvedValue(true);
     const leerCalendario = vi.fn().mockResolvedValue({ attendees: [] });
     const actualizarCalendario = vi.fn();
 
     const resultado = await actualizarInvitadosSerie(
-      { db, leerCalendario, actualizarCalendario, enviarCorreo } as any,
+      { db, leerCalendario, actualizarCalendario, enviarCorreo },
       { id: "admin", rol: "ADMINISTRACION", activo: true } as any,
       "req-1",
-      { emails: ["invitado@ejemplo.com"] }
+      { emails: ["invitado@ejemplo.com"] },
     );
 
     expect(resultado.correosEnviados).toBe(1);

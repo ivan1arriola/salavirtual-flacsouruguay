@@ -3,7 +3,7 @@ import {
   calcularRecurrenciaZoom,
   calcularSlotsZoom,
   detectarOcurrenciasSobrantes,
-  detectarOcurrenciasAjustar
+  detectarOcurrenciasAjustar,
 } from "../src/modules/conferencias/domain/zoom-recurrence.domain";
 
 describe("dominio de recurrencia Zoom (type 8)", () => {
@@ -33,9 +33,18 @@ describe("dominio de recurrencia Zoom (type 8)", () => {
     it("calcula la regla semanal para martes consecutivos", () => {
       // 2026-11-10 es martes
       const instancias = [
-        { inicio: new Date("2026-11-10T18:00:00-03:00"), fin: new Date("2026-11-10T20:00:00-03:00") },
-        { inicio: new Date("2026-11-17T18:00:00-03:00"), fin: new Date("2026-11-17T20:00:00-03:00") },
-        { inicio: new Date("2026-11-24T18:00:00-03:00"), fin: new Date("2026-11-24T20:00:00-03:00") }
+        {
+          inicio: new Date("2026-11-10T18:00:00-03:00"),
+          fin: new Date("2026-11-10T20:00:00-03:00"),
+        },
+        {
+          inicio: new Date("2026-11-17T18:00:00-03:00"),
+          fin: new Date("2026-11-17T20:00:00-03:00"),
+        },
+        {
+          inicio: new Date("2026-11-24T18:00:00-03:00"),
+          fin: new Date("2026-11-24T20:00:00-03:00"),
+        },
       ];
 
       const res = calcularRecurrenciaZoom(instancias, tz);
@@ -46,15 +55,21 @@ describe("dominio de recurrencia Zoom (type 8)", () => {
         type: 2,
         repeatInterval: 1,
         weeklyDays: "3", // Martes en Zoom es 3
-        endTimes: 3
+        endTimes: 3,
       });
     });
 
     it("calcula endTimes extendido cuando hay feriados o huecos intermedios", () => {
       // Martes 10/11, feriado el 17/11, clase el 24/11
       const instancias = [
-        { inicio: new Date("2026-11-10T18:00:00-03:00"), fin: new Date("2026-11-10T20:00:00-03:00") },
-        { inicio: new Date("2026-11-24T18:00:00-03:00"), fin: new Date("2026-11-24T20:00:00-03:00") }
+        {
+          inicio: new Date("2026-11-10T18:00:00-03:00"),
+          fin: new Date("2026-11-10T20:00:00-03:00"),
+        },
+        {
+          inicio: new Date("2026-11-24T18:00:00-03:00"),
+          fin: new Date("2026-11-24T20:00:00-03:00"),
+        },
       ];
 
       const res = calcularRecurrenciaZoom(instancias, tz);
@@ -67,10 +82,22 @@ describe("dominio de recurrencia Zoom (type 8)", () => {
     it("calcula weekly_days con múltiples días (martes y jueves) con feriado", () => {
       // Mar 10, Jue 12, (Mar 17 feriado), Jue 19, Mar 24
       const instancias = [
-        { inicio: new Date("2026-11-10T19:00:00-03:00"), fin: new Date("2026-11-10T21:00:00-03:00") },
-        { inicio: new Date("2026-11-12T19:00:00-03:00"), fin: new Date("2026-11-12T21:00:00-03:00") },
-        { inicio: new Date("2026-11-19T19:00:00-03:00"), fin: new Date("2026-11-19T21:00:00-03:00") },
-        { inicio: new Date("2026-11-24T19:00:00-03:00"), fin: new Date("2026-11-24T21:00:00-03:00") }
+        {
+          inicio: new Date("2026-11-10T19:00:00-03:00"),
+          fin: new Date("2026-11-10T21:00:00-03:00"),
+        },
+        {
+          inicio: new Date("2026-11-12T19:00:00-03:00"),
+          fin: new Date("2026-11-12T21:00:00-03:00"),
+        },
+        {
+          inicio: new Date("2026-11-19T19:00:00-03:00"),
+          fin: new Date("2026-11-19T21:00:00-03:00"),
+        },
+        {
+          inicio: new Date("2026-11-24T19:00:00-03:00"),
+          fin: new Date("2026-11-24T21:00:00-03:00"),
+        },
       ];
 
       const res = calcularRecurrenciaZoom(instancias, tz);
@@ -82,11 +109,11 @@ describe("dominio de recurrencia Zoom (type 8)", () => {
     it("ordena cronológicamente si las instancias no vienen en orden", () => {
       const i1 = {
         inicio: new Date("2026-11-10T19:00:00-03:00"),
-        fin: new Date("2026-11-10T21:00:00-03:00")
+        fin: new Date("2026-11-10T21:00:00-03:00"),
       };
       const i2 = {
         inicio: new Date("2026-11-17T19:00:00-03:00"),
-        fin: new Date("2026-11-17T21:00:00-03:00")
+        fin: new Date("2026-11-17T21:00:00-03:00"),
       };
 
       const res = calcularRecurrenciaZoom([i2, i1], tz);
@@ -100,7 +127,7 @@ describe("dominio de recurrencia Zoom (type 8)", () => {
     it("lanza error si la cantidad de instancias supera 50", () => {
       const muchas = Array.from({ length: 51 }, (_, i) => ({
         inicio: new Date(Date.UTC(2026, 0, 1 + i, 18, 0)),
-        fin: new Date(Date.UTC(2026, 0, 1 + i, 20, 0))
+        fin: new Date(Date.UTC(2026, 0, 1 + i, 20, 0)),
       }));
       expect(() => calcularRecurrenciaZoom(muchas, tz)).toThrow(/50/);
     });
@@ -108,8 +135,14 @@ describe("dominio de recurrencia Zoom (type 8)", () => {
     it("lanza error si los slots semanales requeridos por huecos superan 50", () => {
       // 2 clases separadas por 52 semanas
       const instancias = [
-        { inicio: new Date("2026-01-06T18:00:00-03:00"), fin: new Date("2026-01-06T20:00:00-03:00") },
-        { inicio: new Date("2027-01-05T18:00:00-03:00"), fin: new Date("2027-01-05T20:00:00-03:00") }
+        {
+          inicio: new Date("2026-01-06T18:00:00-03:00"),
+          fin: new Date("2026-01-06T20:00:00-03:00"),
+        },
+        {
+          inicio: new Date("2027-01-05T18:00:00-03:00"),
+          fin: new Date("2027-01-05T20:00:00-03:00"),
+        },
       ];
       expect(() => calcularRecurrenciaZoom(instancias, tz)).toThrow(/50/);
     });
@@ -120,14 +153,14 @@ describe("dominio de recurrencia Zoom (type 8)", () => {
       // Curso los martes semanas 1 y 3 (salteando semana 2 por feriado)
       const instancias = [
         { inicio: new Date("2026-11-10T18:00:00-03:00") },
-        { inicio: new Date("2026-11-24T18:00:00-03:00") }
+        { inicio: new Date("2026-11-24T18:00:00-03:00") },
       ];
 
       // Zoom generó semana 1, 2 (feriado) y 3
       const zoomOcurrencias = [
         { occurrenceId: "occ-1", startTime: "2026-11-10T21:00:00Z" },
         { occurrenceId: "occ-feriado", startTime: "2026-11-17T21:00:00Z" },
-        { occurrenceId: "occ-2", startTime: "2026-11-24T21:00:00Z" }
+        { occurrenceId: "occ-2", startTime: "2026-11-24T21:00:00Z" },
       ];
 
       const sobrantes = detectarOcurrenciasSobrantes(zoomOcurrencias, instancias, tz);
@@ -138,11 +171,11 @@ describe("dominio de recurrencia Zoom (type 8)", () => {
     it("retorna lista vacía si todas las ocurrencias coinciden", () => {
       const instancias = [
         { inicio: new Date("2026-11-10T18:00:00-03:00") },
-        { inicio: new Date("2026-11-17T18:00:00-03:00") }
+        { inicio: new Date("2026-11-17T18:00:00-03:00") },
       ];
       const zoomOcurrencias = [
         { occurrenceId: "occ-1", startTime: "2026-11-10T21:00:00Z" },
-        { occurrenceId: "occ-2", startTime: "2026-11-17T21:00:00Z" }
+        { occurrenceId: "occ-2", startTime: "2026-11-17T21:00:00Z" },
       ];
 
       expect(detectarOcurrenciasSobrantes(zoomOcurrencias, instancias, tz)).toEqual([]);
@@ -154,14 +187,20 @@ describe("dominio de recurrencia Zoom (type 8)", () => {
       // Clase 1: 18:00 a 20:00 (120 min)
       // Clase 2: 19:00 a 20:30 (90 min)
       const instancias = [
-        { inicio: new Date("2026-11-10T18:00:00-03:00"), fin: new Date("2026-11-10T20:00:00-03:00") },
-        { inicio: new Date("2026-11-17T19:00:00-03:00"), fin: new Date("2026-11-17T20:30:00-03:00") }
+        {
+          inicio: new Date("2026-11-10T18:00:00-03:00"),
+          fin: new Date("2026-11-10T20:00:00-03:00"),
+        },
+        {
+          inicio: new Date("2026-11-17T19:00:00-03:00"),
+          fin: new Date("2026-11-17T20:30:00-03:00"),
+        },
       ];
 
       // Zoom generó ambas a las 18:00 (21:00 UTC) y 120 min de duración
       const zoomOcurrencias = [
         { occurrenceId: "occ-1", startTime: "2026-11-10T21:00:00Z", duration: 120 },
-        { occurrenceId: "occ-2", startTime: "2026-11-17T21:00:00Z", duration: 120 }
+        { occurrenceId: "occ-2", startTime: "2026-11-17T21:00:00Z", duration: 120 },
       ];
 
       const aAjustar = detectarOcurrenciasAjustar(zoomOcurrencias, instancias, tz);
@@ -170,8 +209,8 @@ describe("dominio de recurrencia Zoom (type 8)", () => {
         {
           occurrenceId: "occ-2",
           startTime: instancias[1].inicio,
-          durationMinutes: 90
-        }
+          durationMinutes: 90,
+        },
       ]);
     });
   });

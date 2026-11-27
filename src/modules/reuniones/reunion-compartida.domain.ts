@@ -17,13 +17,13 @@ const ESTADOS_ACTIVOS = ["PROGRAMADA", "EN_CURSO"] as const;
 export function usosActivos(
   usos: readonly UsoReunionCompartida[],
   ahora: Date,
-  excluirEventoId?: string
+  excluirEventoId?: string,
 ): number {
   return usos.filter(
     (uso) =>
       uso.eventoProveedorId !== excluirEventoId &&
       (ESTADOS_ACTIVOS as readonly string[]).includes(uso.instanciaEstado) &&
-      uso.instanciaFin.getTime() > ahora.getTime()
+      uso.instanciaFin.getTime() > ahora.getTime(),
   ).length;
 }
 
@@ -31,7 +31,7 @@ export function usosActivos(
 export function debeEliminarseReunionCompartida(
   usos: readonly UsoReunionCompartida[],
   eventoQueCancela: string,
-  ahora: Date
+  ahora: Date,
 ): boolean {
   return usosActivos(usos, ahora, eventoQueCancela) === 0;
 }

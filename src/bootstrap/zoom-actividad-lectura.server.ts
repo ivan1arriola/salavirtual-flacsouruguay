@@ -1,7 +1,7 @@
 import { db } from "../lib/db";
 import {
   construirActividadEncuentroZoom,
-  type EntradaActividadZoom
+  type EntradaActividadZoom,
 } from "../modules/reuniones/presentation/actividad-encuentro-zoom";
 
 // Los hitos (inicio, grabación, pantalla, alertas, fin) tienen su propio tope: si compartieran el de las
@@ -19,7 +19,7 @@ const TIPOS_PARTICIPANTE = [
   "meeting.participant_jbh_waiting_left",
   "meeting.participant_role_changed",
   "meeting.participant_joined_breakout_room",
-  "meeting.participant_left_breakout_room"
+  "meeting.participant_left_breakout_room",
 ];
 
 /**
@@ -28,14 +28,14 @@ const TIPOS_PARTICIPANTE = [
  */
 export async function leerActividadEncuentroZoom(
   eventoProveedorId: string,
-  ejecucion?: Readonly<{ cuentaZoomId: string; uuid: string }>
+  ejecucion?: Readonly<{ cuentaZoomId: string; uuid: string }>,
 ): Promise<EntradaActividadZoom[]> {
   const ocurrencias = await db.ocurrenciaArchivoZoom.findMany({
     where: {
       eventoProveedorId,
-      ...(ejecucion ? { cuentaZoomId: ejecucion.cuentaZoomId, uuid: ejecucion.uuid } : {})
+      ...(ejecucion ? { cuentaZoomId: ejecucion.cuentaZoomId, uuid: ejecucion.uuid } : {}),
     },
-    select: { cuentaZoomId: true, uuid: true }
+    select: { cuentaZoomId: true, uuid: true },
   });
   if (ocurrencias.length === 0) {
     return [];
@@ -43,7 +43,7 @@ export async function leerActividadEncuentroZoom(
   const claves = ocurrencias.map(({ cuentaZoomId, uuid }) => ({ cuentaZoomId, uuid }));
   const donde = claves.flatMap((clave) => [
     clave,
-    { cuentaZoomId: clave.cuentaZoomId, uuids: { has: clave.uuid } }
+    { cuentaZoomId: clave.cuentaZoomId, uuids: { has: clave.uuid } },
   ]);
   const seleccion = { tipo: true, ocurridoAt: true, huella: true } as const;
   const [principales, hitos, participantes] = await Promise.all([
@@ -51,7 +51,7 @@ export async function leerActividadEncuentroZoom(
       where: { OR: claves },
       orderBy: { ocurridoAt: "desc" },
       take: TOPE_HITOS,
-      select: seleccion
+      select: seleccion,
     }),
     db.eventoWebhookZoomAdicional.findMany({
       where: { OR: donde, tipo: { notIn: TIPOS_PARTICIPANTE } },
@@ -64,8 +64,8 @@ export async function leerActividadEncuentroZoom(
         participanteEmail: true,
         registranteId: true,
         motivoSalida: true,
-        detalle: true
-      }
+        detalle: true,
+      },
     }),
     db.eventoWebhookZoomAdicional.findMany({
       where: { OR: donde, tipo: { in: TIPOS_PARTICIPANTE } },
@@ -78,9 +78,9 @@ export async function leerActividadEncuentroZoom(
         participanteEmail: true,
         registranteId: true,
         motivoSalida: true,
-        detalle: true
-      }
-    })
+        detalle: true,
+      },
+    }),
   ]);
   return construirActividadEncuentroZoom([...principales, ...hitos, ...participantes]);
 }

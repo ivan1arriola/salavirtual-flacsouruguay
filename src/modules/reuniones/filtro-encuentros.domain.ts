@@ -7,7 +7,7 @@ export type EncuentroFiltrable = Readonly<{
 
 export function perteneceAVistaTemporal(
   encuentro: EncuentroFiltrable,
-  vista: VistaTemporalEncuentros
+  vista: VistaTemporalEncuentros,
 ): boolean {
   const esPasadoAnterior = encuentro.temporalidad === "PASADO" && !encuentro.esDeHoy;
   if (vista === "TODOS") {
@@ -18,7 +18,7 @@ export function perteneceAVistaTemporal(
 
 export function filtrarEncuentrosPorVista<T extends EncuentroFiltrable>(
   encuentros: readonly T[],
-  vista: VistaTemporalEncuentros
+  vista: VistaTemporalEncuentros,
 ): readonly T[] {
   return encuentros.filter((encuentro) => perteneceAVistaTemporal(encuentro, vista));
 }

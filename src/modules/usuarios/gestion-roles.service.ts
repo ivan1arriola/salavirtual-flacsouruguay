@@ -4,7 +4,7 @@ import {
   puedeGestionarRoles,
   requierePerfilAsistente,
   requierePerfilDocente,
-  type ActorGestionRoles
+  type ActorGestionRoles,
 } from "./gestion-roles.domain";
 import type { RolUsuario } from "./roles";
 import { crearSlugAsistenteDisponible } from "../asistencia/asistente-slug.adapter";
@@ -13,7 +13,7 @@ export async function cambiarRolUsuario(
   db: PrismaClient,
   actor: ActorGestionRoles,
   usuarioId: string,
-  input: unknown
+  input: unknown,
 ): Promise<RolUsuario> {
   if (!puedeGestionarRoles(actor)) {
     throw new Error("Solo Administracion puede cambiar roles.");
@@ -23,7 +23,7 @@ export async function cambiarRolUsuario(
   return db.$transaction(async (tx) => {
     const actorActual = await tx.usuario.findUnique({
       where: { id: actor.id },
-      select: { id: true, rol: true, activo: true }
+      select: { id: true, rol: true, activo: true },
     });
     if (!actorActual || !puedeGestionarRoles(actorActual)) {
       throw new Error("La sesion ya no tiene permisos de administracion.");
@@ -37,8 +37,8 @@ export async function cambiarRolUsuario(
         apellidos: true,
         rol: true,
         docente: { select: { id: true } },
-        asistenteTecnico: { select: { id: true } }
-      }
+        asistenteTecnico: { select: { id: true } },
+      },
     });
     if (!usuario) {
       throw new Error("Usuario no encontrado.");
@@ -48,7 +48,7 @@ export async function cambiarRolUsuario(
     }
     if (usuario.rol === "ADMINISTRACION" && rol !== "ADMINISTRACION") {
       const administradoresActivos = await tx.usuario.count({
-        where: { rol: "ADMINISTRACION", activo: true }
+        where: { rol: "ADMINISTRACION", activo: true },
       });
       if (administradoresActivos <= 1) {
         throw new Error("Debe quedar al menos un usuario de Administracion activo.");
@@ -66,7 +66,7 @@ export async function cambiarRolUsuario(
     if (rol !== "ASISTENTE_TECNICO" && usuario.asistenteTecnico) {
       await tx.asistenteTecnico.update({
         where: { id: usuario.asistenteTecnico.id },
-        data: { cesadoHastaProximoInicioSesion: false }
+        data: { cesadoHastaProximoInicioSesion: false },
       });
     }
 
@@ -78,8 +78,8 @@ export async function cambiarRolUsuario(
         entidadTipo: "Usuario",
         entidadId: usuario.id,
         valorAnterior: { rol: usuario.rol },
-        valorNuevo: { rol }
-      }
+        valorNuevo: { rol },
+      },
     });
 
     return rol;

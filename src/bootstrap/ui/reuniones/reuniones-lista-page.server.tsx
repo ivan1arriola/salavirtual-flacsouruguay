@@ -6,7 +6,7 @@ import ReunionesZoomPage from "./reuniones-lista-zoom-page.server";
 export default async function ReunionesListaPage(
   props: Readonly<{
     searchParams: Promise<Record<string, string | undefined>>;
-  }>
+  }>,
 ) {
   const { proveedor } = await props.searchParams;
   return resolverProveedorReunion(proveedor) === "GOOGLE_MEET" ? (

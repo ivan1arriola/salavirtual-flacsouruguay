@@ -18,13 +18,13 @@ async function main(): Promise<void> {
             select: {
               operacionPendiente: true,
               estadoIntegracion: true,
-              externalEventId: true
-            }
-          }
-        }
-      }
+              externalEventId: true,
+            },
+          },
+        },
+      },
     },
-    orderBy: { fechaInicioSolicitada: "asc" }
+    orderBy: { fechaInicioSolicitada: "asc" },
   });
 
   const plan = requests.map((request) => {
@@ -33,11 +33,11 @@ async function main(): Promise<void> {
       eventosProveedor.every(
         (event) =>
           event.operacionPendiente !== "CANCELAR" &&
-          (event.externalEventId === null || event.estadoIntegracion === "SINCRONIZADA")
-      )
+          (event.externalEventId === null || event.estadoIntegracion === "SINCRONIZADA"),
+      ),
     );
     const pendingGoogleCancellation = cancelled.filter(
-      ({ id }) => !safeToDelete.some((safe) => safe.id === id)
+      ({ id }) => !safeToDelete.some((safe) => safe.id === id),
     );
     const activeCount = request.instancias.length - cancelled.length;
     const deleteRequest = activeCount === 0 && pendingGoogleCancellation.length === 0;
@@ -50,7 +50,7 @@ async function main(): Promise<void> {
       pendingGoogleCancellationCount: pendingGoogleCancellation.length,
       activeCount,
       deleteRequest,
-      cancelledIds: safeToDelete.map(({ id }) => id)
+      cancelledIds: safeToDelete.map(({ id }) => id),
     };
   });
 
@@ -63,13 +63,15 @@ async function main(): Promise<void> {
         safeToDeleteInstances: plan.reduce((total, item) => total + item.safeToDeleteCount, 0),
         pendingGoogleCancellations: plan.reduce(
           (total, item) => total + item.pendingGoogleCancellationCount,
-          0
+          0,
         ),
-        requestsWithoutActiveInstancesReadyToDelete: plan.filter(({ deleteRequest }) => deleteRequest).length
+        requestsWithoutActiveInstancesReadyToDelete: plan.filter(
+          ({ deleteRequest }) => deleteRequest,
+        ).length,
       },
       null,
-      2
-    )
+      2,
+    ),
   );
 
   if (!applyChanges) {
@@ -77,8 +79,8 @@ async function main(): Promise<void> {
       JSON.stringify(
         plan.map(({ cancelledIds: _cancelledIds, ...item }) => item),
         null,
-        2
-      )
+        2,
+      ),
     );
     return;
   }
@@ -110,7 +112,7 @@ async function main(): Promise<void> {
       failures.push({
         solicitudId: item.solicitudId,
         titulo: item.titulo,
-        error: error instanceof Error ? error.message : "Error desconocido"
+        error: error instanceof Error ? error.message : "Error desconocido",
       });
     }
   }
@@ -122,13 +124,13 @@ async function main(): Promise<void> {
         cleanedRequests,
         skippedPendingGoogleCancellations: plan.reduce(
           (total, item) => total + item.pendingGoogleCancellationCount,
-          0
+          0,
         ),
-        failures
+        failures,
       },
       null,
-      2
-    )
+      2,
+    ),
   );
 }
 

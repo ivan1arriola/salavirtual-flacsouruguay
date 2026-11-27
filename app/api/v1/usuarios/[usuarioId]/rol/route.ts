@@ -18,12 +18,12 @@ export async function PUT(request: Request, context: RouteContext) {
 
   const actor = await resolveSessionActor(db, {
     id: session.user.id,
-    email: session.user.email
+    email: session.user.email,
   });
   if (!actor) {
     return NextResponse.json(
       { error: "La sesion esta desactualizada. Volve a iniciar sesion." },
-      { status: 401 }
+      { status: 401 },
     );
   }
 

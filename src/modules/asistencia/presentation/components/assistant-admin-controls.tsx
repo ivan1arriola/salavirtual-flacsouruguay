@@ -7,7 +7,7 @@ import {
   PlayCircle,
   ShieldAlert,
   UserRoundCheck,
-  UserRoundX
+  UserRoundX,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -32,14 +32,14 @@ export function AssistantAdminControls(props: Props) {
     body: Readonly<{
       disponibleGeneral?: boolean;
       cesadoHastaProximoInicioSesion?: boolean;
-    }>
+    }>,
   ) {
     if (
       kind === "cease" &&
       body.cesadoHastaProximoInicioSesion === true &&
       props.asignacionesFuturas > 0 &&
       !window.confirm(
-        `Este asistente tiene ${props.asignacionesFuturas} asignación(es) futura(s). El cese no las cancela. ¿Continuar?`
+        `Este asistente tiene ${props.asignacionesFuturas} asignación(es) futura(s). El cese no las cancela. ¿Continuar?`,
       )
     ) {
       return;
@@ -53,8 +53,8 @@ export function AssistantAdminControls(props: Props) {
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body)
-        }
+          body: JSON.stringify(body),
+        },
       );
       const result = (await response.json().catch(() => ({}))) as { error?: string };
       if (!response.ok) {
@@ -75,7 +75,10 @@ export function AssistantAdminControls(props: Props) {
       <div className="section-heading">
         <div>
           <h2>Control operativo</h2>
-          <p>Administrá si puede recibir nuevas coberturas y si queda temporalmente fuera de operación.</p>
+          <p>
+            Administrá si puede recibir nuevas coberturas y si queda temporalmente fuera de
+            operación.
+          </p>
         </div>
       </div>
 
@@ -126,7 +129,7 @@ export function AssistantAdminControls(props: Props) {
             type="button"
             onClick={() =>
               update("availability", {
-                disponibleGeneral: !props.disponibleGeneral
+                disponibleGeneral: !props.disponibleGeneral,
               })
             }
           >
@@ -159,7 +162,7 @@ export function AssistantAdminControls(props: Props) {
             type="button"
             onClick={() =>
               update("cease", {
-                cesadoHastaProximoInicioSesion: !props.cesadoHastaProximoInicioSesion
+                cesadoHastaProximoInicioSesion: !props.cesadoHastaProximoInicioSesion,
               })
             }
           >

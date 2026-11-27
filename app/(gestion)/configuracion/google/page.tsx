@@ -9,13 +9,15 @@ import { requireAdminPage } from "../require-admin-page";
 export default async function ConfiguracionGooglePage() {
   await requireAdminPage();
   const { configuration } = await obtenerDatosPaginaConfiguracion(db, "google");
-  const privateKeyConfigurada = Boolean(configuration?.privateKeyCifrada || configuration?.privateKey);
+  const privateKeyConfigurada = Boolean(
+    configuration?.privateKeyCifrada || configuration?.privateKey,
+  );
   const readiness = workspaceReadiness({
     serviceAccountEmail: configuration?.serviceAccountEmail ?? null,
     privateKeyConfigurada,
     serviceAccountSubject: configuration?.serviceAccountSubject ?? null,
     driveDestinationId: configuration?.driveDestinationId ?? null,
-    activa: configuration?.activa ?? false
+    activa: configuration?.activa ?? false,
   });
 
   return (
@@ -39,7 +41,7 @@ export default async function ConfiguracionGooglePage() {
           }
           status={{
             tone: readiness.ready ? "ok" : "warning",
-            label: readiness.ready ? "Lista" : "Incompleta"
+            label: readiness.ready ? "Lista" : "Incompleta",
           }}
           defaultOpen={!readiness.ready}
         >
@@ -51,7 +53,7 @@ export default async function ConfiguracionGooglePage() {
                     serviceAccountSubject: configuration.serviceAccountSubject,
                     driveDestinationId: configuration.driveDestinationId,
                     privateKeyConfigurada,
-                    activa: configuration.activa
+                    activa: configuration.activa,
                   }
                 : null
             }

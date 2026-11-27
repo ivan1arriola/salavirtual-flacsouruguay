@@ -8,11 +8,14 @@ function txFalso(
   eventos: EventoCand[],
   actualizados = 1,
   luego: EventoCand[] = [],
-  anticipados: EventoCand[] = []
+  anticipados: EventoCand[] = [],
 ) {
   const findMany = vi.fn(async (_args?: unknown) => eventos);
   // 1.ª: UUID; 2.ª: encuentros que contienen el inicio; 3.ª: inicio anticipado.
-  findMany.mockResolvedValueOnce(eventos).mockResolvedValueOnce(luego).mockResolvedValue(anticipados);
+  findMany
+    .mockResolvedValueOnce(eventos)
+    .mockResolvedValueOnce(luego)
+    .mockResolvedValue(anticipados);
   return {
     $executeRaw: vi.fn(),
     eventoProveedor: { findMany },
@@ -22,8 +25,8 @@ function txFalso(
       findMany: vi.fn(async () => []),
       updateMany: vi.fn(),
       update: vi.fn(),
-      delete: vi.fn()
-    }
+      delete: vi.fn(),
+    },
   };
 }
 const AHORA = new Date("2026-11-11T12:00:00Z");
@@ -31,9 +34,12 @@ const REAL = new Date("2026-11-09T14:05:00Z");
 const MIN = 60_000;
 const inst = (inicioMin: number, finMin: number) => ({
   inicioProgramadoAt: new Date(REAL.getTime() + inicioMin * MIN),
-  finProgramadoAt: new Date(REAL.getTime() + finMin * MIN)
+  finProgramadoAt: new Date(REAL.getTime() + finMin * MIN),
 });
-const correr = (tx: ReturnType<typeof txFalso>, over: Partial<{ eventoProveedorId: string | null }> = {}) =>
+const correr = (
+  tx: ReturnType<typeof txFalso>,
+  over: Partial<{ eventoProveedorId: string | null }> = {},
+) =>
   vincularAutomaticamenteSiInequivoco(tx as unknown as Prisma.TransactionClient, {
     ocurrenciaId: "o1",
     uuid: "uuid-1",
@@ -41,7 +47,7 @@ const correr = (tx: ReturnType<typeof txFalso>, over: Partial<{ eventoProveedorI
     inicioRealAt: REAL,
     eventoProveedorId: null,
     ahora: AHORA,
-    ...over
+    ...over,
   });
 
 describe("vincularAutomaticamenteSiInequivoco", () => {
@@ -50,13 +56,13 @@ describe("vincularAutomaticamenteSiInequivoco", () => {
     expect(await correr(tx)).toEqual({ tipo: "VINCULADA", eventoProveedorId: "ev1" });
     expect(tx.ocurrenciaArchivoZoom.updateMany).toHaveBeenCalledWith({
       where: { id: "o1", eventoProveedorId: null },
-      data: { eventoProveedorId: "ev1", vinculadaAt: AHORA, vinculadaPorId: null }
+      data: { eventoProveedorId: "ev1", vinculadaAt: AHORA, vinculadaPorId: null },
     });
     expect(tx.auditoria.create).toHaveBeenCalledTimes(1);
     expect(tx.auditoria.create.mock.calls[0]![0].data).toMatchObject({
       accion: "ZOOM_OCURRENCIA_VINCULADA_AUTO",
       entidadId: "o1",
-      actorUsuarioId: null
+      actorUsuarioId: null,
     });
   });
 
@@ -65,9 +71,12 @@ describe("vincularAutomaticamenteSiInequivoco", () => {
     await correr(tx);
     expect(tx.eventoProveedor.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { zoomMeetingUuid: "uuid-1", proveedor: { tipo: { in: ["ZOOM", "ZOOM_HISTORICO"] } } },
-        take: 2
-      })
+        where: {
+          zoomMeetingUuid: "uuid-1",
+          proveedor: { tipo: { in: ["ZOOM", "ZOOM_HISTORICO"] } },
+        },
+        take: 2,
+      }),
     );
   });
 
@@ -102,7 +111,7 @@ describe("vínculo automático por reunión y horario (cuando no hay UUID)", () 
     const tx = txFalso([], 1, [{ id: "ev9", instancia: inst(-5, 55) }]);
     expect(await correr(tx)).toEqual({ tipo: "VINCULADA", eventoProveedorId: "ev9" });
     expect(tx.auditoria.create.mock.calls[0]![0].data).toMatchObject({
-      valorNuevo: { eventoProveedorId: "ev9", criterio: "REUNION_Y_HORARIO" }
+      valorNuevo: { eventoProveedorId: "ev9", criterio: "REUNION_Y_HORARIO" },
     });
   });
 
@@ -110,23 +119,26 @@ describe("vínculo automático por reunión y horario (cuando no hay UUID)", () 
     const tx = txFalso([], 1, []);
     await correr(tx);
     const consulta = (n: number) =>
-      tx.eventoProveedor.findMany.mock.calls[n]![0] as { where: Record<string, unknown>; take: number };
+      tx.eventoProveedor.findMany.mock.calls[n]![0] as {
+        where: Record<string, unknown>;
+        take: number;
+      };
     expect(consulta(1).where).toMatchObject({
       externalEventId: "888",
       proveedor: { tipo: { in: ["ZOOM", "ZOOM_HISTORICO"] } },
-      instancia: { inicioProgramadoAt: { lte: REAL }, finProgramadoAt: { gte: REAL } }
+      instancia: { inicioProgramadoAt: { lte: REAL }, finProgramadoAt: { gte: REAL } },
     });
     // Con take 2 basta para detectar ambigüedad sin que un límite oculte a un segundo candidato.
     expect(consulta(1).take).toBe(2);
     expect(consulta(2).where).toMatchObject({
-      instancia: { inicioProgramadoAt: { gt: REAL, lte: new Date(REAL.getTime() + 45 * MIN) } }
+      instancia: { inicioProgramadoAt: { gt: REAL, lte: new Date(REAL.getTime() + 45 * MIN) } },
     });
   });
 
   it("dos encuentros que contienen el inicio real son ambiguos: no se vincula", async () => {
     const tx = txFalso([], 1, [
       { id: "a", instancia: inst(-10, 50) },
-      { id: "b", instancia: inst(-20, 40) }
+      { id: "b", instancia: inst(-20, 40) },
     ]);
     expect(await correr(tx)).toEqual({ tipo: "AMBIGUA" });
     expect(tx.ocurrenciaArchivoZoom.updateMany).not.toHaveBeenCalled();
@@ -140,7 +152,7 @@ describe("vínculo automático por reunión y horario (cuando no hay UUID)", () 
   it("dos candidatos solo por tolerancia previa también son ambiguos", async () => {
     const tx = txFalso([], 1, [
       { id: "a", instancia: inst(10, 70) },
-      { id: "b", instancia: inst(30, 90) }
+      { id: "b", instancia: inst(30, 90) },
     ]);
     expect(await correr(tx)).toEqual({ tipo: "AMBIGUA" });
   });
@@ -154,9 +166,11 @@ describe("vínculo automático por reunión y horario (cuando no hay UUID)", () 
   it("sin encuentro que lo contenga, un único inicio anticipado se vincula y dos son ambiguos", async () => {
     expect(await correr(txFalso([], 1, [], [{ id: "temprano" }]))).toEqual({
       tipo: "VINCULADA",
-      eventoProveedorId: "temprano"
+      eventoProveedorId: "temprano",
     });
-    expect(await correr(txFalso([], 1, [], [{ id: "a" }, { id: "b" }]))).toEqual({ tipo: "AMBIGUA" });
+    expect(await correr(txFalso([], 1, [], [{ id: "a" }, { id: "b" }]))).toEqual({
+      tipo: "AMBIGUA",
+    });
   });
 
   it("si el UUID ya fue ambiguo no se intenta adivinar por horario", async () => {

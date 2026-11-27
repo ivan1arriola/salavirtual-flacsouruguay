@@ -21,10 +21,10 @@ describe("acciones de unión a Zoom", () => {
 
   it("con contexto da nombres accesibles que identifican el encuentro", () => {
     const html = renderToStaticMarkup(
-      createElement(ZoomJoinActions, { url: URL_ZOOM, contexto: "martes 10 de noviembre, 10:00" })
+      createElement(ZoomJoinActions, { url: URL_ZOOM, contexto: "martes 10 de noviembre, 10:00" }),
     );
     expect(html).toContain(
-      'aria-label="Unirse a martes 10 de noviembre, 10:00 (se abre en una pestaña nueva)"'
+      'aria-label="Unirse a martes 10 de noviembre, 10:00 (se abre en una pestaña nueva)"',
     );
     expect(html).toContain('aria-label="Copiar enlace de martes 10 de noviembre, 10:00"');
   });
@@ -50,11 +50,11 @@ describe("estado del enlace de Zoom", () => {
       LISTO: "Enlace listo",
       ATENCION: "Enlace listo, cambios sin sincronizar",
       PENDIENTE: "Enlace pendiente",
-      ERROR: "Error al crear el enlace"
+      ERROR: "Error al crear el enlace",
     } as const;
     for (const [estado, etiqueta] of Object.entries(etiquetas)) {
       const html = renderToStaticMarkup(
-        createElement(ZoomLinkStatus, { ...props, estado: estado as keyof typeof etiquetas })
+        createElement(ZoomLinkStatus, { ...props, estado: estado as keyof typeof etiquetas }),
       );
       expect(html).toContain(`status zoom-link-status is-${estado.toLowerCase()}`);
       expect(html).toContain(etiqueta);
@@ -69,22 +69,28 @@ describe("estado del enlace de Zoom", () => {
 
   it("el nombre accesible del reintento identifica el encuentro", () => {
     const html = renderToStaticMarkup(
-      createElement(ZoomLinkStatus, { ...props, estado: "ERROR", contexto: "martes 10 de noviembre, 10:00" })
+      createElement(ZoomLinkStatus, {
+        ...props,
+        estado: "ERROR",
+        contexto: "martes 10 de noviembre, 10:00",
+      }),
     );
     expect(html).toContain('aria-label="Reintentar el enlace de martes 10 de noviembre, 10:00"');
   });
 
   it("solo administración ve el reintento, y no con el enlace listo", () => {
     expect(
-      renderToStaticMarkup(createElement(ZoomLinkStatus, { ...props, esAdmin: false, estado: "ERROR" }))
+      renderToStaticMarkup(
+        createElement(ZoomLinkStatus, { ...props, esAdmin: false, estado: "ERROR" }),
+      ),
     ).not.toContain("Reintentar");
-    expect(renderToStaticMarkup(createElement(ZoomLinkStatus, { ...props, estado: "LISTO" }))).not.toContain(
-      "Reintentar"
-    );
+    expect(
+      renderToStaticMarkup(createElement(ZoomLinkStatus, { ...props, estado: "LISTO" })),
+    ).not.toContain("Reintentar");
     expect(
       renderToStaticMarkup(
-        createElement(ZoomLinkStatus, { ...props, estado: "ERROR", eventoProveedorId: null })
-      )
+        createElement(ZoomLinkStatus, { ...props, estado: "ERROR", eventoProveedorId: null }),
+      ),
     ).not.toContain("Reintentar");
   });
 });

@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 
 // El panel incluye controles cliente (reintento y vínculo) que usan el router de Next.
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ refresh: () => undefined, push: () => undefined })
+  useRouter: () => ({ refresh: () => undefined, push: () => undefined }),
 }));
 import { ZoomArchivoProgreso, hrefInventarioZoom } from "../src/components/zoom-archivo-progreso";
 import type { PaginaInventarioZoom } from "../src/modules/archivos/ports";
@@ -19,12 +19,12 @@ const base = {
   tamanoBytes: 1048576n,
   descargable: true,
   webViewUrl: "https://drive.google.com/file/d/abc/view",
-  errorCodigo: null
+  errorCodigo: null,
 } as const;
 
 function datos(
   over: Partial<PaginaInventarioZoom["ocurrencias"][number]> = {},
-  pag: Partial<PaginaInventarioZoom> = {}
+  pag: Partial<PaginaInventarioZoom> = {},
 ): PaginaInventarioZoom {
   return {
     pagina: 1,
@@ -41,14 +41,16 @@ function datos(
         inventariadoAt: null,
         procesamientoPendiente: false,
         archivos: [base],
-        ...over
-      }
+        ...over,
+      },
     ],
-    ...pag
+    ...pag,
   };
 }
 const html = (d: PaginaInventarioZoom, cat: FiltroCategoriaZoom = "TODOS") =>
-  renderToStaticMarkup(createElement(ZoomArchivoProgreso, { datos: d, categoria: cat, vinculo: "TODAS" }));
+  renderToStaticMarkup(
+    createElement(ZoomArchivoProgreso, { datos: d, categoria: cat, vinculo: "TODAS" }),
+  );
 
 describe("ZoomArchivoProgreso", () => {
   it("escapa el título: nunca interpola contenido como HTML", () => {
@@ -60,8 +62,11 @@ describe("ZoomArchivoProgreso", () => {
   it("enlaza solo archivos conservados; el pendiente muestra su estado sin enlace", () => {
     const h = html(
       datos({
-        archivos: [base, { ...base, id: "b", tipoOriginal: "CHAT", estado: "PENDIENTE", webViewUrl: null }]
-      })
+        archivos: [
+          base,
+          { ...base, id: "b", tipoOriginal: "CHAT", estado: "PENDIENTE", webViewUrl: null },
+        ],
+      }),
     );
     expect(h.match(/<a href="https:\/\/drive\.google\.com/g)).toHaveLength(1);
     expect(h).toContain("Pendiente de copia");
@@ -70,7 +75,9 @@ describe("ZoomArchivoProgreso", () => {
 
   it("un video conservado no declara respaldo completo si falta otro archivo; con todos sí", () => {
     expect(
-      html(datos({ archivos: [base, { ...base, id: "b", tipoOriginal: "CHAT", estado: "COPIANDO" }] }))
+      html(
+        datos({ archivos: [base, { ...base, id: "b", tipoOriginal: "CHAT", estado: "COPIANDO" }] }),
+      ),
     ).not.toContain("Respaldo completo");
     expect(html(datos())).toContain("Respaldo completo en Drive.");
   });
@@ -84,8 +91,10 @@ describe("ZoomArchivoProgreso", () => {
   it("muestra el código de error por archivo y los contadores", () => {
     const h = html(
       datos({
-        archivos: [{ ...base, estado: "REQUIERE_REVISION", errorCodigo: "RANGE_IGNORADO", webViewUrl: null }]
-      })
+        archivos: [
+          { ...base, estado: "REQUIERE_REVISION", errorCodigo: "RANGE_IGNORADO", webViewUrl: null },
+        ],
+      }),
     );
     expect(h).toContain("RANGE_IGNORADO");
     expect(h).toContain("En revisión 1");
@@ -93,7 +102,7 @@ describe("ZoomArchivoProgreso", () => {
 
   it("estado vacío accesible y filtro por categoría sin coincidencias", () => {
     expect(html(datos({}, { ocurrencias: [], totalOcurrencias: 0 }))).toContain(
-      "No hay archivos de Zoom inventariados"
+      "No hay archivos de Zoom inventariados",
     );
     expect(html(datos(), "AUDIO")).toContain("No hay archivos en esta categoría.");
   });
@@ -101,10 +110,10 @@ describe("ZoomArchivoProgreso", () => {
   it("los enlaces de navegación conservan filtros y vuelven a la página 1 al filtrar", () => {
     const actual = { zoomPagina: 3, zoomCategoria: "AUDIO", zoomVinculo: "SIN_VINCULO" } as const;
     expect(hrefInventarioZoom({ zoomPagina: 4 }, actual)).toBe(
-      "/grabaciones?zoomPagina=4&zoomCategoria=AUDIO&zoomVinculo=SIN_VINCULO#archivos-zoom"
+      "/grabaciones?zoomPagina=4&zoomCategoria=AUDIO&zoomVinculo=SIN_VINCULO#archivos-zoom",
     );
-    expect(hrefInventarioZoom({ zoomCategoria: "TODOS", zoomVinculo: "TODAS", zoomPagina: 1 }, actual)).toBe(
-      "/grabaciones#archivos-zoom"
-    );
+    expect(
+      hrefInventarioZoom({ zoomCategoria: "TODOS", zoomVinculo: "TODAS", zoomPagina: 1 }, actual),
+    ).toBe("/grabaciones#archivos-zoom");
   });
 });

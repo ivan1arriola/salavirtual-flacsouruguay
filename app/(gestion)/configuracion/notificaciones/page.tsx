@@ -7,13 +7,13 @@ import { actualizarReportesAsistenciaAdmin } from "../actions";
 import { requireAdminPage } from "../require-admin-page";
 
 export default async function ConfiguracionNotificacionesPage({
-  searchParams
+  searchParams,
 }: Readonly<{ searchParams: Promise<{ estado?: string; error?: string }> }>) {
   await requireAdminPage();
   const query = await searchParams;
   const { assistantConfiguration, adminReportRecipients } = await obtenerDatosPaginaConfiguracion(
     db,
-    "notificaciones"
+    "notificaciones",
   );
 
   return (
@@ -27,13 +27,13 @@ export default async function ConfiguracionNotificacionesPage({
         estado={query.estado}
         mensajes={{
           "reportes-asistencia-actualizados":
-            "Los destinatarios adicionales de los reportes fueron actualizados."
+            "Los destinatarios adicionales de los reportes fueron actualizados.",
         }}
       />
       <AssistantReportConfigForm
         emails={assistantConfiguration?.correosCopiaReporteMensual ?? []}
         adminEmails={adminReportRecipients.flatMap(({ emailPrincipal }) =>
-          emailPrincipal ? [emailPrincipal] : []
+          emailPrincipal ? [emailPrincipal] : [],
         )}
         action={actualizarReportesAsistenciaAdmin}
       />

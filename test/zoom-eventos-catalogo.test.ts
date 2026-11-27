@@ -13,8 +13,8 @@ describe("catálogo de la suscripción Sala Virtual", () => {
       expect.arrayContaining([
         "meeting.ai_companion_assets_deleted",
         "recording.batch_trashed",
-        "group.member_added"
-      ])
+        "group.member_added",
+      ]),
     );
   });
 });

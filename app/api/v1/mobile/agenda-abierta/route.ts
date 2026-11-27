@@ -4,7 +4,7 @@ import { MobileActorError, requireMobileActor } from "@/src/lib/auth/mobile-acto
 import { db } from "@/src/lib/db";
 import {
   evaluarConflictoAsistencia,
-  type AsignacionExistente
+  type AsignacionExistente,
 } from "@/src/modules/asistencia/agenda-abierta.domain";
 import { actualizarPostulacionAsistencia } from "@/src/modules/asistencia/asistencia.service";
 import { seleccionarEventoProveedorActivo } from "@/src/modules/reuniones/evento-proveedor-activo.domain";
@@ -16,7 +16,7 @@ async function resolveMobileAssistant(request: Request) {
 
   const assistant = await db.asistenteTecnico.findUnique({
     where: { usuarioId: actor.id },
-    select: { id: true, cesadoHastaProximoInicioSesion: true }
+    select: { id: true, cesadoHastaProximoInicioSesion: true },
   });
   if (!assistant || assistant.cesadoHastaProximoInicioSesion) {
     return null;
@@ -38,7 +38,7 @@ export async function GET(request: Request) {
   if (!resolved) {
     return NextResponse.json(
       { error: "La cuenta ya no tiene acceso como asistente técnico." },
-      { status: 403 }
+      { status: 403 },
     );
   }
 
@@ -50,7 +50,7 @@ export async function GET(request: Request) {
       requiereAsistenciaTecnica: true,
       finProgramadoAt: { gte: now },
       estado: "PROGRAMADA",
-      asignaciones: { none: { estado: { in: [...ACTIVE_ASSIGNMENTS] } } }
+      asignaciones: { none: { estado: { in: [...ACTIVE_ASSIGNMENTS] } } },
     },
     orderBy: { inicioProgramadoAt: "asc" },
     include: {
@@ -59,13 +59,13 @@ export async function GET(request: Request) {
           docentePrograma: {
             include: {
               programa: true,
-              docente: { include: { usuario: true } }
-            }
-          }
-        }
+              docente: { include: { usuario: true } },
+            },
+          },
+        },
       },
-      eventosProveedor: { include: { proveedor: true, cuentaProveedor: true } }
-    }
+      eventosProveedor: { include: { proveedor: true, cuentaProveedor: true } },
+    },
   });
 
   const meetingIds = meetings.map(({ id }) => id);
@@ -76,8 +76,8 @@ export async function GET(request: Request) {
         estado: { in: [...ACTIVE_ASSIGNMENTS] },
         instancia: {
           finProgramadoAt: { gte: now },
-          estado: "PROGRAMADA"
-        }
+          estado: "PROGRAMADA",
+        },
       },
       select: {
         instancia: {
@@ -87,27 +87,27 @@ export async function GET(request: Request) {
             finProgramadoAt: true,
             inicioAsistenciaTecnicaAt: true,
             finAsistenciaTecnicaAt: true,
-            solicitud: { select: { titulo: true } }
-          }
-        }
-      }
+            solicitud: { select: { titulo: true } },
+          },
+        },
+      },
     }),
     meetingIds.length > 0
       ? db.postulacionAsistenciaTecnica.findMany({
           where: {
             instanciaSalaId: { in: meetingIds },
-            asistenteTecnicoId: assistant.id
+            asistenteTecnicoId: assistant.id,
           },
-          select: { instanciaSalaId: true, estado: true }
+          select: { instanciaSalaId: true, estado: true },
         })
-      : Promise.resolve([])
+      : Promise.resolve([]),
   ]);
 
   const assignedList: AsignacionExistente[] = assignments.map(({ instancia }) => ({
     id: instancia.id,
     titulo: instancia.solicitud.titulo,
     inicio: instancia.inicioAsistenciaTecnicaAt ?? instancia.inicioProgramadoAt,
-    fin: instancia.finAsistenciaTecnicaAt ?? instancia.finProgramadoAt
+    fin: instancia.finAsistenciaTecnicaAt ?? instancia.finProgramadoAt,
   }));
 
   const openMeetings = meetings.map((meeting) => {
@@ -126,7 +126,7 @@ export async function GET(request: Request) {
     const finAsistencia = finAsistenciaConfigurada ?? meeting.finProgramadoAt;
     const conflict = evaluarConflictoAsistencia(
       { inicio: inicioAsistencia, fin: finAsistencia },
-      assignedList
+      assignedList,
     );
 
     return {
@@ -141,15 +141,16 @@ export async function GET(request: Request) {
       assistanceStartsAt: inicioAsistenciaConfigurada?.toISOString() ?? null,
       assistanceEndsAt: finAsistenciaConfigurada?.toISOString() ?? null,
       timezone: meeting.timezone,
-      googleAccount: meet?.cuentaProveedor?.emailOrganizador ?? meet?.cuentaProveedor?.nombre ?? null,
+      googleAccount:
+        meet?.cuentaProveedor?.emailOrganizador ?? meet?.cuentaProveedor?.nombre ?? null,
       interested: interest?.estado === "ME_INTERESA",
       availabilityState: conflict.estado,
       availabilityLabel: conflict.etiqueta,
       availabilityDetail: "detalle" in conflict ? conflict.detalle : null,
       durationMinutes: Math.max(
         1,
-        Math.round((finAsistencia.getTime() - inicioAsistencia.getTime()) / 60_000)
-      )
+        Math.round((finAsistencia.getTime() - inicioAsistencia.getTime()) / 60_000),
+      ),
     };
   });
 
@@ -157,9 +158,9 @@ export async function GET(request: Request) {
     generatedAt: now.toISOString(),
     summary: {
       openCount: openMeetings.length,
-      interestedCount: openMeetings.filter(({ interested }) => interested).length
+      interestedCount: openMeetings.filter(({ interested }) => interested).length,
     },
-    meetings: openMeetings
+    meetings: openMeetings,
   });
 }
 
@@ -176,7 +177,7 @@ export async function PUT(request: Request) {
   if (!resolved) {
     return NextResponse.json(
       { error: "La cuenta ya no tiene acceso como asistente técnico." },
-      { status: 403 }
+      { status: 403 },
     );
   }
 
@@ -184,7 +185,7 @@ export async function PUT(request: Request) {
     const interest = await actualizarPostulacionAsistencia(
       db,
       resolved.actor,
-      await request.json().catch(() => null)
+      await request.json().catch(() => null),
     );
     return NextResponse.json({ interest });
   } catch (error) {

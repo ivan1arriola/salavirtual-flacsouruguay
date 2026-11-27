@@ -34,7 +34,7 @@ const ETIQUETAS: Readonly<Record<CategoriaArchivoZoom, string>> = {
   TRANSCRIPCION: "Transcripción y subtítulos",
   LINEA_DE_TIEMPO: "Línea de tiempo",
   RESUMEN: "Resumen",
-  OTROS: "Otros archivos"
+  OTROS: "Otros archivos",
 };
 
 export function etiquetaCategoriaZoom(categoria: CategoriaArchivoZoom): string {
@@ -64,10 +64,9 @@ export function categoriaArchivoZoom(tipoOriginal: string): CategoriaArchivoZoom
   }
 }
 
-export function filtrarArchivosZoomPorCategoria<T extends Pick<ArchivoInventarioZoomVista, "tipoOriginal">>(
-  archivos: readonly T[],
-  filtro: FiltroCategoriaZoom
-): readonly T[] {
+export function filtrarArchivosZoomPorCategoria<
+  T extends Pick<ArchivoInventarioZoomVista, "tipoOriginal">,
+>(archivos: readonly T[], filtro: FiltroCategoriaZoom): readonly T[] {
   return filtro === "TODOS"
     ? archivos
     : archivos.filter((a) => categoriaArchivoZoom(a.tipoOriginal) === filtro);
@@ -86,7 +85,9 @@ export type ResumenArchivosZoom = Readonly<{
   tamanosDesconocidos: number;
 }>;
 
-export function resumirArchivosZoom(archivos: readonly ArchivoInventarioZoomVista[]): ResumenArchivosZoom {
+export function resumirArchivosZoom(
+  archivos: readonly ArchivoInventarioZoomVista[],
+): ResumenArchivosZoom {
   const conservados = archivos.filter((a) => a.estado === "CONSERVADO").length;
   const revision = archivos.filter((a) => a.estado === "REQUIERE_REVISION").length;
   const conocidos = archivos.flatMap((a) => (a.tamanoBytes === null ? [] : [a.tamanoBytes]));
@@ -100,7 +101,7 @@ export function resumirArchivosZoom(archivos: readonly ArchivoInventarioZoomVist
     conError: archivos.filter((a) => a.errorCodigo !== null && a.estado !== "CONSERVADO").length,
     bytesConocidos,
     bytesTotales: tamanosDesconocidos === 0 ? bytesConocidos : null,
-    tamanosDesconocidos
+    tamanosDesconocidos,
   };
 }
 
@@ -110,7 +111,7 @@ export function resumirArchivosZoom(archivos: readonly ArchivoInventarioZoomVist
  */
 export function respaldoCompletoZoom(
   archivos: readonly ArchivoInventarioZoomVista[],
-  opciones: Readonly<{ procesamientoPendiente?: boolean }> = {}
+  opciones: Readonly<{ procesamientoPendiente?: boolean }> = {},
 ): boolean {
   if (opciones.procesamientoPendiente) {
     return false;
@@ -120,7 +121,7 @@ export function respaldoCompletoZoom(
 
 /** Enlace a Drive solo para archivos ya conservados y únicamente https en hosts de Google. */
 export function enlaceArchivoZoom(
-  archivo: Pick<ArchivoInventarioZoomVista, "estado" | "webViewUrl">
+  archivo: Pick<ArchivoInventarioZoomVista, "estado" | "webViewUrl">,
 ): string | null {
   if (archivo.estado !== "CONSERVADO" || !archivo.webViewUrl) {
     return null;
@@ -135,7 +136,9 @@ export function enlaceArchivoZoom(
 }
 
 /** El inventario de Zoom (incluido el histórico sin encuentro vinculado) es solo de administración. */
-export function puedeVerInventarioZoom(rol: "ADMINISTRACION" | "DOCENTE" | "ASISTENTE_TECNICO"): boolean {
+export function puedeVerInventarioZoom(
+  rol: "ADMINISTRACION" | "DOCENTE" | "ASISTENTE_TECNICO",
+): boolean {
   return rol === "ADMINISTRACION";
 }
 
@@ -146,7 +149,7 @@ const ETIQUETAS_ESTADO: Readonly<Record<EstadoArchivoZoomVista, string>> = {
   COPIANDO: "Copiando a Drive",
   CONSERVADO: "Conservado en Drive",
   ERROR_REINTENTABLE: "Error, se reintentará",
-  REQUIERE_REVISION: "Requiere revisión"
+  REQUIERE_REVISION: "Requiere revisión",
 };
 
 export function etiquetaEstadoArchivoZoom(estado: EstadoArchivoZoomVista): string {
@@ -167,13 +170,13 @@ const VARIANTES_ZOOM_LEGIBLES: Readonly<Record<string, string>> = {
   timeline: "Línea de tiempo",
   summary: "Resumen de la reunión",
   meeting_summary: "Resumen de la reunión",
-  summary_next_steps: "Próximos pasos del resumen"
+  summary_next_steps: "Próximos pasos del resumen",
 };
 
 /** Traduce el identificador de variante de Zoom a una etiqueta humana en español. */
 export function describirVarianteZoom(
   variante: string | null | undefined,
-  tipoOriginal?: string
+  tipoOriginal?: string,
 ): string | null {
   const texto = variante?.trim() ?? "";
   if (!texto) {
@@ -216,7 +219,7 @@ export function describirVarianteZoom(
  * (p. ej. línea de tiempo JSON) para que la tarjeta muestre primero los archivos principales.
  */
 export function esArchivoSecundarioZoom(
-  fila: Readonly<{ tipoOriginal: string; variante?: string | null }>
+  fila: Readonly<{ tipoOriginal: string; variante?: string | null }>,
 ): boolean {
   const variante = fila.variante?.trim() ?? "";
   if (/^audio\s+only\s*-/i.test(variante)) {
@@ -278,6 +281,6 @@ export function archivoBibliotecaZoom(fila: ArchivoZoomBibliotecaFila): ArchivoB
     estado: fila.estado,
     estadoEtiqueta: etiquetaEstadoArchivoZoom(fila.estado),
     pendiente: fila.estado !== "CONSERVADO",
-    errorCodigo: fila.errorCodigo
+    errorCodigo: fila.errorCodigo,
   };
 }

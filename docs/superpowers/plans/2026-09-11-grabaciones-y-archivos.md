@@ -106,7 +106,7 @@ import { describe, expect, it } from "vitest";
 import {
   filtrarEncuentrosConArchivos,
   resolverEstadoVisualGrabacion,
-  type GrupoEncuentroConArchivos
+  type GrupoEncuentroConArchivos,
 } from "../src/modules/meet/grabaciones-filtro.domain";
 
 describe("grabaciones-filtro.domain", () => {
@@ -115,7 +115,7 @@ describe("grabaciones-filtro.domain", () => {
       tieneArchivoGrabacion: true,
       archivosSincronizadosAt: new Date(),
       finProgramadoAt: new Date(Date.now() - 3600000),
-      requiereGrabacion: true
+      requiereGrabacion: true,
     });
     expect(estado).toBe("DISPONIBLE");
   });
@@ -125,7 +125,7 @@ describe("grabaciones-filtro.domain", () => {
       tieneArchivoGrabacion: false,
       archivosSincronizadosAt: null,
       finProgramadoAt: new Date(Date.now() - 1800000), // terminó hace 30 min
-      requiereGrabacion: true
+      requiereGrabacion: true,
     });
     expect(estado).toBe("PROCESANDO");
   });
@@ -135,7 +135,7 @@ describe("grabaciones-filtro.domain", () => {
       tieneArchivoGrabacion: false,
       archivosSincronizadosAt: new Date(),
       finProgramadoAt: new Date(Date.now() - 86400000),
-      requiereGrabacion: true
+      requiereGrabacion: true,
     });
     expect(estado).toBe("NO_REGISTRADA");
   });
@@ -148,7 +148,7 @@ describe("grabaciones-filtro.domain", () => {
         programa: "Maestría en Políticas",
         docente: "María García",
         fechaInicio: new Date(),
-        archivos: [{ tipo: "GRABACION", id: "a1" }]
+        archivos: [{ tipo: "GRABACION", id: "a1" }],
       },
       {
         instanciaId: "2",
@@ -156,8 +156,8 @@ describe("grabaciones-filtro.domain", () => {
         programa: "Doctorado en Ciencias Sociales",
         docente: "Juan Pérez",
         fechaInicio: new Date(),
-        archivos: [{ tipo: "LISTA_ASISTENCIA", id: "a2" }]
-      }
+        archivos: [{ tipo: "LISTA_ASISTENCIA", id: "a2" }],
+      },
     ];
 
     expect(filtrarEncuentrosConArchivos(grupos, "TODOS", "políticas")).toHaveLength(1);
@@ -180,7 +180,8 @@ Crear `src/modules/meet/grabaciones-filtro.domain.ts`:
 ```ts
 import type { TipoArtefactoMeet } from "./meet-artifacts.domain";
 
-export type TipoFiltroArtefacto = "TODOS" | "GRABACIONES" | "ASISTENCIAS" | "NOTAS_Y_TRANSCRIPCIONES";
+export type TipoFiltroArtefacto =
+  "TODOS" | "GRABACIONES" | "ASISTENCIAS" | "NOTAS_Y_TRANSCRIPCIONES";
 
 export type EstadoVisualGrabacion = "DISPONIBLE" | "PROCESANDO" | "NO_REGISTRADA" | "NO_REQUERIDA";
 
@@ -229,7 +230,7 @@ export function resolverEstadoVisualGrabacion(datos: {
 export function filtrarEncuentrosConArchivos(
   grupos: readonly GrupoEncuentroConArchivos[],
   filtro: TipoFiltroArtefacto,
-  busqueda: string
+  busqueda: string,
 ): readonly GrupoEncuentroConArchivos[] {
   const query = busqueda.trim().toLowerCase();
 

@@ -12,7 +12,7 @@ describe("sistema de diseño de correos", () => {
         resumen: "Información & próxima acción",
         contenidoHtml: panelCorreo("<p>Contenido conocido</p>"),
         variante,
-        preferenciasUrl: "https://salavirtual.flacso.edu.uy/mi-perfil"
+        preferenciasUrl: "https://salavirtual.flacso.edu.uy/mi-perfil",
       });
       expect(html).toContain("FLACSO Uruguay");
       expect(html).toContain("max-width:600px");
@@ -27,7 +27,7 @@ describe("sistema de diseño de correos", () => {
   it("evita inyectar enlaces inseguros en botones", () => {
     expect(botonCorreo({ texto: "Ver", url: "javascript:alert(1)" })).toBe("");
     expect(botonCorreo({ texto: "Ver", url: "https://salavirtual.flacso.edu.uy/" })).toContain(
-      'href="https://salavirtual.flacso.edu.uy/"'
+      'href="https://salavirtual.flacso.edu.uy/"',
     );
   });
 
@@ -38,9 +38,9 @@ describe("sistema de diseño de correos", () => {
         tipo: "HOST_NO_CONECTADO",
         titulo: "Alerta de Meet",
         cuerpo: "No se detectó al anfitrión.",
-        href: "/reuniones/123"
+        href: "/reuniones/123",
       },
-      base
+      base,
     );
     expect(alerta.html).toContain("Alerta operativa");
     expect(alerta.html).toContain("No se detectó al anfitrión.");
@@ -52,9 +52,9 @@ describe("sistema de diseño de correos", () => {
         titulo: "Reunión confirmada",
         cuerpo: "Tu clase está programada.",
         emailText: "DATOS DE LA REUNIÓN\nReunión: Clase 2\nPrograma: Seminario",
-        href: "/reuniones/abc"
+        href: "/reuniones/abc",
       },
-      base
+      base,
     );
     expect(reunion.html).toContain("Información de la reunión");
     expect(reunion.html).toContain("Clase 2");
@@ -71,8 +71,8 @@ describe("sistema de diseño de correos", () => {
         minutosHibridos: 50,
         montoVirtual: 0,
         montoHibrido: 0,
-        monto: 0
-      }
+        monto: 0,
+      },
     });
     expect(report.html).toContain("FLACSO Uruguay");
     expect(report.html).toContain("Tus horas de monitoreo");

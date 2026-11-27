@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   meetPreparadoParaMigracion,
-  planificarMigracionZoom
+  planificarMigracionZoom,
 } from "../src/modules/reuniones/migracion-zoom-preview.domain";
 
 const now = new Date("2026-11-02T12:00:00.000Z");
@@ -20,7 +20,7 @@ function candidate(id: string, overrides: Record<string, unknown> = {}) {
     meetJoinUrl: `https://meet.google.com/${id}`,
     cuentaZoomPreferidaId: null,
     zoomSincronizado: false,
-    ...overrides
+    ...overrides,
   };
 }
 
@@ -31,12 +31,12 @@ describe("planificarMigracionZoom", () => {
       margenSeguridadHoras: 24,
       candidatos: [candidate("b"), candidate("a")],
       hosts: [{ id: "sala01", prioridad: 1, limiteConcurrente: 1 }],
-      reservasZoom: []
+      reservasZoom: [],
     });
 
     expect(result.map(({ id, estado, hostId }) => ({ id, estado, hostId }))).toEqual([
       { id: "a", estado: "MIGRABLE", hostId: "sala01" },
-      { id: "b", estado: "SIN_SALA", hostId: null }
+      { id: "b", estado: "SIN_SALA", hostId: null },
     ]);
   });
 
@@ -46,7 +46,7 @@ describe("planificarMigracionZoom", () => {
       margenSeguridadHoras: 24,
       candidatos: [candidate("a"), candidate("b")],
       hosts: [{ id: "sala01", prioridad: 1, limiteConcurrente: 5 }],
-      reservasZoom: []
+      reservasZoom: [],
     });
     expect(result.map(({ estado }) => estado)).toEqual(["MIGRABLE", "SIN_SALA"]);
   });
@@ -57,11 +57,11 @@ describe("planificarMigracionZoom", () => {
       margenSeguridadHoras: 24,
       candidatos: [candidate("a", { encuentrosSerie: 3 }), candidate("b")],
       hosts: [{ id: "sala01", prioridad: 1, limiteConcurrente: 1 }],
-      reservasZoom: []
+      reservasZoom: [],
     });
     expect(result.map(({ id, estado, hostId }) => ({ id, estado, hostId }))).toEqual([
       { id: "a", estado: "SERIE", hostId: null },
-      { id: "b", estado: "MIGRABLE", hostId: "sala01" }
+      { id: "b", estado: "MIGRABLE", hostId: "sala01" },
     ]);
   });
 
@@ -71,7 +71,7 @@ describe("planificarMigracionZoom", () => {
       margenSeguridadHoras: 24,
       candidatos: [candidate("a", { encuentrosSerie: 1 })],
       hosts: [{ id: "sala01", prioridad: 1, limiteConcurrente: 1 }],
-      reservasZoom: []
+      reservasZoom: [],
     });
     expect(fila.estado).toBe("MIGRABLE");
   });
@@ -82,10 +82,10 @@ describe("planificarMigracionZoom", () => {
       margenSeguridadHoras: 24,
       candidatos: [
         candidate("a", { encuentrosSerie: 3, conservarGoogleMeet: true }),
-        candidate("b", { encuentrosSerie: 3, proveedorActivo: "ZOOM" })
+        candidate("b", { encuentrosSerie: 3, proveedorActivo: "ZOOM" }),
       ],
       hosts: [{ id: "sala01", prioridad: 1, limiteConcurrente: 1 }],
-      reservasZoom: []
+      reservasZoom: [],
     });
     expect(result.map(({ estado }) => estado)).toEqual(["EXCEPCION", "YA_ZOOM"]);
   });
@@ -96,12 +96,12 @@ describe("planificarMigracionZoom", () => {
       margenSeguridadHoras: 24,
       candidatos: [candidate("a", { conservarGoogleMeet: true }), candidate("b")],
       hosts: [{ id: "sala01", prioridad: 1, limiteConcurrente: 1 }],
-      reservasZoom: []
+      reservasZoom: [],
     });
 
     expect(result.map(({ estado, hostId }) => ({ estado, hostId }))).toEqual([
       { estado: "EXCEPCION", hostId: null },
-      { estado: "MIGRABLE", hostId: "sala01" }
+      { estado: "MIGRABLE", hostId: "sala01" },
     ]);
   });
 
@@ -111,13 +111,13 @@ describe("planificarMigracionZoom", () => {
       margenSeguridadHoras: 24,
       candidatos: [
         candidate("a", { cuentaZoomPreferidaId: "sala02" }),
-        candidate("b", { cuentaZoomPreferidaId: "sala02" })
+        candidate("b", { cuentaZoomPreferidaId: "sala02" }),
       ],
       hosts: [
         { id: "sala01", prioridad: 1, limiteConcurrente: 1 },
-        { id: "sala02", prioridad: 2, limiteConcurrente: 1 }
+        { id: "sala02", prioridad: 2, limiteConcurrente: 1 },
       ],
-      reservasZoom: []
+      reservasZoom: [],
     });
     expect(result.map(({ hostId }) => hostId)).toEqual(["sala02", "sala01"]);
   });
@@ -129,10 +129,10 @@ describe("planificarMigracionZoom", () => {
       candidatos: [
         candidate("a", { inicio: new Date("2026-11-02T13:00:00.000Z") }),
         candidate("b", { inicio: new Date("2026-11-01T12:00:00.000Z") }),
-        candidate("c", { meetPreparado: false })
+        candidate("c", { meetPreparado: false }),
       ],
       hosts: [{ id: "sala01", prioridad: 1, limiteConcurrente: 1 }],
-      reservasZoom: []
+      reservasZoom: [],
     });
 
     expect(result.map(({ estado }) => estado)).toEqual(["NO_FUTURO", "CERCANO", "REVISAR"]);
@@ -145,7 +145,7 @@ describe("meetPreparadoParaMigracion", () => {
     operacionPendiente: "CONFIGURAR_MEET",
     joinUrl: "https://meet.google.com/abc-defg-hij",
     externalEventId: "calendar-event",
-    emailOrganizador: "sala@flacso.edu.uy"
+    emailOrganizador: "sala@flacso.edu.uy",
   };
 
   it("acepta Meet operativo con ajustes avanzados pendientes", () => {

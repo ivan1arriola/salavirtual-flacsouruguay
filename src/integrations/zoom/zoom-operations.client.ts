@@ -5,7 +5,7 @@ import {
   errorPorRespuesta,
   pedirZoom,
   ZoomApiError,
-  type AutenticacionZoom
+  type AutenticacionZoom,
 } from "./zoom-http";
 
 const API = "https://api.zoom.us/v2";
@@ -14,7 +14,7 @@ const MAX_PAGINAS = 20;
 /** Inventario paginado de la cuenta: un error nunca se interpreta como agenda vacía. */
 export async function listarProximasReunionesCuentaZoom(
   auth: AutenticacionZoom,
-  usuarioZoomId: string
+  usuarioZoomId: string,
 ): Promise<readonly ReunionZoomRemota[]> {
   const resultado: ReunionZoomRemota[] = [];
   const vistos = new Set<string>();
@@ -30,8 +30,8 @@ export async function listarProximasReunionesCuentaZoom(
       fetch(url, {
         headers: { Authorization: `Bearer ${accessToken}` },
         cache: "no-store",
-        signal: AbortSignal.timeout(12000)
-      })
+        signal: AbortSignal.timeout(12000),
+      }),
     );
     if (!respuesta.ok) {
       throw await errorPorRespuesta("agenda-cuenta", respuesta);
@@ -50,9 +50,12 @@ export async function listarProximasReunionesCuentaZoom(
         }
         const fecha = reunion.start_time ? new Date(reunion.start_time) : null;
         return [
-          { meetingId: String(reunion.id), inicio: fecha && Number.isFinite(fecha.getTime()) ? fecha : null }
+          {
+            meetingId: String(reunion.id),
+            inicio: fecha && Number.isFinite(fecha.getTime()) ? fecha : null,
+          },
         ];
-      })
+      }),
     );
     token = datos.next_page_token ?? "";
     if (!token) {
@@ -69,14 +72,14 @@ export async function listarProximasReunionesCuentaZoom(
 /** Una recurrente solo informa sus ocurrencias en el detalle de la reunión. */
 async function detalleReunionRecurrenteZoom(
   auth: AutenticacionZoom,
-  meetingId: string
+  meetingId: string,
 ): Promise<Record<string, unknown>> {
   const detalle = await pedirZoom(auth, "agenda-cuenta", (accessToken) =>
     fetch(`${API}/meetings/${encodeURIComponent(meetingId)}`, {
       headers: { Authorization: `Bearer ${accessToken}` },
       cache: "no-store",
-      signal: AbortSignal.timeout(12000)
-    })
+      signal: AbortSignal.timeout(12000),
+    }),
   );
   if (!detalle.ok) {
     throw await errorPorRespuesta("agenda-cuenta", detalle);
@@ -92,16 +95,20 @@ export type ReunionAgendaZoom = Readonly<{
 
 async function reunionDeAgendaZoom(
   auth: AutenticacionZoom,
-  reunion: Record<string, unknown>
+  reunion: Record<string, unknown>,
 ): Promise<ReunionAgendaZoom | null> {
-  const id = reunion.id ? String(reunion.id) : null;
+  const id = reunion["id"] ? String(reunion["id"]) : null;
   // 1 = instantánea y 3 = sin horario fijo: no ocupan la agenda.
-  if (!id || reunion.type === 1 || reunion.type === 3) {
+  if (!id || reunion["type"] === 1 || reunion["type"] === 3) {
     return null;
   }
-  const fuente = reunion.type === 8 ? await detalleReunionRecurrenteZoom(auth, id) : reunion;
-  const tema = typeof reunion.topic === "string" ? reunion.topic.trim().slice(0, 250) : "";
-  return { meetingId: id, tema: tema || "Reunión Zoom", ocurrencias: ocurrenciasDeObjetoZoom(fuente) };
+  const fuente = reunion["type"] === 8 ? await detalleReunionRecurrenteZoom(auth, id) : reunion;
+  const tema = typeof reunion["topic"] === "string" ? reunion["topic"].trim().slice(0, 250) : "";
+  return {
+    meetingId: id,
+    tema: tema || "Reunión Zoom",
+    ocurrencias: ocurrenciasDeObjetoZoom(fuente),
+  };
 }
 
 async function paginaAgendaZoom(auth: AutenticacionZoom, usuarioZoomId: string, token: string) {
@@ -115,8 +122,8 @@ async function paginaAgendaZoom(auth: AutenticacionZoom, usuarioZoomId: string, 
     fetch(url, {
       headers: { Authorization: `Bearer ${accessToken}` },
       cache: "no-store",
-      signal: AbortSignal.timeout(12000)
-    })
+      signal: AbortSignal.timeout(12000),
+    }),
   );
   if (!respuesta.ok) {
     throw await errorPorRespuesta("agenda-cuenta", respuesta);
@@ -137,7 +144,7 @@ async function paginaAgendaZoom(auth: AutenticacionZoom, usuarioZoomId: string, 
  */
 export async function listarAgendaCuentaZoom(
   auth: AutenticacionZoom,
-  usuarioZoomId: string
+  usuarioZoomId: string,
 ): Promise<readonly ReunionAgendaZoom[]> {
   const resultado: ReunionAgendaZoom[] = [];
   const vistos = new Set<string>();
@@ -172,14 +179,14 @@ export type DetalleReunionPasadaZoom = Readonly<{
 /** Consulta el UUID de una ocurrencia, nunca el número compartido de una serie. */
 export async function obtenerDetalleReunionPasadaZoom(
   auth: AutenticacionZoom,
-  uuid: string
+  uuid: string,
 ): Promise<DetalleReunionPasadaZoom | null> {
   const respuesta = await pedirZoom(auth, "reunion-pasada", (accessToken) =>
     fetch(`${API}/past_meetings/${codificarUuidZoom(uuid)}`, {
       headers: { Authorization: `Bearer ${accessToken}` },
       cache: "no-store",
-      signal: AbortSignal.timeout(12000)
-    })
+      signal: AbortSignal.timeout(12000),
+    }),
   );
   if (respuesta.status === 404) {
     await respuesta.body?.cancel();
@@ -193,8 +200,8 @@ export async function obtenerDetalleReunionPasadaZoom(
     const date = typeof valor === "string" ? new Date(valor) : null;
     return date && Number.isFinite(date.getTime()) ? date : null;
   };
-  const inicio = fecha(datos.start_time);
-  const fin = fecha(datos.end_time);
+  const inicio = fecha(datos["start_time"]);
+  const fin = fecha(datos["end_time"]);
   // `duration` puede ser la duración programada; el tiempo transcurrido lo dan inicio y fin reales.
   const duracionMinutos =
     inicio && fin ? Math.max(0, Math.round((fin.getTime() - inicio.getTime()) / 60000)) : null;
@@ -202,7 +209,8 @@ export async function obtenerDetalleReunionPasadaZoom(
     inicio,
     fin,
     duracionMinutos,
-    participantesReportados: typeof datos.participants_count === "number" ? datos.participants_count : null
+    participantesReportados:
+      typeof datos["participants_count"] === "number" ? datos["participants_count"] : null,
   };
 }
 
@@ -212,8 +220,8 @@ export async function consultarGrabacionOcurrenciaZoom(auth: AutenticacionZoom, 
     fetch(`${API}/meetings/${codificarUuidZoom(uuid)}/recordings`, {
       headers: { Authorization: `Bearer ${token}` },
       cache: "no-store",
-      signal: AbortSignal.timeout(8000)
-    })
+      signal: AbortSignal.timeout(8000),
+    }),
   );
   if (response.status === 404) {
     const error = (await response.json().catch(() => null)) as { code?: number } | null;
@@ -226,7 +234,7 @@ export async function consultarGrabacionOcurrenciaZoom(auth: AutenticacionZoom, 
     recording_files?: Array<{ file_type?: string; status?: string }>;
   };
   const archivos = data.recording_files?.filter(({ file_type }) =>
-    ["MP4", "M4A", "MP3"].includes(file_type?.toUpperCase() ?? "")
+    ["MP4", "M4A", "MP3"].includes(file_type?.toUpperCase() ?? ""),
   );
   if (archivos?.some(({ status }) => status === "completed")) {
     return "EN_ZOOM";

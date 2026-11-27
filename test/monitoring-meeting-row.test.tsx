@@ -2,7 +2,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import {
   MonitoringMeetingRow,
-  type MonitoringMeetingRowData
+  type MonitoringMeetingRowData,
 } from "../src/modules/asistencia/presentation/components/monitoring-meeting-row";
 
 const base: MonitoringMeetingRowData = {
@@ -22,7 +22,7 @@ const base: MonitoringMeetingRowData = {
   modalidad: "VIRTUAL",
   horarioReunion: null,
   applicantsCount: 0,
-  cuenta: "3"
+  cuenta: "3",
 };
 
 const render = (over: Partial<MonitoringMeetingRowData> = {}) =>

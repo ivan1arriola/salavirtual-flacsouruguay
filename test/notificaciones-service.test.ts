@@ -7,10 +7,10 @@ describe("notificaciones de asistentes de monitoreo", () => {
     const findPreference = vi.fn();
     const db = {
       asistenteTecnico: {
-        findFirst: vi.fn().mockResolvedValue({ id: "assistant" })
+        findFirst: vi.fn().mockResolvedValue({ id: "assistant" }),
       },
       preferenciaNotificacion: { findUnique: findPreference },
-      notificacion: { create: createNotification }
+      notificacion: { create: createNotification },
     };
 
     await notificarUsuario(
@@ -19,8 +19,8 @@ describe("notificaciones de asistentes de monitoreo", () => {
       {
         tipo: "ASISTENCIA_REQUERIDA",
         titulo: "Cobertura disponible",
-        cuerpo: "Hay una reunión abierta."
-      }
+        cuerpo: "Hay una reunión abierta.",
+      },
     );
 
     expect(findPreference).not.toHaveBeenCalled();

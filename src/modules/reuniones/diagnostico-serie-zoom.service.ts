@@ -11,7 +11,7 @@ const seleccion = {
   inicioProgramadoAt: true,
   proveedorActivoTipo: true,
   solicitud: {
-    select: { titulo: true, serieReunionId: true, docenteProgramaId: true, createdAt: true }
+    select: { titulo: true, serieReunionId: true, docenteProgramaId: true, createdAt: true },
   },
   eventosProveedor: {
     select: {
@@ -19,9 +19,9 @@ const seleccion = {
       externalEventId: true,
       cuentaProveedorId: true,
       reunionProveedorId: true,
-      proveedor: { select: { tipo: true } }
-    }
-  }
+      proveedor: { select: { tipo: true } },
+    },
+  },
 } satisfies Prisma.InstanciaSalaSelect;
 
 type InstanciaCargada = Prisma.InstanciaSalaGetPayload<{ select: typeof seleccion }>;
@@ -37,7 +37,7 @@ function aEncuentro(instancia: InstanciaCargada): EncuentroEnlaceSerie {
     joinUrl: evento?.joinUrl ?? null,
     externalEventId: evento?.externalEventId ?? null,
     cuentaProveedorId: evento?.cuentaProveedorId ?? null,
-    reunionProveedorId: evento?.reunionProveedorId ?? null
+    reunionProveedorId: evento?.reunionProveedorId ?? null,
   };
 }
 
@@ -50,13 +50,13 @@ export async function obtenerDiagnosticosSeriesZoom(
   db: PrismaClient,
   actor: Readonly<{ id: string; rol: string }>,
   ahora: Date = new Date(),
-  opciones: Readonly<{ incluirHuerfanas?: boolean }> = {}
+  opciones: Readonly<{ incluirHuerfanas?: boolean }> = {},
 ): Promise<ReadonlyMap<string, DiagnosticoSerieZoom>> {
   exigirAdministracion(actor);
   const instancias = await db.instanciaSala.findMany({
     where: { estado: "PROGRAMADA", inicioProgramadoAt: { gt: ahora } },
     orderBy: [{ inicioProgramadoAt: "asc" }, { id: "asc" }],
-    select: seleccion
+    select: seleccion,
   });
   const porSerie = new Map<string, EncuentroEnlaceSerie[]>();
   for (const instancia of instancias) {
@@ -74,8 +74,11 @@ export async function obtenerDiagnosticosSeriesZoom(
           proveedor: { tipo: "ZOOM" },
           OR: [
             { serieClave: { in: claves } },
-            { serieClave: { notIn: claves }, estadoCreacion: { in: ["PENDIENTE", "CREANDO", "CREADA"] } }
-          ]
+            {
+              serieClave: { notIn: claves },
+              estadoCreacion: { in: ["PENDIENTE", "CREANDO", "CREADA"] },
+            },
+          ],
         }
       : reunionesDeLaSerie,
     select: {
@@ -84,13 +87,15 @@ export async function obtenerDiagnosticosSeriesZoom(
       estadoCreacion: true,
       externalId: true,
       joinUrl: true,
-      cuentaProveedorId: true
-    }
+      cuentaProveedorId: true,
+    },
   });
-  const clavesConAvisos = [...new Set([...claves, ...reuniones.map(({ serieClave }) => serieClave)])];
+  const clavesConAvisos = [
+    ...new Set([...claves, ...reuniones.map(({ serieClave }) => serieClave)]),
+  ];
   const avisos = await db.avisoEnlaceSerie.findMany({
     where: { serieClave: { in: clavesConAvisos } },
-    select: { serieClave: true, email: true, tipo: true, estado: true }
+    select: { serieClave: true, email: true, tipo: true, estado: true },
   });
   const reunionesPorSerie = new Map<string, typeof reuniones>();
   for (const reunion of reuniones) {
@@ -116,8 +121,8 @@ export async function obtenerDiagnosticosSeriesZoom(
         ahora,
         encuentros: porSerie.get(serieClave) ?? [],
         reuniones: reunionesPorSerie.get(serieClave) ?? [],
-        avisos: avisosPorSerie.get(serieClave) ?? []
-      })
-    ])
+        avisos: avisosPorSerie.get(serieClave) ?? [],
+      }),
+    ]),
   );
 }

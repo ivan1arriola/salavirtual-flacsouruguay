@@ -1,6 +1,10 @@
 import type { JWT } from "google-auth-library";
 import { GOOGLE_HTTP_TIMEOUT_MS } from "../auth";
-import { DRIVE_API_BASE_URL, DRIVE_FOLDER_MIME, DRIVE_UPLOAD_API_BASE_URL } from "./drive-files.client";
+import {
+  DRIVE_API_BASE_URL,
+  DRIVE_FOLDER_MIME,
+  DRIVE_UPLOAD_API_BASE_URL,
+} from "./drive-files.client";
 
 /** Drive exige que los bloques intermedios sean múltiplos de 256 KiB. */
 export const DRIVE_BLOQUE_MULTIPLO_BYTES = 256 * 1024;
@@ -77,11 +81,11 @@ export async function iniciarSubidaDriveReanudable(
     mimeType: string;
     origenHash: string;
     tamanoTotal: bigint | null;
-  }>
+  }>,
 ): Promise<string> {
   const headers: Record<string, string> = {
     "Content-Type": "application/json; charset=UTF-8",
-    "X-Upload-Content-Type": params.mimeType
+    "X-Upload-Content-Type": params.mimeType,
   };
   if (params.tamanoTotal !== null) {
     headers["X-Upload-Content-Length"] = params.tamanoTotal.toString();
@@ -98,8 +102,8 @@ export async function iniciarSubidaDriveReanudable(
       name: params.nombre,
       parents: [params.carpetaId],
       mimeType: params.mimeType,
-      appProperties: { [DRIVE_ZOOM_ORIGEN_PROPERTY]: params.origenHash }
-    }
+      appProperties: { [DRIVE_ZOOM_ORIGEN_PROPERTY]: params.origenHash },
+    },
   })) as unknown as RespuestaHttp;
   if (r.status !== 200) {
     throw errorSaneado("inicio de sesión", r.status);
@@ -115,18 +119,18 @@ export async function consultarSubidaDriveReanudable(
   auth: JWT,
   sesionUrl: string,
   tamanoTotal: bigint | null,
-  opciones: Readonly<{ signal?: AbortSignal }> = {}
+  opciones: Readonly<{ signal?: AbortSignal }> = {},
 ): Promise<ResultadoSubidaDrive> {
   const r = (await auth.request<unknown>({
     url: sesionUrl,
     method: "PUT",
     headers: {
       "Content-Range": `bytes */${tamanoTotal === null ? "*" : tamanoTotal.toString()}`,
-      "Content-Length": "0"
+      "Content-Length": "0",
     },
     timeout: GOOGLE_HTTP_TIMEOUT_MS,
     validateStatus: aceptaTodo,
-    signal: opciones.signal
+    signal: opciones.signal,
   })) as unknown as RespuestaHttp;
   return interpretar("consulta de sesión", r);
 }
@@ -137,7 +141,7 @@ export async function subirBloqueDriveReanudable(
   offset: bigint,
   bytes: Uint8Array,
   tamanoTotal: bigint | null,
-  opciones: Readonly<{ ultimo?: boolean; signal?: AbortSignal }> = {}
+  opciones: Readonly<{ ultimo?: boolean; signal?: AbortSignal }> = {},
 ): Promise<ResultadoSubidaDrive> {
   const ultimo = opciones.ultimo === true;
   if (!ultimo && bytes.byteLength % DRIVE_BLOQUE_MULTIPLO_BYTES !== 0) {
@@ -155,7 +159,7 @@ export async function subirBloqueDriveReanudable(
     data: bytes,
     timeout: GOOGLE_HTTP_TIMEOUT_MS,
     validateStatus: aceptaTodo,
-    signal: opciones.signal
+    signal: opciones.signal,
   })) as unknown as RespuestaHttp;
   return interpretar("subida de bloque", r);
 }
@@ -164,14 +168,16 @@ export async function subirBloqueDriveReanudable(
 export async function obtenerArchivoDrivePorId(
   auth: JWT,
   fileId: string,
-  opciones: Readonly<{ signal?: AbortSignal }> = {}
-): Promise<(ArchivoDriveSubido & { appProperties?: Record<string, string>; trashed?: boolean }) | null> {
+  opciones: Readonly<{ signal?: AbortSignal }> = {},
+): Promise<
+  (ArchivoDriveSubido & { appProperties?: Record<string, string>; trashed?: boolean }) | null
+> {
   const r = (await auth.request<unknown>({
     url: `${DRIVE_API_BASE_URL}/files/${encodeURIComponent(fileId)}?fields=id,name,mimeType,size,webViewLink,appProperties,trashed&supportsAllDrives=true`,
     method: "GET",
     timeout: GOOGLE_HTTP_TIMEOUT_MS,
     validateStatus: aceptaTodo,
-    signal: opciones.signal
+    signal: opciones.signal,
   })) as unknown as RespuestaHttp;
   if (r.status === 404) {
     return null;
@@ -179,14 +185,17 @@ export async function obtenerArchivoDrivePorId(
   if (r.status !== 200) {
     throw errorSaneado("consulta de archivo", r.status);
   }
-  return r.data as ArchivoDriveSubido & { appProperties?: Record<string, string>; trashed?: boolean };
+  return r.data as ArchivoDriveSubido & {
+    appProperties?: Record<string, string>;
+    trashed?: boolean;
+  };
 }
 
 /** Segunda vía de reconciliación: archivos marcados con la identidad estable del recurso Zoom. */
 export async function listarArchivosDrivePorOrigen(
   auth: JWT,
   origenHash: string,
-  opciones: Readonly<{ signal?: AbortSignal }> = {}
+  opciones: Readonly<{ signal?: AbortSignal }> = {},
 ): Promise<readonly ArchivoDriveSubido[]> {
   if (!/^[a-f0-9]{64}$/.test(origenHash)) {
     throw new Error("Identificador de origen Drive inválido.");
@@ -197,7 +206,7 @@ export async function listarArchivosDrivePorOrigen(
     method: "GET",
     timeout: GOOGLE_HTTP_TIMEOUT_MS,
     validateStatus: aceptaTodo,
-    signal: opciones.signal
+    signal: opciones.signal,
   })) as unknown as RespuestaHttp;
   if (r.status !== 200) {
     throw errorSaneado("búsqueda por origen", r.status);
@@ -211,7 +220,7 @@ export async function generarIdArchivoDrive(auth: JWT): Promise<string> {
     url: `${DRIVE_API_BASE_URL}/files/generateIds?count=1&space=drive`,
     method: "GET",
     timeout: GOOGLE_HTTP_TIMEOUT_MS,
-    validateStatus: aceptaTodo
+    validateStatus: aceptaTodo,
   })) as unknown as RespuestaHttp;
   const id = (r.data as { ids?: string[] } | undefined)?.ids?.[0];
   if (r.status !== 200 || !id) {
@@ -221,12 +230,15 @@ export async function generarIdArchivoDrive(auth: JWT): Promise<string> {
 }
 
 /** Healthcheck de escritura: la carpeta existe, es carpeta y la identidad de servicio puede crear dentro. */
-export async function verificarEscrituraCarpetaDrive(auth: JWT, carpetaId: string): Promise<boolean> {
+export async function verificarEscrituraCarpetaDrive(
+  auth: JWT,
+  carpetaId: string,
+): Promise<boolean> {
   const r = (await auth.request<unknown>({
     url: `${DRIVE_API_BASE_URL}/files/${encodeURIComponent(carpetaId)}?fields=id,mimeType,capabilities(canAddChildren)&supportsAllDrives=true`,
     method: "GET",
     timeout: GOOGLE_HTTP_TIMEOUT_MS,
-    validateStatus: aceptaTodo
+    validateStatus: aceptaTodo,
   })) as unknown as RespuestaHttp;
   if (r.status === 404) {
     return false;
@@ -234,6 +246,7 @@ export async function verificarEscrituraCarpetaDrive(auth: JWT, carpetaId: strin
   if (r.status !== 200) {
     throw errorSaneado("comprobación de carpeta", r.status);
   }
-  const datos = r.data as { mimeType?: string; capabilities?: { canAddChildren?: boolean } } | undefined;
+  const datos = r.data as
+    { mimeType?: string; capabilities?: { canAddChildren?: boolean } } | undefined;
   return datos?.mimeType === DRIVE_FOLDER_MIME && datos.capabilities?.canAddChildren === true;
 }

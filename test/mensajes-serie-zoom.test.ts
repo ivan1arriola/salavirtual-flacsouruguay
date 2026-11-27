@@ -3,10 +3,16 @@ import type { ResultadoCorreccionSerie } from "@/src/modules/reuniones/corregir-
 import type { ResultadoMigracionSerie } from "@/src/modules/reuniones/migracion-zoom-serie-aplicar.service";
 import {
   describirResultadoSerie,
-  type MensajeResultadoSerie
+  type MensajeResultadoSerie,
 } from "@/src/modules/reuniones/mensajes-serie-zoom.domain";
 
-const RESULTADOS_SIN_ERROR = ["MIGRADA", "CORREGIDA", "YA_ZOOM", "YA_UNIFICADA", "OMITIDA"] as const;
+const RESULTADOS_SIN_ERROR = [
+  "MIGRADA",
+  "CORREGIDA",
+  "YA_ZOOM",
+  "YA_UNIFICADA",
+  "OMITIDA",
+] as const;
 
 const ETAPAS_ERROR = [
   "VALIDACION",
@@ -15,7 +21,7 @@ const ETAPAS_ERROR = [
   "CAMBIO_PROVEEDOR",
   "VINCULACION",
   "AVISOS",
-  "FINAL"
+  "FINAL",
 ] as const;
 
 const PATRON_TECNICO = /prisma|ConnectorError|PostgresError|22021|invalid byte sequence/i;
@@ -36,35 +42,38 @@ describe("describirResultadoSerie", () => {
       const msg = describirResultadoSerie({
         resultado,
         etapa: "FINAL",
-        reintentable: false
+        reintentable: false,
       });
 
       validarMensajeComprensible(msg);
       expect(msg.reintentable).toBe(false);
       expect(msg.detalleTecnico).toBeUndefined();
-    }
+    },
   );
 
   it("produce mensajes distintos para cada resultado exitoso u omitido", () => {
     const titulos = new Set(
-      RESULTADOS_SIN_ERROR.map((resultado) => describirResultadoSerie({ resultado }).titulo)
+      RESULTADOS_SIN_ERROR.map((resultado) => describirResultadoSerie({ resultado }).titulo),
     );
     expect(titulos.size).toBe(RESULTADOS_SIN_ERROR.length);
   });
 
-  it.each(ETAPAS_ERROR)("devuelve mensaje claro por etapa %s cuando el resultado es ERROR", (etapa) => {
-    const textoOriginal = `Fallo simulado en ${etapa}`;
-    const msg = describirResultadoSerie({
-      resultado: "ERROR",
-      etapa,
-      mensaje: textoOriginal,
-      reintentable: true
-    });
+  it.each(ETAPAS_ERROR)(
+    "devuelve mensaje claro por etapa %s cuando el resultado es ERROR",
+    (etapa) => {
+      const textoOriginal = `Fallo simulado en ${etapa}`;
+      const msg = describirResultadoSerie({
+        resultado: "ERROR",
+        etapa,
+        mensaje: textoOriginal,
+        reintentable: true,
+      });
 
-    validarMensajeComprensible(msg);
-    expect(msg.reintentable).toBe(true);
-    expect(msg.detalleTecnico).toBe(textoOriginal);
-  });
+      validarMensajeComprensible(msg);
+      expect(msg.reintentable).toBe(true);
+      expect(msg.detalleTecnico).toBe(textoOriginal);
+    },
+  );
 
   it("produce mensajes distintos para cada etapa de ERROR", () => {
     const detalles = new Set(
@@ -74,9 +83,9 @@ describe("describirResultadoSerie", () => {
             resultado: "ERROR",
             etapa,
             mensaje: "Fallo temporal",
-            reintentable: true
-          }).detalle
-      )
+            reintentable: true,
+          }).detalle,
+      ),
     );
     expect(detalles.size).toBe(ETAPAS_ERROR.length);
   });
@@ -89,7 +98,7 @@ describe("describirResultadoSerie", () => {
       resultado: "ERROR",
       etapa: "FINAL",
       mensaje: errorPrisma22021,
-      reintentable: true
+      reintentable: true,
     });
 
     validarMensajeComprensible(msg);
@@ -101,26 +110,29 @@ describe("describirResultadoSerie", () => {
     "Error 22021 en consulta",
     "ERROR: INVALID BYTE SEQUENCE for encoding UTF8",
     "La clave de la serie no es válida.",
-    "Hay un encuentro a menos de 24 horas del inicio."
-  ])("fuerza reintentable false cuando el mensaje contiene texto no reintentable (%s)", (mensaje) => {
-    const msg = describirResultadoSerie({
-      resultado: "ERROR",
-      etapa: "VALIDACION",
-      mensaje,
-      reintentable: true
-    });
+    "Hay un encuentro a menos de 24 horas del inicio.",
+  ])(
+    "fuerza reintentable false cuando el mensaje contiene texto no reintentable (%s)",
+    (mensaje) => {
+      const msg = describirResultadoSerie({
+        resultado: "ERROR",
+        etapa: "VALIDACION",
+        mensaje,
+        reintentable: true,
+      });
 
-    validarMensajeComprensible(msg);
-    expect(msg.reintentable).toBe(false);
-    expect(msg.detalleTecnico).toBe(mensaje);
-  });
+      validarMensajeComprensible(msg);
+      expect(msg.reintentable).toBe(false);
+      expect(msg.detalleTecnico).toBe(mensaje);
+    },
+  );
 
   it("respeta reintentable false cuando el servicio lo indica aunque el texto no esté en la lista", () => {
     const msg = describirResultadoSerie({
       resultado: "ERROR",
       etapa: "ZOOM",
       mensaje: "Zoom devolvió un enlace de acceso inválido.",
-      reintentable: false
+      reintentable: false,
     });
 
     validarMensajeComprensible(msg);
@@ -135,13 +147,13 @@ describe("describirResultadoSerie", () => {
         resultado: "ERROR",
         etapa,
         mensaje: "Tiempo de espera agotado al contactar el servicio externo.",
-        reintentable: true
+        reintentable: true,
       });
 
       validarMensajeComprensible(msg);
       expect(msg.reintentable).toBe(true);
       expect(msg.detalleTecnico).toBe("Tiempo de espera agotado al contactar el servicio externo.");
-    }
+    },
   );
 
   it("acepta estructuralmente ResultadoMigracionSerie y ResultadoCorreccionSerie", () => {
@@ -150,14 +162,14 @@ describe("describirResultadoSerie", () => {
       resultado: "MIGRADA",
       etapa: "FINAL",
       reintentable: false,
-      encuentros: 4
+      encuentros: 4,
     };
     const correccion: ResultadoCorreccionSerie = {
       serieClave: "sol:2",
       resultado: "CORREGIDA",
       etapa: "AVISOS",
       reintentable: false,
-      encuentros: 3
+      encuentros: 3,
     };
 
     const msgMigracion = describirResultadoSerie(migracion);
@@ -176,14 +188,14 @@ describe("describirResultadoSerie", () => {
       expect(mensaje.reintentable).toBe(true);
       expect(`${mensaje.detalle} ${mensaje.accionSugerida}`).toMatch(/avisos/i);
       expect(`${mensaje.detalle} ${mensaje.accionSugerida}`).not.toMatch(
-        /no (tenés que hacer nada|hace falta ninguna acción)/i
+        /no (tenés que hacer nada|hace falta ninguna acción)/i,
       );
-    }
+    },
   );
 
   it("un resultado exitoso sin reintento conserva su mensaje de «no hace falta nada»", () => {
     expect(
-      describirResultadoSerie({ resultado: "YA_UNIFICADA", reintentable: false }).accionSugerida
+      describirResultadoSerie({ resultado: "YA_UNIFICADA", reintentable: false }).accionSugerida,
     ).toMatch(/no hace falta/i);
   });
 });

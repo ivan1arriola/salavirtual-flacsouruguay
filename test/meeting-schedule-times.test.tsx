@@ -17,8 +17,8 @@ function renderSchedule(props: Partial<Parameters<typeof MeetingScheduleTimes>[0
       modality: "HIBRIDA",
       assistanceStartsAt: arrival,
       assistanceEndsAt: departure,
-      ...props
-    })
+      ...props,
+    }),
   );
 }
 
@@ -52,7 +52,7 @@ describe("horarios de reunión y cobertura en todos los roles", () => {
     const html = renderSchedule({
       modality: "VIRTUAL",
       assistanceStartsAt: null,
-      assistanceEndsAt: null
+      assistanceEndsAt: null,
     });
     expect(html).toContain("Horario de monitoreo");
     expect(html).toContain("Horario del encuentro");

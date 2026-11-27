@@ -15,7 +15,10 @@ export default defineConfig([
       eqeqeq: ["error", "always", { null: "ignore" }],
       curly: ["error", "all"],
       "@typescript-eslint/no-explicit-any": "error",
-      "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }],
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
+      ],
       "sonarjs/cognitive-complexity": ["error", 12],
       complexity: ["error", 10],
       "max-depth": ["error", 3],
@@ -23,17 +26,20 @@ export default defineConfig([
       "max-lines": ["error", { max: 400, skipBlankLines: true, skipComments: true }],
       "max-lines-per-function": ["error", { max: 100, skipBlankLines: true, skipComments: true }],
       "no-nested-ternary": "error",
-      "no-warning-comments": ["error", { terms: ["todo", "fixme", "hack", "xxx"], location: "anywhere" }],
+      "no-warning-comments": [
+        "error",
+        { terms: ["todo", "fixme", "hack", "xxx"], location: "anywhere" },
+      ],
       "@typescript-eslint/no-non-null-assertion": "error",
       "@typescript-eslint/consistent-type-imports": "error",
       "sonarjs/no-duplicate-string": "error",
-      "sonarjs/todo-tag": "error"
-    }
+      "sonarjs/todo-tag": "error",
+    },
   },
   {
     files: ["app/**/*.{ts,tsx}", "src/**/*.{ts,tsx}", "test/**/*.{ts,tsx}"],
     languageOptions: {
-      parserOptions: { projectService: true, tsconfigRootDir: import.meta.dirname }
+      parserOptions: { projectService: true, tsconfigRootDir: import.meta.dirname },
     },
     rules: {
       "@typescript-eslint/no-floating-promises": "error",
@@ -53,15 +59,15 @@ export default defineConfig([
     rules: {
       "@next/next/no-img-element": "error",
       "jsx-a11y/anchor-has-content": "error",
-      "jsx-a11y/alt-text": ["error", { elements: ["img"], img: ["Image"] }]
-    }
+      "jsx-a11y/alt-text": ["error", { elements: ["img"], img: ["Image"] }],
+    },
   },
   {
     files: ["scripts/**/*.{ts,mjs}"],
     rules: {
       // Los scripts administrativos escriben resultados y resúmenes a stdout.
-      "no-console": "off"
-    }
+      "no-console": "off",
+    },
   },
   {
     ignores: [
@@ -73,7 +79,7 @@ export default defineConfig([
       "node_modules/**",
       "generated/**",
       "prisma/migrations/**",
-      "scripts/legacy-meetings/**"
-    ]
-  }
+      "scripts/legacy-meetings/**",
+    ],
+  },
 ]);

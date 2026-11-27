@@ -22,6 +22,9 @@ export type GoogleCalendarCredentials = Readonly<{
 }>;
 
 export type AssistantCalendarProvider = Readonly<{
-  publicarEvento: (credentials: GoogleCalendarCredentials, event: EventoCalendarioAsistente) => Promise<void>;
+  publicarEvento: (
+    credentials: GoogleCalendarCredentials,
+    event: EventoCalendarioAsistente,
+  ) => Promise<void>;
   eliminarEvento: (credentials: GoogleCalendarCredentials, eventId: string) => Promise<void>;
 }>;

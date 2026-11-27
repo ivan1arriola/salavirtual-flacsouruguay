@@ -7,14 +7,14 @@ export async function notificarUsuariosUseCase(
   emailTransport: EmailTransportPort,
   recipients: readonly NotificationRecipient[],
   message: NotificationMessage,
-  appBaseUrl = "https://salavirtual.flacso.edu.uy"
+  appBaseUrl = "https://salavirtual.flacso.edu.uy",
 ): Promise<void> {
   const programRecipients = await destinatariosProgramaParaNotificacion(repository, message);
 
   const uniqueRecipients = Array.from(
     new Map(
-      [...recipients, ...programRecipients].map((recipient) => [recipient.usuarioId, recipient])
-    ).values()
+      [...recipients, ...programRecipients].map((recipient) => [recipient.usuarioId, recipient]),
+    ).values(),
   );
 
   // Gmail usa una sola cuenta delegada. Los envíos simultáneos causaban
@@ -27,7 +27,7 @@ export async function notificarUsuariosUseCase(
 
 async function destinatariosProgramaParaNotificacion(
   repository: NotificacionesRepositoryPort,
-  message: NotificationMessage
+  message: NotificationMessage,
 ): Promise<readonly NotificationRecipient[]> {
   if (message.tipo !== "REUNION_CREADA" && message.tipo !== "ASISTENCIA_ASIGNACION") {
     return [];

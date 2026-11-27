@@ -1,10 +1,11 @@
-export type TipoArtefactoMeet = "GRABACION" | "LISTA_ASISTENCIA" | "TRANSCRIPCION" | "NOTAS" | "OTRO";
+export type TipoArtefactoMeet =
+  "GRABACION" | "LISTA_ASISTENCIA" | "TRANSCRIPCION" | "NOTAS" | "OTRO";
 
 export const TIPOS_ARTEFACTO_SINCRONIZABLES = Object.freeze([
   "GRABACION",
   "TRANSCRIPCION",
   "LISTA_ASISTENCIA",
-  "NOTAS"
+  "NOTAS",
 ] as const);
 
 export type DatosCarpetaReunion = Readonly<{
@@ -49,7 +50,7 @@ const ETIQUETAS: Readonly<Record<TipoArtefactoMeet, string>> = {
   LISTA_ASISTENCIA: "lista-asistencia",
   TRANSCRIPCION: "transcripcion",
   NOTAS: "notas",
-  OTRO: "archivo"
+  OTRO: "archivo",
 };
 
 const ETIQUETAS_UI: Readonly<Record<TipoArtefactoMeet, string>> = {
@@ -57,7 +58,7 @@ const ETIQUETAS_UI: Readonly<Record<TipoArtefactoMeet, string>> = {
   LISTA_ASISTENCIA: "Asistencia",
   TRANSCRIPCION: "Transcripción",
   NOTAS: "Notas de Meet",
-  OTRO: "Archivo"
+  OTRO: "Archivo",
 };
 
 export function etiquetaTipoArtefactoMeet(tipo: TipoArtefactoMeet): string {
@@ -80,7 +81,7 @@ export function nombreArchivoReunion(datos: DatosNombreArtefacto): string {
 export function elegirConferenciaMeet(
   records: readonly RegistroConferenciaMeet[],
   inicio: Date,
-  fin: Date
+  fin: Date,
 ): RegistroConferenciaMeet | null {
   if (records.length === 0) {
     return null;
@@ -101,11 +102,17 @@ export function elegirConferenciaMeet(
       }
       const currentStart = Date.parse(current.startTime);
       const currentEnd = current.endTime ? Date.parse(current.endTime) : finMs;
-      const currentOverlap = Math.max(0, Math.min(currentEnd, finMs) - Math.max(currentStart, inicioMs));
+      const currentOverlap = Math.max(
+        0,
+        Math.min(currentEnd, finMs) - Math.max(currentStart, inicioMs),
+      );
 
       const selectedStart = Date.parse(selected.startTime);
       const selectedEnd = selected.endTime ? Date.parse(selected.endTime) : finMs;
-      const selectedOverlap = Math.max(0, Math.min(selectedEnd, finMs) - Math.max(selectedStart, inicioMs));
+      const selectedOverlap = Math.max(
+        0,
+        Math.min(selectedEnd, finMs) - Math.max(selectedStart, inicioMs),
+      );
 
       if (currentOverlap !== selectedOverlap) {
         return currentOverlap > selectedOverlap ? current : selected;
@@ -135,7 +142,7 @@ export function elegirConferenciaMeet(
 
 export function asistenciaMeetCompleta(
   sesionesPorParticipante: readonly (readonly SesionParticipanteMeet[])[],
-  conferenciaFinalizada = false
+  conferenciaFinalizada = false,
 ): boolean {
   if (sesionesPorParticipante.length === 0) {
     return false;
@@ -144,7 +151,7 @@ export function asistenciaMeetCompleta(
     return sesionesPorParticipante.some((sesiones) => sesiones.length > 0);
   }
   return sesionesPorParticipante.every(
-    (sesiones) => sesiones.length > 0 && sesiones.every(({ endTime }) => Boolean(endTime))
+    (sesiones) => sesiones.length > 0 && sesiones.every(({ endTime }) => Boolean(endTime)),
   );
 }
 
@@ -158,7 +165,7 @@ export function crearHtmlAsistencia(filas: readonly FilaAsistenciaMeet[]): strin
       <td>${escaparHtml(fila.inicio)}</td>
       <td>${escaparHtml(fila.fin)}</td>
       <td>${minutosEntre(fila.inicio, fila.fin)}</td>
-    </tr>`
+    </tr>`,
     )
     .join("");
   return `<!doctype html>
@@ -190,9 +197,10 @@ function fechaLocalToken(date: Date, timezone: string): string {
     timeZone: timezone,
     year: "numeric",
     month: "2-digit",
-    day: "2-digit"
+    day: "2-digit",
   }).formatToParts(date);
-  const value = (type: "year" | "month" | "day") => parts.find((part) => part.type === type)?.value ?? "00";
+  const value = (type: "year" | "month" | "day") =>
+    parts.find((part) => part.type === type)?.value ?? "00";
   return `${value("year")}${value("month")}${value("day")}`;
 }
 

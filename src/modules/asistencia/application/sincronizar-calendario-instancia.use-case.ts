@@ -2,7 +2,7 @@ import {
   idEventoCalendarioAsistenteSegmento,
   planificarSincronizacionCalendarioAsistente,
   type CuentaCalendarioAsistente,
-  type ResultadoSincronizacionCalendarioAsistente
+  type ResultadoSincronizacionCalendarioAsistente,
 } from "../domain";
 import type { AssistantCalendarProvider, AssistantCalendarRepositoryPort } from "../ports";
 
@@ -10,7 +10,7 @@ export async function sincronizarCalendarioAsistenteInstanciaUseCase(
   repository: AssistantCalendarRepositoryPort,
   provider: AssistantCalendarProvider,
   instanciaSalaId: string,
-  now = new Date()
+  now = new Date(),
 ): Promise<readonly ResultadoSincronizacionCalendarioAsistente[]> {
   const meeting = await repository.obtenerInstanciaParaCalendario(instanciaSalaId);
   if (!meeting) {
@@ -22,7 +22,7 @@ export async function sincronizarCalendarioAsistenteInstanciaUseCase(
     estado: meeting.estado,
     requiereAsistenciaTecnica: meeting.requiereAsistenciaTecnica,
     vigente: (meeting.finAsistenciaTecnicaAt ?? meeting.finProgramadoAt) > now,
-    asignaciones: meeting.asignaciones
+    asignaciones: meeting.asignaciones,
   });
 
   if (plan.publicar.length === 0 && plan.eliminar.length === 0) {
@@ -33,7 +33,7 @@ export async function sincronizarCalendarioAsistenteInstanciaUseCase(
   if (!creds?.serviceAccountEmail || !creds.privateKey) {
     return [
       ...plan.publicar.map(({ cuenta }) => errorConfiguracion(cuenta, "PUBLICAR")),
-      ...plan.eliminar.map(({ cuenta }) => errorConfiguracion(cuenta, "ELIMINAR"))
+      ...plan.eliminar.map(({ cuenta }) => errorConfiguracion(cuenta, "ELIMINAR")),
     ];
   }
 
@@ -45,7 +45,11 @@ export async function sincronizarCalendarioAsistenteInstanciaUseCase(
         const credentials = { serviceAccountEmail, privateKey, subject: cuenta.email };
         const coverageStart = meeting.inicioAsistenciaTecnicaAt ?? meeting.inicioProgramadoAt;
         const coverageEnd = meeting.finAsistenciaTecnicaAt ?? meeting.finProgramadoAt;
-        const preparationId = idEventoCalendarioAsistenteSegmento(meeting.id, cuenta.id, "PREPARACION");
+        const preparationId = idEventoCalendarioAsistenteSegmento(
+          meeting.id,
+          cuenta.id,
+          "PREPARACION",
+        );
         const closingId = idEventoCalendarioAsistenteSegmento(meeting.id, cuenta.id, "CIERRE");
         const common = {
           descripcion: meeting.descripcion ?? meeting.solicitudDescripcion,
@@ -55,7 +59,7 @@ export async function sincronizarCalendarioAsistenteInstanciaUseCase(
           timezone: meeting.timezone,
           instanciaSalaId: meeting.id,
           programa: meeting.programaNombre,
-          docente: meeting.docenteNombreCompleto
+          docente: meeting.docenteNombreCompleto,
         } as const;
 
         // El evento original de la reunión/Meet ya incluye al asistente como cohost/attendee.
@@ -70,7 +74,7 @@ export async function sincronizarCalendarioAsistenteInstanciaUseCase(
             titulo: `Preparación técnica presencial · ${meeting.solicitudTitulo}`,
             inicio: coverageStart,
             fin: meeting.inicioProgramadoAt,
-            joinUrl: null
+            joinUrl: null,
           });
         } else {
           await provider.eliminarEvento(credentials, preparationId);
@@ -84,12 +88,12 @@ export async function sincronizarCalendarioAsistenteInstanciaUseCase(
             titulo: `Cierre técnico presencial · ${meeting.solicitudTitulo}`,
             inicio: meeting.finProgramadoAt,
             fin: coverageEnd,
-            joinUrl: null
+            joinUrl: null,
           });
         } else {
           await provider.eliminarEvento(credentials, closingId);
         }
-      })
+      }),
     ),
     ...plan.eliminar.map(async ({ cuenta, eventId }) =>
       ejecutar(cuenta, "ELIMINAR", async () => {
@@ -97,21 +101,21 @@ export async function sincronizarCalendarioAsistenteInstanciaUseCase(
         await provider.eliminarEvento(credentials, eventId);
         await provider.eliminarEvento(
           credentials,
-          idEventoCalendarioAsistenteSegmento(meeting.id, cuenta.id, "PREPARACION")
+          idEventoCalendarioAsistenteSegmento(meeting.id, cuenta.id, "PREPARACION"),
         );
         await provider.eliminarEvento(
           credentials,
-          idEventoCalendarioAsistenteSegmento(meeting.id, cuenta.id, "CIERRE")
+          idEventoCalendarioAsistenteSegmento(meeting.id, cuenta.id, "CIERRE"),
         );
-      })
-    )
+      }),
+    ),
   ]);
 }
 
 async function ejecutar(
   cuenta: CuentaCalendarioAsistente,
   accion: "PUBLICAR" | "ELIMINAR",
-  operation: () => Promise<void>
+  operation: () => Promise<void>,
 ): Promise<ResultadoSincronizacionCalendarioAsistente> {
   try {
     await operation();
@@ -119,7 +123,7 @@ async function ejecutar(
       cuentaGoogleId: cuenta.id,
       email: cuenta.email,
       accion,
-      estado: "SINCRONIZADA"
+      estado: "SINCRONIZADA",
     };
   } catch (error) {
     return {
@@ -127,20 +131,20 @@ async function ejecutar(
       email: cuenta.email,
       accion,
       estado: "ERROR",
-      error: error instanceof Error ? error.message : "Google Calendar rechazó la sincronización."
+      error: error instanceof Error ? error.message : "Google Calendar rechazó la sincronización.",
     };
   }
 }
 
 function errorConfiguracion(
   cuenta: CuentaCalendarioAsistente,
-  accion: "PUBLICAR" | "ELIMINAR"
+  accion: "PUBLICAR" | "ELIMINAR",
 ): ResultadoSincronizacionCalendarioAsistente {
   return {
     cuentaGoogleId: cuenta.id,
     email: cuenta.email,
     accion,
     estado: "ERROR",
-    error: "Google Workspace no está configurado para sincronizar calendarios de asistentes."
+    error: "Google Workspace no está configurado para sincronizar calendarios de asistentes.",
   };
 }

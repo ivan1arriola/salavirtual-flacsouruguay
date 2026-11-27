@@ -3,42 +3,45 @@ import type {
   AssignmentSuggestion,
   AssignmentSuggestionInput,
   DisponibilidadInput,
-  PeriodoAsistencia
+  PeriodoAsistencia,
 } from "./asistencia.types";
 
 export function buildAssignmentSuggestions(
-  input: AssignmentSuggestionInput
+  input: AssignmentSuggestionInput,
 ): Map<string, AssignmentSuggestion> {
   const eligibleAssistants = input.assistants.filter(
-    (assistant) => !assistant.cesadoHastaProximoInicioSesion
+    (assistant) => !assistant.cesadoHastaProximoInicioSesion,
   );
-  const assistantById = new Map(eligibleAssistants.map((assistant) => [assistant.id, assistant] as const));
-
-  const initialLoads: Readonly<Record<string, number>> = input.assignments.reduce<Record<string, number>>(
-    (acc, assignment) => {
-      const minutes = minutesBetween(assignment.startsAt, assignment.endsAt);
-      const loadKey = `${assignment.assistantId}:${monthKey(assignment.startsAt, assignment.timezone)}`;
-      return {
-        ...acc,
-        [loadKey]: (acc[loadKey] ?? 0) + minutes
-      };
-    },
-    {}
+  const assistantById = new Map(
+    eligibleAssistants.map((assistant) => [assistant.id, assistant] as const),
   );
 
-  const initialSchedules: Readonly<Record<string, readonly PeriodoAsistencia[]>> = input.assignments.reduce<
-    Record<string, readonly PeriodoAsistencia[]>
+  const initialLoads: Readonly<Record<string, number>> = input.assignments.reduce<
+    Record<string, number>
   >((acc, assignment) => {
-    const existing = acc[assignment.assistantId] ?? [];
+    const minutes = minutesBetween(assignment.startsAt, assignment.endsAt);
+    const loadKey = `${assignment.assistantId}:${monthKey(assignment.startsAt, assignment.timezone)}`;
     return {
       ...acc,
-      [assignment.assistantId]: [...existing, { inicio: assignment.startsAt, fin: assignment.endsAt }]
+      [loadKey]: (acc[loadKey] ?? 0) + minutes,
     };
   }, {});
 
+  const initialSchedules: Readonly<Record<string, readonly PeriodoAsistencia[]>> =
+    input.assignments.reduce<Record<string, readonly PeriodoAsistencia[]>>((acc, assignment) => {
+      const existing = acc[assignment.assistantId] ?? [];
+      return {
+        ...acc,
+        [assignment.assistantId]: [
+          ...existing,
+          { inicio: assignment.startsAt, fin: assignment.endsAt },
+        ],
+      };
+    }, {});
+
   const pendingMeetings = ordenarArray(
     input.meetings.filter(({ covered }) => !covered).map(({ meeting }) => meeting),
-    (left, right) => left.inicioProgramadoAt.getTime() - right.inicioProgramadoAt.getTime()
+    (left, right) => left.inicioProgramadoAt.getTime() - right.inicioProgramadoAt.getTime(),
   );
 
   type StepState = Readonly<{
@@ -53,15 +56,15 @@ export function buildAssignmentSuggestions(
         ...new Set(
           meeting.postulaciones
             .map((interest) => interest.asistenteTecnico.id)
-            .filter((assistantId) => assistantById.has(assistantId))
-        )
+            .filter((assistantId) => assistantById.has(assistantId)),
+        ),
       ];
       const applicantSet = new Set(applicantIds);
       const coverageStart = meeting.inicioAsistenciaTecnicaAt ?? meeting.inicioProgramadoAt;
       const coverageEnd = meeting.finAsistenciaTecnicaAt ?? meeting.finProgramadoAt;
       const meetingPeriod = {
         inicio: coverageStart,
-        fin: coverageEnd
+        fin: coverageEnd,
       };
       const keySuffix = monthKey(coverageStart, meeting.timezone);
 
@@ -72,10 +75,10 @@ export function buildAssignmentSuggestions(
             [assistant.id]: evaluarDisponibilidad(
               coverageStart,
               coverageEnd,
-              assistant.disponibilidades ?? []
-            )
+              assistant.disponibilidades ?? [],
+            ),
           }),
-          {}
+          {},
         );
 
       const candidateIds = eligibleAssistants.map(({ id }) => id);
@@ -84,12 +87,14 @@ export function buildAssignmentSuggestions(
           .filter((assistantId) => availabilityById[assistantId]?.tipo !== "NO_DISPONIBLE")
           .filter((assistantId) =>
             (state.schedules[assistantId] ?? []).every((scheduled) =>
-              cumpleSeparacionMinimaAsistencias(scheduled, meetingPeriod)
-            )
+              cumpleSeparacionMinimaAsistencias(scheduled, meetingPeriod),
+            ),
           ),
         (left, right) => {
-          const leftScore = (availabilityById[left]?.puntaje ?? 0) * 2 + Number(applicantSet.has(left));
-          const rightScore = (availabilityById[right]?.puntaje ?? 0) * 2 + Number(applicantSet.has(right));
+          const leftScore =
+            (availabilityById[left]?.puntaje ?? 0) * 2 + Number(applicantSet.has(left));
+          const rightScore =
+            (availabilityById[right]?.puntaje ?? 0) * 2 + Number(applicantSet.has(right));
           if (leftScore !== rightScore) {
             return rightScore - leftScore;
           }
@@ -100,9 +105,9 @@ export function buildAssignmentSuggestions(
           }
           return (assistantById.get(left)?.name ?? left).localeCompare(
             assistantById.get(right)?.name ?? right,
-            "es"
+            "es",
           );
-        }
+        },
       );
 
       const selectedId = availableCandidates[0];
@@ -119,7 +124,7 @@ export function buildAssignmentSuggestions(
           : applicantIds.length > 0
             ? "Sin postulantes disponibles"
             : null,
-        `${formatLoad(loadBefore)} este mes`
+        `${formatLoad(loadBefore)} este mes`,
       ]
         .filter(Boolean)
         .join(" · ");
@@ -129,19 +134,19 @@ export function buildAssignmentSuggestions(
       return {
         suggestions: [
           ...state.suggestions,
-          [meeting.id, { id: selected.id, name: selected.name, reason }] as const
+          [meeting.id, { id: selected.id, name: selected.name, reason }] as const,
         ],
         loads: {
           ...state.loads,
-          [`${selected.id}:${keySuffix}`]: loadBefore + duration
+          [`${selected.id}:${keySuffix}`]: loadBefore + duration,
         },
         schedules: {
           ...state.schedules,
-          [selected.id]: [...(state.schedules[selected.id] ?? []), meetingPeriod]
-        }
+          [selected.id]: [...(state.schedules[selected.id] ?? []), meetingPeriod],
+        },
       };
     },
-    { suggestions: [], loads: initialLoads, schedules: initialSchedules }
+    { suggestions: [], loads: initialLoads, schedules: initialSchedules },
   );
 
   return new Map(finalState.suggestions);
@@ -150,20 +155,23 @@ export function buildAssignmentSuggestions(
 export function evaluarDisponibilidad(
   startsAt: Date,
   endsAt: Date,
-  records: readonly DisponibilidadInput[]
+  records: readonly DisponibilidadInput[],
 ): Readonly<{
   tipo: "PREFERENTE" | "DISPONIBLE" | "SIN_DEFINIR" | "NO_DISPONIBLE";
   puntaje: number;
   etiqueta?: string;
 }> {
   const exact = records.filter(
-    (record) => record.fecha && record.fecha.toISOString().slice(0, 10) === dateKey(startsAt, record.timezone)
+    (record) =>
+      record.fecha &&
+      record.fecha.toISOString().slice(0, 10) === dateKey(startsAt, record.timezone),
   );
   const relevant =
     exact.length > 0
       ? exact
       : records.filter(
-          (record) => record.fecha === null && record.diaSemana === weekday(startsAt, record.timezone)
+          (record) =>
+            record.fecha === null && record.diaSemana === weekday(startsAt, record.timezone),
         );
   const overlapping = relevant.filter((record) => {
     const start = timeKey(startsAt, record.timezone);
@@ -196,14 +204,14 @@ function dateKey(date: Date, timezone: string): string {
     timeZone: timezone || "America/Montevideo",
     year: "numeric",
     month: "2-digit",
-    day: "2-digit"
+    day: "2-digit",
   }).format(date);
 }
 
 function weekday(date: Date, timezone: string): number {
   const label = new Intl.DateTimeFormat("en-US", {
     timeZone: timezone || "America/Montevideo",
-    weekday: "short"
+    weekday: "short",
   }).format(date);
   return ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(label);
 }
@@ -213,7 +221,7 @@ function timeKey(date: Date, timezone: string): string {
     timeZone: timezone || "America/Montevideo",
     hour: "2-digit",
     minute: "2-digit",
-    hourCycle: "h23"
+    hourCycle: "h23",
   }).formatToParts(date);
   return `${parts.find(({ type }) => type === "hour")?.value ?? "00"}:${parts.find(({ type }) => type === "minute")?.value ?? "00"}`;
 }
@@ -222,7 +230,7 @@ function monthKey(date: Date, timezone: string): string {
   return new Intl.DateTimeFormat("en-CA", {
     timeZone: timezone || "America/Montevideo",
     year: "numeric",
-    month: "2-digit"
+    month: "2-digit",
   }).format(date);
 }
 

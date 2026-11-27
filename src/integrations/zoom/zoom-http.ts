@@ -35,7 +35,11 @@ export class ZoomApiError extends Error {
   constructor(
     code: CodigoErrorZoom,
     recurso: string,
-    opciones: Readonly<{ status?: number; reintentarEnSegundos?: number; codigoZoom?: number | null }> = {}
+    opciones: Readonly<{
+      status?: number;
+      reintentarEnSegundos?: number;
+      codigoZoom?: number | null;
+    }> = {},
   ) {
     super(`Zoom: ${code} (${recurso}${opciones.status ? `, HTTP ${opciones.status}` : ""})`);
     this.name = "ZoomApiError";
@@ -94,7 +98,7 @@ async function hacerSinFiltrarRed(
   hacer: (token: string) => Promise<Response>,
   token: string,
   recurso: string,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ): Promise<Response> {
   try {
     return await hacer(token);
@@ -115,7 +119,7 @@ export async function pedirZoom(
   auth: AutenticacionZoom,
   recurso: string,
   hacer: (token: string) => Promise<Response>,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ): Promise<Response> {
   const proveedor = typeof auth === "string" ? null : auth;
   let token = proveedor ? await proveedor.obtener() : (auth as string);
@@ -137,7 +141,10 @@ export async function pedirZoom(
       const segundos = segundosRetryAfter(response.headers.get("retry-after"));
       await descartarCuerpo(response);
       if (esperado429 || segundos > ESPERA_MAXIMA_REINTENTO_SEGUNDOS) {
-        throw new ZoomApiError("LIMITE_TASA", recurso, { status: 429, reintentarEnSegundos: segundos });
+        throw new ZoomApiError("LIMITE_TASA", recurso, {
+          status: 429,
+          reintentarEnSegundos: segundos,
+        });
       }
       esperado429 = true;
       await esperar(segundos * 1000, signal);
@@ -151,7 +158,7 @@ export async function pedirZoom(
 export function errorPorEstado(
   recurso: string,
   status: number,
-  codigoZoom: number | null = null
+  codigoZoom: number | null = null,
 ): ZoomApiError {
   if (status === 403) {
     return new ZoomApiError("CAPACIDAD_PENDIENTE", recurso, { status, codigoZoom });
@@ -169,18 +176,25 @@ export function errorPorEstado(
  * Como `errorPorEstado`, pero lee del cuerpo únicamente el `code` numérico de Zoom para poder diagnosticar
  * un rechazo. El mensaje y cualquier otro campo se descartan; un cuerpo ilegible no cambia el error.
  */
-export async function errorPorRespuesta(recurso: string, response: Response): Promise<ZoomApiError> {
+export async function errorPorRespuesta(
+  recurso: string,
+  response: Response,
+): Promise<ZoomApiError> {
   const codigo = await response
     .clone()
     .json()
     .then(
       (cuerpo: unknown) => {
-        const valor = cuerpo && typeof cuerpo === "object" ? (cuerpo as { code?: unknown }).code : null;
-        return typeof valor === "number" && Number.isInteger(valor) && valor >= 0 && valor < 1_000_000
+        const valor =
+          cuerpo && typeof cuerpo === "object" ? (cuerpo as { code?: unknown }).code : null;
+        return typeof valor === "number" &&
+          Number.isInteger(valor) &&
+          valor >= 0 &&
+          valor < 1_000_000
           ? valor
           : null;
       },
-      () => null
+      () => null,
     );
   return errorPorEstado(recurso, response.status, codigo);
 }

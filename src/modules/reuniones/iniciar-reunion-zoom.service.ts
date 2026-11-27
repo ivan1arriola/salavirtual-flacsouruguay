@@ -18,7 +18,7 @@ export type IniciarReunionZoomDependencias = Readonly<{
 export async function obtenerEnlaceInicioZoom(
   dependencias: IniciarReunionZoomDependencias,
   actor: SessionActor,
-  instanciaId: string
+  instanciaId: string,
 ): Promise<string> {
   const instancia = await dependencias.db.instanciaSala.findUnique({
     where: { id: instanciaId },
@@ -31,15 +31,17 @@ export async function obtenerEnlaceInicioZoom(
           externalEventId: true,
           reunionProveedorId: true,
           reunionProveedor: { select: { externalId: true } },
-          proveedor: { select: { tipo: true } }
-        }
+          proveedor: { select: { tipo: true } },
+        },
       },
       solicitud: {
         select: {
-          docentePrograma: { select: { programaId: true, docente: { select: { usuarioId: true } } } }
-        }
-      }
-    }
+          docentePrograma: {
+            select: { programaId: true, docente: { select: { usuarioId: true } } },
+          },
+        },
+      },
+    },
   });
   if (!instancia) {
     throw new NotFoundApiError("El encuentro no existe.");

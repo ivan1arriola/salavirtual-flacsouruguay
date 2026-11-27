@@ -4,15 +4,18 @@ const mensajes = new Map([
   ["conectado", "Cuenta conectada. Tus coberturas aparecerán durante la próxima sincronización."],
   ["sincronizado", "Tu calendario se actualizó."],
   ["desconectado", "Google Calendar se desconectó."],
-  ["desconectado-revocado", "Cuenta desconectada. Si el calendario sigue en Google, podés eliminarlo allí."],
+  [
+    "desconectado-revocado",
+    "Cuenta desconectada. Si el calendario sigue en Google, podés eliminarlo allí.",
+  ],
   ["sin-permiso", "La conexión se canceló. Podés iniciarla otra vez."],
   ["ocupado", "Tu calendario se está actualizando. Probá de nuevo en unos segundos."],
-  ["error", "No se pudo completar la operación con Google Calendar. Probá de nuevo."]
+  ["error", "No se pudo completar la operación con Google Calendar. Probá de nuevo."],
 ]);
 
 export function CalendarioZoomAsistente({
   conexion,
-  estado
+  estado,
 }: Readonly<{
   conexion: { email: string; ultimoIntentoAt: Date | null; error: string | null } | null;
   estado: string | undefined;

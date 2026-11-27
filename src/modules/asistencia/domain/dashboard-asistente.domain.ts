@@ -1,7 +1,7 @@
 const utc3PartsFormatter = new Intl.DateTimeFormat("en-CA", {
   timeZone: "America/Montevideo",
   year: "numeric",
-  month: "2-digit"
+  month: "2-digit",
 });
 
 function yearAndMonthUtc3(fecha: Date): Readonly<{ year: number; month: number }> {
@@ -37,9 +37,10 @@ export function contarPostulacionesAbiertas(
   postulaciones: readonly Readonly<{
     instanciaSalaId: string;
     estado: "ME_INTERESA" | "NO_ME_INTERESA" | "RETIRADO";
-  }>[]
+  }>[],
 ): number {
   return postulaciones.filter(
-    ({ instanciaSalaId, estado }) => estado === "ME_INTERESA" && instanciasAbiertasIds.has(instanciaSalaId)
+    ({ instanciaSalaId, estado }) =>
+      estado === "ME_INTERESA" && instanciasAbiertasIds.has(instanciaSalaId),
   ).length;
 }

@@ -3,7 +3,7 @@ import { ForbiddenApiError, ValidationApiError } from "@/src/lib/http/api-error"
 import { prepararCambioEnlaceCalendarZoom } from "./migracion-zoom-calendar.domain";
 import {
   MARGEN_SEGURIDAD_HORAS_APLICAR,
-  type DependenciasMigracionZoom
+  type DependenciasMigracionZoom,
 } from "./migracion-zoom-aplicar.service";
 import { esUrlZoom } from "./migracion-zoom-aviso-email.domain";
 import type { ResumenAvisosMigracion } from "./migracion-zoom-avisos.service";
@@ -15,7 +15,7 @@ import { bloquearReservaSalas } from "./reserva-salas.adapter";
 import {
   claveBloqueoSerieMigracion,
   filtroSerieDesdeClave,
-  normalizarClaveSerie
+  normalizarClaveSerie,
 } from "./serie-reunion.domain";
 
 type Actor = Readonly<{ id: string; rol: string }>;
@@ -43,7 +43,7 @@ class FalloEtapa extends Error {
     public readonly etapa: ResultadoMigracionSerie["etapa"],
     message: string,
     public readonly reintentable = true,
-    public readonly omitida = false
+    public readonly omitida = false,
   ) {
     super(message);
   }
@@ -66,9 +66,9 @@ const seleccionInstancia = {
       reunionProveedorId: true,
       cuentaProveedorId: true,
       cuentaProveedor: { select: { emailOrganizador: true } },
-      proveedor: { select: { tipo: true } }
-    }
-  }
+      proveedor: { select: { tipo: true } },
+    },
+  },
 } satisfies Prisma.InstanciaSalaSelect;
 
 type CitaDeEncuentro = Readonly<{
@@ -97,13 +97,15 @@ type PreparacionSerie = Readonly<{
 export async function aplicarMigracionZoomSerie(
   deps: DependenciasMigracionZoomSerie,
   actor: Actor,
-  input: Readonly<{ modo: "PILOTO" | "LOTE"; serieClaves: readonly string[] }>
+  input: Readonly<{ modo: "PILOTO" | "LOTE"; serieClaves: readonly string[] }>,
 ): Promise<readonly ResultadoMigracionSerie[]> {
   if (actor.rol !== "ADMINISTRACION") {
     throw new ForbiddenApiError("Solo Administración puede aplicar la migración a Zoom.");
   }
   const claves = [
-    ...new Set(input.serieClaves.filter((clave) => clave.trim().length > 0).map(normalizarClaveSerie))
+    ...new Set(
+      input.serieClaves.filter((clave) => clave.trim().length > 0).map(normalizarClaveSerie),
+    ),
   ];
   if (claves.length === 0) {
     throw new ValidationApiError("Indicá al menos una serie.");
@@ -112,7 +114,9 @@ export async function aplicarMigracionZoomSerie(
     throw new ValidationApiError("El piloto convierte exactamente una serie.");
   }
   if (claves.length > MAXIMO_LOTE_MIGRACION_ZOOM_SERIE) {
-    throw new ValidationApiError(`Un lote admite hasta ${MAXIMO_LOTE_MIGRACION_ZOOM_SERIE} series.`);
+    throw new ValidationApiError(
+      `Un lote admite hasta ${MAXIMO_LOTE_MIGRACION_ZOOM_SERIE} series.`,
+    );
   }
 
   const resultados: ResultadoMigracionSerie[] = [];
@@ -127,15 +131,15 @@ export async function aplicarMigracionZoomSerie(
               resultado: error.omitida ? "OMITIDA" : "ERROR",
               etapa: error.etapa,
               mensaje: error.message,
-              reintentable: error.reintentable
+              reintentable: error.reintentable,
             }
           : {
               serieClave,
               resultado: "ERROR",
               etapa: "FINAL",
               mensaje: error instanceof Error ? error.message : "Error inesperado.",
-              reintentable: true
-            }
+              reintentable: true,
+            },
       );
     }
   }
@@ -145,7 +149,7 @@ export async function aplicarMigracionZoomSerie(
 /** Revalida bajo el bloqueo de la serie y deja la reunión compartida y los eventos Zoom listos (o reanudables). */
 async function prepararBajoBloqueo(
   deps: DependenciasMigracionZoomSerie,
-  serieClave: string
+  serieClave: string,
 ): Promise<PreparacionSerie> {
   const ahora = (deps.ahora ?? (() => new Date()))();
   const filtro = filtroSerieDesdeClave(serieClave);
@@ -164,7 +168,7 @@ async function prepararBajoBloqueo(
     const instancias = await tx.instanciaSala.findMany({
       where: { estado: "PROGRAMADA", inicioProgramadoAt: { gt: ahora }, solicitud: filtro },
       orderBy: [{ inicioProgramadoAt: "asc" }, { id: "asc" }],
-      select: seleccionInstancia
+      select: seleccionInstancia,
     });
     if (instancias.length === 0) {
       throw new FalloEtapa("VALIDACION", "La serie no tiene encuentros futuros.", false, true);
@@ -173,26 +177,26 @@ async function prepararBajoBloqueo(
     const hostsDb = await tx.cuentaProveedor.findMany({
       where: { ...CUENTA_ZOOM_ASIGNABLE, proveedor: { tipo: "ZOOM" } },
       orderBy: [{ prioridad: "asc" }, { id: "asc" }],
-      select: { id: true, emailOrganizador: true, prioridad: true, limiteConcurrente: true }
+      select: { id: true, emailOrganizador: true, prioridad: true, limiteConcurrente: true },
     });
     const reunion = await tx.reunionProveedor.findUnique({
       where: { proveedorId_serieClave: { proveedorId: proveedorZoom.id, serieClave } },
-      select: { id: true, cuentaProveedorId: true }
+      select: { id: true, cuentaProveedorId: true },
     });
     // Si algún encuentro ya está en Zoom, todos deben usar la reunión de esta serie. Si apuntan a otra,
     // o a un evento sin reunión compartida, migrar el resto crearía una segunda reunión para la misma serie.
     const zoomFueraDeLaSerie = instancias.some(
       (instancia) =>
         instancia.proveedorActivoTipo === "ZOOM" &&
-        instancia.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "ZOOM")?.reunionProveedorId !==
-          reunion?.id
+        instancia.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "ZOOM")
+          ?.reunionProveedorId !== reunion?.id,
     );
     if (zoomFueraDeLaSerie) {
       throw new FalloEtapa(
         "VALIDACION",
         "Hay encuentros de la serie en Zoom con otra reunión o sin reunión compartida: usá «Unificar enlace» antes de migrar el resto.",
         false,
-        true
+        true,
       );
     }
     const ids = instancias.map(({ id }) => id);
@@ -201,12 +205,12 @@ async function prepararBajoBloqueo(
         proveedor: { tipo: "ZOOM" },
         cuentaProveedorId: { not: null },
         instanciaSalaId: { notIn: ids },
-        instancia: { estado: { in: ["PROGRAMADA", "EN_CURSO"] }, finProgramadoAt: { gt: ahora } }
+        instancia: { estado: { in: ["PROGRAMADA", "EN_CURSO"] }, finProgramadoAt: { gt: ahora } },
       },
       select: {
         cuentaProveedorId: true,
-        instancia: { select: { inicioProgramadoAt: true, finProgramadoAt: true } }
-      }
+        instancia: { select: { inicioProgramadoAt: true, finProgramadoAt: true } },
+      },
     });
 
     // Reanudación: la reunión ya existe, así que su cuenta queda fija y los eventos Zoom propios
@@ -223,12 +227,13 @@ async function prepararBajoBloqueo(
           encuentros: serie.encuentros.map((encuentro) => {
             const instancia = instancias.find(({ id }) => id === encuentro.id);
             const zoomPropio = instancia?.eventosProveedor.some(
-              ({ proveedor, reunionProveedorId }) => proveedor.tipo === "ZOOM" && propias(reunionProveedorId)
+              ({ proveedor, reunionProveedorId }) =>
+                proveedor.tipo === "ZOOM" && propias(reunionProveedorId),
             );
             return zoomPropio && encuentro.proveedorActivo !== "ZOOM"
               ? { ...encuentro, zoomSincronizado: false, reunionCompartidaId: null }
               : encuentro;
-          })
+          }),
         }
       : serie;
 
@@ -239,9 +244,15 @@ async function prepararBajoBloqueo(
       hosts: hosts.map((host) => ({ ...host, limiteConcurrente: 1 })),
       reservasZoom: reservas.flatMap(({ cuentaProveedorId, instancia }) =>
         cuentaProveedorId
-          ? [{ cuentaProveedorId, inicio: instancia.inicioProgramadoAt, fin: instancia.finProgramadoAt }]
-          : []
-      )
+          ? [
+              {
+                cuentaProveedorId,
+                inicio: instancia.inicioProgramadoAt,
+                fin: instancia.finProgramadoAt,
+              },
+            ]
+          : [],
+      ),
     });
     const todasLasInstanciaIds = ids;
     const vacia = {
@@ -249,7 +260,7 @@ async function prepararBajoBloqueo(
       eventoIds: [],
       instanciaIds: [],
       todasLasInstanciaIds,
-      citas: []
+      citas: [],
     };
     if (fila?.estado === "YA_ZOOM") {
       return { ...vacia, yaZoom: true };
@@ -259,7 +270,7 @@ async function prepararBajoBloqueo(
         "VALIDACION",
         `La serie ya no es migrable (${fila?.estado ?? "sin datos"}).`,
         false,
-        true
+        true,
       );
     }
 
@@ -268,7 +279,7 @@ async function prepararBajoBloqueo(
       (
         await tx.reunionProveedor.create({
           data: { proveedorId: proveedorZoom.id, cuentaProveedorId: fila.hostId, serieClave },
-          select: { id: true }
+          select: { id: true },
         })
       ).id;
 
@@ -276,14 +287,16 @@ async function prepararBajoBloqueo(
     const eventoIds: string[] = [];
     const citas: CitaDeEncuentro[] = [];
     for (const instancia of aMigrar) {
-      const meet = instancia.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET");
+      const meet = instancia.eventosProveedor.find(
+        ({ proveedor }) => proveedor.tipo === "GOOGLE_MEET",
+      );
       const zoom = instancia.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "ZOOM");
       if (zoom && zoom.reunionProveedorId !== reunionId) {
         throw new FalloEtapa(
           "VALIDACION",
           "Un encuentro de la serie ya tiene una reunión Zoom propia: revisá la serie.",
           false,
-          true
+          true,
         );
       }
       if (zoom) {
@@ -299,8 +312,8 @@ async function prepararBajoBloqueo(
             data: {
               operacionPendiente: "PROVISIONAR",
               estadoIntegracion: "PENDIENTE",
-              errorIntegracion: null
-            }
+              errorIntegracion: null,
+            },
           });
         }
       } else {
@@ -310,9 +323,9 @@ async function prepararBajoBloqueo(
             proveedorId: proveedorZoom.id,
             cuentaProveedorId: fila.hostId,
             reunionProveedorId: reunionId,
-            operacionPendiente: "PROVISIONAR"
+            operacionPendiente: "PROVISIONAR",
           },
-          select: { id: true }
+          select: { id: true },
         });
         eventoIds.push(creado.id);
       }
@@ -320,7 +333,7 @@ async function prepararBajoBloqueo(
         instanciaId: instancia.id,
         calendarId: meet?.cuentaProveedor?.emailOrganizador ?? null,
         calendarEventId: meet?.externalEventId ?? null,
-        meetJoinUrl: meet?.joinUrl ?? null
+        meetJoinUrl: meet?.joinUrl ?? null,
       });
     }
     return {
@@ -329,7 +342,7 @@ async function prepararBajoBloqueo(
       eventoIds,
       instanciaIds: aMigrar.map(({ id }) => id),
       todasLasInstanciaIds,
-      citas
+      citas,
     };
   });
 }
@@ -337,22 +350,26 @@ async function prepararBajoBloqueo(
 async function migrarSerie(
   deps: DependenciasMigracionZoomSerie,
   actor: Actor,
-  serieClave: string
+  serieClave: string,
 ): Promise<ResultadoMigracionSerie> {
   const prep = await prepararBajoBloqueo(deps, serieClave);
   if (prep.yaZoom) {
     // Reintento tras un cambio hecho por esta migración: completa solo los avisos pendientes.
     // Una serie que nació en Zoom (sin auditoría) no recibe aviso.
     const migrada = await deps.db.auditoria.findFirst({
-      where: { accion: "MIGRACION_ZOOM_SERIE_APLICADA", entidadTipo: "SerieReunion", entidadId: serieClave },
-      select: { id: true }
+      where: {
+        accion: "MIGRACION_ZOOM_SERIE_APLICADA",
+        entidadTipo: "SerieReunion",
+        entidadId: serieClave,
+      },
+      select: { id: true },
     });
     if (!migrada) {
       return { serieClave, resultado: "YA_ZOOM", etapa: "FINAL", reintentable: false };
     }
     const reunion = await deps.db.reunionProveedor.findUnique({
       where: { id: prep.reunionId },
-      select: { joinUrl: true }
+      select: { joinUrl: true },
     });
     const avisos = reunion?.joinUrl
       ? await enviarAvisos(deps, serieClave, prep.todasLasInstanciaIds, reunion.joinUrl)
@@ -362,7 +379,7 @@ async function migrarSerie(
       resultado: "YA_ZOOM",
       etapa: "FINAL",
       reintentable: avisos?.estado === "PARCIAL",
-      avisos
+      avisos,
     };
   }
 
@@ -370,36 +387,43 @@ async function migrarSerie(
   try {
     await deps.sincronizarEventos(prep.eventoIds);
   } catch (error) {
-    throw new FalloEtapa("ZOOM", error instanceof Error ? error.message : "Falló la provisión de Zoom.");
+    throw new FalloEtapa(
+      "ZOOM",
+      error instanceof Error ? error.message : "Falló la provisión de Zoom.",
+    );
   }
   const reunion = await deps.db.reunionProveedor.findUnique({
     where: { id: prep.reunionId },
-    select: { externalId: true, joinUrl: true, estadoCreacion: true, errorIntegracion: true }
+    select: { externalId: true, joinUrl: true, estadoCreacion: true, errorIntegracion: true },
   });
   if (!reunion || reunion.estadoCreacion !== "CREADA" || !reunion.externalId) {
     throw new FalloEtapa(
       "ZOOM",
-      reunion?.errorIntegracion || "La reunión Zoom de la serie todavía no quedó creada."
+      reunion?.errorIntegracion || "La reunión Zoom de la serie todavía no quedó creada.",
     );
   }
   const eventos = await deps.db.eventoProveedor.findMany({
     where: { id: { in: [...prep.eventoIds] } },
-    select: { id: true, estadoIntegracion: true, operacionPendiente: true, errorIntegracion: true }
+    select: { id: true, estadoIntegracion: true, operacionPendiente: true, errorIntegracion: true },
   });
   const pendiente = eventos.find(
-    (evento) => evento.estadoIntegracion !== "SINCRONIZADA" || evento.operacionPendiente
+    (evento) => evento.estadoIntegracion !== "SINCRONIZADA" || evento.operacionPendiente,
   );
   if (eventos.length !== prep.eventoIds.length || pendiente) {
     throw new FalloEtapa(
       "ZOOM",
-      pendiente?.errorIntegracion || "Algún encuentro de la serie todavía no quedó sincronizado con Zoom."
+      pendiente?.errorIntegracion ||
+        "Algún encuentro de la serie todavía no quedó sincronizado con Zoom.",
     );
   }
   let joinUrl: string;
   try {
     joinUrl = (await deps.verificarReunionZoom(reunion.externalId)).joinUrl;
   } catch (error) {
-    throw new FalloEtapa("ZOOM", error instanceof Error ? error.message : "No se pudo verificar Zoom.");
+    throw new FalloEtapa(
+      "ZOOM",
+      error instanceof Error ? error.message : "No se pudo verificar Zoom.",
+    );
   }
   if (!esUrlZoom(joinUrl)) {
     throw new FalloEtapa("ZOOM", "Zoom devolvió un enlace de acceso inválido.", false);
@@ -407,7 +431,10 @@ async function migrarSerie(
   if (reunion.joinUrl !== joinUrl) {
     await deps.db.reunionProveedor.update({ where: { id: prep.reunionId }, data: { joinUrl } });
   }
-  await deps.db.eventoProveedor.updateMany({ where: { id: { in: [...prep.eventoIds] } }, data: { joinUrl } });
+  await deps.db.eventoProveedor.updateMany({
+    where: { id: { in: [...prep.eventoIds] } },
+    data: { joinUrl },
+  });
 
   // 2. Calendar: parchea y verifica la cita de cada encuentro, guardando el avance para reanudar.
   //    Un fallo deja a TODA la serie en Meet (el proveedor no se cambia todavía).
@@ -422,14 +449,14 @@ async function migrarSerie(
           id: { in: [...prep.instanciaIds] },
           estado: "PROGRAMADA",
           conservarGoogleMeet: false,
-          OR: [{ proveedorActivoTipo: null }, { proveedorActivoTipo: "GOOGLE_MEET" }]
+          OR: [{ proveedorActivoTipo: null }, { proveedorActivoTipo: "GOOGLE_MEET" }],
         },
-        data: { proveedorActivoTipo: "ZOOM" }
+        data: { proveedorActivoTipo: "ZOOM" },
       });
       if (cambio.count !== prep.instanciaIds.length) {
         throw new FalloEtapa(
           "CAMBIO_PROVEEDOR",
-          "Algún encuentro cambió durante la conversión; revisá la serie y reintentá."
+          "Algún encuentro cambió durante la conversión; revisá la serie y reintentá.",
         );
       }
       await tx.auditoria.create({
@@ -438,14 +465,17 @@ async function migrarSerie(
           accion: "MIGRACION_ZOOM_SERIE_APLICADA",
           entidadTipo: "SerieReunion",
           entidadId: serieClave,
-          valorAnterior: { proveedorActivoTipo: "GOOGLE_MEET", instanciaIds: [...prep.instanciaIds] },
+          valorAnterior: {
+            proveedorActivoTipo: "GOOGLE_MEET",
+            instanciaIds: [...prep.instanciaIds],
+          },
           valorNuevo: {
             proveedorActivoTipo: "ZOOM",
             reunionProveedorId: prep.reunionId,
             zoomMeetingId: reunion.externalId,
-            instanciaIds: [...prep.instanciaIds]
-          }
-        }
+            instanciaIds: [...prep.instanciaIds],
+          },
+        },
       });
     })
     .catch((error: unknown) => {
@@ -454,7 +484,7 @@ async function migrarSerie(
       }
       throw new FalloEtapa(
         "CAMBIO_PROVEEDOR",
-        error instanceof Error ? error.message : "No se pudo cambiar el proveedor activo."
+        error instanceof Error ? error.message : "No se pudo cambiar el proveedor activo.",
       );
     });
 
@@ -467,18 +497,18 @@ async function migrarSerie(
     etapa: "FINAL",
     encuentros: prep.instanciaIds.length,
     reintentable: avisos.estado === "PARCIAL",
-    avisos
+    avisos,
   };
 }
 
 async function actualizarCitas(
   deps: DependenciasMigracionZoomSerie,
   prep: PreparacionSerie,
-  joinUrl: string
+  joinUrl: string,
 ): Promise<void> {
   const previas = await deps.db.cambioEnlaceCita.findMany({
     where: { reunionProveedorId: prep.reunionId, instanciaSalaId: { in: [...prep.instanciaIds] } },
-    select: { id: true, instanciaSalaId: true, enlaceNuevo: true, estado: true }
+    select: { id: true, instanciaSalaId: true, enlaceNuevo: true, estado: true },
   });
   const fallos: string[] = [];
   for (const cita of prep.citas) {
@@ -493,7 +523,7 @@ async function actualizarCitas(
         ? await deps.db.cambioEnlaceCita.update({
             where: { id: previa.id },
             data: { enlaceNuevo: joinUrl, estado: estadoInicial, sinCita },
-            select: { id: true, estado: true }
+            select: { id: true, estado: true },
           })
         : await deps.db.cambioEnlaceCita.create({
             data: {
@@ -501,21 +531,24 @@ async function actualizarCitas(
               reunionProveedorId: prep.reunionId,
               enlaceNuevo: joinUrl,
               estado: estadoInicial,
-              sinCita
+              sinCita,
             },
-            select: { id: true, estado: true }
+            select: { id: true, estado: true },
           }));
     if (registro.estado === "VERIFICADA" || sinCita) {
       continue;
     }
 
-    const ref = { calendarId: cita.calendarId!, eventId: cita.calendarEventId! };
+    const ref = { calendarId: cita.calendarId, eventId: cita.calendarEventId };
     try {
       const actual = await deps.calendar.obtener(ref);
-      const cambio = prepararCambioEnlaceCalendarZoom(actual, cita.meetJoinUrl!, joinUrl);
+      const cambio = prepararCambioEnlaceCalendarZoom(actual, cita.meetJoinUrl, joinUrl);
       if (registro.estado !== "PARCHEADA") {
         await deps.calendar.actualizar({ ...ref, cambio });
-        await deps.db.cambioEnlaceCita.update({ where: { id: registro.id }, data: { estado: "PARCHEADA" } });
+        await deps.db.cambioEnlaceCita.update({
+          where: { id: registro.id },
+          data: { estado: "PARCHEADA" },
+        });
       }
       const verificado = await deps.calendar.obtener(ref);
       const sinMeet = !verificado.conferenceData && !verificado.hangoutLink;
@@ -527,15 +560,20 @@ async function actualizarCitas(
       if (!sinMeet || !conZoom || !ubicacionIntacta) {
         throw new Error("Google Calendar no refleja el cambio a Zoom.");
       }
-      await deps.db.cambioEnlaceCita.update({ where: { id: registro.id }, data: { estado: "VERIFICADA" } });
+      await deps.db.cambioEnlaceCita.update({
+        where: { id: registro.id },
+        data: { estado: "VERIFICADA" },
+      });
     } catch (error) {
-      fallos.push(error instanceof Error ? error.message : "Falló la actualización de Google Calendar.");
+      fallos.push(
+        error instanceof Error ? error.message : "Falló la actualización de Google Calendar.",
+      );
     }
   }
   if (fallos.length > 0) {
     throw new FalloEtapa(
       "CALENDAR",
-      `${fallos.length} de ${prep.citas.length} citas de Calendar quedaron pendientes: ${fallos[0]} Reintentá para retomarlas.`
+      `${fallos.length} de ${prep.citas.length} citas de Calendar quedaron pendientes: ${fallos[0]} Reintentá para retomarlas.`,
     );
   }
 }
@@ -544,7 +582,7 @@ async function enviarAvisos(
   deps: DependenciasMigracionZoomSerie,
   serieClave: string,
   instanciaIds: readonly string[],
-  joinUrl: string
+  joinUrl: string,
 ): Promise<ResumenAvisosMigracion> {
   if (!deps.enviarCorreo) {
     return {
@@ -555,7 +593,7 @@ async function enviarAvisos(
       yaEnviados: 0,
       enCurso: 0,
       errores: 0,
-      detalle: []
+      detalle: [],
     };
   }
   try {
@@ -564,10 +602,12 @@ async function enviarAvisos(
         db: deps.db,
         enviarCorreo: deps.enviarCorreo,
         leerInvitadosCalendar: async (calendarId, eventId) =>
-          (await deps.calendar.obtener({ calendarId, eventId })).attendees?.map(({ email }) => email) ?? [],
-        ahora: deps.ahora
+          (await deps.calendar.obtener({ calendarId, eventId })).attendees?.map(
+            ({ email }) => email,
+          ) ?? [],
+        ahora: deps.ahora,
       },
-      { serieClave, instanciaIds, tipo: "MIGRACION_SERIE", joinUrl }
+      { serieClave, instanciaIds, tipo: "MIGRACION_SERIE", joinUrl },
     );
   } catch (error) {
     return {
@@ -578,7 +618,7 @@ async function enviarAvisos(
       yaEnviados: 0,
       enCurso: 0,
       errores: 1,
-      detalle: []
+      detalle: [],
     };
   }
 }

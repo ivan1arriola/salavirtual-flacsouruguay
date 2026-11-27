@@ -14,13 +14,15 @@ describe("deteccion de grabaciones en Prisma", () => {
         ventana: "CALIENTE",
         desde: new Date("2026-10-27T14:00:00Z"),
         hasta,
-        limite: 10
-      })
+        limite: 10,
+      }),
     ).toEqual(["evt-vivo"]);
     expect(findMany.mock.calls[0]![0].where.instancia).toEqual(
-      expect.objectContaining({ inicioProgramadoAt: { lte: hasta } })
+      expect.objectContaining({ inicioProgramadoAt: { lte: hasta } }),
     );
-    expect(JSON.stringify(findMany.mock.calls[0]![0].where.OR)).toContain('"none":{"tipo":"GRABACION"}');
+    expect(JSON.stringify(findMany.mock.calls[0]![0].where.OR)).toContain(
+      '"none":{"tipo":"GRABACION"}',
+    );
   });
 
   it("revisa una vez encuentros ya sincronizados del ultimo mes sin video", async () => {
@@ -31,9 +33,11 @@ describe("deteccion de grabaciones en Prisma", () => {
       ventana: "CIERRE",
       desde: new Date("2026-09-27T18:00:00Z"),
       hasta: new Date("2026-10-25T18:00:00Z"),
-      limite: 10
+      limite: 10,
     });
-    expect(JSON.stringify(findMany.mock.calls[0]![0].where.OR)).toContain('"grabacionObservadaAt":null');
+    expect(JSON.stringify(findMany.mock.calls[0]![0].where.OR)).toContain(
+      '"grabacionObservadaAt":null',
+    );
   });
 
   it("incluye la grabacion activa sin archivos aunque sea opcional", async () => {
@@ -47,8 +51,8 @@ describe("deteccion de grabaciones en Prisma", () => {
         titulo: "Clase",
         docentePrograma: {
           programa: { nombre: "Curso" },
-          docente: { usuario: { nombres: "Ana", apellidos: "Pérez" } }
-        }
+          docente: { usuario: { nombres: "Ana", apellidos: "Pérez" } },
+        },
       },
       eventosProveedor: [
         {
@@ -56,9 +60,9 @@ describe("deteccion de grabaciones en Prisma", () => {
           archivosSincronizadosAt: null,
           grabacionEstadoMeet: "EN_CURSO",
           grabacionObservadaAt: fecha,
-          archivos: []
-        }
-      ]
+          archivos: [],
+        },
+      ],
     };
     const count = vi.fn().mockResolvedValue(1);
     const findMany = vi.fn().mockResolvedValue([meeting]);
@@ -67,10 +71,10 @@ describe("deteccion de grabaciones en Prisma", () => {
 
     const page = await repo.listarGrabacionesDb!(
       { id: "admin", rol: "ADMINISTRACION" },
-      { pagina: 1, busqueda: "", filtro: "GRABACIONES" }
+      { pagina: 1, busqueda: "", filtro: "GRABACIONES" },
     );
     expect(page.encuentros).toMatchObject([
-      { instanciaId: "inst-viva", estadoGrabacionMeet: "EN_CURSO", archivos: [] }
+      { instanciaId: "inst-viva", estadoGrabacionMeet: "EN_CURSO", archivos: [] },
     ]);
     const where = JSON.stringify(findMany.mock.calls[0]![0].where);
     expect(where).toContain("grabacionEstadoMeet");

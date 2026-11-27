@@ -15,25 +15,27 @@ import {
   type ArtifactProviderPort,
   type LiveParticipantsResult,
   type SessionActor,
-  type SyncArtifactsResult
+  type SyncArtifactsResult,
 } from "@/src/modules/archivos/api";
 
 export function crearArchivosRepository() {
   return crearPrismaArchivosRepositoryAdapter(db);
 }
 
-export function crearArtifactProvider(credentials: ArtifactProviderCredentials): ArtifactProviderPort {
+export function crearArtifactProvider(
+  credentials: ArtifactProviderCredentials,
+): ArtifactProviderPort {
   return crearGoogleArtifactsProviderAdapter(credentials);
 }
 
 export async function sincronizarArtefactos(
   eventoProveedorIds: readonly string[],
-  regenerarAsistencia = false
+  regenerarAsistencia = false,
 ): Promise<readonly SyncArtifactsResult[]> {
   const repository = crearArchivosRepository();
   return sincronizarArtefactosUseCase(repository, crearArtifactProvider, descifrarConfiguracion, {
     eventoProveedorIds,
-    regenerarAsistencia
+    regenerarAsistencia,
   });
 }
 
@@ -42,7 +44,7 @@ export async function repararPlanillasAsistenciaVacias(eventoProveedorIds?: read
     crearArchivosRepository(),
     crearArtifactProvider,
     descifrarConfiguracion,
-    eventoProveedorIds
+    eventoProveedorIds,
   );
 }
 
@@ -53,25 +55,25 @@ export async function sincronizarArtefactosOperativos(ahora = new Date()) {
     repository,
     crearArtifactProvider,
     descifrarConfiguracion,
-    { eventoProveedorIds: lote.eventoProveedorIds }
+    { eventoProveedorIds: lote.eventoProveedorIds },
   );
   return { ...lote, resultados, timestamp: ahora.toISOString() };
 }
 
 export async function obtenerParticipantesActivosInstancia(
-  instanciaId: string
+  instanciaId: string,
 ): Promise<LiveParticipantsResult> {
   const repository = crearArchivosRepository();
   return obtenerParticipantesActivosUseCase(
     repository,
     crearArtifactProvider,
     descifrarConfiguracion,
-    instanciaId
+    instanciaId,
   );
 }
 
 export async function listarArchivosMeetVisibles(
-  actor: SessionActor
+  actor: SessionActor,
 ): Promise<readonly ArchivoMeetVisibleModel[]> {
   const repository = crearArchivosRepository();
   return listarArchivosVisiblesUseCase(repository, actor);
@@ -83,7 +85,7 @@ export async function listarGrabacionesDb(
     pagina: number;
     busqueda: string;
     filtro: import("@/src/modules/archivos/domain").TipoFiltroArtefacto;
-  }
+  },
 ) {
   return listarGrabacionesDbUseCase(crearArchivosRepository(), actor, input);
 }

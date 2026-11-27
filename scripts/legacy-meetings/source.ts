@@ -8,10 +8,10 @@ export async function cargarOrigen() {
       orderBy: [{ createdAt: "asc" }, { id: "asc" }],
       include: {
         docente: {
-          select: { usuarioId: true }
+          select: { usuarioId: true },
         },
         createdBy: {
-          select: { id: true }
+          select: { id: true },
         },
         eventos: {
           orderBy: [{ inicioProgramadoAt: "asc" }, { id: "asc" }],
@@ -19,14 +19,14 @@ export async function cargarOrigen() {
             asignaciones: {
               include: {
                 asistente: {
-                  select: { usuarioId: true }
-                }
-              }
-            }
-          }
-        }
-      }
-    })
+                  select: { usuarioId: true },
+                },
+              },
+            },
+          },
+        },
+      },
+    }),
   ]);
 }
 

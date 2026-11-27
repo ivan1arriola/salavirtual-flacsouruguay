@@ -8,7 +8,7 @@ export type GenerarPlanillaPagosDeps = Readonly<{
 
 export async function generarPlanillaPagosUseCase(
   deps: GenerarPlanillaPagosDeps,
-  periodo: PeriodoReporteMensual
+  periodo: PeriodoReporteMensual,
 ): Promise<Uint8Array | Buffer> {
   const filas = await deps.liquidacionesRepo.obtenerFilasPlanillaPagos(periodo);
   return deps.exporter.generarPlanillaPagosExcel(periodo, filas);

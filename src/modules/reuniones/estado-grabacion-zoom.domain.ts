@@ -1,5 +1,10 @@
 export type EstadoGrabacionZoomFicha =
-  "NO_PREVISTA" | "SIN_CONFIRMAR" | "PROCESANDO" | "SINCRONIZANDO" | "DISPONIBLE" | "REQUIERE_ATENCION";
+  | "NO_PREVISTA"
+  | "SIN_CONFIRMAR"
+  | "PROCESANDO"
+  | "SINCRONIZANDO"
+  | "DISPONIBLE"
+  | "REQUIERE_ATENCION";
 
 export const ETIQUETA_GRABACION_ZOOM: Record<EstadoGrabacionZoomFicha, string> = {
   NO_PREVISTA: "No prevista",
@@ -7,7 +12,7 @@ export const ETIQUETA_GRABACION_ZOOM: Record<EstadoGrabacionZoomFicha, string> =
   PROCESANDO: "Procesando en Zoom",
   SINCRONIZANDO: "Sincronizando con Drive",
   DISPONIBLE: "Disponible en Drive",
-  REQUIERE_ATENCION: "Requiere atención"
+  REQUIERE_ATENCION: "Requiere atención",
 };
 
 export type EstadoArchivoGrabacionZoom =
@@ -26,7 +31,7 @@ export const ETIQUETA_ARCHIVO_GRABACION_ZOOM: Record<EstadoArchivoGrabacionZoom,
   SINCRONIZANDO: "Sincronizando con Drive",
   DISPONIBLE_DRIVE: "Disponible en Drive",
   ERROR_REINTENTABLE: "Error, se reintentará",
-  REQUIERE_REVISION: "Requiere revisión"
+  REQUIERE_REVISION: "Requiere revisión",
 };
 
 /** Traduce EstadoArchivoZoom; un estado desconocido no se afirma como bueno: queda pendiente. */
@@ -59,7 +64,7 @@ export function derivarEstadoGrabacionZoomFicha(
       pendiente: boolean;
       archivos: readonly Readonly<{ url: string | null; estado?: EstadoArchivoGrabacionZoom }>[];
     }>[];
-  }>
+  }>,
 ): EstadoGrabacionZoomFicha {
   const archivos = entrada.ocurrencias.flatMap((o) => o.archivos);
   if (archivos.some(({ url }) => url !== null)) {
@@ -69,7 +74,9 @@ export function derivarEstadoGrabacionZoomFicha(
     return "PROCESANDO";
   }
   if (archivos.length > 0) {
-    return archivos.every(({ estado }) => estado === "ERROR_REINTENTABLE" || estado === "REQUIERE_REVISION")
+    return archivos.every(
+      ({ estado }) => estado === "ERROR_REINTENTABLE" || estado === "REQUIERE_REVISION",
+    )
       ? "REQUIERE_ATENCION"
       : "SINCRONIZANDO";
   }

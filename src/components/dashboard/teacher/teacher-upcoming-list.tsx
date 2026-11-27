@@ -7,7 +7,7 @@ import type { UpcomingMeetingSummaryDTO } from "@/src/modules/dashboard/types";
 import { getMeetingProviderPresentation } from "@/src/modules/dashboard/meeting-provider.presentation";
 
 export function TeacherUpcomingList({
-  meetings
+  meetings,
 }: Readonly<{
   meetings: readonly UpcomingMeetingSummaryDTO[];
 }>) {
@@ -48,7 +48,9 @@ export function TeacherUpcomingList({
                     assistanceEndsAt={meeting.finAsistenciaAt}
                     compact
                   />
-                  <span className="badge-tag">{meeting.modalidad === "HIBRIDA" ? "Híbrida" : "Virtual"}</span>
+                  <span className="badge-tag">
+                    {meeting.modalidad === "HIBRIDA" ? "Híbrida" : "Virtual"}
+                  </span>
                 </div>
 
                 <div className="teacher-upcoming-card-content">

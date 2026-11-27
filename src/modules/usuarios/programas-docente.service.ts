@@ -3,13 +3,13 @@ import type { SessionActor } from "@/src/lib/auth/session-actor.adapter";
 import {
   puedeGestionarProgramasDocente,
   puedeGestionarProgramasPropios,
-  programasDocenteSchema
+  programasDocenteSchema,
 } from "./programas-docente.domain";
 
 export async function actualizarProgramasPropios(
   db: PrismaClient,
   actor: SessionActor,
-  rawInput: unknown
+  rawInput: unknown,
 ): Promise<readonly string[]> {
   if (!puedeGestionarProgramasPropios(actor)) {
     throw new Error("No tenes permisos para gestionar tus programas.");
@@ -21,7 +21,7 @@ export async function actualizarProgramasDocente(
   db: PrismaClient,
   actor: SessionActor,
   docenteUsuarioId: string,
-  rawInput: unknown
+  rawInput: unknown,
 ): Promise<readonly string[]> {
   if (!puedeGestionarProgramasDocente(actor, docenteUsuarioId)) {
     throw new Error("No tenes permisos para gestionar los programas de este docente.");
@@ -32,7 +32,7 @@ export async function actualizarProgramasDocente(
     const [actorActual, usuario] = await Promise.all([
       tx.usuario.findUnique({
         where: { id: actor.id },
-        select: { id: true, rol: true, activo: true }
+        select: { id: true, rol: true, activo: true },
       }),
       tx.usuario.findUnique({
         where: { id: docenteUsuarioId },
@@ -43,11 +43,11 @@ export async function actualizarProgramasDocente(
           docente: {
             select: {
               id: true,
-              programas: { where: { activo: true }, select: { programaId: true } }
-            }
-          }
-        }
-      })
+              programas: { where: { activo: true }, select: { programaId: true } },
+            },
+          },
+        },
+      }),
     ]);
     if (!actorActual || !puedeGestionarProgramasDocente(actorActual, docenteUsuarioId)) {
       throw new Error("La sesion ya no tiene permisos para gestionar estos programas.");
@@ -55,14 +55,15 @@ export async function actualizarProgramasDocente(
 
     const puedeTenerPerfilDocente = Boolean(
       usuario &&
-      (usuario.rol === "DOCENTE" || (usuario.rol === "ADMINISTRACION" && usuario.id === actorActual.id))
+      (usuario.rol === "DOCENTE" ||
+        (usuario.rol === "ADMINISTRACION" && usuario.id === actorActual.id)),
     );
     if (!usuario || !puedeTenerPerfilDocente) {
       throw new Error("El usuario no puede gestionar programas académicos propios.");
     }
 
     const programasValidos = await tx.programa.count({
-      where: { id: { in: programaIds }, activo: true }
+      where: { id: { in: programaIds }, activo: true },
     });
     if (programasValidos !== programaIds.length) {
       throw new Error("Uno o mas programas no existen o ya no estan activos.");
@@ -72,19 +73,19 @@ export async function actualizarProgramasDocente(
       usuario.docente ??
       (await tx.docente.create({
         data: { usuarioId: usuario.id },
-        select: { id: true, programas: { select: { programaId: true } } }
+        select: { id: true, programas: { select: { programaId: true } } },
       }));
     const anteriores = usuario.docente?.programas.map(({ programaId }) => programaId) ?? [];
 
     await tx.docentePrograma.updateMany({
       where: { docenteId: docente.id, activo: true, programaId: { notIn: programaIds } },
-      data: { activo: false }
+      data: { activo: false },
     });
     for (const programaId of programaIds) {
       await tx.docentePrograma.upsert({
         where: { docenteId_programaId: { docenteId: docente.id, programaId } },
         create: { docenteId: docente.id, programaId, activo: true },
-        update: { activo: true }
+        update: { activo: true },
       });
     }
 
@@ -95,8 +96,8 @@ export async function actualizarProgramasDocente(
         entidadTipo: "Docente",
         entidadId: docente.id,
         valorAnterior: { programaIds: anteriores },
-        valorNuevo: { programaIds }
-      }
+        valorNuevo: { programaIds },
+      },
     });
     return programaIds;
   });

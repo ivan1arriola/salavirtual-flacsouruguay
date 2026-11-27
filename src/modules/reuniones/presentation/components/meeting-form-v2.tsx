@@ -11,7 +11,7 @@ import {
   ShieldCheck,
   Trash2,
   UserRoundCheck,
-  UsersRound
+  UsersRound,
 } from "lucide-react";
 import { type FormEvent, useRef, useState } from "react";
 import { MeetingCreationDialog } from "./meeting-creation-dialog";
@@ -20,7 +20,7 @@ import { generarFechasRecurrentes } from "@/src/modules/reuniones/recurrencia.do
 import {
   horarioAsistenciaCumpleMargen,
   sugerirHorarioAsistencia,
-  sincronizarHorarioAsistencia
+  sincronizarHorarioAsistencia,
 } from "@/src/modules/reuniones/horarios-asistencia.domain";
 import { asistenciaLocalAIso } from "@/src/modules/reuniones/horarios-asistencia.adapter";
 
@@ -52,7 +52,7 @@ const WEEKDAYS = [
   { value: 4, label: "Jue" },
   { value: 5, label: "Vie" },
   { value: 6, label: "Sáb" },
-  { value: 0, label: "Dom" }
+  { value: 0, label: "Dom" },
 ] as const;
 
 const EMPTY_DATE: MeetingDate = {
@@ -61,20 +61,20 @@ const EMPTY_DATE: MeetingDate = {
   horaFin: "",
   horaAsistenciaInicio: "",
   horaAsistenciaFin: "",
-  descripcion: ""
+  descripcion: "",
 };
 
 export function MeetingFormV2({
   programs,
   assistants,
-  canAssignAssistant
+  canAssignAssistant,
 }: Readonly<{
   programs: readonly ProgramOption[];
   assistants: readonly Option[];
   canAssignAssistant: boolean;
 }>) {
   const [selectedProgramId, setSelectedProgramId] = useState<string>(
-    programs.length === 1 ? programs[0].id : ""
+    programs.length === 1 ? programs[0].id : "",
   );
   const [title, setTitle] = useState("");
   const [dates, setDates] = useState<readonly MeetingDate[]>([EMPTY_DATE]);
@@ -86,7 +86,7 @@ export function MeetingFormV2({
     horaInicio: "",
     horaFin: "",
     horaAsistenciaInicio: "",
-    horaAsistenciaFin: ""
+    horaAsistenciaFin: "",
   });
   const [recurrenceMessage, setRecurrenceMessage] = useState("");
   const [recurrenceGenerated, setRecurrenceGenerated] = useState(false);
@@ -111,7 +111,7 @@ export function MeetingFormV2({
     dates.every(
       (date) =>
         Boolean(date.fecha && date.horaInicio && date.horaFin && date.horaFin > date.horaInicio) &&
-        (!requiresAssistance || horarioAsistenciaCumpleMargen(date, meetingMode))
+        (!requiresAssistance || horarioAsistenciaCumpleMargen(date, meetingMode)),
     );
   const isReady = academicReady && datesReady;
 
@@ -127,7 +127,9 @@ export function MeetingFormV2({
     }
     if (!selectedProgram.teacherEmail) {
       setStatus("error");
-      setMessage("El docente seleccionado no tiene una cuenta Google configurada para usar como cohost.");
+      setMessage(
+        "El docente seleccionado no tiene una cuenta Google configurada para usar como cohost.",
+      );
       return;
     }
     if (!datesReady) {
@@ -135,7 +137,7 @@ export function MeetingFormV2({
       setMessage(
         meetingMode === "HIBRIDA" && requiresAssistance
           ? "Revisá las fechas y horarios: la cobertura híbrida necesita al menos 30 minutos antes y 30 minutos después."
-          : "Revisá las fechas y horarios: la cobertura virtual empieza exactamente 15 minutos antes y termina con el encuentro."
+          : "Revisá las fechas y horarios: la cobertura virtual empieza exactamente 15 minutos antes y termina con el encuentro.",
       );
       document.getElementById("fechas")?.scrollIntoView({ behavior: "smooth", block: "start" });
       return;
@@ -153,7 +155,7 @@ export function MeetingFormV2({
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Idempotency-Key": idempotencyKeyRef.current
+          "Idempotency-Key": idempotencyKeyRef.current,
         },
         body: JSON.stringify({
           titulo: formData.get("titulo"),
@@ -171,7 +173,14 @@ export function MeetingFormV2({
           modalidad: formData.get("modalidad"),
           timezone: "America/Montevideo",
           instancias: dates.map(
-            ({ fecha, horaInicio, horaFin, horaAsistenciaInicio, horaAsistenciaFin, descripcion }) => ({
+            ({
+              fecha,
+              horaInicio,
+              horaFin,
+              horaAsistenciaInicio,
+              horaAsistenciaFin,
+              descripcion,
+            }) => ({
               inicio: localMontevideoToIso(fecha, horaInicio),
               fin: localMontevideoToIso(fecha, horaFin),
               asistenciaInicio: requiresAssistance
@@ -181,7 +190,7 @@ export function MeetingFormV2({
                     meetingMode === "VIRTUAL"
                       ? sugerirHorarioAsistencia(horaInicio, horaFin, "VIRTUAL").llegada
                       : horaAsistenciaInicio,
-                    "LLEGADA"
+                    "LLEGADA",
                   )
                 : undefined,
               asistenciaFin: requiresAssistance
@@ -189,13 +198,13 @@ export function MeetingFormV2({
                     fecha,
                     horaFin,
                     meetingMode === "VIRTUAL" ? horaFin : horaAsistenciaFin,
-                    "SALIDA"
+                    "SALIDA",
                   )
                 : undefined,
-              descripcion: descripcion || undefined
-            })
-          )
-        })
+              descripcion: descripcion || undefined,
+            }),
+          ),
+        }),
       });
       const result = await response.json();
       if (!response.ok) {
@@ -203,7 +212,7 @@ export function MeetingFormV2({
       }
       await minimumLoadingTime;
       const failures = result.provisionamiento?.filter(
-        ({ estado }: { estado: string }) => estado !== "SINCRONIZADA"
+        ({ estado }: { estado: string }) => estado !== "SINCRONIZADA",
       ).length;
       setCreatedMeetingId(result.solicitudId);
       setStatus("done");
@@ -212,7 +221,7 @@ export function MeetingFormV2({
           ? "Esta reunión ya se estaba creando. Se conservó una única solicitud."
           : failures
             ? "La reunión quedó guardada. La configuración de Google continúa pendiente."
-            : "La reunión y sus enlaces de Zoom quedaron creados correctamente."
+            : "La reunión y sus enlaces de Zoom quedaron creados correctamente.",
       );
     } catch (error) {
       submittingRef.current = false;
@@ -222,7 +231,12 @@ export function MeetingFormV2({
   }
 
   function horarioInicialSegunModalidad<
-    T extends { horaInicio: string; horaFin: string; horaAsistenciaInicio: string; horaAsistenciaFin: string }
+    T extends {
+      horaInicio: string;
+      horaFin: string;
+      horaAsistenciaInicio: string;
+      horaAsistenciaFin: string;
+    },
   >(date: T, modalidad: "VIRTUAL" | "HIBRIDA"): T {
     const limpio = { ...date, horaAsistenciaInicio: "", horaAsistenciaFin: "" };
     return sincronizarHorarioAsistencia(limpio, limpio, modalidad);
@@ -251,8 +265,10 @@ export function MeetingFormV2({
           return date;
         }
         const updated = { ...date, [campo]: value };
-        return requiresAssistance ? sincronizarHorarioAsistencia(date, updated, meetingMode) : updated;
-      })
+        return requiresAssistance
+          ? sincronizarHorarioAsistencia(date, updated, meetingMode)
+          : updated;
+      }),
     );
   }
 
@@ -265,7 +281,9 @@ export function MeetingFormV2({
   function cambiarRecurrencia(campo: "horaInicio" | "horaFin", value: string) {
     setRecurrence((current) => {
       const updated = { ...current, [campo]: value };
-      return requiresAssistance ? sincronizarHorarioAsistencia(current, updated, meetingMode) : updated;
+      return requiresAssistance
+        ? sincronizarHorarioAsistencia(current, updated, meetingMode)
+        : updated;
     });
     // Una regla modificada invalida las fechas ya generadas.
     invalidarVistaPreviaRecurrencia();
@@ -278,7 +296,7 @@ export function MeetingFormV2({
         throw new Error(
           meetingMode === "HIBRIDA"
             ? "La cobertura híbrida debe empezar al menos 30 minutos antes y terminar al menos 30 minutos después."
-            : "La cobertura virtual comienza exactamente 15 minutos antes y termina al mismo tiempo que el encuentro."
+            : "La cobertura virtual comienza exactamente 15 minutos antes y termina al mismo tiempo que el encuentro.",
         );
       }
       if (generated.length === 0) {
@@ -289,20 +307,22 @@ export function MeetingFormV2({
           ...date,
           horaAsistenciaInicio: requiresAssistance ? recurrence.horaAsistenciaInicio : "",
           horaAsistenciaFin: requiresAssistance ? recurrence.horaAsistenciaFin : "",
-          descripcion: ""
-        }))
+          descripcion: "",
+        })),
       );
       setRecurrenceGenerated(true);
       setRecurrenceMessage(
-        `${generated.length} ${generated.length === 1 ? "encuentro generado" : "encuentros generados"}. Revisá la vista previa.`
+        `${generated.length} ${generated.length === 1 ? "encuentro generado" : "encuentros generados"}. Revisá la vista previa.`,
       );
       window.requestAnimationFrame(() => {
         window.requestAnimationFrame(() =>
-          recurrenceReviewRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" })
+          recurrenceReviewRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" }),
         );
       });
     } catch (error) {
-      setRecurrenceMessage(error instanceof Error ? error.message : "No se pudieron generar las fechas.");
+      setRecurrenceMessage(
+        error instanceof Error ? error.message : "No se pudieron generar las fechas.",
+      );
     }
   }
 
@@ -320,7 +340,11 @@ export function MeetingFormV2({
   }
 
   return (
-    <form className="meeting-form meeting-form-v2" onSubmit={submit} aria-busy={status === "saving"}>
+    <form
+      className="meeting-form meeting-form-v2"
+      onSubmit={submit}
+      aria-busy={status === "saving"}
+    >
       <nav className="meeting-form-steps" aria-label="Secciones del formulario">
         <a
           className={academicReady ? "is-complete" : ""}
@@ -482,13 +506,16 @@ export function MeetingFormV2({
             {meetingMode === "HIBRIDA" ? (
               <div>
                 <strong>Híbrida: al menos 30 minutos antes y después</strong>
-                <span>Los horarios se proponen automáticamente y podés ampliarlos según sea necesario.</span>
+                <span>
+                  Los horarios se proponen automáticamente y podés ampliarlos según sea necesario.
+                </span>
               </div>
             ) : (
               <div>
                 <strong>Virtual: 15 minutos antes, sin tiempo adicional al final</strong>
                 <span>
-                  La llegada y salida se calculan automáticamente y son fijas; no tenés que completarlas.
+                  La llegada y salida se calculan automáticamente y son fijas; no tenés que
+                  completarlas.
                 </span>
               </div>
             )}
@@ -546,7 +573,10 @@ export function MeetingFormV2({
                           required
                           value={recurrence.horaAsistenciaInicio}
                           onChange={(event) => {
-                            setRecurrence({ ...recurrence, horaAsistenciaInicio: event.target.value });
+                            setRecurrence({
+                              ...recurrence,
+                              horaAsistenciaInicio: event.target.value,
+                            });
                             invalidarVistaPreviaRecurrencia();
                           }}
                         />
@@ -569,8 +599,8 @@ export function MeetingFormV2({
                     recurrence.horaAsistenciaFin &&
                     !horarioAsistenciaCumpleMargen(recurrence, "HIBRIDA") ? (
                       <span className="meeting-date-warning" role="alert">
-                        La llegada debe ser al menos 30 min antes del inicio y la salida al menos 30 min
-                        después del final.
+                        La llegada debe ser al menos 30 min antes del inicio y la salida al menos 30
+                        min después del final.
                       </span>
                     ) : null}
                   </div>
@@ -603,7 +633,11 @@ export function MeetingFormV2({
                       onChange={(event) => {
                         setRecurrence({
                           ...recurrence,
-                          diasSemana: toggleWeekday(recurrence.diasSemana, day.value, event.target.checked)
+                          diasSemana: toggleWeekday(
+                            recurrence.diasSemana,
+                            day.value,
+                            event.target.checked,
+                          ),
                         });
                         invalidarVistaPreviaRecurrencia();
                       }}
@@ -614,7 +648,9 @@ export function MeetingFormV2({
               </fieldset>
               <div className="recurrence-actions">
                 <span
-                  className={recurrenceMessage ? "recurrence-feedback has-result" : "recurrence-feedback"}
+                  className={
+                    recurrenceMessage ? "recurrence-feedback has-result" : "recurrence-feedback"
+                  }
                   role="status"
                 >
                   {recurrenceMessage || "Luego podrás revisar y ajustar cada encuentro."}
@@ -642,7 +678,9 @@ export function MeetingFormV2({
                     : "Fechas cargadas manualmente"}
                 </strong>
                 {dateMode === "RECURRENT" ? (
-                  <small>Podés cambiar fechas y horarios, quitar encuentros o agregar excepciones.</small>
+                  <small>
+                    Podés cambiar fechas y horarios, quitar encuentros o agregar excepciones.
+                  </small>
                 ) : null}
               </div>
               <span className="date-count">{dates.length}</span>
@@ -666,7 +704,9 @@ export function MeetingFormV2({
                         type="date"
                         required
                         value={date.fecha}
-                        onChange={(event) => setDates(updateDate(dates, index, "fecha", event.target.value))}
+                        onChange={(event) =>
+                          setDates(updateDate(dates, index, "fecha", event.target.value))
+                        }
                       />
                     </Field>
                     <Field label="Hora de inicio">
@@ -674,7 +714,9 @@ export function MeetingFormV2({
                         type="time"
                         required
                         value={date.horaInicio}
-                        onChange={(event) => cambiarHoraEncuentro(index, "horaInicio", event.target.value)}
+                        onChange={(event) =>
+                          cambiarHoraEncuentro(index, "horaInicio", event.target.value)
+                        }
                       />
                     </Field>
                     <Field label="Hora de fin">
@@ -682,7 +724,9 @@ export function MeetingFormV2({
                         type="time"
                         required
                         value={date.horaFin}
-                        onChange={(event) => cambiarHoraEncuentro(index, "horaFin", event.target.value)}
+                        onChange={(event) =>
+                          cambiarHoraEncuentro(index, "horaFin", event.target.value)
+                        }
                       />
                     </Field>
                     {requiereHorarioPresencial ? (
@@ -697,7 +741,14 @@ export function MeetingFormV2({
                               required
                               value={date.horaAsistenciaInicio}
                               onChange={(event) =>
-                                setDates(updateDate(dates, index, "horaAsistenciaInicio", event.target.value))
+                                setDates(
+                                  updateDate(
+                                    dates,
+                                    index,
+                                    "horaAsistenciaInicio",
+                                    event.target.value,
+                                  ),
+                                )
                               }
                             />
                           </Field>
@@ -707,7 +758,9 @@ export function MeetingFormV2({
                               required
                               value={date.horaAsistenciaFin}
                               onChange={(event) =>
-                                setDates(updateDate(dates, index, "horaAsistenciaFin", event.target.value))
+                                setDates(
+                                  updateDate(dates, index, "horaAsistenciaFin", event.target.value),
+                                )
                               }
                             />
                           </Field>
@@ -723,8 +776,8 @@ export function MeetingFormV2({
                           <div className="meeting-assistance-readonly">
                             <span>Llegada del asistente</span>
                             <strong>
-                              {sugerirHorarioAsistencia(date.horaInicio, date.horaFin, "VIRTUAL").llegada ||
-                                "—"}
+                              {sugerirHorarioAsistencia(date.horaInicio, date.horaFin, "VIRTUAL")
+                                .llegada || "—"}
                             </strong>
                           </div>
                           <div className="meeting-assistance-readonly">
@@ -747,7 +800,8 @@ export function MeetingFormV2({
                     ) : null}
                     <details className="meeting-date-notes" key={dateMode + "-" + index + "-notes"}>
                       <summary>
-                        <Plus size={15} aria-hidden="true" /> Notas del encuentro <span>(opcional)</span>
+                        <Plus size={15} aria-hidden="true" /> Notas del encuentro{" "}
+                        <span>(opcional)</span>
                       </summary>
                       <label className="field date-description">
                         <span>Descripción de este encuentro</span>
@@ -773,8 +827,8 @@ export function MeetingFormV2({
                     date.horaAsistenciaFin &&
                     !horarioAsistenciaCumpleMargen(date) ? (
                       <p className="meeting-date-warning" role="alert">
-                        El asistente debe llegar al menos 30 minutos antes y salir 30 minutos después del
-                        encuentro.
+                        El asistente debe llegar al menos 30 minutos antes y salir 30 minutos
+                        después del encuentro.
                       </p>
                     ) : null}
                   </div>
@@ -834,8 +888,8 @@ export function MeetingFormV2({
               <div>
                 <strong>Horarios de asistencia presencial</strong>
                 <span>
-                  La llegada se programa 30 minutos antes y la salida 30 minutos después del encuentro, como
-                  mínimo. Ambos horarios se pueden ampliar.
+                  La llegada se programa 30 minutos antes y la salida 30 minutos después del
+                  encuentro, como mínimo. Ambos horarios se pueden ampliar.
                 </span>
                 <a href="#fechas">Revisar llegada y salida en Fechas</a>
               </div>
@@ -845,7 +899,9 @@ export function MeetingFormV2({
               <Clock3 size={18} aria-hidden="true" />
               <div>
                 <strong>Asistencia virtual con horario fijo</strong>
-                <span>La cobertura comienza 15 minutos antes y termina exactamente con el encuentro.</span>
+                <span>
+                  La cobertura comienza 15 minutos antes y termina exactamente con el encuentro.
+                </span>
                 <a href="#fechas">Ver los horarios en Fechas</a>
               </div>
             </div>
@@ -922,7 +978,8 @@ export function MeetingFormV2({
               <div>
                 <h3>Quién va a ingresar a la reunión</h3>
                 <p>
-                  El docente del programa se agrega siempre como cohost. Podés sumar otras cuentas Google.
+                  El docente del programa se agrega siempre como cohost. Podés sumar otras cuentas
+                  Google.
                 </p>
               </div>
             </div>
@@ -1000,8 +1057,8 @@ export function MeetingFormV2({
             </span>
             <small>
               {requiresAssistance ? "Con monitoreo" : "Sin monitoreo"} ·{" "}
-              {requiresRecording ? "Se graba" : "Sin grabación"} · {extraCohostEmails.length} cohosts extra ·{" "}
-              {guestEmails.length} invitados
+              {requiresRecording ? "Se graba" : "Sin grabación"} · {extraCohostEmails.length}{" "}
+              cohosts extra · {guestEmails.length} invitados
             </small>
           </div>
         ) : null}
@@ -1044,7 +1101,7 @@ function ChoicePanel({
   noDetail,
   yesLabel,
   yesDetail,
-  onChange
+  onChange,
 }: Readonly<{
   title: string;
   detail: string;
@@ -1086,7 +1143,7 @@ function FormSection({
   number,
   title,
   detail,
-  children
+  children,
 }: Readonly<{
   id: string;
   icon: React.ReactNode;
@@ -1113,7 +1170,7 @@ function FormSection({
 function Field({
   label,
   wide = false,
-  children
+  children,
 }: Readonly<{ label: string; wide?: boolean; children: React.ReactNode }>) {
   return (
     <label className={wide ? "field field-wide" : "field"}>
@@ -1127,7 +1184,7 @@ function updateDate(
   dates: readonly MeetingDate[],
   index: number,
   key: keyof MeetingDate,
-  value: string
+  value: string,
 ): readonly MeetingDate[] {
   return dates.map((date, current) => (current === index ? { ...date, [key]: value } : date));
 }
@@ -1146,6 +1203,6 @@ function wait(milliseconds: number): Promise<void> {
 
 function waitForNextPaint(): Promise<void> {
   return new Promise((resolve) =>
-    window.requestAnimationFrame(() => window.requestAnimationFrame(() => resolve()))
+    window.requestAnimationFrame(() => window.requestAnimationFrame(() => resolve())),
   );
 }

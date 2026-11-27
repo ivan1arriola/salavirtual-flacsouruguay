@@ -3,11 +3,11 @@ import { describe, expect, it } from "vitest";
 
 const pagina = readFileSync(
   new URL("../src/bootstrap/ui/reuniones/reuniones-lista-zoom-page.server.tsx", import.meta.url),
-  "utf8"
+  "utf8",
 );
 const css = readFileSync(
   new URL("../app/(gestion)/reuniones/reuniones-zoom.module.css", import.meta.url),
-  "utf8"
+  "utf8",
 );
 
 describe("lista de reuniones de Zoom: día y cuenta anfitriona", () => {
@@ -44,9 +44,9 @@ describe("lista de reuniones de Zoom: día y cuenta anfitriona", () => {
   });
 
   it("los colores de la paleta no se repiten", () => {
-    const fuertes = [...css.matchAll(/\.item\[data-cuenta="\d+"\][^{]*\{ --tone: (#[0-9a-f]{6});/gi)].map(
-      (m) => m[1].toLowerCase()
-    );
+    const fuertes = [
+      ...css.matchAll(/\.item\[data-cuenta="\d+"\][^{]*\{ --tone: (#[0-9a-f]{6});/gi),
+    ].map((m) => m[1].toLowerCase());
     expect(new Set(fuertes).size).toBe(fuertes.length);
   });
 });

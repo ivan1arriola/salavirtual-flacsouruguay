@@ -13,8 +13,8 @@ describe("filtros de asistentes operativos", () => {
         asistentes: [],
         enGruposPequenos: false,
         cantidadGruposPequenos: 0,
-        ahoraIso: "2026-01-01T00:00:00Z"
-      })
+        ahoraIso: "2026-01-01T00:00:00Z",
+      }),
     );
     expect(html).toContain('role="group" aria-label="Filtrar asistentes"');
     expect(html).toMatch(/<button[^>]*aria-pressed="true"[^>]*>[\s\S]*?Conectados ahora/);

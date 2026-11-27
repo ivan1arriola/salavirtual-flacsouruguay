@@ -3,27 +3,34 @@ import {
   clasificarTipoArchivoZoom,
   nombreArchivoZoom,
   type HashZoom,
-  type ObservacionInventarioZoom
+  type ObservacionInventarioZoom,
 } from "./zoom-archivos.domain";
-import type { ArchivoOrigenZoom, EstadoArchivoZoom, ReferenciaOcurrenciaZoom } from "./zoom-archivos.types";
+import type {
+  ArchivoOrigenZoom,
+  EstadoArchivoZoom,
+  ReferenciaOcurrenciaZoom,
+} from "./zoom-archivos.types";
 
-export type EstadoCalculadoArchivoZoom = Readonly<{ estado: EstadoArchivoZoom; errorCodigo: string | null }>;
+export type EstadoCalculadoArchivoZoom = Readonly<{
+  estado: EstadoArchivoZoom;
+  errorCodigo: string | null;
+}>;
 
 /** Claves de origen con candidatos indistinguibles y su multiplicidad observada. */
 export function multiplicidadesAmbiguasZoom(
-  observaciones: readonly ObservacionInventarioZoom[]
+  observaciones: readonly ObservacionInventarioZoom[],
 ): ReadonlyMap<string, number> {
   return new Map(
     observaciones.flatMap((o) =>
-      o.tipo === "IDENTIDAD_AMBIGUA" ? [[o.claveOrigen, o.multiplicidad] as const] : []
-    )
+      o.tipo === "IDENTIDAD_AMBIGUA" ? [[o.claveOrigen, o.multiplicidad] as const] : [],
+    ),
   );
 }
 
 /** Estado con que se registra un recurso descubierto por primera vez. */
 export function estadoInicialArchivoZoom(
   recurso: ArchivoOrigenZoom,
-  multiplicidad: number
+  multiplicidad: number,
 ): EstadoCalculadoArchivoZoom {
   if (multiplicidad > 1) {
     return { estado: "REQUIERE_REVISION", errorCodigo: "IDENTIDAD_AMBIGUA" };
@@ -45,7 +52,7 @@ export function estadoInicialArchivoZoom(
 export function estadoTrasReinventarioZoom(
   actual: EstadoArchivoZoom,
   recurso: ArchivoOrigenZoom,
-  multiplicidad: number
+  multiplicidad: number,
 ): EstadoCalculadoArchivoZoom | null {
   if (actual === "CONSERVADO" || actual === "COPIANDO" || actual === "REQUIERE_REVISION") {
     return null;
@@ -60,13 +67,19 @@ export function estadoTrasReinventarioZoom(
   return siguiente.estado === actual ? null : siguiente;
 }
 
-export type NombreDestinoAsignado = Readonly<{ nombre: string; desambiguado: boolean; colision: boolean }>;
+export type NombreDestinoAsignado = Readonly<{
+  nombre: string;
+  desambiguado: boolean;
+  colision: boolean;
+}>;
 
 /** Orden estable sin mutar la entrada. */
 function ordenar<T>(items: readonly T[], antes: (a: T, b: T) => boolean): readonly T[] {
   return items.reduce<readonly T[]>((orden, actual) => {
     const indice = orden.findIndex((item) => antes(actual, item));
-    return indice < 0 ? [...orden, actual] : [...orden.slice(0, indice), actual, ...orden.slice(indice)];
+    return indice < 0
+      ? [...orden, actual]
+      : [...orden.slice(0, indice), actual, ...orden.slice(indice)];
   }, []);
 }
 
@@ -78,7 +91,7 @@ function nombreConContador(
   ocurrencia: ReferenciaOcurrenciaZoom,
   recurso: ArchivoOrigenZoom,
   tomados: ReadonlySet<string>,
-  contador: number
+  contador: number,
 ): string {
   const candidato = nombreArchivoZoom(ocurrencia, recurso, `${recurso.claveOrigen}-${contador}`);
   return tomados.has(claveComparable(candidato))
@@ -89,18 +102,22 @@ function nombreConContador(
 function asignarNombre(
   ocurrencia: ReferenciaOcurrenciaZoom,
   recurso: ArchivoOrigenZoom,
-  tomados: ReadonlySet<string>
+  tomados: ReadonlySet<string>,
 ): NombreDestinoAsignado {
   const candidatos = [
     nombreArchivoZoom(ocurrencia, recurso),
     nombreArchivoZoom(ocurrencia, recurso, recurso.claveOrigen.slice(0, 12)),
-    nombreArchivoZoom(ocurrencia, recurso, recurso.claveOrigen)
+    nombreArchivoZoom(ocurrencia, recurso, recurso.claveOrigen),
   ];
   const libre = candidatos.findIndex((c) => !tomados.has(claveComparable(c)));
   const nombreLibre = candidatos[libre];
   return nombreLibre !== undefined
     ? { nombre: nombreLibre, desambiguado: libre > 0, colision: false }
-    : { nombre: nombreConContador(ocurrencia, recurso, tomados, 2), desambiguado: true, colision: true };
+    : {
+        nombre: nombreConContador(ocurrencia, recurso, tomados, 2),
+        desambiguado: true,
+        colision: true,
+      };
 }
 
 type NombresAcumulados = Readonly<{
@@ -117,21 +134,21 @@ type NombresAcumulados = Readonly<{
 export function asignarNombresDestinoZoom(
   ocurrencia: ReferenciaOcurrenciaZoom,
   recursos: readonly ArchivoOrigenZoom[],
-  ocupados: Iterable<string>
+  ocupados: Iterable<string>,
 ): ReadonlyMap<string, NombreDestinoAsignado> {
   const inicial: NombresAcumulados = {
     tomados: new Set([...ocupados].map(claveComparable)),
-    asignados: new Map()
+    asignados: new Map(),
   };
   return ordenar(recursos, (a, b) => a.claveOrigen < b.claveOrigen).reduce<NombresAcumulados>(
     (acumulado, recurso) => {
       const asignado = asignarNombre(ocurrencia, recurso, acumulado.tomados);
       return {
         tomados: new Set([...acumulado.tomados, claveComparable(asignado.nombre)]),
-        asignados: new Map([...acumulado.asignados, [recurso.claveOrigen, asignado]])
+        asignados: new Map([...acumulado.asignados, [recurso.claveOrigen, asignado]]),
       };
     },
-    inicial
+    inicial,
   ).asignados;
 }
 
@@ -146,7 +163,7 @@ export function referenciaExternaArchivoZoom(
   cuentaZoomId: string,
   uuid: string,
   claveOrigen: string,
-  hash: HashZoom
+  hash: HashZoom,
 ): string {
   return `${PREFIJO_REFERENCIA_ARCHIVO_ZOOM}${hash(cuentaZoomId)}/${hash(uuid)}/${claveOrigen}`;
 }
@@ -157,7 +174,7 @@ export function referenciaExternaArchivoZoom(
  */
 export function bytesTransferidosReservaAbandonadaZoom(
   bytesConfirmadosInicio: bigint,
-  bytesConfirmadosActuales: bigint
+  bytesConfirmadosActuales: bigint,
 ): bigint {
   return bytesConfirmadosActuales > bytesConfirmadosInicio
     ? bytesConfirmadosActuales - bytesConfirmadosInicio
@@ -181,7 +198,10 @@ export function tipoArchivoReunionZoom(tipoOriginal: string): TipoArtefactoMeet 
 }
 
 /** Mensaje de error persistible: sin URLs, tokens ni credenciales, y acotado. */
-export function sanearErrorZoom(texto: string | null | undefined, largoMaximo = 500): string | null {
+export function sanearErrorZoom(
+  texto: string | null | undefined,
+  largoMaximo = 500,
+): string | null {
   if (texto === null || texto === undefined) {
     return null;
   }
@@ -190,7 +210,7 @@ export function sanearErrorZoom(texto: string | null | undefined, largoMaximo = 
     .replace(/\bBearer\s+\S+/gi, "Bearer [redactado]")
     .replace(
       /\b(access_token|refresh_token|token|signature|sig|key|password|secret|authorization|client_secret)\s*[=:]\s*[^&\s]+/gi,
-      "$1=[redactado]"
+      "$1=[redactado]",
     )
     .replace(/\s+/g, " ")
     .trim()
@@ -230,7 +250,7 @@ export function evaluarCupoTransferenciaZoom(
   bytes: bigint,
   prioridad: PrioridadTransferenciaZoom,
   limites: LimitesCupoZoom,
-  ahora: Date
+  ahora: Date,
 ): EvaluacionCupoZoom {
   if (bytes < 0n) {
     throw new RangeError("Los bytes a reservar no pueden ser negativos.");
@@ -248,7 +268,7 @@ export function evaluarCupoTransferenciaZoom(
   const desde = ahora.getTime() - limites.ventanaMs;
   const vigentes = ordenar(
     reservas.filter((r) => r.reservadoAt.getTime() > desde),
-    (a, b) => a.reservadoAt.getTime() < b.reservadoAt.getTime()
+    (a, b) => a.reservadoAt.getTime() < b.reservadoAt.getTime(),
   );
   const usadoBytes = vigentes.reduce((suma, r) => suma + r.bytes, 0n);
   const limiteBytes =
@@ -261,7 +281,7 @@ export function evaluarCupoTransferenciaZoom(
   // Bytes que salen de la ventana a medida que vencen las reservas más antiguas.
   const liberados = vigentes.reduce<readonly bigint[]>(
     (acumulado, r) => [...acumulado, (acumulado.at(-1) ?? 0n) + r.bytes],
-    []
+    [],
   );
   const indice =
     bytes <= limiteBytes

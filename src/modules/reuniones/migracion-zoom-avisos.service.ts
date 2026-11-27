@@ -9,7 +9,7 @@ export type EnviarCorreoMigracion = (
     subject: string;
     text: string;
     html: string;
-  }>
+  }>,
 ) => Promise<Readonly<{ sent: boolean; skipped?: string; error?: string }>>;
 
 export type DependenciasAvisosMigracionZoom = Readonly<{
@@ -38,7 +38,10 @@ export type ResumenAvisosMigracion = Readonly<{
   detalle: readonly Readonly<{ email: string; estado: EstadoAvisoDestinatario; error?: string }>[];
 }>;
 
-const vacio = (estado: ResumenAvisosMigracion["estado"], motivo: string): ResumenAvisosMigracion => ({
+const vacio = (
+  estado: ResumenAvisosMigracion["estado"],
+  motivo: string,
+): ResumenAvisosMigracion => ({
   estado,
   motivo,
   destinatarios: 0,
@@ -46,7 +49,7 @@ const vacio = (estado: ResumenAvisosMigracion["estado"], motivo: string): Resume
   yaEnviados: 0,
   enCurso: 0,
   errores: 0,
-  detalle: []
+  detalle: [],
 });
 
 export function normalizarEmailAviso(email: string | null | undefined): string | null {
@@ -59,7 +62,9 @@ function esDuplicado(error: unknown): boolean {
 }
 
 function codigoError(error: unknown): string {
-  return error instanceof Error ? error.name.replace(/[^A-Za-z0-9_]/g, "").slice(0, 80) || "Error" : "Error";
+  return error instanceof Error
+    ? error.name.replace(/[^A-Za-z0-9_]/g, "").slice(0, 80) || "Error"
+    : "Error";
 }
 
 const seleccion = {
@@ -73,8 +78,8 @@ const seleccion = {
       joinUrl: true,
       externalEventId: true,
       cuentaProveedor: { select: { emailOrganizador: true } },
-      proveedor: { select: { tipo: true } }
-    }
+      proveedor: { select: { tipo: true } },
+    },
   },
   solicitud: {
     select: {
@@ -82,17 +87,22 @@ const seleccion = {
       estado: true,
       creadaPorUsuarioId: true,
       docentePrograma: {
-        select: { docente: { select: { usuarioId: true } }, programa: { select: { nombre: true } } }
-      }
-    }
+        select: {
+          docente: { select: { usuarioId: true } },
+          programa: { select: { nombre: true } },
+        },
+      },
+    },
   },
   asignaciones: {
     where: { estado: { in: ["ASIGNADO", "ACEPTADO"] } },
-    select: { asistenteTecnico: { select: { usuarioId: true, cesadoHastaProximoInicioSesion: true } } }
+    select: {
+      asistenteTecnico: { select: { usuarioId: true, cesadoHastaProximoInicioSesion: true } },
+    },
   },
   cohosts: { select: { cuentaGoogle: { select: { email: true } } } },
   cohostEmails: { select: { email: true } },
-  invitados: { select: { email: true, nombre: true } }
+  invitados: { select: { email: true, nombre: true } },
 } satisfies Prisma.InstanciaSalaSelect;
 
 /**
@@ -104,11 +114,14 @@ const seleccion = {
  */
 export async function notificarMigracionZoom(
   deps: DependenciasAvisosMigracionZoom,
-  instanciaId: string
+  instanciaId: string,
 ): Promise<ResumenAvisosMigracion> {
   const { db } = deps;
   const ahora = (deps.ahora ?? (() => new Date()))();
-  const instancia = await db.instanciaSala.findUnique({ where: { id: instanciaId }, select: seleccion });
+  const instancia = await db.instanciaSala.findUnique({
+    where: { id: instanciaId },
+    select: seleccion,
+  });
   if (!instancia) {
     return vacio("NO_APLICA", "El encuentro no existe.");
   }
@@ -141,12 +154,12 @@ export async function notificarMigracionZoom(
       instancia.solicitud.docentePrograma.docente.usuarioId,
       ...instancia.asignaciones
         .filter(({ asistenteTecnico }) => !asistenteTecnico.cesadoHastaProximoInicioSesion)
-        .map(({ asistenteTecnico }) => asistenteTecnico.usuarioId)
-    ])
+        .map(({ asistenteTecnico }) => asistenteTecnico.usuarioId),
+    ]),
   ];
   const usuarios = await db.usuario.findMany({
     where: { id: { in: usuarioIds }, activo: true, fusionadoEnId: null },
-    select: { nombres: true, emailPrincipal: true }
+    select: { nombres: true, emailPrincipal: true },
   });
   for (const u of usuarios) {
     agregar(u.emailPrincipal, u.nombres);
@@ -165,11 +178,15 @@ export async function notificarMigracionZoom(
   // en Sala Virtual. La clave única de la outbox deduplica ambos orígenes.
   const meet = instancia.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET");
   let errorCalendar: string | null = null;
-  if (deps.leerInvitadosCalendar && meet?.externalEventId && meet.cuentaProveedor?.emailOrganizador) {
+  if (
+    deps.leerInvitadosCalendar &&
+    meet?.externalEventId &&
+    meet.cuentaProveedor?.emailOrganizador
+  ) {
     try {
       const invitadosCalendar = await deps.leerInvitadosCalendar(
         meet.cuentaProveedor.emailOrganizador,
-        meet.externalEventId
+        meet.externalEventId,
       );
       for (const email of invitadosCalendar) {
         agregar(email);
@@ -196,9 +213,9 @@ export async function notificarMigracionZoom(
             email,
             inicioProgramadoAt: instancia.inicioProgramadoAt,
             joinUrl,
-            estado: "RESERVADO"
+            estado: "RESERVADO",
           },
-          select: { id: true }
+          select: { id: true },
         })
       ).id;
     } catch (error) {
@@ -207,7 +224,7 @@ export async function notificarMigracionZoom(
       }
       const previo = await db.avisoMigracionZoom.findUnique({
         where: { instanciaSalaId_email: { instanciaSalaId: instancia.id, email } },
-        select: { id: true, estado: true }
+        select: { id: true, estado: true },
       });
       if (!previo) {
         detalle.push({ email, estado: "EN_CURSO" });
@@ -232,8 +249,8 @@ export async function notificarMigracionZoom(
           errorCodigo: null,
           joinUrl,
           inicioProgramadoAt: instancia.inicioProgramadoAt,
-          intentos: { increment: 1 }
-        }
+          intentos: { increment: 1 },
+        },
       });
       if (reclamo.count !== 1) {
         detalle.push({ email, estado: "EN_CURSO" });
@@ -250,8 +267,8 @@ export async function notificarMigracionZoom(
           estado: true,
           proveedorActivoTipo: true,
           inicioProgramadoAt: true,
-          solicitud: { select: { estado: true } }
-        }
+          solicitud: { select: { estado: true } },
+        },
       });
       if (
         !vigente ||
@@ -260,7 +277,10 @@ export async function notificarMigracionZoom(
         vigente.solicitud.estado === "CANCELADA" ||
         vigente.inicioProgramadoAt.getTime() !== instancia.inicioProgramadoAt.getTime()
       ) {
-        await db.avisoMigracionZoom.update({ where: { id: reservaId }, data: { estado: "OBSOLETO" } });
+        await db.avisoMigracionZoom.update({
+          where: { id: reservaId },
+          data: { estado: "OBSOLETO" },
+        });
         detalle.push({ email, estado: "OBSOLETO" });
         continue;
       }
@@ -270,21 +290,21 @@ export async function notificarMigracionZoom(
         programa: instancia.solicitud.docentePrograma.programa.nombre,
         fecha,
         horario,
-        urlZoom: joinUrl
+        urlZoom: joinUrl,
       });
       const resultado = await deps.enviarCorreo({ to: [email], ...correo });
       if (!resultado.sent) {
         const codigo = (resultado.skipped ?? resultado.error ?? "NO_CONFIRMADO").slice(0, 80);
         await db.avisoMigracionZoom.update({
           where: { id: reservaId },
-          data: { estado: "ERROR", errorCodigo: codigo }
+          data: { estado: "ERROR", errorCodigo: codigo },
         });
         detalle.push({ email, estado: "ERROR", error: codigo });
         continue;
       }
       await db.avisoMigracionZoom.update({
         where: { id: reservaId },
-        data: { estado: "ACEPTADO", enviadoAt: new Date(), errorCodigo: null }
+        data: { estado: "ACEPTADO", enviadoAt: new Date(), errorCodigo: null },
       });
       detalle.push({ email, estado: "ENVIADO" });
     } catch (error) {
@@ -298,7 +318,8 @@ export async function notificarMigracionZoom(
     }
   }
 
-  const cuenta = (estado: EstadoAvisoDestinatario) => detalle.filter((d) => d.estado === estado).length;
+  const cuenta = (estado: EstadoAvisoDestinatario) =>
+    detalle.filter((d) => d.estado === estado).length;
   const errores = cuenta("ERROR");
   const enCurso = cuenta("EN_CURSO");
   return {
@@ -311,6 +332,6 @@ export async function notificarMigracionZoom(
     yaEnviados: cuenta("YA_ENVIADO"),
     enCurso,
     errores,
-    detalle
+    detalle,
   };
 }

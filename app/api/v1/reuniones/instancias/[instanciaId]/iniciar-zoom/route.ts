@@ -4,7 +4,10 @@ import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { descifrarConfiguracion } from "@/src/lib/config/encryption";
 import { db } from "@/src/lib/db";
 import { toHttpError } from "@/src/lib/http/api-error";
-import { obtenerReunionZoomHttp, obtenerZoomAccessToken } from "@/src/integrations/zoom/zoom-client";
+import {
+  obtenerReunionZoomHttp,
+  obtenerZoomAccessToken,
+} from "@/src/integrations/zoom/zoom-client";
 import { obtenerCredencialesZoom } from "@/src/modules/configuracion/zoom-config.service";
 import { obtenerEnlaceInicioZoom } from "@/src/modules/reuniones/iniciar-reunion-zoom.service";
 
@@ -36,18 +39,21 @@ export async function GET(_request: Request, context: RouteContext) {
           }
           const token = await obtenerZoomAccessToken(credenciales);
           return (await obtenerReunionZoomHttp(token, zoomMeetingId)).startUrl ?? null;
-        }
+        },
       },
       actor,
-      instanciaId
+      instanciaId,
     );
 
-    return NextResponse.redirect(startUrl, { status: 302, headers: { "Cache-Control": "no-store" } });
+    return NextResponse.redirect(startUrl, {
+      status: 302,
+      headers: { "Cache-Control": "no-store" },
+    });
   } catch (error) {
     const mapped = toHttpError(error);
     return NextResponse.json(
       { error: mapped.message },
-      { status: mapped.status, headers: { "Cache-Control": "no-store" } }
+      { status: mapped.status, headers: { "Cache-Control": "no-store" } },
     );
   }
 }

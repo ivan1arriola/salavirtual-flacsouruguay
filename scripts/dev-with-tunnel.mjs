@@ -11,9 +11,9 @@ const tunnel = spawn(
     "ServerAliveInterval=30",
     "-L",
     "15432:127.0.0.1:5432",
-    "servidor-flacso"
+    "servidor-flacso",
   ],
-  { stdio: "inherit" }
+  { stdio: "inherit" },
 );
 
 let next;
@@ -35,7 +35,7 @@ function waitForTunnel() {
   return new Promise((resolve, reject) => {
     const timeout = setTimeout(
       () => reject(new Error("el puerto local no estuvo disponible a tiempo")),
-      10000
+      10000,
     );
 
     const checkPort = () => {
@@ -81,7 +81,7 @@ waitForTunnel()
 
     next = spawn("npm", ["run", "dev:next"], {
       stdio: "inherit",
-      env: process.env
+      env: process.env,
     });
 
     next.once("error", (error) => {

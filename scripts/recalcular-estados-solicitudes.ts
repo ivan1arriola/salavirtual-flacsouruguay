@@ -19,18 +19,18 @@ async function main() {
               estadoIntegracion: true,
               joinUrl: true,
               codigoReunion: true,
-              errorIntegracion: true
-            }
-          }
-        }
-      }
-    }
+              errorIntegracion: true,
+            },
+          },
+        },
+      },
+    },
   });
   const changes = requests.flatMap((request) => {
     const expected = resolverEstadoSolicitudPorIntegraciones(
       request.instancias.flatMap(({ eventosProveedor }) =>
-        eventosProveedor.map((event) => estadoIntegracionEfectivo(event))
-      )
+        eventosProveedor.map((event) => estadoIntegracionEfectivo(event)),
+      ),
     );
     return expected === request.estado
       ? []
@@ -39,14 +39,14 @@ async function main() {
             id: request.id,
             titulo: request.titulo,
             anterior: request.estado,
-            esperado: expected
-          }
+            esperado: expected,
+          },
         ];
   });
 
   console.table(changes);
   console.log(
-    `${changes.length} reuniones requieren actualización.${apply ? " Aplicando cambios…" : " Ejecución de prueba."}`
+    `${changes.length} reuniones requieren actualización.${apply ? " Aplicando cambios…" : " Ejecución de prueba."}`,
   );
   if (!apply) {
     return;

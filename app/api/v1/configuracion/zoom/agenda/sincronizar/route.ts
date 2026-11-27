@@ -15,14 +15,17 @@ const NO_CACHE = { "Cache-Control": "private, no-store" };
  * un webhook. Responde 502 si alguna cuenta no se pudo consultar, para que quede en el journal.
  */
 export async function GET(request: Request) {
-  const secret = process.env.CRON_SECRET;
+  const secret = process.env["CRON_SECRET"];
   if (!secret || request.headers.get("authorization") !== `Bearer ${secret}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401, headers: NO_CACHE });
   }
   try {
     const resultado = await sincronizarAgendaZoomCompleta();
     if (resultado.tipo === "ERROR") {
-      return NextResponse.json({ error: "Zoom no está configurado." }, { status: 503, headers: NO_CACHE });
+      return NextResponse.json(
+        { error: "Zoom no está configurado." },
+        { status: 503, headers: NO_CACHE },
+      );
     }
     const fallidas = resultado.resultados.filter(({ ok }) => !ok).length;
     return NextResponse.json(resultado, { status: fallidas ? 502 : 200, headers: NO_CACHE });
@@ -30,7 +33,7 @@ export async function GET(request: Request) {
     console.error("[zoom] Falló la sincronización periódica de la agenda", error);
     return NextResponse.json(
       { error: "No se pudo sincronizar con Zoom." },
-      { status: 502, headers: NO_CACHE }
+      { status: 502, headers: NO_CACHE },
     );
   }
 }
@@ -47,13 +50,16 @@ export async function POST() {
   try {
     const resultado = await sincronizarAgendaZoomCompleta();
     if (resultado.tipo === "ERROR") {
-      return NextResponse.json({ error: "Zoom no está configurado." }, { status: 503, headers: NO_CACHE });
+      return NextResponse.json(
+        { error: "Zoom no está configurado." },
+        { status: 503, headers: NO_CACHE },
+      );
     }
     return NextResponse.json(resultado, { headers: NO_CACHE });
   } catch {
     return NextResponse.json(
       { error: "No se pudo sincronizar con Zoom. Probá de nuevo más tarde." },
-      { status: 502, headers: NO_CACHE }
+      { status: 502, headers: NO_CACHE },
     );
   }
 }

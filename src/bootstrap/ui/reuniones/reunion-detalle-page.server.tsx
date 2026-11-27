@@ -6,7 +6,7 @@ import { puedeGestionarPrograma } from "@/src/modules/reuniones/permisos-program
 import {
   elegirProveedorDetalle,
   proveedorActivoDeInstancia,
-  resolverProveedorReunion
+  resolverProveedorReunion,
 } from "@/src/modules/reuniones/proveedor-reunion.domain";
 import { construirFiltroSerieSolicitud } from "@/src/modules/reuniones/serie-reunion.domain";
 import ReunionDetailPage from "./reunion-detail-page.server";
@@ -18,7 +18,7 @@ import ReunionZoomDetailPage from "./reunion-zoom-detail-page.server";
  */
 export default async function ReunionDetallePage({
   params,
-  searchParams
+  searchParams,
 }: Readonly<{
   params: Promise<{ solicitudId: string }>;
   searchParams: Promise<{ proveedor?: string }>;
@@ -35,9 +35,12 @@ export default async function ReunionDetallePage({
   const { solicitudId } = await params;
   const solicitud = await db.solicitudSala.findUnique({
     where: { id: solicitudId },
-    include: { docentePrograma: { select: { programaId: true } } }
+    include: { docentePrograma: { select: { programaId: true } } },
   });
-  if (!solicitud || !(await puedeGestionarPrograma(db, actor, solicitud.docentePrograma.programaId))) {
+  if (
+    !solicitud ||
+    !(await puedeGestionarPrograma(db, actor, solicitud.docentePrograma.programaId))
+  ) {
     notFound();
   }
 
@@ -50,10 +53,10 @@ export default async function ReunionDetallePage({
           inicioProgramadoAt: true,
           finProgramadoAt: true,
           proveedorActivoTipo: true,
-          eventosProveedor: { select: { proveedor: { select: { tipo: true } } } }
-        }
-      }
-    }
+          eventosProveedor: { select: { proveedor: { select: { tipo: true } } } },
+        },
+      },
+    },
   });
 
   const { proveedor } = await searchParams;
@@ -63,14 +66,17 @@ export default async function ReunionDetallePage({
         estado: instancia.estado,
         inicioProgramadoAt: instancia.inicioProgramadoAt,
         finProgramadoAt: instancia.finProgramadoAt,
-        proveedor: proveedorActivoDeInstancia(instancia)
-      }))
+        proveedor: proveedorActivoDeInstancia(instancia),
+      })),
     ),
     new Date(),
-    resolverProveedorReunion(proveedor)
+    resolverProveedorReunion(proveedor),
   );
   const otroProveedor = otro
-    ? { ...otro, href: `/reuniones/${solicitudId}?proveedor=${otro.proveedor === "ZOOM" ? "zoom" : "meet"}` }
+    ? {
+        ...otro,
+        href: `/reuniones/${solicitudId}?proveedor=${otro.proveedor === "ZOOM" ? "zoom" : "meet"}`,
+      }
     : null;
 
   return elegido === "ZOOM" ? (

@@ -55,8 +55,8 @@ export function SesEmailSettingsForm({ config }: Props) {
           <span>Usar Amazon SES para notificaciones, invitaciones y pruebas</span>
         </label>
         <p className="email-test-help">
-          Verificá la identidad en esta región. Si SES aún está en sandbox, el destinatario de prueba también
-          debe estar verificado.
+          Verificá la identidad en esta región. Si SES aún está en sandbox, el destinatario de
+          prueba también debe estar verificado.
         </p>
         <button className="primary-action" type="submit">
           Guardar configuración SES

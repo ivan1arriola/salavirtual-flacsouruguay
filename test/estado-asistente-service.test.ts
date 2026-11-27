@@ -4,7 +4,7 @@ import {
   actualizarEstadoOperativoAsistente,
   cesarAsistenteTecnicoHastaProximoInicioSesion,
   reactivarAsistenteTecnicoAhora,
-  registrarInicioSesionUsuario
+  registrarInicioSesionUsuario,
 } from "../src/modules/usuarios/estado-asistente.service";
 
 describe("estado temporal del asistente de monitoreo", () => {
@@ -19,25 +19,25 @@ describe("estado temporal del asistente de monitoreo", () => {
           .mockResolvedValueOnce({
             id: "assistant-user",
             rol: "ASISTENTE_TECNICO",
-            asistenteTecnico: { id: "assistant", cesadoHastaProximoInicioSesion: false }
-          })
+            asistenteTecnico: { id: "assistant", cesadoHastaProximoInicioSesion: false },
+          }),
       },
       asistenteTecnico: { update },
-      auditoria: { create: createAudit }
+      auditoria: { create: createAudit },
     };
     const db = {
-      $transaction: (action: (client: typeof tx) => Promise<unknown>) => action(tx)
+      $transaction: (action: (client: typeof tx) => Promise<unknown>) => action(tx),
     } as unknown as PrismaClient;
 
     await cesarAsistenteTecnicoHastaProximoInicioSesion(
       db,
       { id: "admin", rol: "ADMINISTRACION", activo: true },
-      "assistant-user"
+      "assistant-user",
     );
 
     expect(update).toHaveBeenCalledWith({
       where: { id: "assistant" },
-      data: { cesadoHastaProximoInicioSesion: true }
+      data: { cesadoHastaProximoInicioSesion: true },
     });
     expect(createAudit).toHaveBeenCalledOnce();
   });
@@ -55,28 +55,28 @@ describe("estado temporal del asistente de monitoreo", () => {
             asistenteTecnico: {
               id: "assistant",
               disponibleGeneral: true,
-              cesadoHastaProximoInicioSesion: false
-            }
-          })
+              cesadoHastaProximoInicioSesion: false,
+            },
+          }),
       },
       asistenteTecnico: { update },
-      auditoria: { create: vi.fn().mockResolvedValue({}) }
+      auditoria: { create: vi.fn().mockResolvedValue({}) },
     };
     const db = {
-      $transaction: (action: (client: typeof tx) => Promise<unknown>) => action(tx)
+      $transaction: (action: (client: typeof tx) => Promise<unknown>) => action(tx),
     } as unknown as PrismaClient;
 
     const result = await actualizarEstadoOperativoAsistente(
       db,
       { id: "admin", rol: "ADMINISTRACION", activo: true },
       "assistant-user",
-      { disponibleGeneral: false }
+      { disponibleGeneral: false },
     );
 
     expect(result.disponibleGeneral).toBe(false);
     expect(update).toHaveBeenCalledWith({
       where: { id: "assistant" },
-      data: { disponibleGeneral: false }
+      data: { disponibleGeneral: false },
     });
   });
 
@@ -93,26 +93,26 @@ describe("estado temporal del asistente de monitoreo", () => {
             asistenteTecnico: {
               id: "assistant",
               disponibleGeneral: true,
-              cesadoHastaProximoInicioSesion: true
-            }
-          })
+              cesadoHastaProximoInicioSesion: true,
+            },
+          }),
       },
       asistenteTecnico: { update },
-      auditoria: { create: vi.fn().mockResolvedValue({}) }
+      auditoria: { create: vi.fn().mockResolvedValue({}) },
     };
     const db = {
-      $transaction: (action: (client: typeof tx) => Promise<unknown>) => action(tx)
+      $transaction: (action: (client: typeof tx) => Promise<unknown>) => action(tx),
     } as unknown as PrismaClient;
 
     await reactivarAsistenteTecnicoAhora(
       db,
       { id: "admin", rol: "ADMINISTRACION", activo: true },
-      "assistant-user"
+      "assistant-user",
     );
 
     expect(update).toHaveBeenCalledWith({
       where: { id: "assistant" },
-      data: { cesadoHastaProximoInicioSesion: false }
+      data: { cesadoHastaProximoInicioSesion: false },
     });
   });
 
@@ -123,8 +123,8 @@ describe("estado temporal del asistente de monitoreo", () => {
         db,
         { id: "assistant-user", rol: "ASISTENTE_TECNICO", activo: true },
         "assistant-user",
-        { disponibleGeneral: false }
-      )
+        { disponibleGeneral: false },
+      ),
     ).rejects.toThrow("Solo Administración puede gestionar asistentes de monitoreo.");
   });
 
@@ -134,25 +134,25 @@ describe("estado temporal del asistente de monitoreo", () => {
     const tx = {
       usuario: { update: vi.fn().mockResolvedValue({}) },
       asistenteTecnico: { updateMany },
-      auditoria: { create: createAudit }
+      auditoria: { create: createAudit },
     };
     const db = {
-      $transaction: (action: (client: typeof tx) => Promise<unknown>) => action(tx)
+      $transaction: (action: (client: typeof tx) => Promise<unknown>) => action(tx),
     } as unknown as PrismaClient;
 
     await registrarInicioSesionUsuario(
       db,
       "assistant-user",
       "credentials",
-      new Date("2026-08-11T22:00:00.000Z")
+      new Date("2026-08-11T22:00:00.000Z"),
     );
 
     expect(updateMany).toHaveBeenCalledWith({
       where: {
         usuarioId: "assistant-user",
-        cesadoHastaProximoInicioSesion: true
+        cesadoHastaProximoInicioSesion: true,
       },
-      data: { cesadoHastaProximoInicioSesion: false }
+      data: { cesadoHastaProximoInicioSesion: false },
     });
     expect(createAudit).toHaveBeenCalledOnce();
   });

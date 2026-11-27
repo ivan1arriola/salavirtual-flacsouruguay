@@ -15,12 +15,12 @@ describe("identificación de instancias Zoom", () => {
           JSON.stringify({
             meetings: [
               { uuid: "otra-clase", start_time: "2026-11-04T14:00:00Z" },
-              { uuid: "clase-correcta", start_time: "2026-11-05T14:05:00Z" }
-            ]
+              { uuid: "clase-correcta", start_time: "2026-11-05T14:05:00Z" },
+            ],
           }),
-          { status: 200 }
-        )
-      )
+          { status: 200 },
+        ),
+      ),
     );
     expect(await resolverUuidInstanciaZoomHttp("token", "123", inicio, fin)).toBe("clase-correcta");
   });
@@ -33,12 +33,12 @@ describe("identificación de instancias Zoom", () => {
           JSON.stringify({
             meetings: [
               { uuid: "primera", start_time: "2026-11-05T14:05:00Z" },
-              { uuid: "segunda", start_time: "2026-11-05T15:00:00Z" }
-            ]
+              { uuid: "segunda", start_time: "2026-11-05T15:00:00Z" },
+            ],
           }),
-          { status: 200 }
-        )
-      )
+          { status: 200 },
+        ),
+      ),
     );
     expect(await resolverUuidInstanciaZoomHttp("token", "123", inicio, fin)).toBeNull();
   });
@@ -48,11 +48,11 @@ describe("identificación de instancias Zoom", () => {
       vi.fn().mockResolvedValue(
         new Response(
           JSON.stringify({
-            meetings: [{ uuid: "otra-fecha", start_time: "2026-11-06T14:00:00Z" }]
+            meetings: [{ uuid: "otra-fecha", start_time: "2026-11-06T14:00:00Z" }],
           }),
-          { status: 200 }
-        )
-      )
+          { status: 200 },
+        ),
+      ),
     );
     expect(await resolverUuidInstanciaZoomHttp("token", "123", inicio, fin)).toBeNull();
   });

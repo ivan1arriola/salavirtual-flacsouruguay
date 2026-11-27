@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   filtrarEncuentrosConArchivos,
   resolverEstadoVisualGrabacion,
-  type GrupoEncuentroConArchivos
+  type GrupoEncuentroConArchivos,
 } from "../src/modules/meet/grabaciones-filtro.domain";
 
 describe("grabaciones-filtro.domain", () => {
@@ -12,7 +12,7 @@ describe("grabaciones-filtro.domain", () => {
       archivosSincronizadosAt: new Date(),
       finProgramadoAt: new Date(Date.now() - 3600000),
       requiereGrabacion: true,
-      ahora: new Date()
+      ahora: new Date(),
     });
     expect(estado).toBe("DISPONIBLE");
   });
@@ -25,7 +25,7 @@ describe("grabaciones-filtro.domain", () => {
       requiereGrabacion: true,
       ahora: new Date(),
       estadoDetectado: "PROCESANDO",
-      observadoAt: new Date()
+      observadoAt: new Date(),
     });
     expect(estado).toBe("PROCESANDO");
   });
@@ -36,7 +36,7 @@ describe("grabaciones-filtro.domain", () => {
       archivosSincronizadosAt: new Date(),
       finProgramadoAt: new Date(Date.now() - 86400000),
       requiereGrabacion: true,
-      ahora: new Date()
+      ahora: new Date(),
     });
     expect(estado).toBe("NO_REGISTRADA");
   });
@@ -47,7 +47,7 @@ describe("grabaciones-filtro.domain", () => {
       archivosSincronizadosAt: null,
       finProgramadoAt: new Date(Date.now() - 1800000), // terminó hace 30 min
       requiereGrabacion: false,
-      ahora: new Date()
+      ahora: new Date(),
     });
     expect(estado).toBe("NO_REQUERIDA");
   });
@@ -60,19 +60,27 @@ describe("grabaciones-filtro.domain", () => {
       finProgramadoAt: new Date("2026-10-27T19:00:00Z"),
       requiereGrabacion: false,
       ahora,
-      observadoAt: new Date("2026-10-27T17:55:00Z")
+      observadoAt: new Date("2026-10-27T17:55:00Z"),
     };
-    expect(resolverEstadoVisualGrabacion({ ...base, estadoDetectado: "EN_CURSO" })).toBe("EN_CURSO");
-    expect(resolverEstadoVisualGrabacion({ ...base, estadoDetectado: "PROCESANDO" })).toBe("PROCESANDO");
+    expect(resolverEstadoVisualGrabacion({ ...base, estadoDetectado: "EN_CURSO" })).toBe(
+      "EN_CURSO",
+    );
+    expect(resolverEstadoVisualGrabacion({ ...base, estadoDetectado: "PROCESANDO" })).toBe(
+      "PROCESANDO",
+    );
     expect(
       resolverEstadoVisualGrabacion({
         ...base,
         estadoDetectado: "EN_CURSO",
-        observadoAt: new Date("2026-10-27T16:00:00Z")
-      })
+        observadoAt: new Date("2026-10-27T16:00:00Z"),
+      }),
     ).toBe("NO_REQUERIDA");
     expect(
-      resolverEstadoVisualGrabacion({ ...base, estadoDetectado: "EN_CURSO", tieneArchivoGrabacion: true })
+      resolverEstadoVisualGrabacion({
+        ...base,
+        estadoDetectado: "EN_CURSO",
+        tieneArchivoGrabacion: true,
+      }),
     ).toBe("DISPONIBLE");
   });
 
@@ -84,7 +92,7 @@ describe("grabaciones-filtro.domain", () => {
         programa: "Maestría en Políticas",
         docente: "María García",
         fechaInicio: new Date(),
-        archivos: [{ tipo: "GRABACION", id: "a1" }]
+        archivos: [{ tipo: "GRABACION", id: "a1" }],
       },
       {
         instanciaId: "2",
@@ -92,8 +100,8 @@ describe("grabaciones-filtro.domain", () => {
         programa: "Doctorado en Ciencias Sociales",
         docente: "Juan Pérez",
         fechaInicio: new Date(),
-        archivos: [{ tipo: "LISTA_ASISTENCIA", id: "a2" }]
-      }
+        archivos: [{ tipo: "LISTA_ASISTENCIA", id: "a2" }],
+      },
     ];
 
     expect(filtrarEncuentrosConArchivos(grupos, "TODOS", "políticas")).toHaveLength(1);
@@ -104,8 +112,8 @@ describe("grabaciones-filtro.domain", () => {
       filtrarEncuentrosConArchivos(
         [{ ...grupos[1], archivos: [], estadoGrabacion: "EN_CURSO" }],
         "GRABACIONES",
-        ""
-      )
+        "",
+      ),
     ).toHaveLength(1);
   });
 });

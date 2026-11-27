@@ -16,7 +16,7 @@ describe("estilos de notificaciones", () => {
     const page = readFileSync(path("app/(gestion)/notificaciones/page.tsx"), "utf8");
     const globalCss = [
       readFileSync(path("app/(gestion)/gestion.css"), "utf8"),
-      readFileSync(path("app/(gestion)/brand-refresh.css"), "utf8")
+      readFileSync(path("app/(gestion)/brand-refresh.css"), "utf8"),
     ].join("\n");
 
     expect(moduleCss).toContain(".page");

@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { Prisma } from "@prisma/client";
+import type { Prisma } from "@prisma/client";
 import { JWT } from "google-auth-library";
 import { db } from "../src/lib/db";
 import { normalizeCohostEmails } from "../src/modules/meet/cohosts.domain";
@@ -11,7 +11,10 @@ const MEET_READ_SCOPE = "https://www.googleapis.com/auth/meetings.space.readonly
 const CALENDAR_API = "https://www.googleapis.com/calendar/v3";
 const MEET_API = "https://meet.googleapis.com/v2";
 const TIMEOUT_MS = 30_000;
-const MIGRATION_ACTIONS = ["MEET_MIGRADO_A_ESPACIO_PREVIEW", "MEET_GRUPO_MIGRADO_A_ESPACIO_PREVIEW"] as const;
+const MIGRATION_ACTIONS = [
+  "MEET_MIGRADO_A_ESPACIO_PREVIEW",
+  "MEET_GRUPO_MIGRADO_A_ESPACIO_PREVIEW",
+] as const;
 
 function argValue(name: string): string | undefined {
   const prefix = `--${name}=`;
@@ -142,7 +145,10 @@ async function main(): Promise<void> {
         spacesToMigrate: pending.length,
         spacesSelected: selected.length,
         calendarEventsToPatch: selected.reduce((sum, group) => sum + group.meetings.length, 0),
-        cohostAssignmentsRequested: selected.reduce((sum, group) => sum + group.desiredCohosts.length, 0),
+        cohostAssignmentsRequested: selected.reduce(
+          (sum, group) => sum + group.desiredCohosts.length,
+          0,
+        ),
         continueOnError,
         limit: limit ?? null,
         skippedCodes: alreadyMigrated.map(({ oldMeetingCode }) => oldMeetingCode),
@@ -152,12 +158,12 @@ async function main(): Promise<void> {
           organizers: group.organizers,
           anchorOrganizer: group.anchorOrganizer,
           desiredCohosts: group.desiredCohosts,
-          titles: unique(group.meetings.map((meeting) => meeting.solicitud.titulo)).slice(0, 4)
-        }))
+          titles: unique(group.meetings.map((meeting) => meeting.solicitud.titulo)).slice(0, 4),
+        })),
       },
       null,
-      2
-    )
+      2,
+    ),
   );
 
   if (!apply || selected.length === 0) {
@@ -174,22 +180,26 @@ async function main(): Promise<void> {
         progress: `${index + 1}/${selected.length}`,
         oldMeetingCode: group.oldMeetingCode,
         meetings: group.meetings.length,
-        status: "starting"
-      })
+        status: "starting",
+      }),
     );
 
     try {
       const result = await migrateGroup(serviceAccountEmail, privateKey, group);
       migrated.push(result);
-      console.log(JSON.stringify({ ...result, progress: `${index + 1}/${selected.length}` }, null, 2));
+      console.log(
+        JSON.stringify({ ...result, progress: `${index + 1}/${selected.length}` }, null, 2),
+      );
     } catch (error) {
       const failure = {
         oldMeetingCode: group.oldMeetingCode,
         meetings: group.meetings.map(({ id }) => id),
-        error: errorMessage(error)
+        error: errorMessage(error),
       };
       failures.push(failure);
-      console.error(JSON.stringify({ ...failure, progress: `${index + 1}/${selected.length}` }, null, 2));
+      console.error(
+        JSON.stringify({ ...failure, progress: `${index + 1}/${selected.length}` }, null, 2),
+      );
       if (!continueOnError) {
         break;
       }
@@ -203,13 +213,16 @@ async function main(): Promise<void> {
       {
         completed: failures.length === 0 || continueOnError,
         migratedSpaces: migrated.length,
-        migratedCalendarEvents: migrated.reduce((sum, item) => sum + Number(item.calendarEvents ?? 0), 0),
+        migratedCalendarEvents: migrated.reduce(
+          (sum, item) => sum + Number(item["calendarEvents"] ?? 0),
+          0,
+        ),
         failures: failures.length,
-        failureDetails: failures
+        failureDetails: failures,
       },
       null,
-      2
-    )
+      2,
+    ),
   );
 
   if (failures.length > 0) {
@@ -220,13 +233,13 @@ async function main(): Promise<void> {
 async function loadMigratedCodes(): Promise<Set<string>> {
   const rows = await db.auditoria.findMany({
     where: { accion: { in: [...MIGRATION_ACTIONS] } },
-    select: { valorNuevo: true }
+    select: { valorNuevo: true },
   });
   return new Set(
     rows.flatMap(({ valorNuevo }) => {
       const code = auditMeetingCode(valorNuevo);
       return code ? [code] : [];
-    })
+    }),
   );
 }
 
@@ -234,7 +247,7 @@ function auditMeetingCode(value: unknown): string | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return null;
   }
-  const code = (value as Record<string, unknown>).codigoReunion;
+  const code = (value as Record<string, unknown>)["codigoReunion"];
   return typeof code === "string" && code.trim() ? code.trim().toLowerCase() : null;
 }
 
@@ -248,9 +261,9 @@ function loadMeetings() {
           proveedor: { tipo: "GOOGLE_MEET" },
           externalEventId: { not: null },
           codigoReunion: { not: null },
-          joinUrl: { not: null }
-        }
-      }
+          joinUrl: { not: null },
+        },
+      },
     },
     orderBy: { inicioProgramadoAt: "asc" },
     select: {
@@ -265,10 +278,10 @@ function loadMeetings() {
           creadaPor: {
             select: {
               emailPrincipal: true,
-              cuentasGoogle: { select: { email: true } }
-            }
-          }
-        }
+              cuentasGoogle: { select: { email: true } },
+            },
+          },
+        },
       },
       asignaciones: {
         where: { estado: { in: ["ASIGNADO", "ACEPTADO"] } },
@@ -278,12 +291,12 @@ function loadMeetings() {
               usuario: {
                 select: {
                   emailPrincipal: true,
-                  cuentasGoogle: { select: { email: true } }
-                }
-              }
-            }
-          }
-        }
+                  cuentasGoogle: { select: { email: true } },
+                },
+              },
+            },
+          },
+        },
       },
       cohosts: { select: { cuentaGoogle: { select: { email: true } } } },
       cohostEmails: { select: { email: true } },
@@ -296,10 +309,10 @@ function loadMeetings() {
           codigoReunion: true,
           joinUrl: true,
           payloadUltimo: true,
-          cuentaProveedor: { select: { emailOrganizador: true } }
-        }
-      }
-    }
+          cuentaProveedor: { select: { emailOrganizador: true } },
+        },
+      },
+    },
   });
 }
 
@@ -319,7 +332,7 @@ function buildPlans(meetings: readonly Meeting[]): readonly GroupPlan[] {
     const anchorOrganizer = organizerOf(onlyEvent(groupMeetings[0]));
     const desiredCohosts = normalizeCohostEmails([
       ...groupMeetings.flatMap((meeting) => desiredCohostsForMeeting(meeting)),
-      ...organizers.filter((email) => email !== anchorOrganizer)
+      ...organizers.filter((email) => email !== anchorOrganizer),
     ]).filter((email) => email !== anchorOrganizer);
 
     return {
@@ -329,8 +342,8 @@ function buildPlans(meetings: readonly Meeting[]): readonly GroupPlan[] {
       anchorOrganizer,
       desiredCohosts,
       requiresAttendanceReport: groupMeetings.some(
-        ({ requiereAsistenciaTecnica }) => requiereAsistenciaTecnica
-      )
+        ({ requiereAsistenciaTecnica }) => requiereAsistenciaTecnica,
+      ),
     };
   });
 }
@@ -342,18 +355,22 @@ function desiredCohostsForMeeting(meeting: Meeting): readonly string[] {
     ...meeting.cohosts.map(({ cuentaGoogle }) => cuentaGoogle.email),
     ...meeting.cohostEmails.map(({ email }) => email),
     ...requester.cuentasGoogle.map(({ email }) => email),
-    ...(requester.cuentasGoogle.length === 0 && requester.emailPrincipal ? [requester.emailPrincipal] : []),
+    ...(requester.cuentasGoogle.length === 0 && requester.emailPrincipal
+      ? [requester.emailPrincipal]
+      : []),
     ...assistants.flatMap((assistant) => assistant.cuentasGoogle.map(({ email }) => email)),
     ...assistants.flatMap((assistant) =>
-      assistant.cuentasGoogle.length === 0 && assistant.emailPrincipal ? [assistant.emailPrincipal] : []
-    )
+      assistant.cuentasGoogle.length === 0 && assistant.emailPrincipal
+        ? [assistant.emailPrincipal]
+        : [],
+    ),
   ]);
 }
 
 async function migrateGroup(
   serviceAccountEmail: string,
   privateKey: string,
-  group: GroupPlan
+  group: GroupPlan,
 ): Promise<Record<string, unknown>> {
   const snapshots = await loadCalendarSnapshots(serviceAccountEmail, privateKey, group);
   const creatorAuth = meetAuth(serviceAccountEmail, privateKey, group.anchorOrganizer);
@@ -369,17 +386,19 @@ async function migrateGroup(
           accessType: "TRUSTED",
           attendanceReportGenerationType: group.requiresAttendanceReport
             ? "GENERATE_REPORT"
-            : "DO_NOT_GENERATE"
-        }
-      }
-    })
+            : "DO_NOT_GENERATE",
+        },
+      },
+    }),
   );
 
   const newSpaceName = created.data.name;
   const newMeetingCode = created.data.meetingCode;
   const newJoinUrl = created.data.meetingUri;
   if (!newSpaceName || !newMeetingCode || !newJoinUrl) {
-    throw new Error("Google Meet no devolvió name, meetingCode y meetingUri para el nuevo espacio.");
+    throw new Error(
+      "Google Meet no devolvió name, meetingCode y meetingUri para el nuevo espacio.",
+    );
   }
 
   for (const cohost of group.desiredCohosts) {
@@ -389,8 +408,8 @@ async function migrateGroup(
           url: `${MEET_API}/${newSpaceName}/members`,
           method: "POST",
           timeout: TIMEOUT_MS,
-          data: { email: cohost, role: "COHOST" }
-        })
+          data: { email: cohost, role: "COHOST" },
+        }),
       );
     } catch (error) {
       if (!isAlreadyExists(error)) {
@@ -403,7 +422,7 @@ async function migrateGroup(
   const actualCohosts = new Set(
     members
       .filter(({ role }) => role === "COHOST")
-      .flatMap(({ email }) => (email ? [email.trim().toLowerCase()] : []))
+      .flatMap(({ email }) => (email ? [email.trim().toLowerCase()] : [])),
   );
   const missingCohosts = group.desiredCohosts.filter((email) => !actualCohosts.has(email));
   if (missingCohosts.length > 0) {
@@ -414,16 +433,16 @@ async function migrateGroup(
     conferenceId: newMeetingCode,
     conferenceSolution: {
       key: { type: "hangoutsMeet" },
-      name: "Google Meet"
+      name: "Google Meet",
     },
     entryPoints: [
       {
         entryPointType: "video",
         uri: newJoinUrl,
         label: newJoinUrl.replace(/^https?:\/\//, ""),
-        meetingCode: newMeetingCode
-      }
-    ]
+        meetingCode: newMeetingCode,
+      },
+    ],
   };
 
   const changed: CalendarSnapshot[] = [];
@@ -436,8 +455,8 @@ async function migrateGroup(
           url: `${snapshot.calendarUrl}?conferenceDataVersion=1&sendUpdates=none`,
           method: "PATCH",
           timeout: TIMEOUT_MS,
-          data: { conferenceData: newConferenceData }
-        })
+          data: { conferenceData: newConferenceData },
+        }),
       );
       changed.push(snapshot);
 
@@ -445,11 +464,11 @@ async function migrateGroup(
         auth.request<CalendarEvent>({
           url: `${snapshot.calendarUrl}?conferenceDataVersion=1`,
           method: "GET",
-          timeout: TIMEOUT_MS
-        })
+          timeout: TIMEOUT_MS,
+        }),
       );
       const verifiedVideoUrl = verified.data.conferenceData?.entryPoints?.find(
-        ({ entryPointType }) => entryPointType === "video"
+        ({ entryPointType }) => entryPointType === "video",
       )?.uri;
       if (
         verified.data.hangoutLink !== newJoinUrl ||
@@ -480,8 +499,8 @@ async function migrateGroup(
             errorIntegracion: null,
             conferenceRecordName: null,
             archivosSincronizadosAt: null,
-            errorArchivos: null
-          }
+            errorArchivos: null,
+          },
         });
       }
 
@@ -493,16 +512,16 @@ async function migrateGroup(
           valorAnterior: toJson({
             codigoReunion: group.oldMeetingCode,
             encuentros: group.meetings.map(({ id }) => id),
-            organizadores: group.organizers
+            organizadores: group.organizers,
           }),
           valorNuevo: toJson({
             codigoReunion: newMeetingCode,
             joinUrl: newJoinUrl,
             spaceName: newSpaceName,
             encuentros: group.meetings.map(({ id }) => id),
-            cohosts: group.desiredCohosts
-          })
-        }
+            cohosts: group.desiredCohosts,
+          }),
+        },
       });
     });
   } catch (error) {
@@ -514,11 +533,11 @@ async function migrateGroup(
             critical: true,
             oldMeetingCode: group.oldMeetingCode,
             newMeetingCode,
-            rollbackFailures
+            rollbackFailures,
           },
           null,
-          2
-        )
+          2,
+        ),
       );
     }
     throw error;
@@ -532,14 +551,14 @@ async function migrateGroup(
     newJoinUrl,
     calendarEvents: snapshots.length,
     organizers: group.organizers,
-    cohostsVerified: group.desiredCohosts
+    cohostsVerified: group.desiredCohosts,
   };
 }
 
 async function loadCalendarSnapshots(
   serviceAccountEmail: string,
   privateKey: string,
-  group: GroupPlan
+  group: GroupPlan,
 ): Promise<readonly CalendarSnapshot[]> {
   const snapshots: CalendarSnapshot[] = [];
   for (const meeting of group.meetings) {
@@ -554,14 +573,14 @@ async function loadCalendarSnapshots(
       auth.request<CalendarEvent>({
         url: `${calendarUrl}?conferenceDataVersion=1`,
         method: "GET",
-        timeout: TIMEOUT_MS
-      })
+        timeout: TIMEOUT_MS,
+      }),
     );
     const previousConferenceData = current.data.conferenceData;
     const currentCode = previousConferenceData?.conferenceId?.trim().toLowerCase();
     if (!previousConferenceData || currentCode !== group.oldMeetingCode) {
       throw new Error(
-        `Calendar y la base no coinciden para ${meeting.id}: esperado ${group.oldMeetingCode}, recibido ${currentCode ?? "sin código"}.`
+        `Calendar y la base no coinciden para ${meeting.id}: esperado ${group.oldMeetingCode}, recibido ${currentCode ?? "sin código"}.`,
       );
     }
     snapshots.push({
@@ -569,7 +588,7 @@ async function loadCalendarSnapshots(
       event,
       organizer,
       calendarUrl,
-      previousConferenceData
+      previousConferenceData,
     });
   }
   return snapshots;
@@ -578,7 +597,7 @@ async function loadCalendarSnapshots(
 async function rollbackCalendar(
   serviceAccountEmail: string,
   privateKey: string,
-  changed: readonly CalendarSnapshot[]
+  changed: readonly CalendarSnapshot[],
 ): Promise<readonly Record<string, unknown>[]> {
   const failures: Array<Record<string, unknown>> = [];
   for (const snapshot of [...changed].reverse()) {
@@ -589,8 +608,8 @@ async function rollbackCalendar(
           url: `${snapshot.calendarUrl}?conferenceDataVersion=1&sendUpdates=none`,
           method: "PATCH",
           timeout: TIMEOUT_MS,
-          data: { conferenceData: snapshot.previousConferenceData }
-        })
+          data: { conferenceData: snapshot.previousConferenceData },
+        }),
       );
     } catch (error) {
       failures.push({ meetingId: snapshot.meetingId, error: errorMessage(error) });
@@ -614,8 +633,8 @@ async function listMembers(auth: JWT, spaceName: string): Promise<readonly MeetM
       }>({
         url: `${MEET_API}/${spaceName}/members?${query.toString()}`,
         method: "GET",
-        timeout: TIMEOUT_MS
-      })
+        timeout: TIMEOUT_MS,
+      }),
     );
     members.push(...(response.data.members ?? []));
     pageToken = response.data.nextPageToken || undefined;
@@ -644,7 +663,7 @@ function calendarAuth(serviceAccountEmail: string, privateKey: string, subject: 
     email: serviceAccountEmail,
     key: privateKey,
     subject,
-    scopes: [CALENDAR_SCOPE]
+    scopes: [CALENDAR_SCOPE],
   });
 }
 
@@ -653,7 +672,7 @@ function meetAuth(serviceAccountEmail: string, privateKey: string, subject: stri
     email: serviceAccountEmail,
     key: privateKey,
     subject,
-    scopes: [MEET_CREATED_SCOPE, MEET_SETTINGS_SCOPE, MEET_READ_SCOPE]
+    scopes: [MEET_CREATED_SCOPE, MEET_SETTINGS_SCOPE, MEET_READ_SCOPE],
   });
 }
 

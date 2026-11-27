@@ -4,7 +4,13 @@ import { obtenerDashboardAdministracion } from "../dashboard/admin-dashboard.ada
 import { seleccionarEventoProveedorActivo } from "../reuniones/evento-proveedor-activo.domain";
 
 const ACTIVE_ASSIGNMENTS = ["ASIGNADO", "ACEPTADO"] as const;
-const INSTANCE_STATES = ["PROGRAMADA", "EN_CURSO", "FINALIZADA", "CANCELADA", "NO_REALIZADA"] as const;
+const INSTANCE_STATES = [
+  "PROGRAMADA",
+  "EN_CURSO",
+  "FINALIZADA",
+  "CANCELADA",
+  "NO_REALIZADA",
+] as const;
 
 const meetingInclude = Prisma.validator<Prisma.InstanciaSalaInclude>()({
   solicitud: {
@@ -18,19 +24,19 @@ const meetingInclude = Prisma.validator<Prisma.InstanciaSalaInclude>()({
           programa: { select: { id: true, nombre: true } },
           docente: {
             select: {
-              usuario: { select: { nombres: true, apellidos: true } }
-            }
-          }
-        }
-      }
-    }
+              usuario: { select: { nombres: true, apellidos: true } },
+            },
+          },
+        },
+      },
+    },
   },
   eventosProveedor: {
     select: {
       joinUrl: true,
       proveedor: { select: { tipo: true } },
-      cuentaProveedor: { select: { emailOrganizador: true, nombre: true } }
-    }
+      cuentaProveedor: { select: { emailOrganizador: true, nombre: true } },
+    },
   },
   asignaciones: {
     where: { estado: { in: [...ACTIVE_ASSIGNMENTS] } },
@@ -40,13 +46,13 @@ const meetingInclude = Prisma.validator<Prisma.InstanciaSalaInclude>()({
       estado: true,
       asistenteTecnico: {
         select: {
-          usuario: { select: { nombres: true, apellidos: true } }
-        }
-      }
+          usuario: { select: { nombres: true, apellidos: true } },
+        },
+      },
     },
     orderBy: [{ updatedAt: "desc" }, { id: "asc" }],
-    take: 1
-  }
+    take: 1,
+  },
 });
 
 type MeetingRow = Prisma.InstanciaSalaGetPayload<{ include: typeof meetingInclude }>;
@@ -61,7 +67,11 @@ export function validateAdminQuery(query: AdminQuery): AdminQuery {
   if (!Number.isInteger(query.limit) || query.limit < 1 || query.limit > 100) {
     throw new Error("limit debe estar entre 1 y 100.");
   }
-  if (query.coverage !== undefined && query.coverage !== "assigned" && query.coverage !== "unassigned") {
+  if (
+    query.coverage !== undefined &&
+    query.coverage !== "assigned" &&
+    query.coverage !== "unassigned"
+  ) {
     throw new Error("coverage inválido.");
   }
   if (
@@ -85,7 +95,7 @@ export async function listAdminMeetings(db: PrismaClient, query: AdminQuery): Pr
     where: buildWhere(query, from, to, cursor),
     orderBy: [{ inicioProgramadoAt: "asc" }, { id: "asc" }],
     take: query.limit + 1,
-    include: meetingInclude
+    include: meetingInclude,
   });
   const hasNext = rows.length > query.limit;
   const items = rows.slice(0, query.limit);
@@ -94,14 +104,14 @@ export async function listAdminMeetings(db: PrismaClient, query: AdminQuery): Pr
   return {
     generatedAt: new Date().toISOString(),
     items: items.map(toAdminMeeting),
-    nextCursor: last ? encodeCursor(last.inicioProgramadoAt, last.id) : null
+    nextCursor: last ? encodeCursor(last.inicioProgramadoAt, last.id) : null,
   };
 }
 
 export async function getAdminMeeting(db: PrismaClient, id: string): Promise<AdminMeeting | null> {
   const row = await db.instanciaSala.findUnique({
     where: { id },
-    include: meetingInclude
+    include: meetingInclude,
   });
   return row ? toAdminMeeting(row) : null;
 }
@@ -113,29 +123,41 @@ export async function getAdminSummary(db: PrismaClient): Promise<AdminSummary> {
       where: { inicioProgramadoAt: { gte: now }, estado: "PROGRAMADA" },
       orderBy: [{ inicioProgramadoAt: "asc" }, { id: "asc" }],
       take: 5,
-      include: meetingInclude
+      include: meetingInclude,
     }),
-    obtenerDashboardAdministracion(db, now)
+    obtenerDashboardAdministracion(db, now),
   ]);
 
   return {
     generatedAt: now.toISOString(),
     upcoming: upcoming.map(toAdminMeeting),
     attention: [
-      { code: "PENDING_COVERAGE", label: "Cobertura pendiente", count: dashboard.metrics.pendingAssistance },
+      {
+        code: "PENDING_COVERAGE",
+        label: "Cobertura pendiente",
+        count: dashboard.metrics.pendingAssistance,
+      },
       {
         code: "INTEGRATION_ERRORS",
         label: "Errores de integración",
-        count: dashboard.metrics.integrationErrors
+        count: dashboard.metrics.integrationErrors,
       },
       {
         code: "PENDING_RECORDINGS",
         label: "Grabaciones pendientes",
-        count: dashboard.metrics.pendingRecordings
+        count: dashboard.metrics.pendingRecordings,
       },
-      { code: "OPEN_INCIDENTS", label: "Incidencias abiertas", count: dashboard.metrics.openIncidents },
-      { code: "DUPLICATE_RISKS", label: "Posibles duplicados", count: dashboard.metrics.duplicateRisks }
-    ].filter(({ count }) => count > 0)
+      {
+        code: "OPEN_INCIDENTS",
+        label: "Incidencias abiertas",
+        count: dashboard.metrics.openIncidents,
+      },
+      {
+        code: "DUPLICATE_RISKS",
+        label: "Posibles duplicados",
+        count: dashboard.metrics.duplicateRisks,
+      },
+    ].filter(({ count }) => count > 0),
   };
 }
 
@@ -143,7 +165,7 @@ function buildWhere(
   query: AdminQuery,
   from: Date,
   to: Date,
-  cursor: Cursor | null
+  cursor: Cursor | null,
 ): Prisma.InstanciaSalaWhereInput {
   const and: Prisma.InstanciaSalaWhereInput[] = [];
   if (query.q?.trim()) {
@@ -157,14 +179,14 @@ function buildWhere(
                 usuario: {
                   OR: [
                     { nombres: { contains: query.q.trim(), mode: "insensitive" } },
-                    { apellidos: { contains: query.q.trim(), mode: "insensitive" } }
-                  ]
-                }
-              }
-            }
-          }
-        ]
-      }
+                    { apellidos: { contains: query.q.trim(), mode: "insensitive" } },
+                  ],
+                },
+              },
+            },
+          },
+        ],
+      },
     });
   }
   if (query.programId) {
@@ -174,8 +196,8 @@ function buildWhere(
     and.push({
       OR: [
         { inicioProgramadoAt: { gt: cursor.startsAt } },
-        { inicioProgramadoAt: cursor.startsAt, id: { gt: cursor.id } }
-      ]
+        { inicioProgramadoAt: cursor.startsAt, id: { gt: cursor.id } },
+      ],
     });
   }
 
@@ -188,10 +210,10 @@ function buildWhere(
       : query.coverage === "unassigned"
         ? {
             requiereAsistenciaTecnica: true,
-            asignaciones: { none: { estado: { in: [...ACTIVE_ASSIGNMENTS] } } }
+            asignaciones: { none: { estado: { in: [...ACTIVE_ASSIGNMENTS] } } },
           }
         : {}),
-    ...(and.length ? { AND: and } : {})
+    ...(and.length ? { AND: and } : {}),
   };
 }
 
@@ -219,7 +241,9 @@ function toAdminMeeting(meeting: MeetingRow): AdminMeeting {
     state: meeting.estado,
     requiresAssistance: meeting.requiereAsistenciaTecnica,
     googleAccount:
-      providerEvent?.cuentaProveedor?.emailOrganizador ?? providerEvent?.cuentaProveedor?.nombre ?? null,
+      providerEvent?.cuentaProveedor?.emailOrganizador ??
+      providerEvent?.cuentaProveedor?.nombre ??
+      null,
     meetUrl: providerEvent?.joinUrl ?? null,
     description: meeting.descripcion ?? meeting.solicitud.descripcion ?? null,
     assignment:
@@ -228,9 +252,9 @@ function toAdminMeeting(meeting: MeetingRow): AdminMeeting {
             id: assignment.id,
             assistantId: assignment.asistenteTecnicoId,
             name: [assistant.nombres, assistant.apellidos].filter(Boolean).join(" "),
-            state: assignment.estado
+            state: assignment.estado,
           }
-        : null
+        : null,
   };
 }
 
@@ -239,7 +263,9 @@ function parseIso(value: unknown, field: string): Date {
     throw new Error(`${field} debe ser ISO 8601.`);
   }
   const match =
-    /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d{1,3})?(?:Z|([+-])(\d{2}):(\d{2}))$/.exec(value);
+    /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d{1,3})?(?:Z|([+-])(\d{2}):(\d{2}))$/.exec(
+      value,
+    );
   if (!match) {
     throw new Error(`${field} debe ser ISO 8601.`);
   }
@@ -254,7 +280,7 @@ function parseIso(value: unknown, field: string): Date {
     secondText,
     offsetSign,
     offsetHourText,
-    offsetMinuteText
+    offsetMinuteText,
   ] = match;
   const year = Number(yearText);
   const month = Number(monthText);
@@ -295,7 +321,9 @@ function daysInMonth(year: number, month: number): number {
 }
 
 function encodeCursor(startsAt: Date, id: string): string {
-  return Buffer.from(JSON.stringify({ startsAt: startsAt.toISOString(), id })).toString("base64url");
+  return Buffer.from(JSON.stringify({ startsAt: startsAt.toISOString(), id })).toString(
+    "base64url",
+  );
 }
 
 function decodeCursor(value: string): Cursor {

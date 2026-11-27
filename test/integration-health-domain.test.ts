@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   esErrorNoBloqueanteDeScopesMeet,
   estadoIntegracionEfectivo,
-  requiereAtencionIntegracionMeet
+  requiereAtencionIntegracionMeet,
 } from "../src/modules/meet/integration-health.domain";
 
 describe("salud de integración de Google Meet", () => {
@@ -11,7 +11,7 @@ describe("salud de integración de Google Meet", () => {
       estadoIntegracion: "ERROR" as const,
       joinUrl: "https://meet.google.com/abc-defg-hij",
       codigoReunion: "abc-defg-hij",
-      errorIntegracion: "Request had insufficient authentication scopes."
+      errorIntegracion: "Request had insufficient authentication scopes.",
     };
 
     expect(esErrorNoBloqueanteDeScopesMeet(event)).toBe(true);
@@ -24,7 +24,7 @@ describe("salud de integración de Google Meet", () => {
       estadoIntegracion: "ERROR" as const,
       joinUrl: null,
       codigoReunion: null,
-      errorIntegracion: "Request had insufficient authentication scopes."
+      errorIntegracion: "Request had insufficient authentication scopes.",
     };
 
     expect(esErrorNoBloqueanteDeScopesMeet(event)).toBe(false);
@@ -37,7 +37,7 @@ describe("salud de integración de Google Meet", () => {
       estadoIntegracion: "ERROR" as const,
       joinUrl: "https://meet.google.com/abc-defg-hij",
       codigoReunion: "abc-defg-hij",
-      errorIntegracion: "Google Calendar todavía no refleja la reprogramación solicitada."
+      errorIntegracion: "Google Calendar todavía no refleja la reprogramación solicitada.",
     };
 
     expect(esErrorNoBloqueanteDeScopesMeet(event)).toBe(false);

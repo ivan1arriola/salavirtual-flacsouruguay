@@ -12,7 +12,8 @@ const slash = (path) => path.replaceAll("\\", "/");
 const localPath = (path) => slash(isAbsolute(path) ? relative(root, path) : path);
 const methods = new Set(["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"]);
 const roles = new Set(["ADMINISTRACION", "DOCENTE", "ASISTENTE_TECNICO"]);
-const guardPattern = /auth|session|actor|permis|puede|require|forbidden|validar|verificar|secret|firma/i;
+const guardPattern =
+  /auth|session|actor|permis|puede|require|forbidden|validar|verificar|secret|firma/i;
 
 function walk(node, visit) {
   visit(node);
@@ -59,8 +60,8 @@ function exportEntries(statement) {
     return statement.declarationList.declarations.flatMap((declaration) =>
       bindingNames(declaration.name).map((name) => ({
         name,
-        node: declaration.initializer ?? declaration
-      }))
+        node: declaration.initializer ?? declaration,
+      })),
     );
   }
   if (ts.isExportDeclaration(statement)) {
@@ -103,7 +104,7 @@ function entry(source, kind, name, node) {
     name,
     line: lineOf(node, source),
     ...clues(node, source),
-    status: "PENDIENTE_TRAZABILIDAD_Y_PRUEBA"
+    status: "PENDIENTE_TRAZABILIDAD_Y_PRUEBA",
   };
 }
 
@@ -130,11 +131,14 @@ function scanEntries(source) {
 function cssImports(source) {
   return source.statements
     .filter(ts.isImportDeclaration)
-    .filter((node) => ts.isStringLiteral(node.moduleSpecifier) && node.moduleSpecifier.text.endsWith(".css"))
+    .filter(
+      (node) =>
+        ts.isStringLiteral(node.moduleSpecifier) && node.moduleSpecifier.text.endsWith(".css"),
+    )
     .map((node) => ({
       file: localPath(source.fileName),
       line: lineOf(node, source),
-      specifier: node.moduleSpecifier.text
+      specifier: node.moduleSpecifier.text,
     }));
 }
 
@@ -178,25 +182,32 @@ function graphSummary(modules) {
       groups.set(key, counts);
     }
   }
-  return { edges: [...groups.values()].sort((a, b) => a.runtime - b.runtime).reverse(), unresolved };
+  return {
+    edges: [...groups.values()].sort((a, b) => a.runtime - b.runtime).reverse(),
+    unresolved,
+  };
 }
 
 const sources = ts.sys
   .readDirectory(root, [".ts", ".tsx"], ["**/node_modules/**"], ["app/**/*", "src/**/*", "auth.ts"])
   .sort();
 const parsed = sources.map((file) =>
-  ts.createSourceFile(file, readFileSync(file, "utf8"), ts.ScriptTarget.Latest, true)
+  ts.createSourceFile(file, readFileSync(file, "utf8"), ts.ScriptTarget.Latest, true),
 );
 const entries = parsed.flatMap(scanEntries);
 const routeFiles = sources.map(localPath).filter((file) => /^app\/api\/.*\/route\.ts$/.test(file));
-const inventoried = new Set(entries.filter((item) => item.kind === "http").map((item) => item.file));
+const inventoried = new Set(
+  entries.filter((item) => item.kind === "http").map((item) => item.file),
+);
 const unidentifiedRoutes = routeFiles.filter((file) => !inventoried.has(file));
 const css = parsed.flatMap(cssImports);
 const graph = JSON.parse(readFileSync(join(output, "dependencies.json"), "utf8"));
 const { edges, unresolved } = graphSummary(graph.modules);
 const pagesWithDb = graph.modules
   .filter((item) => /(^|\/)page\.tsx$/.test(item.source))
-  .filter((item) => item.dependencies?.some((dep) => localPath(dep.resolved ?? "") === "src/lib/db.ts"))
+  .filter((item) =>
+    item.dependencies?.some((dep) => localPath(dep.resolved ?? "") === "src/lib/db.ts"),
+  )
   .map((item) => localPath(item.source));
 const summary = {
   sourceFiles: sources.length,
@@ -209,7 +220,7 @@ const summary = {
   graphModules: graph.modules.length,
   crossOwnerPairs: edges.length,
   unresolvedImports: unresolved.length,
-  pagesWithDb: pagesWithDb.length
+  pagesWithDb: pagesWithDb.length,
 };
 
 function save(name, data) {

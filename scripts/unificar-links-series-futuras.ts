@@ -1,10 +1,10 @@
-import { Prisma } from "@prisma/client";
+import type { Prisma } from "@prisma/client";
 import { loadEnvConfig } from "@next/env";
 import { db } from "../src/lib/db";
 import { extraerConferenceData } from "../src/modules/meet/google-calendar.domain";
 import {
   compartirConferenciaGoogleCalendar,
-  type GoogleCalendarCredentials
+  type GoogleCalendarCredentials,
 } from "../src/modules/meet/google-calendar.adapter";
 import { claveSerieReunion } from "../src/modules/reuniones/serie-reunion.domain";
 
@@ -33,12 +33,12 @@ async function main(): Promise<void> {
           titulo: plan.meetings[0].solicitud.titulo,
           meetings: plan.meetings.length,
           currentCodes: plan.codes,
-          sharedCode: onlyEvent(plan.anchor).codigoReunion
-        }))
+          sharedCode: onlyEvent(plan.anchor).codigoReunion,
+        })),
       },
       null,
-      2
-    )
+      2,
+    ),
   );
   if (!applyChanges || plans.length === 0) {
     return;
@@ -46,9 +46,10 @@ async function main(): Promise<void> {
 
   loadEnvConfig(process.cwd());
   const { descifrarConfiguracion } = await import("../src/lib/config/encryption");
-  const { obtenerCredencialPrincipalGoogleWorkspace } = await import("../src/modules/configuracion/api");
+  const { obtenerCredencialPrincipalGoogleWorkspace } =
+    await import("../src/modules/configuracion/api");
   const config = await obtenerCredencialPrincipalGoogleWorkspace(db, descifrarConfiguracion, {
-    requireActiva: true
+    requireActiva: true,
   });
   if (!config) {
     throw new Error("Google Workspace no está configurado para unificar enlaces de series.");
@@ -71,20 +72,20 @@ function loadMeetings() {
           estadoIntegracion: "SINCRONIZADA",
           externalEventId: { not: null },
           codigoReunion: { not: null },
-          joinUrl: { not: null }
-        }
-      }
+          joinUrl: { not: null },
+        },
+      },
     },
     orderBy: { inicioProgramadoAt: "asc" },
     include: {
       solicitud: {
-        include: { docentePrograma: { include: { programa: true } } }
+        include: { docentePrograma: { include: { programa: true } } },
       },
       eventosProveedor: {
         where: { proveedor: { tipo: "GOOGLE_MEET" } },
-        include: { cuentaProveedor: true }
-      }
-    }
+        include: { cuentaProveedor: true },
+      },
+    },
   });
 }
 
@@ -95,19 +96,29 @@ function buildPlans(meetings: readonly Meeting[]): readonly Plan[] {
     groups.set(key, [...(groups.get(key) ?? []), meeting]);
   }
   return [...groups.entries()].flatMap(([key, values]) => {
-    const codes = unique(values.map((meeting) => onlyEvent(meeting).codigoReunion).filter(isString));
+    const codes = unique(
+      values.map((meeting) => onlyEvent(meeting).codigoReunion).filter(isString),
+    );
     if (codes.length <= 1) {
       return [];
     }
-    const anchor = values.find((meeting) => extraerConferenceData(onlyEvent(meeting).payloadUltimo));
+    const anchor = values.find((meeting) =>
+      extraerConferenceData(onlyEvent(meeting).payloadUltimo),
+    );
     if (!anchor) {
-      throw new Error(`La serie ${values[0].solicitud.titulo} no tiene conferenceData reutilizable.`);
+      throw new Error(
+        `La serie ${values[0].solicitud.titulo} no tiene conferenceData reutilizable.`,
+      );
     }
     return [{ key, meetings: values, anchor, codes }];
   });
 }
 
-async function applyPlan(plan: Plan, serviceAccountEmail: string, privateKey: string): Promise<void> {
+async function applyPlan(
+  plan: Plan,
+  serviceAccountEmail: string,
+  privateKey: string,
+): Promise<void> {
   const anchorEvent = onlyEvent(plan.anchor);
   const conferenceData = extraerConferenceData(anchorEvent.payloadUltimo);
   if (!conferenceData || !anchorEvent.codigoReunion || !anchorEvent.joinUrl) {
@@ -126,10 +137,15 @@ async function applyPlan(plan: Plan, serviceAccountEmail: string, privateKey: st
     const credentials: GoogleCalendarCredentials = {
       serviceAccountEmail,
       privateKey,
-      subject: calendarId
+      subject: calendarId,
     };
     const result = await withRateLimitRetries(() =>
-      compartirConferenciaGoogleCalendar(credentials, calendarId, event.externalEventId!, conferenceData)
+      compartirConferenciaGoogleCalendar(
+        credentials,
+        calendarId,
+        event.externalEventId!,
+        conferenceData,
+      ),
     );
     await db.$transaction(async (tx) => {
       await tx.$executeRaw`SELECT set_config('flacso.meet_change_origin', 'unificar-links-series-futuras', true), set_config('flacso.meet_change_reason', 'Unificación de enlaces de la serie', true)`;
@@ -141,8 +157,8 @@ async function applyPlan(plan: Plan, serviceAccountEmail: string, privateKey: st
           payloadUltimo: JSON.parse(JSON.stringify(result.payload)) as Prisma.InputJsonValue,
           sincronizadoAt: new Date(),
           estadoIntegracion: "SINCRONIZADA",
-          errorIntegracion: null
-        }
+          errorIntegracion: null,
+        },
       });
     });
   }
@@ -155,9 +171,9 @@ async function applyPlan(plan: Plan, serviceAccountEmail: string, privateKey: st
       valorAnterior: { codigosMeet: plan.codes },
       valorNuevo: {
         codigoMeet: anchorEvent.codigoReunion,
-        encuentros: plan.meetings.length
-      }
-    }
+        encuentros: plan.meetings.length,
+      },
+    },
   });
 }
 

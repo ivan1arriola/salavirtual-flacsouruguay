@@ -3,13 +3,15 @@ import type {
   CuentaCalendarioAsistente,
   PlanCalendarioAsistente,
   ResultadoSincronizacionCalendarioAsistente,
-  SnapshotCalendarioAsistente
+  SnapshotCalendarioAsistente,
 } from "./calendario-asistente.types";
 
 const ACTIVE_ASSIGNMENTS = new Set(["ASIGNADO", "ACEPTADO"]);
 
 export function idEventoCalendarioAsistente(instanciaId: string, cuentaGoogleId: string): string {
-  return createHash("sha256").update(`flacso-asistencia:${instanciaId}:${cuentaGoogleId}`).digest("hex");
+  return createHash("sha256")
+    .update(`flacso-asistencia:${instanciaId}:${cuentaGoogleId}`)
+    .digest("hex");
 }
 
 export type SegmentoCalendarioAsistente = "PREPARACION" | "CIERRE";
@@ -17,7 +19,7 @@ export type SegmentoCalendarioAsistente = "PREPARACION" | "CIERRE";
 export function idEventoCalendarioAsistenteSegmento(
   instanciaId: string,
   cuentaGoogleId: string,
-  segmento: SegmentoCalendarioAsistente
+  segmento: SegmentoCalendarioAsistente,
 ): string {
   return createHash("sha256")
     .update(`flacso-asistencia:${instanciaId}:${cuentaGoogleId}:${segmento.toLowerCase()}`)
@@ -25,9 +27,13 @@ export function idEventoCalendarioAsistenteSegmento(
 }
 
 export function cuentasCalendarioDeseadas(
-  snapshot: SnapshotCalendarioAsistente
+  snapshot: SnapshotCalendarioAsistente,
 ): readonly CuentaCalendarioAsistente[] {
-  if (snapshot.estado !== "PROGRAMADA" || !snapshot.requiereAsistenciaTecnica || snapshot.vigente === false) {
+  if (
+    snapshot.estado !== "PROGRAMADA" ||
+    !snapshot.requiereAsistenciaTecnica ||
+    snapshot.vigente === false
+  ) {
     return [];
   }
 
@@ -39,12 +45,12 @@ export function cuentasCalendarioDeseadas(
         return usuario.rol === "ASISTENTE_TECNICO" && usuario.activo && !usuario.fusionadoEnId;
       })
       .flatMap(({ asistenteTecnico }) => asistenteTecnico.usuario.cuentasGoogle)
-      .filter(esCuentaGoogleVinculada)
+      .filter(esCuentaGoogleVinculada),
   );
 }
 
 export function planificarSincronizacionCalendarioAsistente(
-  snapshot: SnapshotCalendarioAsistente & Readonly<{ instanciaId: string }>
+  snapshot: SnapshotCalendarioAsistente & Readonly<{ instanciaId: string }>,
 ): PlanCalendarioAsistente {
   const desired = cuentasCalendarioDeseadas(snapshot);
   const desiredIds = desired.map(({ id }) => id);
@@ -52,25 +58,25 @@ export function planificarSincronizacionCalendarioAsistente(
     snapshot.asignaciones
       .filter(({ asistenteTecnico }) => asistenteTecnico.usuario.rol === "ASISTENTE_TECNICO")
       .flatMap(({ asistenteTecnico }) => asistenteTecnico.usuario.cuentasGoogle)
-      .filter(esCuentaGoogleVinculada)
+      .filter(esCuentaGoogleVinculada),
   );
 
   return {
     publicar: desired.map((cuenta) => ({
       cuenta,
-      eventId: idEventoCalendarioAsistente(snapshot.instanciaId, cuenta.id)
+      eventId: idEventoCalendarioAsistente(snapshot.instanciaId, cuenta.id),
     })),
     eliminar: historical
       .filter(({ id }) => !desiredIds.includes(id))
       .map((cuenta) => ({
         cuenta,
-        eventId: idEventoCalendarioAsistente(snapshot.instanciaId, cuenta.id)
-      }))
+        eventId: idEventoCalendarioAsistente(snapshot.instanciaId, cuenta.id),
+      })),
   };
 }
 
 export function hayErroresSincronizacionCalendarioAsistente(
-  results: readonly ResultadoSincronizacionCalendarioAsistente[]
+  results: readonly ResultadoSincronizacionCalendarioAsistente[],
 ): boolean {
   return results.some(({ estado }) => estado === "ERROR");
 }
@@ -79,6 +85,10 @@ function esCuentaGoogleVinculada(cuenta: CuentaCalendarioAsistente): boolean {
   return Boolean(cuenta.providerAccountId && cuenta.emailVerificadoAt);
 }
 
-function cuentasUnicas(cuentas: readonly CuentaCalendarioAsistente[]): readonly CuentaCalendarioAsistente[] {
-  return cuentas.filter((cuenta, index, all) => all.findIndex(({ id }) => id === cuenta.id) === index);
+function cuentasUnicas(
+  cuentas: readonly CuentaCalendarioAsistente[],
+): readonly CuentaCalendarioAsistente[] {
+  return cuentas.filter(
+    (cuenta, index, all) => all.findIndex(({ id }) => id === cuenta.id) === index,
+  );
 }

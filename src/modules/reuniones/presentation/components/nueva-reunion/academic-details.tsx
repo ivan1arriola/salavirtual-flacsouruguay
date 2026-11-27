@@ -7,7 +7,7 @@ export function AcademicDetails({
   selectedProgramId,
   onProgramChange,
   title,
-  onTitleChange
+  onTitleChange,
 }: Readonly<{
   programs: readonly ProgramOption[];
   selectedProgramId: string;
@@ -54,7 +54,11 @@ export function AcademicDetails({
         <details className="general-description">
           <summary>Descripción general (opcional)</summary>
           <Field label="Descripción" wide>
-            <textarea name="descripcion" placeholder="Agregá contexto para los encuentros" rows={3} />
+            <textarea
+              name="descripcion"
+              placeholder="Agregá contexto para los encuentros"
+              rows={3}
+            />
           </Field>
         </details>
       </div>

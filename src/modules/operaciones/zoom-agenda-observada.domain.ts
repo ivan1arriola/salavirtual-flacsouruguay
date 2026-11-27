@@ -35,8 +35,10 @@ type Clasificada = Readonly<{
 }>;
 
 const TOLERANCIA_MS = 60_000;
-const seSolapan = (a: Readonly<{ inicio: Date; fin: Date }>, b: Readonly<{ inicio: Date; fin: Date }>) =>
-  a.inicio < b.fin && b.inicio < a.fin;
+const seSolapan = (
+  a: Readonly<{ inicio: Date; fin: Date }>,
+  b: Readonly<{ inicio: Date; fin: Date }>,
+) => a.inicio < b.fin && b.inicio < a.fin;
 
 /**
  * Contrasta el espejo de Zoom con la agenda de la app. `idsPropios` son todas las reuniones Zoom que la app
@@ -46,7 +48,7 @@ export function detectarInconsistenciasAgendaZoom(
   observadas: readonly ObservadaAgendaZoom[],
   reuniones: readonly ReunionZoomAuditable[],
   idsPropios: ReadonlySet<string>,
-  ahora: Date
+  ahora: Date,
 ): InconsistenciasAgendaZoom {
   const futuras = observadas.filter(({ fin }) => fin > ahora);
   const activas = futuras.filter(({ estado }) => estado === "ACTIVA");
@@ -60,15 +62,18 @@ export function detectarInconsistenciasAgendaZoom(
         (reunion) =>
           reunion.cuentaId !== null &&
           reunion.cuentaId === observada.cuentaProveedorId &&
-          seSolapan(reunion, observada)
-      )
+          seSolapan(reunion, observada),
+      ),
     }));
 
   const porReunion = futuras
     .filter(({ meetingId }) => idsPropios.has(meetingId))
     .reduce<Readonly<Record<string, readonly ObservadaAgendaZoom[]>>>(
-      (grupos, fila) => ({ ...grupos, [fila.meetingId]: [...(grupos[fila.meetingId] ?? []), fila] }),
-      {}
+      (grupos, fila) => ({
+        ...grupos,
+        [fila.meetingId]: [...(grupos[fila.meetingId] ?? []), fila],
+      }),
+      {},
     );
   // Solo encuentros que todavía no empezaron: lo transcurrido o en curso nunca se marca.
   const clasificadas = reuniones
@@ -83,13 +88,13 @@ export function detectarInconsistenciasAgendaZoom(
         return [{ tipo: "ELIMINADA", reunion, enZoom: vigentes }];
       }
       const coincide = vigentes.some(
-        ({ inicio }) => Math.abs(inicio.getTime() - reunion.inicio.getTime()) <= TOLERANCIA_MS
+        ({ inicio }) => Math.abs(inicio.getTime() - reunion.inicio.getTime()) <= TOLERANCIA_MS,
       );
       return coincide ? [] : [{ tipo: "HORARIO", reunion, enZoom: vigentes }];
     });
   const eliminadasEnZoom = clasificadas.flatMap((c) => (c.tipo === "ELIMINADA" ? [c.reunion] : []));
   const horarioDistinto = clasificadas.flatMap((c) =>
-    c.tipo === "HORARIO" ? [{ reunion: c.reunion, enZoom: c.enZoom }] : []
+    c.tipo === "HORARIO" ? [{ reunion: c.reunion, enZoom: c.enZoom }] : [],
   );
   return { externas, ignoradas, eliminadasEnZoom, horarioDistinto };
 }
@@ -104,12 +109,13 @@ export type OcurrenciaElegida =
 export function elegirOcurrenciaDelEncuentro(
   reunion: ReunionZoomAuditable,
   enZoom: readonly ObservadaAgendaZoom[],
-  reuniones: readonly ReunionZoomAuditable[]
+  reuniones: readonly ReunionZoomAuditable[],
 ): OcurrenciaElegida {
-  const distancia = (o: ObservadaAgendaZoom) => Math.abs(o.inicio.getTime() - reunion.inicio.getTime());
+  const distancia = (o: ObservadaAgendaZoom) =>
+    Math.abs(o.inicio.getTime() - reunion.inicio.getTime());
   const ocurrencia = enZoom.reduce<ObservadaAgendaZoom | null>(
     (mejor, o) => (!mejor || distancia(o) < distancia(mejor) ? o : mejor),
-    null
+    null,
   );
   if (!ocurrencia) {
     return { ok: false, motivo: "Zoom no informa ninguna ocurrencia vigente de esta reunión." };
@@ -123,13 +129,13 @@ export function elegirOcurrenciaDelEncuentro(
       otra.instanciaId !== reunion.instanciaId &&
       otra.meetingId === reunion.meetingId &&
       (distanciaAOcurrencia(otra) <= TOLERANCIA_MS ||
-        distanciaAOcurrencia(otra) <= distanciaAOcurrencia(reunion))
+        distanciaAOcurrencia(otra) <= distanciaAOcurrencia(reunion)),
   );
   return ocupada
     ? {
         ok: false,
         motivo:
-          "La ocurrencia de Zoom más cercana podría corresponder a otro encuentro de la serie: no se adivina."
+          "La ocurrencia de Zoom más cercana podría corresponder a otro encuentro de la serie: no se adivina.",
       }
     : { ok: true, ocurrencia };
 }

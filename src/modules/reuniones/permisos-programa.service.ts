@@ -11,7 +11,7 @@ export type DestinatarioDocentePrograma = Readonly<{
 export async function puedeGestionarPrograma(
   db: Db,
   actor: SessionActor,
-  programaId: string
+  programaId: string,
 ): Promise<boolean> {
   if (!actor.activo) {
     return false;
@@ -30,40 +30,40 @@ export async function puedeGestionarPrograma(
       programa: { activo: true },
       docente: {
         usuarioId: actor.id,
-        usuario: { activo: true, rol: "DOCENTE" }
-      }
+        usuario: { activo: true, rol: "DOCENTE" },
+      },
     },
-    select: { id: true }
+    select: { id: true },
   });
   return Boolean(association);
 }
 
 export async function destinatariosDocentesPrograma(
   db: Db,
-  programaId: string
+  programaId: string,
 ): Promise<readonly DestinatarioDocentePrograma[]> {
   const associations = await db.docentePrograma.findMany({
     where: {
       programaId,
       activo: true,
       programa: { activo: true },
-      docente: { usuario: { activo: true, rol: "DOCENTE" } }
+      docente: { usuario: { activo: true, rol: "DOCENTE" } },
     },
     select: {
       docente: {
         select: {
-          usuario: { select: { id: true, emailPrincipal: true } }
-        }
-      }
-    }
+          usuario: { select: { id: true, emailPrincipal: true } },
+        },
+      },
+    },
   });
 
   return Array.from(
     new Map(
       associations.map(({ docente }) => [
         docente.usuario.id,
-        { usuarioId: docente.usuario.id, email: docente.usuario.emailPrincipal }
-      ])
-    ).values()
+        { usuarioId: docente.usuario.id, email: docente.usuario.emailPrincipal },
+      ]),
+    ).values(),
   );
 }

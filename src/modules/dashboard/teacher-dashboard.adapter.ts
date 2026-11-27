@@ -3,7 +3,7 @@ import { filtroArchivoReunionMeet } from "@/src/modules/archivos/api";
 import {
   cohostsConfirmados,
   extraerCohostEmailsDeInstancia,
-  extraerCohostsUnificadosDeInstancia
+  extraerCohostsUnificadosDeInstancia,
 } from "@/src/modules/conferencias/api";
 import { seleccionarEventoProveedorActivo } from "../reuniones/evento-proveedor-activo.domain";
 import { determinarEstadoTemporal } from "./dashboard.domain";
@@ -19,16 +19,16 @@ export interface TeacherDashboardData {
 export async function obtenerDashboardDocente(
   db: PrismaClient,
   usuarioId: string,
-  ahora: Date
+  ahora: Date,
 ): Promise<TeacherDashboardData> {
   const teacherCondition = {
     OR: [
       {
         solicitud: {
           docentePrograma: {
-            docente: { usuarioId }
-          }
-        }
+            docente: { usuarioId },
+          },
+        },
       },
       {
         solicitud: {
@@ -38,14 +38,14 @@ export async function obtenerDashboardDocente(
               docentes: {
                 some: {
                   activo: true,
-                  docente: { usuarioId }
-                }
-              }
-            }
-          }
-        }
-      }
-    ]
+                  docente: { usuarioId },
+                },
+              },
+            },
+          },
+        },
+      },
+    ],
   };
 
   const [instances, totalUpcomingCount, recentRecordingRecords] = await Promise.all([
@@ -53,7 +53,7 @@ export async function obtenerDashboardDocente(
       where: {
         estado: "PROGRAMADA",
         finProgramadoAt: { gte: ahora },
-        ...teacherCondition
+        ...teacherCondition,
       },
       orderBy: { inicioProgramadoAt: "asc" },
       take: 6,
@@ -63,31 +63,31 @@ export async function obtenerDashboardDocente(
             docentePrograma: {
               include: {
                 programa: true,
-                docente: { include: { usuario: true } }
-              }
-            }
-          }
+                docente: { include: { usuario: true } },
+              },
+            },
+          },
         },
         eventosProveedor: { include: { proveedor: true, cuentaProveedor: true } },
         cohosts: {
           include: {
-            cuentaGoogle: { include: { user: true } }
-          }
+            cuentaGoogle: { include: { user: true } },
+          },
         },
         cohostEmails: true,
         asignaciones: {
           where: { estado: { in: ["ASIGNADO", "ACEPTADO"] } },
           include: { asistenteTecnico: { include: { usuario: true } } },
-          take: 1
-        }
-      }
+          take: 1,
+        },
+      },
     }),
     db.instanciaSala.count({
       where: {
         estado: "PROGRAMADA",
         finProgramadoAt: { gte: ahora },
-        ...teacherCondition
-      }
+        ...teacherCondition,
+      },
     }),
     db.archivoReunion.findMany({
       where: {
@@ -95,10 +95,10 @@ export async function obtenerDashboardDocente(
         eventoProveedor: {
           instancia: {
             estado: { notIn: ["CANCELADA", "NO_REALIZADA"] },
-            ...teacherCondition
-          }
+            ...teacherCondition,
+          },
         },
-        AND: [filtroArchivoReunionMeet()]
+        AND: [filtroArchivoReunionMeet()],
       },
       orderBy: [{ capturadoAt: "desc" }, { createdAt: "desc" }],
       take: 3,
@@ -110,26 +110,28 @@ export async function obtenerDashboardDocente(
                 solicitud: {
                   include: {
                     docentePrograma: {
-                      include: { programa: true }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    })
+                      include: { programa: true },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    }),
   ]);
 
   const mappedMeetings = instances.map((instance) => {
     // Cohosts se verifican solo contra Google Meet; enlace y sala siguen al proveedor activo.
-    const meetCohosts = instance.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET");
+    const meetCohosts = instance.eventosProveedor.find(
+      ({ proveedor }) => proveedor.tipo === "GOOGLE_MEET",
+    );
     const meet = seleccionarEventoProveedorActivo(instance);
     const cohostEmails = extraerCohostEmailsDeInstancia(instance);
     const cohostsList = extraerCohostsUnificadosDeInstancia(instance).map((c) => ({
       name: c.name ?? "",
-      email: c.email
+      email: c.email,
     }));
     const isVerified = Boolean(
       !meetCohosts?.errorIntegracion &&
@@ -138,22 +140,22 @@ export async function obtenerDashboardDocente(
         meetCohosts?.payloadUltimo,
         meetCohosts?.codigoReunion,
         meetCohosts?.cuentaProveedor?.emailOrganizador,
-        cohostEmails
-      )
+        cohostEmails,
+      ),
     );
     const assignment = instance.asignaciones[0];
     const assistantUser = assignment?.asistenteTecnico?.usuario;
     const asistente = assistantUser
       ? {
           id: assignment.asistenteTecnico.id,
-          nombre: `${assistantUser.nombres} ${assistantUser.apellidos ?? ""}`.trim()
+          nombre: `${assistantUser.nombres} ${assistantUser.apellidos ?? ""}`.trim(),
         }
       : null;
 
     const estadoTemporal = determinarEstadoTemporal(
       instance.inicioProgramadoAt,
       instance.finProgramadoAt,
-      ahora
+      ahora,
     );
 
     return {
@@ -162,7 +164,7 @@ export async function obtenerDashboardDocente(
       cohostsList,
       isVerified,
       asistente,
-      estadoTemporal
+      estadoTemporal,
     };
   });
 
@@ -176,12 +178,14 @@ export async function obtenerDashboardDocente(
       solicitudId: firstMeeting.instance.solicitud.id,
       titulo: firstMeeting.instance.solicitud.titulo,
       programa: firstMeeting.instance.solicitud.docentePrograma.programa.nombre,
-      modalidad: firstMeeting.instance.modalidadOverride ?? firstMeeting.instance.solicitud.modalidad,
+      modalidad:
+        firstMeeting.instance.modalidadOverride ?? firstMeeting.instance.solicitud.modalidad,
       inicioProgramadoAt: firstMeeting.instance.inicioProgramadoAt.toISOString(),
       finProgramadoAt: firstMeeting.instance.finProgramadoAt.toISOString(),
       inicioAsistenciaAt: firstMeeting.instance.requiereAsistenciaTecnica
         ? (
-            firstMeeting.instance.inicioAsistenciaTecnicaAt ?? firstMeeting.instance.inicioProgramadoAt
+            firstMeeting.instance.inicioAsistenciaTecnicaAt ??
+            firstMeeting.instance.inicioProgramadoAt
           ).toISOString()
         : null,
       finAsistenciaAt: firstMeeting.instance.requiereAsistenciaTecnica
@@ -190,12 +194,13 @@ export async function obtenerDashboardDocente(
           ).toISOString()
         : null,
       joinUrl: firstMeeting.meet?.joinUrl ?? null,
-      providerType: firstMeeting.meet?.proveedor.tipo ?? firstMeeting.instance.proveedorActivoTipo ?? null,
+      providerType:
+        firstMeeting.meet?.proveedor.tipo ?? firstMeeting.instance.proveedorActivoTipo ?? null,
       cohostConfirmado: firstMeeting.isVerified,
       cohosts: firstMeeting.cohostsList,
       asistente: firstMeeting.asistente,
       requiereAsistencia: firstMeeting.instance.requiereAsistenciaTecnica,
-      salaNombre: firstMeeting.meet?.cuentaProveedor?.nombre ?? null
+      salaNombre: firstMeeting.meet?.cuentaProveedor?.nombre ?? null,
     };
   }
 
@@ -221,15 +226,17 @@ export async function obtenerDashboardDocente(
       estadoTemporal,
       asistenteNombre: asistente?.nombre ?? null,
       requiereAsistencia: instance.requiereAsistenciaTecnica,
-      cohostsVerificados: isVerified
-    })
+      cohostsVerificados: isVerified,
+    }),
   );
 
   const recentRecordings: RecentRecordingDTO[] = recentRecordingRecords.map((rec) => {
     const instancia = rec.eventoProveedor.instancia;
     const duracionMin =
       instancia.inicioProgramadoAt && instancia.finProgramadoAt
-        ? Math.round((instancia.finProgramadoAt.getTime() - instancia.inicioProgramadoAt.getTime()) / 60000)
+        ? Math.round(
+            (instancia.finProgramadoAt.getTime() - instancia.inicioProgramadoAt.getTime()) / 60000,
+          )
         : null;
 
     return {
@@ -239,7 +246,7 @@ export async function obtenerDashboardDocente(
       fecha: (rec.capturadoAt ?? rec.createdAt).toISOString(),
       duracionMinutos: duracionMin,
       driveUrl: rec.webViewUrl,
-      publicUrl: `/reuniones/${instancia.solicitud.id}`
+      publicUrl: `/reuniones/${instancia.solicitud.id}`,
     };
   });
 
@@ -247,6 +254,6 @@ export async function obtenerDashboardDocente(
     heroMeeting,
     upcomingMeetings,
     recentRecordings,
-    totalUpcomingCount
+    totalUpcomingCount,
   };
 }

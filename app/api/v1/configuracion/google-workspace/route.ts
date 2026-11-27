@@ -5,7 +5,7 @@ import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
 import {
   actualizarSeccionGoogleWorkspace,
-  desactivarCredencialLegacyWorkspace
+  desactivarCredencialLegacyWorkspace,
 } from "@/src/modules/configuracion/google-workspace.service";
 
 export const runtime = "nodejs";
@@ -19,7 +19,7 @@ export async function GET() {
   // Never authorize sensitive reads solely from the role saved in a JWT/session.
   const actor = await resolveSessionActor(db, {
     id: session.user.id,
-    email: session.user.email
+    email: session.user.email,
   });
   if (!actor?.activo || actor.rol !== "ADMINISTRACION") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -35,8 +35,8 @@ export async function GET() {
         privateKeyCifrada: true,
         activa: true,
         version: true,
-        updatedAt: true
-      }
+        updatedAt: true,
+      },
     }),
     db.configuracionGoogleWorkspace.findMany({
       where: { id: { startsWith: "legacy:" } },
@@ -47,9 +47,9 @@ export async function GET() {
         privateKeyCifrada: true,
         activa: true,
         version: true,
-        updatedAt: true
-      }
-    })
+        updatedAt: true,
+      },
+    }),
   ]);
 
   return NextResponse.json({
@@ -61,7 +61,7 @@ export async function GET() {
           activa: configuracion.activa,
           version: configuracion.version,
           updatedAt: configuracion.updatedAt,
-          privateKeyConfigurada: Boolean(configuracion.privateKeyCifrada)
+          privateKeyConfigurada: Boolean(configuracion.privateKeyCifrada),
         }
       : null,
     legacyCredentials: legacy.map((credential) => ({
@@ -70,8 +70,8 @@ export async function GET() {
       activa: credential.activa,
       version: credential.version,
       updatedAt: credential.updatedAt,
-      privateKeyConfigurada: Boolean(credential.privateKeyCifrada)
-    }))
+      privateKeyConfigurada: Boolean(credential.privateKeyCifrada),
+    })),
   });
 }
 
@@ -85,25 +85,25 @@ export async function PUT(request: Request) {
   try {
     const actor = await resolveSessionActor(db, {
       id: session.user.id,
-      email: session.user.email
+      email: session.user.email,
     });
     if (!actor) {
       return NextResponse.json(
         { error: "La sesión está desactualizada. Volvé a iniciar sesión." },
-        { status: 401 }
+        { status: 401 },
       );
     }
     const configuracion = await actualizarSeccionGoogleWorkspace(
       { db, cifrar: cifrarConfiguracion },
       actor,
-      input
+      input,
     );
 
     return NextResponse.json({
       configuracion: {
         ...configuracion,
-        privateKeyConfigurada: true
-      }
+        privateKeyConfigurada: true,
+      },
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Configuracion invalida.";
@@ -118,14 +118,17 @@ export async function DELETE(request: Request) {
   }
   const actor = await resolveSessionActor(db, {
     id: session.user.id,
-    email: session.user.email
+    email: session.user.email,
   });
   if (!actor || actor.rol !== "ADMINISTRACION" || !actor.activo) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
   const id = new URL(request.url).searchParams.get("id")?.trim();
   if (!id?.startsWith("legacy:")) {
-    return NextResponse.json({ error: "Solo se pueden desactivar credenciales Legacy." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Solo se pueden desactivar credenciales Legacy." },
+      { status: 400 },
+    );
   }
   try {
     await desactivarCredencialLegacyWorkspace(db, actor, id);

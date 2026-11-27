@@ -9,7 +9,7 @@ import {
   type EstadoArchivoZoomVista,
   type GoogleArtifact,
   type MovedDriveFile,
-  type TipoArtefactoMeet
+  type TipoArtefactoMeet,
 } from "../../domain";
 import type {
   ArchivoMeetVisibleModel,
@@ -19,13 +19,16 @@ import type {
   EstadoSincronizacionInput,
   EventoParaSincronizarArchivos,
   PlanillaAsistenciaCandidata,
-  SessionActor
+  SessionActor,
 } from "../../ports";
-import type { EventosOperativosRepositoryPort, ListarEventosOperativosInput } from "../../application";
+import type {
+  EventosOperativosRepositoryPort,
+  ListarEventosOperativosInput,
+} from "../../application";
 import { filtroArchivoReunionMeet } from "./archivo-reunion-meet.filter";
 
 export function crearPrismaArchivosRepositoryAdapter(
-  db: PrismaClient
+  db: PrismaClient,
 ): ArchivosRepositoryPort & EventosOperativosRepositoryPort {
   return {
     async listarEventosOperativos(input: ListarEventosOperativosInput): Promise<readonly string[]> {
@@ -35,7 +38,7 @@ export function crearPrismaArchivosRepositoryAdapter(
       const finalizadoSinVideo: Prisma.EventoProveedorWhereInput = {
         archivosSincronizadosAt: { not: null },
         archivos: { none: { tipo: "GRABACION" } },
-        ...(input.ventana === "CIERRE" ? { grabacionObservadaAt: null } : {})
+        ...(input.ventana === "CIERRE" ? { grabacionObservadaAt: null } : {}),
       };
       const events = await db.eventoProveedor.findMany({
         where: {
@@ -44,25 +47,27 @@ export function crearPrismaArchivosRepositoryAdapter(
           OR: [
             { archivosSincronizadosAt: null },
             ...(input.ventana === "INTERMEDIA" ? [{ errorArchivos: { not: null } }] : []),
-            finalizadoSinVideo
+            finalizadoSinVideo,
           ],
           instancia: {
             estado: { not: "CANCELADA" },
             finProgramadoAt: {
               gte: input.desde,
-              ...(input.ventana === "CALIENTE" ? {} : { lt: input.hasta })
+              ...(input.ventana === "CALIENTE" ? {} : { lt: input.hasta }),
             },
-            ...(input.ventana === "CALIENTE" ? { inicioProgramadoAt: { lte: input.hasta } } : {})
-          }
+            ...(input.ventana === "CALIENTE" ? { inicioProgramadoAt: { lte: input.hasta } } : {}),
+          },
         },
         orderBy: { instancia: { finProgramadoAt: input.ventana === "CALIENTE" ? "desc" : "asc" } },
         take: input.limite,
-        select: { id: true }
+        select: { id: true },
       });
       return events.map(({ id }) => id);
     },
     async obtenerConfiguracionWorkspacePrincipal(): Promise<ConfiguracionWorkspaceArchivos | null> {
-      const cred = await obtenerCredencialPrincipalGoogleWorkspace(db, (val) => val, { requireActiva: true });
+      const cred = await obtenerCredencialPrincipalGoogleWorkspace(db, (val) => val, {
+        requireActiva: true,
+      });
       if (!cred) {
         return null;
       }
@@ -71,24 +76,34 @@ export function crearPrismaArchivosRepositoryAdapter(
         serviceAccountEmail: cred.serviceAccountEmail,
         privateKeyCifrada: cred.privateKeyCifrada ?? cred.privateKey,
         driveDestinationId: cred.driveDestinationId,
-        serviceAccountSubject: cred.serviceAccountSubject
+        serviceAccountSubject: cred.serviceAccountSubject,
       };
     },
 
     async obtenerEventosParaSincronizar(
-      eventoProveedorIds: readonly string[]
+      eventoProveedorIds: readonly string[],
     ): Promise<readonly EventoParaSincronizarArchivos[]> {
       const events = await db.eventoProveedor.findMany({
         where: { id: { in: [...eventoProveedorIds] }, proveedor: { tipo: "GOOGLE_MEET" } },
         include: {
           cuentaProveedor: true,
           archivos: {
-            select: { id: true, driveFileId: true, externalResourceName: true, tipo: true, mimeType: true }
+            select: {
+              id: true,
+              driveFileId: true,
+              externalResourceName: true,
+              tipo: true,
+              mimeType: true,
+            },
           },
           instancia: {
-            include: { solicitud: true, cohostEmails: true, cohosts: { include: { cuentaGoogle: true } } }
-          }
-        }
+            include: {
+              solicitud: true,
+              cohostEmails: true,
+              cohosts: { include: { cuentaGoogle: true } },
+            },
+          },
+        },
       });
 
       return events.map((event) => ({
@@ -101,13 +116,15 @@ export function crearPrismaArchivosRepositoryAdapter(
         archivos: event.archivos,
         asistenciaDriveFileId:
           event.archivos.find(
-            (a) => a.tipo === "LISTA_ASISTENCIA" && a.mimeType === "application/vnd.google-apps.spreadsheet"
+            (a) =>
+              a.tipo === "LISTA_ASISTENCIA" &&
+              a.mimeType === "application/vnd.google-apps.spreadsheet",
           )?.driveFileId ?? null,
         inicioProgramadoAt: event.instancia.inicioProgramadoAt,
         finProgramadoAt: event.instancia.finProgramadoAt,
         timezone: event.instancia.timezone,
         requiereGrabacion: event.instancia.requiereGrabacion,
-        tituloSolicitud: event.instancia.solicitud.titulo
+        tituloSolicitud: event.instancia.solicitud.titulo,
       }));
     },
 
@@ -115,14 +132,14 @@ export function crearPrismaArchivosRepositoryAdapter(
       eventoProveedorId: string,
       tipo: TipoArtefactoMeet,
       artifact: GoogleArtifact,
-      drive: MovedDriveFile
+      drive: MovedDriveFile,
     ): Promise<void> {
       await db.archivoReunion.upsert({
         where: {
           eventoProveedorId_externalResourceName: {
             eventoProveedorId,
-            externalResourceName: artifact.resourceName
-          }
+            externalResourceName: artifact.resourceName,
+          },
         },
         create: {
           eventoProveedorId,
@@ -133,7 +150,7 @@ export function crearPrismaArchivosRepositoryAdapter(
           mimeType: drive.mimeType,
           tamanoBytes: drive.size ? BigInt(drive.size) : null,
           webViewUrl: drive.webViewLink,
-          capturadoAt: artifact.startTime ? new Date(artifact.startTime) : new Date()
+          capturadoAt: artifact.startTime ? new Date(artifact.startTime) : new Date(),
         },
         update: {
           tipo,
@@ -142,14 +159,14 @@ export function crearPrismaArchivosRepositoryAdapter(
           mimeType: drive.mimeType,
           tamanoBytes: drive.size ? BigInt(drive.size) : null,
           webViewUrl: drive.webViewLink,
-          capturadoAt: artifact.startTime ? new Date(artifact.startTime) : new Date()
-        }
+          capturadoAt: artifact.startTime ? new Date(artifact.startTime) : new Date(),
+        },
       });
     },
 
     async actualizarEstadoSincronizacion(
       eventoProveedorId: string,
-      datos: EstadoSincronizacionInput
+      datos: EstadoSincronizacionInput,
     ): Promise<void> {
       await db.eventoProveedor.update({
         where: { id: eventoProveedorId },
@@ -159,38 +176,38 @@ export function crearPrismaArchivosRepositoryAdapter(
           archivosSincronizadosAt: datos.archivosSincronizadosAt,
           errorArchivos: datos.errorArchivos,
           grabacionEstadoMeet: datos.estadoGrabacionMeet,
-          grabacionObservadaAt: datos.grabacionObservadaAt
-        }
+          grabacionObservadaAt: datos.grabacionObservadaAt,
+        },
       });
     },
 
     async registrarErrorSincronizacion(eventoProveedorId: string, error: string): Promise<void> {
       await db.eventoProveedor.update({
         where: { id: eventoProveedorId },
-        data: { errorArchivos: error }
+        data: { errorArchivos: error },
       });
     },
 
     async obtenerDatosInstanciaParaParticipantes(
-      instanciaId: string
+      instanciaId: string,
     ): Promise<DatosInstanciaParaParticipantes | null> {
       const evento = await db.eventoProveedor.findFirst({
         where: {
           instanciaSalaId: instanciaId,
-          proveedor: { tipo: "GOOGLE_MEET" }
+          proveedor: { tipo: "GOOGLE_MEET" },
         },
         select: {
           codigoReunion: true,
           cuentaProveedor: {
-            select: { emailOrganizador: true }
+            select: { emailOrganizador: true },
           },
           instancia: {
             select: {
               inicioProgramadoAt: true,
-              finProgramadoAt: true
-            }
-          }
-        }
+              finProgramadoAt: true,
+            },
+          },
+        },
       });
 
       if (!evento) {
@@ -200,7 +217,7 @@ export function crearPrismaArchivosRepositoryAdapter(
         codigoReunion: evento.codigoReunion,
         emailOrganizador: evento.cuentaProveedor?.emailOrganizador ?? null,
         inicioProgramadoAt: evento.instancia.inicioProgramadoAt,
-        finProgramadoAt: evento.instancia.finProgramadoAt
+        finProgramadoAt: evento.instancia.finProgramadoAt,
       };
     },
 
@@ -209,7 +226,7 @@ export function crearPrismaArchivosRepositoryAdapter(
         where: {
           tipo: { in: [...TIPOS_ARTEFACTO_SINCRONIZABLES] },
           eventoProveedor: { instancia: alcanceInstancias(actor) },
-          AND: [filtroArchivoReunionMeet()]
+          AND: [filtroArchivoReunionMeet()],
         },
         orderBy: [{ capturadoAt: "desc" }, { createdAt: "desc" }],
         take: 300,
@@ -223,16 +240,16 @@ export function crearPrismaArchivosRepositoryAdapter(
                       docentePrograma: {
                         include: {
                           programa: true,
-                          docente: { include: { usuario: true } }
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
+                          docente: { include: { usuario: true } },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
       });
     },
 
@@ -241,14 +258,14 @@ export function crearPrismaArchivosRepositoryAdapter(
         where: {
           tipo: "LISTA_ASISTENCIA",
           mimeType: "application/vnd.google-apps.spreadsheet",
-          eventoProveedor: { proveedor: { tipo: "GOOGLE_MEET" }, codigoReunion: { not: null } }
+          eventoProveedor: { proveedor: { tipo: "GOOGLE_MEET" }, codigoReunion: { not: null } },
         },
         orderBy: [{ capturadoAt: "desc" }, { createdAt: "desc" }],
         select: {
           eventoProveedorId: true,
           driveFileId: true,
-          eventoProveedor: { select: { cuentaProveedor: { select: { emailOrganizador: true } } } }
-        }
+          eventoProveedor: { select: { cuentaProveedor: { select: { emailOrganizador: true } } } },
+        },
       });
       return sheets.flatMap((sheet) => {
         const emailOrganizador = sheet.eventoProveedor.cuentaProveedor?.emailOrganizador;
@@ -257,8 +274,8 @@ export function crearPrismaArchivosRepositoryAdapter(
               {
                 eventoProveedorId: sheet.eventoProveedorId,
                 spreadsheetId: sheet.driveFileId,
-                emailOrganizador
-              }
+                emailOrganizador,
+              },
             ]
           : [];
       });
@@ -268,45 +285,52 @@ export function crearPrismaArchivosRepositoryAdapter(
       const q = input.busqueda.trim();
       const grabacionReciente: Prisma.EventoProveedorWhereInput = {
         grabacionEstadoMeet: { in: ["EN_CURSO", "PROCESANDO"] },
-        grabacionObservadaAt: { gte: new Date(Date.now() - VIGENCIA_ESTADO_GRABACION_MS) }
+        grabacionObservadaAt: { gte: new Date(Date.now() - VIGENCIA_ESTADO_GRABACION_MS) },
       };
       const meeting: Prisma.EventoProveedorWhereInput = {
         proveedor: { tipo: "GOOGLE_MEET" },
-        OR: [{ archivos: { some: { tipo: { in: [...TIPOS_ARTEFACTO_SINCRONIZABLES] } } } }, grabacionReciente]
+        OR: [
+          { archivos: { some: { tipo: { in: [...TIPOS_ARTEFACTO_SINCRONIZABLES] } } } },
+          grabacionReciente,
+        ],
       };
       // Encuentros Zoom: el inventario (no ArchivoReunion) es la fuente; cuentan también los que solo tienen asistencia.
-      const tipoZoom: Prisma.ProveedorReunionWhereInput = { tipo: { in: ["ZOOM", "ZOOM_HISTORICO"] } };
+      const tipoZoom: Prisma.ProveedorReunionWhereInput = {
+        tipo: { in: ["ZOOM", "ZOOM_HISTORICO"] },
+      };
       const archivosZoomCon = (
-        archivo: Prisma.ArchivoOrigenZoomWhereInput
+        archivo: Prisma.ArchivoOrigenZoomWhereInput,
       ): Prisma.EventoProveedorWhereInput => ({
         proveedor: tipoZoom,
-        ocurrenciasArchivoZoom: { some: { archivos: { some: archivo } } }
+        ocurrenciasArchivoZoom: { some: { archivos: { some: archivo } } },
       });
       const tipoOriginalEn = (tipos: readonly string[]): Prisma.ArchivoOrigenZoomWhereInput => ({
-        tipoOriginal: { in: [...tipos], mode: "insensitive" }
+        tipoOriginal: { in: [...tipos], mode: "insensitive" },
       });
       const zoomConAsistencia: Prisma.EventoProveedorWhereInput = {
         proveedor: tipoZoom,
-        asistenciaZoom: { some: {} }
+        asistenciaZoom: { some: {} },
       };
       const zoomTodos: Prisma.EventoProveedorWhereInput = {
         proveedor: tipoZoom,
         OR: [
           { ocurrenciasArchivoZoom: { some: { archivos: { some: {} } } } },
-          { asistenciaZoom: { some: {} } }
-        ]
+          { asistenciaZoom: { some: {} } },
+        ],
       };
       const usuarioSearch = {
         OR: [
           { nombres: { contains: q, mode: "insensitive" } },
-          { apellidos: { contains: q, mode: "insensitive" } }
-        ]
+          { apellidos: { contains: q, mode: "insensitive" } },
+        ],
       };
       const docenteSearch = {
-        docentePrograma: { is: { docente: { is: { usuario: { is: usuarioSearch } } } } }
+        docentePrograma: { is: { docente: { is: { usuario: { is: usuarioSearch } } } } },
       };
       const programaSearch = {
-        docentePrograma: { is: { programa: { is: { nombre: { contains: q, mode: "insensitive" } } } } }
+        docentePrograma: {
+          is: { programa: { is: { nombre: { contains: q, mode: "insensitive" } } } },
+        },
       };
       const tituloSearch = { titulo: { contains: q, mode: "insensitive" } };
       const search = (
@@ -315,7 +339,7 @@ export function crearPrismaArchivosRepositoryAdapter(
       const baseConditions: Prisma.InstanciaSalaWhereInput[] = [
         alcanceInstancias(actor),
         search,
-        { eventosProveedor: { some: { OR: [meeting, zoomTodos] } } }
+        { eventosProveedor: { some: { OR: [meeting, zoomTodos] } } },
       ];
       const base: Prisma.InstanciaSalaWhereInput = { AND: baseConditions };
 
@@ -325,27 +349,32 @@ export function crearPrismaArchivosRepositoryAdapter(
             OR: [
               {
                 proveedor: { tipo: "GOOGLE_MEET" },
-                OR: [{ archivos: { some: { tipo: "GRABACION" } } }, grabacionReciente]
+                OR: [{ archivos: { some: { tipo: "GRABACION" } } }, grabacionReciente],
               },
-              archivosZoomCon(tipoOriginalEn(["MP4"]))
-            ]
-          }
-        }
+              archivosZoomCon(tipoOriginalEn(["MP4"])),
+            ],
+          },
+        },
       };
       const soloAsistencias: Prisma.InstanciaSalaWhereInput = {
         eventosProveedor: {
-          some: { OR: [{ ...meeting, archivos: { some: { tipo: "LISTA_ASISTENCIA" } } }, zoomConAsistencia] }
-        }
+          some: {
+            OR: [
+              { ...meeting, archivos: { some: { tipo: "LISTA_ASISTENCIA" } } },
+              zoomConAsistencia,
+            ],
+          },
+        },
       };
       const soloNotasYTranscripciones: Prisma.InstanciaSalaWhereInput = {
         eventosProveedor: {
           some: {
             OR: [
               { ...meeting, archivos: { some: { tipo: { in: ["NOTAS", "TRANSCRIPCION"] } } } },
-              archivosZoomCon(tipoOriginalEn(["TRANSCRIPT", "CC", "AUDIO_TRANSCRIPT", "SUMMARY"]))
-            ]
-          }
-        }
+              archivosZoomCon(tipoOriginalEn(["TRANSCRIPT", "CC", "AUDIO_TRANSCRIPT", "SUMMARY"])),
+            ],
+          },
+        },
       };
       const categoria: Prisma.InstanciaSalaWhereInput | null =
         input.filtro === "GRABACIONES"
@@ -361,75 +390,85 @@ export function crearPrismaArchivosRepositoryAdapter(
       const totalEncuentros = await db.instanciaSala.count({ where: filtered });
       const totalPaginas = Math.max(1, Math.ceil(totalEncuentros / 12));
       const pagina = Math.min(Math.max(1, input.pagina), totalPaginas);
-      const [todos, grabaciones, asistencias, notas, transcripciones, encuentros] = await Promise.all([
-        db.instanciaSala.count({ where: base }),
-        db.instanciaSala.count({ where: { AND: [alcanceInstancias(actor), search, soloGrabaciones] } }),
-        db.instanciaSala.count({ where: { AND: [...baseConditions, soloAsistencias] } }),
-        db.instanciaSala.count({ where: { AND: [...baseConditions, soloNotasYTranscripciones] } }),
-        db.instanciaSala.count({
-          where: {
-            AND: [
-              ...baseConditions,
-              {
-                eventosProveedor: {
-                  some: {
-                    OR: [
-                      { ...meeting, archivos: { some: { tipo: "TRANSCRIPCION" } } },
-                      archivosZoomCon(tipoOriginalEn(["TRANSCRIPT", "CC", "AUDIO_TRANSCRIPT"]))
-                    ]
-                  }
-                }
-              }
-            ]
-          }
-        }),
-        db.instanciaSala.findMany({
-          where: filtered,
-          orderBy: [{ inicioProgramadoAt: "desc" }, { id: "desc" }],
-          skip: (pagina - 1) * 12,
-          take: 12,
-          include: {
-            solicitud: {
-              include: {
-                docentePrograma: { include: { programa: true, docente: { include: { usuario: true } } } }
-              }
+      const [todos, grabaciones, asistencias, notas, transcripciones, encuentros] =
+        await Promise.all([
+          db.instanciaSala.count({ where: base }),
+          db.instanciaSala.count({
+            where: { AND: [alcanceInstancias(actor), search, soloGrabaciones] },
+          }),
+          db.instanciaSala.count({ where: { AND: [...baseConditions, soloAsistencias] } }),
+          db.instanciaSala.count({
+            where: { AND: [...baseConditions, soloNotasYTranscripciones] },
+          }),
+          db.instanciaSala.count({
+            where: {
+              AND: [
+                ...baseConditions,
+                {
+                  eventosProveedor: {
+                    some: {
+                      OR: [
+                        { ...meeting, archivos: { some: { tipo: "TRANSCRIPCION" } } },
+                        archivosZoomCon(tipoOriginalEn(["TRANSCRIPT", "CC", "AUDIO_TRANSCRIPT"])),
+                      ],
+                    },
+                  },
+                },
+              ],
             },
-            eventosProveedor: {
-              where: { OR: [meeting, zoomTodos] },
-              include: {
-                proveedor: { select: { tipo: true } },
-                // Las referencias locales de origen Zoom se excluyen: su fuente en la biblioteca es el inventario.
-                archivos: {
-                  where: { tipo: { in: [...TIPOS_ARTEFACTO_SINCRONIZABLES] }, ...filtroArchivoReunionMeet() }
+          }),
+          db.instanciaSala.findMany({
+            where: filtered,
+            orderBy: [{ inicioProgramadoAt: "desc" }, { id: "desc" }],
+            skip: (pagina - 1) * 12,
+            take: 12,
+            include: {
+              solicitud: {
+                include: {
+                  docentePrograma: {
+                    include: { programa: true, docente: { include: { usuario: true } } },
+                  },
                 },
-                ocurrenciasArchivoZoom: {
-                  orderBy: { inicioRealAt: "asc" },
-                  select: {
-                    id: true,
-                    driveFolderId: true,
-                    archivos: {
-                      orderBy: [{ coleccion: "asc" }, { tipoOriginal: "asc" }, { id: "asc" }],
-                      select: {
-                        id: true,
-                        tipoOriginal: true,
-                        variante: true,
-                        extension: true,
-                        estado: true,
-                        tamanoBytes: true,
-                        mimeType: true,
-                        nombreDestino: true,
-                        webViewUrl: true,
-                        errorCodigo: true
-                      }
-                    }
-                  }
+              },
+              eventosProveedor: {
+                where: { OR: [meeting, zoomTodos] },
+                include: {
+                  proveedor: { select: { tipo: true } },
+                  // Las referencias locales de origen Zoom se excluyen: su fuente en la biblioteca es el inventario.
+                  archivos: {
+                    where: {
+                      tipo: { in: [...TIPOS_ARTEFACTO_SINCRONIZABLES] },
+                      ...filtroArchivoReunionMeet(),
+                    },
+                  },
+                  ocurrenciasArchivoZoom: {
+                    orderBy: { inicioRealAt: "asc" },
+                    select: {
+                      id: true,
+                      driveFolderId: true,
+                      archivos: {
+                        orderBy: [{ coleccion: "asc" }, { tipoOriginal: "asc" }, { id: "asc" }],
+                        select: {
+                          id: true,
+                          tipoOriginal: true,
+                          variante: true,
+                          extension: true,
+                          estado: true,
+                          tamanoBytes: true,
+                          mimeType: true,
+                          nombreDestino: true,
+                          webViewUrl: true,
+                          errorCodigo: true,
+                        },
+                      },
+                    },
+                  },
+                  _count: { select: { asistenciaZoom: true } },
                 },
-                _count: { select: { asistenciaZoom: true } }
-              }
-            }
-          }
-        })
-      ]);
+              },
+            },
+          }),
+        ]);
       return {
         pagina,
         totalPaginas,
@@ -442,7 +481,7 @@ export function crearPrismaArchivosRepositoryAdapter(
             return {
               instanciaId: e.id,
               solicitudId: e.solicitudSalaId,
-              proveedor: (esZoom ? "ZOOM" : "GOOGLE_MEET") as "GOOGLE_MEET" | "ZOOM",
+              proveedor: esZoom ? "ZOOM" : "GOOGLE_MEET",
               asistenciaZoom: esZoom && ev._count.asistenciaZoom > 0,
               titulo: e.solicitud.titulo,
               programa: e.solicitud.docentePrograma.programa.nombre,
@@ -457,7 +496,8 @@ export function crearPrismaArchivosRepositoryAdapter(
               archivosSincronizadosAt: ev.archivosSincronizadosAt,
               estadoGrabacionMeet: esZoom
                 ? null
-                : (ev.grabacionEstadoMeet as import("../../domain").EstadoGrabacionDetectada | null),
+                : (ev.grabacionEstadoMeet as
+                    import("../../domain").EstadoGrabacionDetectada | null),
               grabacionObservadaAt: esZoom ? null : ev.grabacionObservadaAt,
               archivos: esZoom
                 ? ev.ocurrenciasArchivoZoom
@@ -465,7 +505,7 @@ export function crearPrismaArchivosRepositoryAdapter(
                     .map((a) => {
                       const vista = archivoBibliotecaZoom({
                         ...a,
-                        estado: a.estado as EstadoArchivoZoomVista
+                        estado: a.estado,
                       });
                       return {
                         id: vista.id,
@@ -479,22 +519,22 @@ export function crearPrismaArchivosRepositoryAdapter(
                         secundarioZoom: vista.secundario,
                         pendienteZoom: vista.pendiente,
                         estadoZoomEtiqueta: vista.estadoEtiqueta,
-                        errorCodigo: vista.errorCodigo
+                        errorCodigo: vista.errorCodigo,
                       };
                     })
                 : ev.archivos.map((a) => ({
                     id: a.driveFileId,
-                    tipo: a.tipo as TipoArtefactoMeet,
+                    tipo: a.tipo,
                     nombre: a.nombre,
                     webViewUrl: a.webViewUrl,
                     tamanoBytes: a.tamanoBytes,
-                    mimeType: a.mimeType
-                  }))
+                    mimeType: a.mimeType,
+                  })),
             };
-          })
-        )
+          }),
+        ),
       };
-    }
+    },
   };
 }
 
@@ -509,19 +549,19 @@ function alcanceInstancias(actor: SessionActor): Prisma.InstanciaSalaWhereInput 
         docentePrograma: {
           programa: {
             docentes: {
-              some: { activo: true, docente: { usuarioId: actor.id } }
-            }
-          }
-        }
-      }
+              some: { activo: true, docente: { usuarioId: actor.id } },
+            },
+          },
+        },
+      },
     };
   }
   return {
     asignaciones: {
       some: {
         asistenteTecnico: { usuarioId: actor.id },
-        estado: { in: ["ASIGNADO", "ACEPTADO"] }
-      }
-    }
+        estado: { in: ["ASIGNADO", "ACEPTADO"] },
+      },
+    },
   };
 }

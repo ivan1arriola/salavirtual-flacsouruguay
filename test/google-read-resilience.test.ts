@@ -5,7 +5,7 @@ import {
   esFalloTemporalGoogle,
   obtenerEventoCalendar,
   listarMiembrosMeetHttp,
-  obtenerOCrearCarpetaDrive
+  obtenerOCrearCarpetaDrive,
 } from "../src/integrations/google";
 
 describe("Google: reintentos seguros para lecturas", () => {
@@ -22,8 +22,8 @@ describe("Google: reintentos seguros para lecturas", () => {
         aleatorio: () => 1,
         esperar: async (ms) => {
           delays.push(ms);
-        }
-      })
+        },
+      }),
     ).toBe("ok");
     expect(delays).toEqual([100, 200]);
     expect(operation).toHaveBeenCalledTimes(3);
@@ -34,7 +34,7 @@ describe("Google: reintentos seguros para lecturas", () => {
     const operation = vi
       .fn()
       .mockRejectedValueOnce({
-        response: { status: 429, headers: { "Retry-After": "120" } }
+        response: { status: 429, headers: { "Retry-After": "120" } },
       })
       .mockResolvedValue("ok");
     await conReintentosGoogleLectura(operation, {
@@ -43,7 +43,7 @@ describe("Google: reintentos seguros para lecturas", () => {
       aleatorio: () => 1,
       esperar: async (n) => {
         delays.push(n);
-      }
+      },
     });
     expect(delays).toEqual([3_000]);
 
@@ -55,8 +55,8 @@ describe("Google: reintentos seguros para lecturas", () => {
         .mockRejectedValueOnce({
           response: {
             status: 503,
-            headers: new Headers({ "retry-after": new Date(fixed + 2200).toUTCString() })
-          }
+            headers: new Headers({ "retry-after": new Date(fixed + 2200).toUTCString() }),
+          },
         })
         .mockResolvedValue("ok"),
       {
@@ -65,8 +65,8 @@ describe("Google: reintentos seguros para lecturas", () => {
         ahora: () => fixed,
         esperar: async (n) => {
           second.push(n);
-        }
-      }
+        },
+      },
     );
     expect(second).toEqual([2_000]);
   });
@@ -74,9 +74,16 @@ describe("Google: reintentos seguros para lecturas", () => {
   it("no reintenta permisos, token vencido ni límites diarios permanentes", async () => {
     const cases = [
       { response: { status: 401 } },
-      { response: { status: 403, data: { error: { errors: [{ reason: "insufficientPermissions" }] } } } },
-      { response: { status: 403, data: { error: { errors: [{ reason: "dailyLimitExceeded" }] } } } },
-      { response: { status: 400 } }
+      {
+        response: {
+          status: 403,
+          data: { error: { errors: [{ reason: "insufficientPermissions" }] } },
+        },
+      },
+      {
+        response: { status: 403, data: { error: { errors: [{ reason: "dailyLimitExceeded" }] } } },
+      },
+      { response: { status: 400 } },
     ];
     for (const error of cases) {
       const request = vi.fn().mockRejectedValue(error);
@@ -84,8 +91,8 @@ describe("Google: reintentos seguros para lecturas", () => {
         conReintentosGoogleLectura(request, {
           esperar: async () => {
             throw new Error("No se debería esperar.");
-          }
-        })
+          },
+        }),
       ).rejects.toBe(error);
       expect(request).toHaveBeenCalledTimes(1);
     }
@@ -97,8 +104,8 @@ describe("Google: reintentos seguros para lecturas", () => {
       conReintentosGoogleLectura(operation, {
         intentosMaximos: 3,
         aleatorio: () => 1,
-        esperar: async () => undefined
-      })
+        esperar: async () => undefined,
+      }),
     ).rejects.toMatchObject({ response: { status: 502 } });
     expect(operation).toHaveBeenCalledTimes(3);
     expect(esFalloTemporalGoogle({ code: "ETIMEDOUT" })).toBe(true);
@@ -120,11 +127,13 @@ describe("Google: reintentos seguros para lecturas", () => {
     const request = vi.fn().mockResolvedValue({
       data: {
         members: [],
-        nextPageToken: "repeated"
-      }
+        nextPageToken: "repeated",
+      },
     });
     const auth = { request } as unknown as JWT;
-    await expect(listarMiembrosMeetHttp(auth, "spaces/test")).rejects.toThrow("token de paginación");
+    await expect(listarMiembrosMeetHttp(auth, "spaces/test")).rejects.toThrow(
+      "token de paginación",
+    );
     expect(request).toHaveBeenCalledTimes(2);
   });
 

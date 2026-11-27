@@ -6,50 +6,52 @@ import {
   isAlreadyCalendarEventError,
   isCalendarNotFoundError,
   obtenerEventoCalendarSiExiste,
-  type GoogleCalendarEvent
+  type GoogleCalendarEvent,
 } from "@/src/integrations/google";
 import type {
   AssistantCalendarProvider,
   EventoCalendarioAsistente,
-  GoogleCalendarCredentials
+  GoogleCalendarCredentials,
 } from "../../ports";
 
 export async function publicarEventoCalendarioAsistente(
   credentials: GoogleCalendarCredentials,
-  event: EventoCalendarioAsistente
+  event: EventoCalendarioAsistente,
 ): Promise<void> {
   const auth = crearGoogleCalendarAuthClient(credentials);
   const payload = construirPayloadEvento(event);
 
   try {
     await crearEventoCalendarHttp(auth, "primary", payload, {
-      sendUpdates: "none"
+      sendUpdates: "none",
     });
   } catch (error) {
     if (!esErrorConflicto(error)) {
       // A Calendar POST can succeed remotely before its response is lost.
       // Only update an event with the same deterministic ID once it is visible.
       // Never immediately replay an ambiguous POST.
-      const existing = await obtenerEventoCalendarSiExiste(auth, "primary", event.id).catch(() => null);
+      const existing = await obtenerEventoCalendarSiExiste(auth, "primary", event.id).catch(
+        () => null,
+      );
       if (!existing || existing.id !== event.id) {
         throw error;
       }
     }
     const { id: _id, ...updatePayload } = payload;
     await actualizarEventoCalendarHttp(auth, "primary", event.id, updatePayload, {
-      sendUpdates: "none"
+      sendUpdates: "none",
     });
   }
 }
 
 export async function eliminarEventoCalendarioAsistente(
   credentials: GoogleCalendarCredentials,
-  eventId: string
+  eventId: string,
 ): Promise<void> {
   const auth = crearGoogleCalendarAuthClient(credentials);
   try {
     await eliminarEventoCalendarHttp(auth, "primary", eventId, {
-      sendUpdates: "none"
+      sendUpdates: "none",
     });
   } catch (error) {
     if (isCalendarNotFoundError(error) || esErrorEliminado(error)) {
@@ -62,7 +64,7 @@ export async function eliminarEventoCalendarioAsistente(
 export function crearGoogleAssistantCalendarProvider(): AssistantCalendarProvider {
   return {
     publicarEvento: publicarEventoCalendarioAsistente,
-    eliminarEvento: eliminarEventoCalendarioAsistente
+    eliminarEvento: eliminarEventoCalendarioAsistente,
   };
 }
 
@@ -75,7 +77,7 @@ function construirPayloadEvento(event: EventoCalendarioAsistente): GoogleCalenda
     `Horario de la reunión/Meet: ${formatHora(event.reunionInicio, event.timezone)}–${formatHora(event.reunionFin, event.timezone)}`,
     descripcionSegmento(event),
     event.joinUrl ? `Google Meet: ${event.joinUrl}` : null,
-    "Asignación de monitoreo gestionada por Sala Virtual FLACSO."
+    "Asignación de monitoreo gestionada por Sala Virtual FLACSO.",
   ]
     .filter(Boolean)
     .join("\n\n");
@@ -87,18 +89,18 @@ function construirPayloadEvento(event: EventoCalendarioAsistente): GoogleCalenda
     ...(event.joinUrl ? { location: event.joinUrl } : {}),
     start: {
       dateTime: event.inicio.toISOString(),
-      timeZone: event.timezone
+      timeZone: event.timezone,
     },
     end: {
       dateTime: event.fin.toISOString(),
-      timeZone: event.timezone
+      timeZone: event.timezone,
     },
     extendedProperties: {
       private: {
         flacsoTipo: "ASISTENCIA_TECNICA",
-        flacsoInstanciaSalaId: event.instanciaSalaId
-      }
-    }
+        flacsoInstanciaSalaId: event.instanciaSalaId,
+      },
+    },
   };
 }
 
@@ -142,6 +144,6 @@ function formatHora(value: Date, timeZone: string): string {
     timeZone,
     hour: "2-digit",
     minute: "2-digit",
-    hour12: false
+    hour12: false,
   }).format(value);
 }

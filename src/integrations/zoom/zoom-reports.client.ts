@@ -34,7 +34,7 @@ type PaginaAsistenciaZoom = Readonly<{
 
 async function leerPaginasAsistenciaZoom(
   token: string,
-  meetingUuid: string
+  meetingUuid: string,
 ): Promise<readonly PaginaAsistenciaZoom[] | null> {
   const paginas: PaginaAsistenciaZoom[] = [];
   const id = encodeURIComponent(encodeURIComponent(meetingUuid));
@@ -47,7 +47,11 @@ async function leerPaginasAsistenciaZoom(
     }
     const response = await fetch(
       `https://api.zoom.us/v2/past_meetings/${id}/participants?${params.toString()}`,
-      { headers: { Authorization: `Bearer ${token}` }, cache: "no-store", signal: AbortSignal.timeout(8000) }
+      {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: "no-store",
+        signal: AbortSignal.timeout(8000),
+      },
     );
     if (response.status === 404) {
       return null;
@@ -56,7 +60,10 @@ async function leerPaginasAsistenciaZoom(
       throw new Error(`Zoom: error al consultar asistencia (${response.status})`);
     }
     const original = await response.text();
-    const data = JSON.parse(original) as { participants?: ParticipanteEnReporte[]; next_page_token?: string };
+    const data = JSON.parse(original) as {
+      participants?: ParticipanteEnReporte[];
+      next_page_token?: string;
+    };
     paginas.push({ original, participantes: data.participants ?? [] });
     cursor = data.next_page_token ?? "";
     if (cursor && vistos.has(cursor)) {
@@ -70,7 +77,7 @@ async function leerPaginasAsistenciaZoom(
 /** Conserva los cuerpos de las páginas que devuelve Zoom, incluidos los campos sin normalizar. */
 export async function descargarAsistenciaOriginalZoom(
   token: string,
-  meetingUuid: string
+  meetingUuid: string,
 ): Promise<string | null> {
   const paginas = await leerPaginasAsistenciaZoom(token, meetingUuid);
   if (!paginas) {
@@ -86,7 +93,7 @@ export async function descargarAsistenciaOriginalZoom(
  */
 export async function descargarReporteParticipantesZoomOriginalHttp(
   token: string,
-  meetingUuid: string
+  meetingUuid: string,
 ): Promise<readonly unknown[] | null> {
   const paginas: unknown[] = [];
   const tokensVistos = new Set<string>();
@@ -99,7 +106,11 @@ export async function descargarReporteParticipantesZoomOriginalHttp(
     const id = encodeURIComponent(encodeURIComponent(meetingUuid));
     const response = await fetch(
       `https://api.zoom.us/v2/past_meetings/${id}/participants?${params.toString()}`,
-      { headers: { Authorization: `Bearer ${token}` }, cache: "no-store", signal: AbortSignal.timeout(8000) }
+      {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: "no-store",
+        signal: AbortSignal.timeout(8000),
+      },
     );
     if (response.status === 404) {
       return null;
@@ -128,7 +139,7 @@ export async function descargarReporteParticipantesZoomOriginalHttp(
  */
 export async function listarParticipantesReunionPasadaZoomHttp(
   token: string,
-  meetingUuid: string
+  meetingUuid: string,
 ): Promise<readonly ZoomSesionParticipante[] | null> {
   const paginas = await leerPaginasAsistenciaZoom(token, meetingUuid);
   if (!paginas) {
@@ -153,7 +164,7 @@ export async function listarParticipantesReunionPasadaZoomHttp(
         email: (p.user_email || p.email || "").trim() || null,
         joinTime,
         leaveTime,
-        status: estadoParticipante(p.status)
+        status: estadoParticipante(p.status),
       });
     }
   }

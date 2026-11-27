@@ -22,7 +22,7 @@ export async function POST() {
   const result = await resincronizarCohostsReunionesExistentes({
     db,
     descifrar: descifrarConfiguracion,
-    crearProvider: crearGoogleConferenceProvider
+    crearProvider: crearGoogleConferenceProvider,
   });
 
   await db.auditoria.create({
@@ -37,13 +37,13 @@ export async function POST() {
         cohostsAgregados: result.cohostsAgregados,
         sincronizadas: result.sincronizadas,
         omitidas: result.omitidas,
-        fallidas: result.fallidas
-      }
-    }
+        fallidas: result.fallidas,
+      },
+    },
   });
 
   return NextResponse.json({
     ...result,
-    errores: result.errores.slice(0, 20)
+    errores: result.errores.slice(0, 20),
   });
 }

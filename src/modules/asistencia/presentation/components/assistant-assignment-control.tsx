@@ -8,7 +8,7 @@ type Applicant = Readonly<{ id: string; name: string }>;
 
 export function AssistantAssignmentControl({
   meetingId,
-  applicants
+  applicants,
 }: Readonly<{ meetingId: string; applicants: readonly Applicant[] }>) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -20,7 +20,7 @@ export function AssistantAssignmentControl({
       const response = await fetch("/api/v1/asistencia/asignaciones", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ instanciaSalaId: meetingId, asistenteTecnicoId: assistantId })
+        body: JSON.stringify({ instanciaSalaId: meetingId, asistenteTecnicoId: assistantId }),
       });
       const result = await response.json().catch(() => ({}));
       if (!response.ok) {

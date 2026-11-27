@@ -1,5 +1,5 @@
 export {
   esErrorNoBloqueanteDeScopesMeet,
   requiereAtencionIntegracionMeet,
-  estadoIntegracionEfectivo
+  estadoIntegracionEfectivo,
 } from "@/src/modules/conferencias/api";

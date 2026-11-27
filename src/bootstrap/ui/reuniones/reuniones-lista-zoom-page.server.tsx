@@ -8,7 +8,7 @@ import {
   List,
   Search,
   Video,
-  X
+  X,
 } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -32,11 +32,11 @@ import {
   colorCuentaZoom,
   cuentasPresentes,
   nombreCuentaZoom,
-  type RelativoDiaZoom
+  type RelativoDiaZoom,
 } from "@/src/modules/reuniones/lista-zoom-agrupacion.domain";
 import {
   obtenerDatosPaginaReuniones,
-  type PeriodoAgenda
+  type PeriodoAgenda,
 } from "@/src/modules/reuniones/reuniones-page.service";
 import { puedeVerAgendaCompleta } from "@/src/modules/reuniones/reuniones.domain";
 import styles from "@/app/(gestion)/reuniones/reuniones-zoom.module.css";
@@ -97,17 +97,20 @@ function reunionesHref(params: LinkFilters): string {
   return `/reuniones?${search.toString()}`;
 }
 
-const RELATIVO: Readonly<Record<Exclude<RelativoDiaZoom, null>, string>> = { HOY: "Hoy", MANANA: "Mañana" };
+const RELATIVO: Readonly<Record<Exclude<RelativoDiaZoom, null>, string>> = {
+  HOY: "Hoy",
+  MANANA: "Mañana",
+};
 
 /** Cuenta anfitriona con su color y su nombre en texto: el color nunca es la única señal. */
 function ChipCuenta({ correo }: Readonly<{ correo: string | null | undefined }>) {
   return (
     <span
-      className={styles.cuentaChip}
+      className={styles["cuentaChip"]}
       data-cuenta={colorCuentaZoom(correo) ?? "sin"}
       title={correo ?? undefined}
     >
-      <span className={styles.punto} aria-hidden="true" />
+      <span className={styles["punto"]} aria-hidden="true" />
       {correo ? nombreCuentaZoom(correo) : "Sin asignar"}
     </span>
   );
@@ -121,7 +124,7 @@ function idReunionZoom(
       codigoReunion: string | null;
       externalEventId: string | null;
     }[];
-  }>
+  }>,
 ): string | null {
   const evento = seleccionarEventoProveedorActivo(instancia);
   if (!evento || evento.proveedor.tipo !== "ZOOM") {
@@ -134,10 +137,10 @@ type EstadoHorarioProps = Readonly<{ fin: Date; inicio: Date; ahora: Date }>;
 
 function EstadoHorario({ fin, inicio, ahora }: EstadoHorarioProps) {
   if (fin <= ahora) {
-    return <span className={styles.scheduleStatus}>Horario finalizado</span>;
+    return <span className={styles["scheduleStatus"]}>Horario finalizado</span>;
   }
   if (inicio <= ahora) {
-    return <span className={styles.scheduleStatus}>En horario previsto</span>;
+    return <span className={styles["scheduleStatus"]}>En horario previsto</span>;
   }
   return null;
 }
@@ -157,7 +160,7 @@ function Paginacion({
   total,
   desde,
   hasta,
-  cantidad
+  cantidad,
 }: Readonly<{
   filtro: LinkFilters;
   actual: number;
@@ -168,20 +171,20 @@ function Paginacion({
 }>) {
   const paginas = Array.from(
     { length: Math.min(5, total) },
-    (_, i) => Math.min(Math.max(1, actual - 2), Math.max(1, total - 4)) + i
+    (_, i) => Math.min(Math.max(1, actual - 2), Math.max(1, total - 4)) + i,
   );
   return (
-    <nav className={styles.pagination} aria-label="Paginación de reuniones">
-      <span className={styles.resultCount}>
+    <nav className={styles["pagination"]} aria-label="Paginación de reuniones">
+      <span className={styles["resultCount"]}>
         Mostrando {desde}–{hasta} de {cantidad} {filtro.vista === "series" ? "series" : "reuniones"}
       </span>
-      <div className={styles.paginationLinks}>
+      <div className={styles["paginationLinks"]}>
         {actual > 1 ? (
           <Link aria-label="Página anterior" href={reunionesHref({ ...filtro, page: actual - 1 })}>
             <ChevronLeft size={16} /> Anterior
           </Link>
         ) : (
-          <span aria-disabled="true" className={styles.disabledPage}>
+          <span aria-disabled="true" className={styles["disabledPage"]}>
             <ChevronLeft size={16} /> Anterior
           </span>
         )}
@@ -199,7 +202,7 @@ function Paginacion({
             Siguiente <ChevronRight size={16} />
           </Link>
         ) : (
-          <span aria-disabled="true" className={styles.disabledPage}>
+          <span aria-disabled="true" className={styles["disabledPage"]}>
             Siguiente <ChevronRight size={16} />
           </span>
         )}
@@ -209,7 +212,7 @@ function Paginacion({
 }
 
 export default async function ReunionesZoomPage({
-  searchParams
+  searchParams,
 }: Readonly<{ searchParams: Promise<SearchParams> }>) {
   const session = await auth();
   if (!session?.user) {
@@ -225,7 +228,7 @@ export default async function ReunionesZoomPage({
   const datos = await obtenerDatosPaginaReuniones(db, actor, {
     ...params,
     vista: params.vista,
-    proveedor: "zoom"
+    proveedor: "zoom",
   });
   const { q, programaId, periodo, isHistory, pagination, programs, desdeParam, hastaParam } = datos;
   const encuentros = datos.meetings;
@@ -240,7 +243,7 @@ export default async function ReunionesZoomPage({
     hasta: hastaParam,
     vista: porSerie ? "series" : "encuentros",
     porPagina: pagination.tamanoPagina,
-    densidad
+    densidad,
   };
   const url = (cambios: Partial<LinkFilters> = {}) => reunionesHref({ ...filtro, ...cambios });
   const hayFiltros = Boolean(q || programaId || desdeParam || hastaParam);
@@ -249,59 +252,90 @@ export default async function ReunionesZoomPage({
   const cuentas = cuentasPresentes(
     porSerie
       ? series.flatMap((serie) => resumirSerieZoom(serie).cuentas)
-      : encuentros.map((encuentro) => resumenEnlaceZoom(encuentro).cuentaAnfitrion)
+      : encuentros.map((encuentro) => resumenEnlaceZoom(encuentro).cuentaAnfitrion),
   );
   const diasSeries = agruparPorDia(series, (serie) => serie[0].inicioProgramadoAt, ahora);
-  const diasEncuentros = agruparPorDia(encuentros, (encuentro) => encuentro.inicioProgramadoAt, ahora);
+  const diasEncuentros = agruparPorDia(
+    encuentros,
+    (encuentro) => encuentro.inicioProgramadoAt,
+    ahora,
+  );
   const encabezadoDia = (
     dia: { clave: string; etiqueta: string; relativo: RelativoDiaZoom },
-    cantidad: number
+    cantidad: number,
   ) => (
-    <h2 className={styles.diaTitulo} id={`dia-${dia.clave}`}>
-      {dia.relativo ? <span className={styles.diaRelativo}>{RELATIVO[dia.relativo]}</span> : null}
-      <span className={styles.diaEtiqueta}>{dia.etiqueta}</span>
-      <span className={styles.diaCantidad}>
+    <h2 className={styles["diaTitulo"]} id={`dia-${dia.clave}`}>
+      {dia.relativo ? (
+        <span className={styles["diaRelativo"]}>{RELATIVO[dia.relativo]}</span>
+      ) : null}
+      <span className={styles["diaEtiqueta"]}>{dia.etiqueta}</span>
+      <span className={styles["diaCantidad"]}>
         {cantidad}{" "}
-        {porSerie ? (cantidad === 1 ? "serie" : "series") : cantidad === 1 ? "reunión" : "reuniones"}
+        {porSerie
+          ? cantidad === 1
+            ? "serie"
+            : "series"
+          : cantidad === 1
+            ? "reunión"
+            : "reuniones"}
       </span>
     </h2>
   );
 
   return (
-    <div className={`${styles.page} ${densidad === "compacta" ? styles.compact : ""}`}>
-      <header className={styles.header}>
+    <div className={`${styles["page"]} ${densidad === "compacta" ? styles["compact"] : ""}`}>
+      <header className={styles["header"]}>
         <div>
           <p className="page-eyebrow">{formatShortDate(new Date())}</p>
           <h1>
             <Video size={27} aria-hidden="true" /> Reuniones
           </h1>
-          <p>{isHistory ? "Reuniones de días anteriores." : "Reuniones de hoy y de los próximos días."}</p>
+          <p>
+            {isHistory
+              ? "Reuniones de días anteriores."
+              : "Reuniones de hoy y de los próximos días."}
+          </p>
         </div>
-        <div className={styles.headerActions}>
+        <div className={styles["headerActions"]}>
           <AccesoRegistrosZoom rol={actor.rol} />
         </div>
       </header>
 
       <ProveedorTabs activo="ZOOM" filtros={filtro} />
-      <div className={styles.toolbar}>
-        <nav className={styles.tabs} aria-label="Período de reuniones">
-          <Link aria-current={!isHistory ? "page" : undefined} href={url({ periodo: "proximas", page: 1 })}>
+      <div className={styles["toolbar"]}>
+        <nav className={styles["tabs"]} aria-label="Período de reuniones">
+          <Link
+            aria-current={!isHistory ? "page" : undefined}
+            href={url({ periodo: "proximas", page: 1 })}
+          >
             <CalendarDays size={17} /> Hoy y próximas
           </Link>
-          <Link aria-current={isHistory ? "page" : undefined} href={url({ periodo: "anteriores", page: 1 })}>
+          <Link
+            aria-current={isHistory ? "page" : undefined}
+            href={url({ periodo: "anteriores", page: 1 })}
+          >
             <Clock3 size={17} /> Anteriores
           </Link>
         </nav>
-        <nav className={styles.tabs} aria-label="Agrupar reuniones">
-          <Link aria-current={!porSerie ? "page" : undefined} href={url({ vista: "encuentros", page: 1 })}>
+        <nav className={styles["tabs"]} aria-label="Agrupar reuniones">
+          <Link
+            aria-current={!porSerie ? "page" : undefined}
+            href={url({ vista: "encuentros", page: 1 })}
+          >
             <List size={17} /> Por reunión
           </Link>
-          <Link aria-current={porSerie ? "page" : undefined} href={url({ vista: "series", page: 1 })}>
+          <Link
+            aria-current={porSerie ? "page" : undefined}
+            href={url({ vista: "series", page: 1 })}
+          >
             <Layers3 size={17} /> Por serie
           </Link>
         </nav>
-        <nav className={styles.tabs} aria-label="Densidad del listado">
-          <Link aria-current={densidad === "normal" ? "page" : undefined} href={url({ densidad: "normal" })}>
+        <nav className={styles["tabs"]} aria-label="Densidad del listado">
+          <Link
+            aria-current={densidad === "normal" ? "page" : undefined}
+            href={url({ densidad: "normal" })}
+          >
             Tarjetas
           </Link>
           <Link
@@ -313,15 +347,15 @@ export default async function ReunionesZoomPage({
         </nav>
       </div>
 
-      <form className={styles.filters} method="get">
+      <form className={styles["filters"]} method="get">
         <input type="hidden" name="proveedor" value="zoom" />
         <input type="hidden" name="periodo" value={periodo} />
         <input type="hidden" name="porPagina" value={pagination.tamanoPagina} />
         <input type="hidden" name="vista" value={filtro.vista} />
         {densidad === "compacta" ? <input type="hidden" name="densidad" value="compacta" /> : null}
-        <label className={styles.search}>
-          <span className={styles.fieldLabel}>Buscar reunión</span>
-          <span className={styles.searchField}>
+        <label className={styles["search"]}>
+          <span className={styles["fieldLabel"]}>Buscar reunión</span>
+          <span className={styles["searchField"]}>
             <Search size={17} aria-hidden="true" />
             <input
               defaultValue={q}
@@ -333,7 +367,7 @@ export default async function ReunionesZoomPage({
         </label>
         {esAdmin ? (
           <label>
-            <span className={styles.fieldLabel}>Programa</span>
+            <span className={styles["fieldLabel"]}>Programa</span>
             <select defaultValue={programaId} name="programa">
               <option value="">Todos los programas</option>
               {programs.map((program) => (
@@ -345,33 +379,40 @@ export default async function ReunionesZoomPage({
           </label>
         ) : null}
         <label>
-          <span className={styles.fieldLabel}>Desde</span>
+          <span className={styles["fieldLabel"]}>Desde</span>
           <input defaultValue={desdeParam} name="desde" type="date" />
         </label>
         <label>
-          <span className={styles.fieldLabel}>Hasta</span>
+          <span className={styles["fieldLabel"]}>Hasta</span>
           <input defaultValue={hastaParam} name="hasta" type="date" />
         </label>
         <button className="primary-action" type="submit">
           Aplicar filtros
         </button>
         {hayFiltros ? (
-          <Link className={styles.clear} href={url({ q: "", programa: "", desde: "", hasta: "", page: 1 })}>
+          <Link
+            className={styles["clear"]}
+            href={url({ q: "", programa: "", desde: "", hasta: "", page: 1 })}
+          >
             <X size={15} /> Limpiar
           </Link>
         ) : null}
       </form>
 
-      <div className={styles.listTools}>
+      <div className={styles["listTools"]}>
         <span>
           {pagination.totalElementos} {porSerie ? "series" : "reuniones"} ·{" "}
           {isHistory ? "Anteriores" : "Hoy y próximas"}
         </span>
-        <form method="get" className={styles.pageSizeForm}>
+        <form method="get" className={styles["pageSizeForm"]}>
           <input type="hidden" name="proveedor" value="zoom" />
-          {periodo === "anteriores" ? <input type="hidden" name="periodo" value="anteriores" /> : null}
+          {periodo === "anteriores" ? (
+            <input type="hidden" name="periodo" value="anteriores" />
+          ) : null}
           <input type="hidden" name="vista" value={filtro.vista} />
-          {densidad === "compacta" ? <input type="hidden" name="densidad" value="compacta" /> : null}
+          {densidad === "compacta" ? (
+            <input type="hidden" name="densidad" value="compacta" />
+          ) : null}
           {q ? <input type="hidden" name="q" value={q} /> : null}
           {programaId ? <input type="hidden" name="programa" value={programaId} /> : null}
           {desdeParam ? <input type="hidden" name="desde" value={desdeParam} /> : null}
@@ -382,19 +423,19 @@ export default async function ReunionesZoomPage({
             <option value="20">20 por página</option>
             <option value="50">50 por página</option>
           </select>
-          <button type="submit" className={styles.pageSizeApply}>
+          <button type="submit" className={styles["pageSizeApply"]}>
             Cambiar
           </button>
         </form>
       </div>
 
       {cuentas.length > 0 ? (
-        <section className={styles.leyenda} aria-label="Cuentas anfitrionas">
-          <h2 className={styles.leyendaTitulo}>Cuentas anfitrionas</h2>
+        <section className={styles["leyenda"]} aria-label="Cuentas anfitrionas">
+          <h2 className={styles["leyendaTitulo"]}>Cuentas anfitrionas</h2>
           <ul>
             {cuentas.map((cuenta) => (
               <li key={cuenta.correo} data-cuenta={cuenta.color} title={cuenta.correo}>
-                <span className={styles.punto} aria-hidden="true" />
+                <span className={styles["punto"]} aria-hidden="true" />
                 {cuenta.nombre}
               </li>
             ))}
@@ -403,7 +444,7 @@ export default async function ReunionesZoomPage({
       ) : null}
 
       {(porSerie ? series.length : encuentros.length) === 0 ? (
-        <div className={styles.empty} role="status">
+        <div className={styles["empty"]} role="status">
           <p>{vacio.texto}</p>
           {vacio.accion === "LIMPIAR" ? (
             <Link
@@ -420,11 +461,11 @@ export default async function ReunionesZoomPage({
           ) : null}
         </div>
       ) : porSerie ? (
-        <div className={styles.dias}>
+        <div className={styles["dias"]}>
           {diasSeries.map((dia) => (
-            <section className={styles.dia} key={dia.clave} aria-labelledby={`dia-${dia.clave}`}>
+            <section className={styles["dia"]} key={dia.clave} aria-labelledby={`dia-${dia.clave}`}>
               {encabezadoDia(dia, dia.items.length)}
-              <ul className={styles.list}>
+              <ul className={styles["list"]}>
                 {dia.items.map((serie) => {
                   const primero = serie[0];
                   const siguiente = serie.find((item) => item.finProgramadoAt > ahora);
@@ -437,14 +478,16 @@ export default async function ReunionesZoomPage({
                   const idZoom = resumen.unificada ? idReunionZoom(referencia) : null;
                   const etiquetaEnlace = etiquetaEnlaceSerie(serie, resumen.enlaces.length);
                   const claseEstadoEnlace =
-                    etiquetaEnlace === "Enlace pendiente" ? styles.statusWarning : styles.statusOk;
+                    etiquetaEnlace === "Enlace pendiente"
+                      ? styles["statusWarning"]
+                      : styles["statusOk"];
                   const enlaceParaUnirse =
                     !isHistory && siguiente && etiquetaEnlace !== "Enlace pendiente"
                       ? resumen.enlaces[0]
                       : null;
                   return (
                     <li
-                      className={styles.item}
+                      className={styles["item"]}
                       data-cuenta={
                         resumen.cuentas.length === 1
                           ? (colorCuentaZoom(resumen.cuentas[0]) ?? "sin")
@@ -454,7 +497,7 @@ export default async function ReunionesZoomPage({
                       }
                       key={serieClave}
                     >
-                      <div className={styles.when}>
+                      <div className={styles["when"]}>
                         <strong>{formatTime(primero.inicioProgramadoAt)}</strong>
                         <span>{formatTime(primero.finProgramadoAt)}</span>
                         <EstadoHorario
@@ -463,28 +506,34 @@ export default async function ReunionesZoomPage({
                           ahora={ahora}
                         />
                       </div>
-                      <div className={styles.what}>
-                        <Link className={styles.titleLink} href={`/reuniones/${primero.solicitudSalaId}`}>
+                      <div className={styles["what"]}>
+                        <Link
+                          className={styles["titleLink"]}
+                          href={`/reuniones/${primero.solicitudSalaId}`}
+                        >
                           {primero.solicitud.titulo}
                         </Link>
                         <span>
                           {docentePrograma.programa.nombre} · {docente}
                         </span>
-                        <span className={styles.cuentas}>
+                        <span className={styles["cuentas"]}>
                           Cuenta:{" "}
                           {resumen.cuentas.length ? (
-                            resumen.cuentas.map((cuenta) => <ChipCuenta correo={cuenta} key={cuenta} />)
+                            resumen.cuentas.map((cuenta) => (
+                              <ChipCuenta correo={cuenta} key={cuenta} />
+                            ))
                           ) : (
                             <ChipCuenta correo={null} />
                           )}
                         </span>
-                        <span className={styles.seriesBadge}>
-                          {serie.length} {serie.length === 1 ? "encuentro" : "encuentros"} en este listado
+                        <span className={styles["seriesBadge"]}>
+                          {serie.length} {serie.length === 1 ? "encuentro" : "encuentros"} en este
+                          listado
                         </span>
                       </div>
-                      <div className={styles.link}>
+                      <div className={styles["link"]}>
                         {idZoom ? (
-                          <span className={styles.zoomId}>
+                          <span className={styles["zoomId"]}>
                             <Hash size={15} /> ID de Zoom: <strong>{idZoom}</strong>
                           </span>
                         ) : null}
@@ -492,12 +541,17 @@ export default async function ReunionesZoomPage({
                           <>
                             <span className={claseEstadoEnlace}>{etiquetaEnlace}</span>
                             {enlaceParaUnirse ? (
-                              <ZoomJoinActions url={enlaceParaUnirse} contexto={primero.solicitud.titulo} />
+                              <ZoomJoinActions
+                                url={enlaceParaUnirse}
+                                contexto={primero.solicitud.titulo}
+                              />
                             ) : null}
                           </>
                         ) : (
                           <>
-                            <span className={styles.statusWarning}>Enlaces o cuentas distintos</span>
+                            <span className={styles["statusWarning"]}>
+                              Enlaces o cuentas distintos
+                            </span>
                             {esAdmin && !isHistory ? (
                               <CorregirSerieZoomBoton
                                 serieClave={serieClave}
@@ -506,7 +560,10 @@ export default async function ReunionesZoomPage({
                             ) : null}
                           </>
                         )}
-                        <Link className={styles.details} href={`/reuniones/${primero.solicitudSalaId}`}>
+                        <Link
+                          className={styles["details"]}
+                          href={`/reuniones/${primero.solicitudSalaId}`}
+                        >
                           Ver serie
                         </Link>
                       </div>
@@ -518,29 +575,30 @@ export default async function ReunionesZoomPage({
           ))}
         </div>
       ) : (
-        <div className={styles.dias}>
+        <div className={styles["dias"]}>
           {diasEncuentros.map((dia) => (
-            <section className={styles.dia} key={dia.clave} aria-labelledby={`dia-${dia.clave}`}>
+            <section className={styles["dia"]} key={dia.clave} aria-labelledby={`dia-${dia.clave}`}>
               {encabezadoDia(dia, dia.items.length)}
-              <ul className={styles.list}>
+              <ul className={styles["list"]}>
                 {dia.items.map((encuentro) => {
                   const enlace = resumenEnlaceZoom(encuentro);
                   const { docentePrograma } = encuentro.solicitud;
                   const docente =
                     `${docentePrograma.docente.usuario.nombres} ${docentePrograma.docente.usuario.apellidos ?? ""}`.trim();
                   const contexto = `${encuentro.solicitud.titulo}, ${formatShortDate(
-                    encuentro.inicioProgramadoAt
+                    encuentro.inicioProgramadoAt,
                   )} ${formatTime(encuentro.inicioProgramadoAt)}`;
                   const zoomId = idReunionZoom(encuentro);
                   return (
                     <li
-                      className={styles.item}
+                      className={styles["item"]}
                       data-cuenta={colorCuentaZoom(enlace.cuentaAnfitrion) ?? "sin"}
                       key={encuentro.id}
                     >
-                      <div className={styles.when}>
+                      <div className={styles["when"]}>
                         <strong>
-                          <Clock3 size={15} aria-hidden="true" /> {formatTime(encuentro.inicioProgramadoAt)} –{" "}
+                          <Clock3 size={15} aria-hidden="true" />{" "}
+                          {formatTime(encuentro.inicioProgramadoAt)} –{" "}
                           {formatTime(encuentro.finProgramadoAt)}
                         </strong>
                         <EstadoHorario
@@ -548,27 +606,32 @@ export default async function ReunionesZoomPage({
                           inicio={encuentro.inicioProgramadoAt}
                           ahora={ahora}
                         />
-                        <span className={styles.durationChip}>
+                        <span className={styles["durationChip"]}>
                           {formatDuration(encuentro.inicioProgramadoAt, encuentro.finProgramadoAt)}
                         </span>
                       </div>
-                      <div className={styles.what}>
-                        <Link className={styles.titleLink} href={`/reuniones/${encuentro.solicitudSalaId}`}>
+                      <div className={styles["what"]}>
+                        <Link
+                          className={styles["titleLink"]}
+                          href={`/reuniones/${encuentro.solicitudSalaId}`}
+                        >
                           {encuentro.solicitud.titulo}
                         </Link>
                         <span>
                           {docentePrograma.programa.nombre} · {docente}
                         </span>
-                        <span className={styles.cuentas}>
+                        <span className={styles["cuentas"]}>
                           Anfitrión: <ChipCuenta correo={enlace.cuentaAnfitrion} />
                         </span>
                       </div>
-                      <div className={styles.link}>
-                        <span className={styles.zoomId}>
+                      <div className={styles["link"]}>
+                        <span className={styles["zoomId"]}>
                           <Hash size={15} aria-hidden="true" /> ID de Zoom:{" "}
                           <strong>{zoomId ?? "Pendiente"}</strong>
                         </span>
-                        {zoomId ? <ZoomCopyIdButton meetingId={zoomId} contexto={contexto} /> : null}
+                        {zoomId ? (
+                          <ZoomCopyIdButton meetingId={zoomId} contexto={contexto} />
+                        ) : null}
                         {enlace.estado !== "LISTO" ? (
                           <ZoomLinkStatus
                             estado={enlace.estado}
@@ -581,7 +644,10 @@ export default async function ReunionesZoomPage({
                         {enlace.joinUrl && !isHistory && encuentro.finProgramadoAt > ahora ? (
                           <ZoomJoinActions url={enlace.joinUrl} contexto={contexto} />
                         ) : null}
-                        <Link className={styles.details} href={`/reuniones/${encuentro.solicitudSalaId}`}>
+                        <Link
+                          className={styles["details"]}
+                          href={`/reuniones/${encuentro.solicitudSalaId}`}
+                        >
                           Detalle
                         </Link>
                       </div>

@@ -4,24 +4,24 @@ import {
   descartarOperacionPendienteUseCase,
   reclasificarOperacionesPendientesLoteUseCase,
   sincronizarCohostsExistenteUseCase,
-  sincronizarEventosPendientesUseCase
+  sincronizarEventosPendientesUseCase,
 } from "../src/modules/conferencias/application";
 import type {
   ConferenceProvisionRequest,
-  ProvisionConferenciaResult
+  ProvisionConferenciaResult,
 } from "../src/modules/conferencias/domain";
 import type {
   ClaimInfo,
   ConferenceProvider,
   ConferenceProviderFactory,
   ConferenciasRepositoryPort,
-  EventoProveedorSnapshot
+  EventoProveedorSnapshot,
 } from "../src/modules/conferencias/ports";
 import {
   crearReunionZoomHttp,
   actualizarReunionZoomHttp,
   eliminarReunionZoomHttp,
-  obtenerReunionZoomHttp
+  obtenerReunionZoomHttp,
 } from "@/src/integrations/zoom/zoom-client";
 
 vi.mock("@/src/integrations/zoom/zoom-client", () => ({
@@ -29,14 +29,14 @@ vi.mock("@/src/integrations/zoom/zoom-client", () => ({
   crearReunionZoomHttp: vi.fn(async () => ({
     meetingId: "98765432100",
     joinUrl: "https://zoom.us/j/98765432100",
-    startUrl: "https://zoom.us/s/98765432100"
+    startUrl: "https://zoom.us/s/98765432100",
   })),
   actualizarReunionZoomHttp: vi.fn(async () => {}),
   eliminarReunionZoomHttp: vi.fn(async () => {}),
   obtenerReunionZoomHttp: vi.fn(async () => ({
     meetingId: "98765432100",
-    joinUrl: "https://flacso.zoom.us/j/98765432100?pwd=xyz"
-  }))
+    joinUrl: "https://flacso.zoom.us/j/98765432100?pwd=xyz",
+  })),
 }));
 
 describe("conferencias/application", () => {
@@ -47,29 +47,31 @@ describe("conferencias/application", () => {
     fin: new Date("2026-10-01T16:00:00.000Z"),
     timezone: "America/Montevideo",
     calendarId: "sala01@flacso.edu.uy",
-    calendarEventId: "evt-123"
+    calendarEventId: "evt-123",
   };
 
-  const createMockRepo = (overrides?: Partial<ConferenciasRepositoryPort>): ConferenciasRepositoryPort => ({
+  const createMockRepo = (
+    overrides?: Partial<ConferenciasRepositoryPort>,
+  ): ConferenciasRepositoryPort => ({
     obtenerSnapshotsEventos: vi.fn(async (ids: readonly string[]) =>
       ids.map((id: string): EventoProveedorSnapshot => ({
         id,
         estadoIntegracion: "PENDIENTE",
         operacionPendiente: "PROVISIONAR",
         reclamoIntegracionAt: null,
-        errorIntegracion: null
-      }))
+        errorIntegracion: null,
+      })),
     ),
     obtenerCredencialesWorkspace: vi.fn(async () => ({
       disponible: true,
       serviceAccountEmail: "svc@flacso.iam.gserviceaccount.com",
-      privateKey: "pk-123"
+      privateKey: "pk-123",
     })),
     obtenerCredencialesZoom: vi.fn(async () => ({
       disponible: true,
       accountId: "acc-123",
       clientId: "cli-123",
-      clientSecret: "sec-123"
+      clientSecret: "sec-123",
     })),
     reclamarEvento: vi.fn(async (id: string): Promise<ClaimInfo | null> => ({
       event: {
@@ -78,11 +80,11 @@ describe("conferencias/application", () => {
         externalEventId: null,
         solicitudSalaId: "sol-1",
         organizerEmail: "sala01@flacso.edu.uy",
-        request: fakeRequest
+        request: fakeRequest,
       },
       operacion: "PROVISIONAR",
       at: new Date(),
-      token: "tok-1"
+      token: "tok-1",
     })),
     buscarConferenceDataCompartida: vi.fn(async () => undefined),
     guardarExternalEventIdTemprano: vi.fn(async () => {}),
@@ -92,47 +94,49 @@ describe("conferencias/application", () => {
       async (claim: ClaimInfo, error: string): Promise<ProvisionConferenciaResult> => ({
         eventoProveedorId: claim.event.id,
         estado: "ERROR",
-        error
-      })
+        error,
+      }),
     ),
-    registrarErrorSinClaim: vi.fn(async (id: string, error: string): Promise<ProvisionConferenciaResult> => ({
-      eventoProveedorId: id,
-      estado: "ERROR",
-      error
-    })),
+    registrarErrorSinClaim: vi.fn(
+      async (id: string, error: string): Promise<ProvisionConferenciaResult> => ({
+        eventoProveedorId: id,
+        estado: "ERROR",
+        error,
+      }),
+    ),
     obtenerEstadoActual: vi.fn(async (id: string): Promise<ProvisionConferenciaResult> => ({
       eventoProveedorId: id,
-      estado: "SINCRONIZADA"
+      estado: "SINCRONIZADA",
     })),
     descartarOperacionPendiente: vi.fn(async (id: string) => ({
       eventoProveedorId: id,
-      descartada: true
+      descartada: true,
     })),
     descartarOperacionesNoBloqueantesLote: vi.fn(async () => ({
-      totalDescartadas: 3
+      totalDescartadas: 3,
     })),
     reclasificarOperacionesPendientesLote: vi.fn(async () => ({
-      totalReclasificadas: 5
+      totalReclasificadas: 5,
     })),
-    ...overrides
+    ...overrides,
   });
 
   const createMockProvider = (overrides?: Partial<ConferenceProvider>): ConferenceProvider => ({
     crearEventoCalendar: vi.fn(async () => ({
       externalEventId: "google-evt-1",
-      payload: { id: "google-evt-1" }
+      payload: { id: "google-evt-1" },
     })),
     obtenerEvento: vi.fn(async () => ({
       externalEventId: "google-evt-1",
       codigoReunion: "abc-defg-hij",
       joinUrl: "https://meet.google.com/abc-defg-hij",
-      payload: { id: "google-evt-1", conferenceData: { conferenceId: "abc-defg-hij" } }
+      payload: { id: "google-evt-1", conferenceData: { conferenceId: "abc-defg-hij" } },
     })),
     configurarEventoMeet: vi.fn(async () => {}),
     cancelarEvento: vi.fn(async () => {}),
     actualizarEvento: vi.fn(async () => {}),
     sincronizarCohostsExistente: vi.fn(async () => ({ verified: true })),
-    ...overrides
+    ...overrides,
   });
 
   it("sincronizarEventosPendientesUseCase orquesta provisionamiento con guardado temprano y finalizacion", async () => {
@@ -151,11 +155,11 @@ describe("conferencias/application", () => {
     expect(repo.guardarExternalEventIdTemprano).toHaveBeenCalledWith(
       expect.objectContaining({ token: "tok-1" }),
       "google-evt-1",
-      expect.any(Object)
+      expect.any(Object),
     );
     expect(repo.persistirMeetDetectado).toHaveBeenCalledWith(
       expect.objectContaining({ token: "tok-1" }),
-      expect.any(Object)
+      expect.any(Object),
     );
     expect(provider.configurarEventoMeet).toHaveBeenCalled();
     expect(repo.finalizarOperacion).toHaveBeenCalled();
@@ -166,7 +170,7 @@ describe("conferencias/application", () => {
     const provider = createMockProvider({
       configurarEventoMeet: vi
         .fn()
-        .mockRejectedValue(new Error("403: insufficient authentication scopes on spaces.members"))
+        .mockRejectedValue(new Error("403: insufficient authentication scopes on spaces.members")),
     });
     const factory: ConferenceProviderFactory = () => provider;
 
@@ -175,7 +179,7 @@ describe("conferencias/application", () => {
     expect(repo.registrarErrorReclamado).toHaveBeenCalledWith(
       expect.anything(),
       expect.stringContaining("insufficient authentication scopes"),
-      true
+      true,
     );
   });
 
@@ -188,12 +192,12 @@ describe("conferencias/application", () => {
           externalEventId: "google-evt-1",
           solicitudSalaId: "sol-1",
           organizerEmail: "sala01@flacso.edu.uy",
-          request: fakeRequest
+          request: fakeRequest,
         },
         operacion: "REPROGRAMAR",
         at: new Date(),
-        token: "tok-1"
-      }))
+        token: "tok-1",
+      })),
     });
     const provider = createMockProvider({
       obtenerEvento: vi.fn(async () => ({
@@ -205,9 +209,9 @@ describe("conferencias/application", () => {
           summary: fakeRequest.titulo,
           description: fakeRequest.descripcion,
           start: { dateTime: fakeRequest.inicio.toISOString(), timeZone: fakeRequest.timezone },
-          end: { dateTime: fakeRequest.fin.toISOString(), timeZone: fakeRequest.timezone }
-        }
-      }))
+          end: { dateTime: fakeRequest.fin.toISOString(), timeZone: fakeRequest.timezone },
+        },
+      })),
     });
     const factory: ConferenceProviderFactory = () => provider;
 
@@ -226,12 +230,12 @@ describe("conferencias/application", () => {
           externalEventId: "google-evt-1",
           solicitudSalaId: "sol-1",
           organizerEmail: "sala01@flacso.edu.uy",
-          request: fakeRequest
+          request: fakeRequest,
         },
         operacion: "CANCELAR",
         at: new Date(),
-        token: "tok-1"
-      }))
+        token: "tok-1",
+      })),
     });
     const provider = createMockProvider();
     const factory: ConferenceProviderFactory = () => provider;
@@ -250,12 +254,12 @@ describe("conferencias/application", () => {
           externalEventId: null,
           solicitudSalaId: "sol-1",
           organizerEmail: "zoom01@flacso.edu.uy",
-          request: { ...fakeRequest, requiereGrabacion: true }
+          request: { ...fakeRequest, requiereGrabacion: true },
         },
         operacion: "PROVISIONAR",
         at: new Date(),
-        token: "tok-1"
-      }))
+        token: "tok-1",
+      })),
     });
     const factory: ConferenceProviderFactory = () => createMockProvider();
 
@@ -265,14 +269,16 @@ describe("conferencias/application", () => {
     expect(crearReunionZoomHttp).toHaveBeenCalledWith(
       "mock-zoom-token",
       "zoom01@flacso.edu.uy",
-      expect.objectContaining({ requiereGrabacion: true })
+      expect.objectContaining({ requiereGrabacion: true }),
     );
     expect(repo.guardarExternalEventIdTemprano).toHaveBeenCalledWith(
       expect.anything(),
       "98765432100",
-      expect.anything()
+      expect.anything(),
     );
-    expect(vi.mocked(repo.guardarExternalEventIdTemprano).mock.calls[0][2]).not.toHaveProperty("startUrl");
+    expect(vi.mocked(repo.guardarExternalEventIdTemprano).mock.calls[0][2]).not.toHaveProperty(
+      "startUrl",
+    );
     expect(repo.persistirMeetDetectado).toHaveBeenCalled();
     expect(repo.finalizarOperacion).toHaveBeenCalled();
   });
@@ -286,12 +292,12 @@ describe("conferencias/application", () => {
           externalEventId: "98765432100",
           solicitudSalaId: "sol-1",
           organizerEmail: "zoom01@flacso.edu.uy",
-          request: fakeRequest
+          request: fakeRequest,
         },
         operacion: "REPROGRAMAR",
         at: new Date(),
-        token: "tok-1"
-      }))
+        token: "tok-1",
+      })),
     });
     const factory: ConferenceProviderFactory = () => createMockProvider();
 
@@ -300,7 +306,7 @@ describe("conferencias/application", () => {
     expect(actualizarReunionZoomHttp).toHaveBeenCalledWith(
       "mock-zoom-token",
       "98765432100",
-      expect.objectContaining({ topic: fakeRequest.titulo })
+      expect.objectContaining({ topic: fakeRequest.titulo }),
     );
     expect(repo.finalizarOperacion).toHaveBeenCalled();
   });
@@ -314,12 +320,12 @@ describe("conferencias/application", () => {
           externalEventId: "98765432100",
           solicitudSalaId: "sol-1",
           organizerEmail: "zoom01@flacso.edu.uy",
-          request: fakeRequest
+          request: fakeRequest,
         },
         operacion: "PROVISIONAR",
         at: new Date(),
-        token: "tok-1"
-      }))
+        token: "tok-1",
+      })),
     });
 
     await sincronizarEventosPendientesUseCase(repo, () => createMockProvider(), ["evt-zoom-retry"]);
@@ -327,7 +333,7 @@ describe("conferencias/application", () => {
     expect(obtenerReunionZoomHttp).toHaveBeenCalledWith("mock-zoom-token", "98765432100");
     expect(repo.persistirMeetDetectado).toHaveBeenCalledWith(
       expect.anything(),
-      expect.objectContaining({ joinUrl: "https://flacso.zoom.us/j/98765432100?pwd=xyz" })
+      expect.objectContaining({ joinUrl: "https://flacso.zoom.us/j/98765432100?pwd=xyz" }),
     );
   });
 
@@ -340,12 +346,12 @@ describe("conferencias/application", () => {
           externalEventId: "98765432100",
           solicitudSalaId: "sol-1",
           organizerEmail: "zoom01@flacso.edu.uy",
-          request: fakeRequest
+          request: fakeRequest,
         },
         operacion: "CANCELAR",
         at: new Date(),
-        token: "tok-1"
-      }))
+        token: "tok-1",
+      })),
     });
     const factory: ConferenceProviderFactory = () => createMockProvider();
 
@@ -365,19 +371,19 @@ describe("conferencias/application", () => {
           externalEventId: null,
           solicitudSalaId: "sol-1",
           organizerEmail: "zoom01@flacso.edu.uy",
-          request: fakeRequest
+          request: fakeRequest,
         },
         operacion: "PROVISIONAR",
         at: new Date(),
-        token: "tok-1"
-      }))
+        token: "tok-1",
+      })),
     });
     const factory: ConferenceProviderFactory = () => createMockProvider();
 
     await sincronizarEventosPendientesUseCase(repo, factory, ["evt-zoom-nocreds"]);
     expect(repo.registrarErrorReclamado).toHaveBeenCalledWith(
       expect.anything(),
-      expect.stringContaining("Credenciales de Zoom Server-to-Server OAuth no configuradas")
+      expect.stringContaining("Credenciales de Zoom Server-to-Server OAuth no configuradas"),
     );
   });
 
@@ -406,7 +412,7 @@ describe("conferencias/application", () => {
       calendarId: "sala01@flacso.edu.uy",
       externalEventId: "google-evt-1",
       cohostsAnteriores: [],
-      cohostsDeseados: ["docente@flacso.edu.uy"]
+      cohostsDeseados: ["docente@flacso.edu.uy"],
     });
 
     expect(res).toEqual({ verified: true });

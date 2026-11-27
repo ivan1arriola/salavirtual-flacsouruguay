@@ -5,7 +5,7 @@ import {
   CheckCircle2,
   ExternalLink,
   GitCompareArrows,
-  XCircle
+  XCircle,
 } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -19,7 +19,7 @@ import { guardarRevisionDuplicado } from "./actions";
 type VistaRevision = "pendientes" | "actualizar" | "falsos";
 
 export default async function DuplicadosPage({
-  searchParams
+  searchParams,
 }: Readonly<{ searchParams: Promise<{ vista?: string; estado?: string }> }>) {
   const session = await auth();
   if (!session?.user) {
@@ -45,7 +45,10 @@ export default async function DuplicadosPage({
         <div>
           <p className="page-eyebrow">Control de agenda</p>
           <h1>Revisión de posibles duplicados</h1>
-          <p>Compará cada coincidencia y registrá si requiere actualización o si es un falso positivo.</p>
+          <p>
+            Compará cada coincidencia y registrá si requiere actualización o si es un falso
+            positivo.
+          </p>
         </div>
         <Link className="secondary-action" href="/reuniones">
           <ArrowLeft size={17} />
@@ -110,7 +113,8 @@ export default async function DuplicadosPage({
                     <h2>{meeting.titulo}</h2>
                     <p>
                       <CalendarClock size={15} />
-                      {formatDate(meeting.inicio)} · {formatTime(meeting.inicio)}–{formatTime(meeting.fin)}
+                      {formatDate(meeting.inicio)} · {formatTime(meeting.inicio)}–
+                      {formatTime(meeting.fin)}
                     </p>
                     <p>{meeting.programaNombre}</p>
                     <Link className="text-link" href={`/reuniones/${meeting.solicitudId}`}>
@@ -120,7 +124,9 @@ export default async function DuplicadosPage({
                 ))}
               </div>
               <footer>
-                <p>La decisión clasifica el caso; no modifica ni cancela reuniones automáticamente.</p>
+                <p>
+                  La decisión clasifica el caso; no modifica ni cancela reuniones automáticamente.
+                </p>
                 <form action={guardarRevisionDuplicado}>
                   <input name="izquierdaId" type="hidden" value={izquierda.id} />
                   <input name="derechaId" type="hidden" value={derecha.id} />
@@ -157,7 +163,7 @@ function ReviewTab({
   count,
   href,
   icon: Icon,
-  label
+  label,
 }: Readonly<{
   active: boolean;
   count: number;

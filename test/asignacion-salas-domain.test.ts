@@ -8,20 +8,20 @@ describe("asignacion funcional de salas Meet", () => {
     const result = asignarSalas(
       [
         { id: "a", serieId: "serie-a", inicio: date(10), fin: date(12) },
-        { id: "b", serieId: "serie-b", inicio: date(11), fin: date(13) }
+        { id: "b", serieId: "serie-b", inicio: date(11), fin: date(13) },
       ],
       [
         { id: "sala-1", prioridad: 1 },
-        { id: "sala-2", prioridad: 2 }
-      ]
+        { id: "sala-2", prioridad: 2 },
+      ],
     );
 
     expect(result).toEqual({
       ok: true,
       asignaciones: [
         { reunionId: "a", salaId: "sala-1" },
-        { reunionId: "b", salaId: "sala-2" }
-      ]
+        { reunionId: "b", salaId: "sala-2" },
+      ],
     });
   });
 
@@ -30,17 +30,17 @@ describe("asignacion funcional de salas Meet", () => {
       [
         { id: "a1", serieId: "serie-a", inicio: date(10), fin: date(11) },
         { id: "b", serieId: "serie-b", inicio: date(10), fin: date(12) },
-        { id: "a2", serieId: "serie-a", inicio: date(13), fin: date(14) }
+        { id: "a2", serieId: "serie-a", inicio: date(13), fin: date(14) },
       ],
       [
         { id: "sala-1", prioridad: 1 },
-        { id: "sala-2", prioridad: 2 }
-      ]
+        { id: "sala-2", prioridad: 2 },
+      ],
     );
 
     expect(result.ok && result.asignaciones[2]).toEqual({
       reunionId: "a2",
-      salaId: "sala-1"
+      salaId: "sala-1",
     });
   });
 
@@ -49,10 +49,10 @@ describe("asignacion funcional de salas Meet", () => {
       asignarSalas(
         [
           { id: "a", serieId: "a", inicio: date(10), fin: date(12) },
-          { id: "b", serieId: "b", inicio: date(11), fin: date(13) }
+          { id: "b", serieId: "b", inicio: date(11), fin: date(13) },
         ],
-        [{ id: "sala-1", prioridad: 1 }]
-      )
+        [{ id: "sala-1", prioridad: 1 }],
+      ),
     ).toEqual({ ok: false, reunionIdsSinSala: ["b"] });
   });
 });

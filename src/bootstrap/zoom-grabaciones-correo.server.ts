@@ -12,7 +12,11 @@ type Dependencias = Readonly<{
 
 const LOTE = 20;
 
-type ArchivoParaAviso = Readonly<{ driveFileId: string | null; nombreDestino: string; estado: string }>;
+type ArchivoParaAviso = Readonly<{
+  driveFileId: string | null;
+  nombreDestino: string;
+  estado: string;
+}>;
 
 export function grabacionZoomListaParaAvisar(
   ocurrencia: Readonly<{
@@ -21,14 +25,17 @@ export function grabacionZoomListaParaAvisar(
     procesamientoPendiente: boolean;
     observacionesInventario: unknown;
     archivos: readonly ArchivoParaAviso[];
-  }>
+  }>,
 ): boolean {
   return (
     Boolean(ocurrencia.eventoProveedorId && ocurrencia.carpetaVinculadaAt) &&
     !ocurrencia.procesamientoPendiente &&
-    (!Array.isArray(ocurrencia.observacionesInventario) || ocurrencia.observacionesInventario.length === 0) &&
+    (!Array.isArray(ocurrencia.observacionesInventario) ||
+      ocurrencia.observacionesInventario.length === 0) &&
     ocurrencia.archivos.some((archivo) => archivo.estado === "CONSERVADO") &&
-    ocurrencia.archivos.every((archivo) => archivo.estado === "CONSERVADO" && Boolean(archivo.driveFileId))
+    ocurrencia.archivos.every(
+      (archivo) => archivo.estado === "CONSERVADO" && Boolean(archivo.driveFileId),
+    )
   );
 }
 
@@ -55,16 +62,16 @@ function correoGrabacion(
     programa: string;
     fecha: Date;
     archivos: readonly { driveFileId: string; nombreDestino: string }[];
-  }>
+  }>,
 ): Pick<MailInput, "subject" | "text" | "html"> {
   const fecha = new Intl.DateTimeFormat("es-UY", {
     timeZone: "America/Montevideo",
     dateStyle: "full",
-    timeStyle: "short"
+    timeStyle: "short",
   }).format(input.fecha);
   const archivos = input.archivos.map((archivo) => ({
     nombre: archivo.nombreDestino,
-    url: `https://drive.google.com/file/d/${encodeURIComponent(archivo.driveFileId)}/view`
+    url: `https://drive.google.com/file/d/${encodeURIComponent(archivo.driveFileId)}/view`,
   }));
   const text = [
     "La grabación de Zoom y todos sus archivos ya están en Drive.",
@@ -73,16 +80,20 @@ function correoGrabacion(
     `Fecha: ${fecha}`,
     "",
     "Archivos:",
-    ...archivos.map((archivo) => `${archivo.nombre}: ${archivo.url}`)
+    ...archivos.map((archivo) => `${archivo.nombre}: ${archivo.url}`),
   ].join("\n");
   const e = escaparHtmlEmail;
   const videos = archivos.filter((a) => /\.mp4$/i.test(a.nombre));
   const principal =
-    PREFERENCIA_VIDEO.map((vista) => videos.find((v) => v.nombre.includes(vista))).find(Boolean) ?? videos[0];
+    PREFERENCIA_VIDEO.map((vista) => videos.find((v) => v.nombre.includes(vista))).find(Boolean) ??
+    videos[0];
   const grupos = [
     { titulo: "Videos", items: videos },
     { titulo: "Audios", items: archivos.filter((a) => /\.m4a$/i.test(a.nombre)) },
-    { titulo: "Chat y otros archivos", items: archivos.filter((a) => !/\.(mp4|m4a)$/i.test(a.nombre)) }
+    {
+      titulo: "Chat y otros archivos",
+      items: archivos.filter((a) => !/\.(mp4|m4a)$/i.test(a.nombre)),
+    },
   ].filter((grupo) => grupo.items.length > 0);
   const gruposHtml = grupos
     .map((grupo) =>
@@ -90,11 +101,11 @@ function correoGrabacion(
         grupo.items
           .map(
             (a) =>
-              `<p style="margin:0 0 7px;font-size:13px;line-height:19px"><a href="${e(a.url)}" style="color:#087f9e;text-decoration:underline">${e(nombreLegible(a.nombre))}</a></p>`
+              `<p style="margin:0 0 7px;font-size:13px;line-height:19px"><a href="${e(a.url)}" style="color:#087f9e;text-decoration:underline">${e(nombreLegible(a.nombre))}</a></p>`,
           )
           .join(""),
-        `${grupo.titulo} (${grupo.items.length})`
-      )
+        `${grupo.titulo} (${grupo.items.length})`,
+      ),
     )
     .join("");
   const html = envolverCorreo({
@@ -107,7 +118,7 @@ function correoGrabacion(
       `<p style="margin:0 0 18px;font-size:14px;line-height:22px"><strong>${e(input.titulo)}</strong><br>${e(input.programa)}<br>${e(fecha)}</p>` +
       gruposHtml,
     nota: "Los enlaces son privados para las personas destinatarias de este correo.",
-    preferenciasUrl: null
+    preferenciasUrl: null,
   });
   return { subject: `Grabación disponible: ${input.titulo} · Sala Virtual FLACSO`, text, html };
 }
@@ -125,8 +136,8 @@ async function prepararAvisos(deps: Dependencias, cuentaZoomId: string): Promise
       observacionesInventario: { equals: [] },
       archivos: {
         some: { tipoOriginal: "MP4", estado: "CONSERVADO", driveFileId: { not: null } },
-        none: { OR: [{ estado: { not: "CONSERVADO" } }, { driveFileId: null }] }
-      }
+        none: { OR: [{ estado: { not: "CONSERVADO" } }, { driveFileId: null }] },
+      },
     },
     select: {
       id: true,
@@ -140,15 +151,17 @@ async function prepararAvisos(deps: Dependencias, cuentaZoomId: string): Promise
           instancia: {
             select: {
               solicitud: {
-                select: { docentePrograma: { select: { docente: { select: { usuarioId: true } } } } }
-              }
-            }
-          }
-        }
-      }
+                select: {
+                  docentePrograma: { select: { docente: { select: { usuarioId: true } } } },
+                },
+              },
+            },
+          },
+        },
+      },
     },
     orderBy: { inicioRealAt: "desc" },
-    take: LOTE
+    take: LOTE,
   });
 
   let preparados = 0;
@@ -156,7 +169,8 @@ async function prepararAvisos(deps: Dependencias, cuentaZoomId: string): Promise
     if (!grabacionZoomListaParaAvisar(ocurrencia)) {
       continue;
     }
-    const docenteId = ocurrencia.eventoProveedor?.instancia.solicitud.docentePrograma.docente.usuarioId;
+    const docenteId =
+      ocurrencia.eventoProveedor?.instancia.solicitud.docentePrograma.docente.usuarioId;
     if (!docenteId) {
       continue;
     }
@@ -165,9 +179,9 @@ async function prepararAvisos(deps: Dependencias, cuentaZoomId: string): Promise
         activo: true,
         fusionadoEnId: null,
         emailPrincipal: { not: null },
-        OR: [{ id: docenteId }, { rol: "ADMINISTRACION" }]
+        OR: [{ id: docenteId }, { rol: "ADMINISTRACION" }],
       },
-      select: { id: true, emailPrincipal: true }
+      select: { id: true, emailPrincipal: true },
     });
     if (!usuarios.some((usuario) => usuario.id === docenteId && usuario.emailPrincipal?.trim())) {
       continue;
@@ -175,9 +189,9 @@ async function prepararAvisos(deps: Dependencias, cuentaZoomId: string): Promise
     const emails = [
       ...new Set(
         usuarios.flatMap(({ emailPrincipal }) =>
-          emailPrincipal ? [emailPrincipal.trim().toLowerCase()] : []
-        )
-      )
+          emailPrincipal ? [emailPrincipal.trim().toLowerCase()] : [],
+        ),
+      ),
     ].filter(Boolean);
     if (emails.length === 0) {
       continue;
@@ -185,14 +199,14 @@ async function prepararAvisos(deps: Dependencias, cuentaZoomId: string): Promise
     const creado = await deps.db.$transaction(async (tx) => {
       const reclamo = await tx.ocurrenciaArchivoZoom.updateMany({
         where: { id: ocurrencia.id, notificacionGrabacionPreparadaAt: null },
-        data: { notificacionGrabacionPreparadaAt: ahora }
+        data: { notificacionGrabacionPreparadaAt: ahora },
       });
       if (reclamo.count !== 1) {
         return false;
       }
       await tx.avisoGrabacionZoom.createMany({
         data: emails.map((email) => ({ ocurrenciaId: ocurrencia.id, email })),
-        skipDuplicates: true
+        skipDuplicates: true,
       });
       return true;
     });
@@ -208,15 +222,15 @@ async function prepararAvisos(deps: Dependencias, cuentaZoomId: string): Promise
 async function crearNotificacionInterna(
   db: PrismaClient,
   aviso: Readonly<{ id: string; email: string; ocurrenciaId: string }>,
-  tituloEncuentro: string
+  tituloEncuentro: string,
 ): Promise<void> {
   const usuario = await db.usuario.findFirst({
     where: {
       activo: true,
       fusionadoEnId: null,
-      emailPrincipal: { equals: aviso.email, mode: "insensitive" }
+      emailPrincipal: { equals: aviso.email, mode: "insensitive" },
     },
-    select: { id: true }
+    select: { id: true },
   });
   if (!usuario) {
     return;
@@ -231,9 +245,9 @@ async function crearNotificacionInterna(
       titulo: "Grabación de Zoom disponible",
       cuerpo: `Ya está disponible la grabación de ${tituloEncuentro}.`,
       href: "/grabaciones",
-      metadata: { ocurrenciaId: aviso.ocurrenciaId }
+      metadata: { ocurrenciaId: aviso.ocurrenciaId },
     },
-    update: {}
+    update: {},
   });
 }
 
@@ -248,7 +262,9 @@ async function ocurrenciaEntregable(db: PrismaClient, ocurrenciaId: string) {
       observacionesInventario: true,
       driveFolderId: true,
       inicioRealAt: true,
-      archivos: { select: { estado: true, tipoOriginal: true, driveFileId: true, nombreDestino: true } },
+      archivos: {
+        select: { estado: true, tipoOriginal: true, driveFileId: true, nombreDestino: true },
+      },
       eventoProveedor: {
         select: {
           instancia: {
@@ -256,14 +272,14 @@ async function ocurrenciaEntregable(db: PrismaClient, ocurrenciaId: string) {
               solicitud: {
                 select: {
                   titulo: true,
-                  docentePrograma: { select: { programa: { select: { nombre: true } } } }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
+                  docentePrograma: { select: { programa: { select: { nombre: true } } } },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
   });
   if (
     !ocurrencia ||
@@ -280,7 +296,7 @@ async function ocurrenciaEntregable(db: PrismaClient, ocurrenciaId: string) {
 async function notificarSinFallar(
   db: PrismaClient,
   aviso: Readonly<{ id: string; email: string; ocurrenciaId: string }>,
-  tituloEncuentro: string
+  tituloEncuentro: string,
 ): Promise<boolean> {
   try {
     await crearNotificacionInterna(db, aviso, tituloEncuentro);
@@ -294,19 +310,19 @@ async function notificarSinFallar(
 async function registrarResultadoCorreo(
   db: PrismaClient,
   avisoId: string,
-  resultado: MailSendResult
+  resultado: MailSendResult,
 ): Promise<"ENVIADO" | "ERROR"> {
   if (resultado.sent) {
     await db.avisoGrabacionZoom.update({
       where: { id: avisoId },
-      data: { estado: "ACEPTADO", enviadoAt: new Date(), errorCodigo: null }
+      data: { estado: "ACEPTADO", enviadoAt: new Date(), errorCodigo: null },
     });
     return "ENVIADO";
   }
   if (resultado.skipped) {
     await db.avisoGrabacionZoom.update({
       where: { id: avisoId },
-      data: { estado: "ERROR", errorCodigo: resultado.skipped }
+      data: { estado: "ERROR", errorCodigo: resultado.skipped },
     });
   }
   return "ERROR";
@@ -314,13 +330,13 @@ async function registrarResultadoCorreo(
 
 async function entregarAvisos(
   deps: Dependencias,
-  cuentaZoomId: string
+  cuentaZoomId: string,
 ): Promise<Readonly<{ enviados: number; errores: number }>> {
   const avisos = await deps.db.avisoGrabacionZoom.findMany({
     where: { estado: { in: ["PENDIENTE", "ERROR"] }, ocurrencia: { cuentaZoomId } },
     select: { id: true, email: true, ocurrenciaId: true },
     orderBy: { updatedAt: "asc" },
-    take: LOTE
+    take: LOTE,
   });
   let enviados = 0;
   let errores = 0;
@@ -331,7 +347,7 @@ async function entregarAvisos(
     }
     const claim = await deps.db.avisoGrabacionZoom.updateMany({
       where: { id: aviso.id, estado: { in: ["PENDIENTE", "ERROR"] } },
-      data: { estado: "RESERVADO", errorCodigo: null }
+      data: { estado: "RESERVADO", errorCodigo: null },
     });
     if (claim.count !== 1) {
       continue;
@@ -351,10 +367,14 @@ async function entregarAvisos(
         fecha: ocurrencia.inicioRealAt,
         archivos: ocurrencia.archivos.map((archivo) => ({
           driveFileId: archivo.driveFileId!,
-          nombreDestino: archivo.nombreDestino
-        }))
+          nombreDestino: archivo.nombreDestino,
+        })),
       });
-      const resultado = await deps.enviarCorreo({ ...correo, to: [aviso.email], idempotencyKey: aviso.id });
+      const resultado = await deps.enviarCorreo({
+        ...correo,
+        to: [aviso.email],
+        idempotencyKey: aviso.id,
+      });
       const registro = await registrarResultadoCorreo(deps.db, aviso.id, resultado);
       if (registro === "ENVIADO") {
         enviados++;
@@ -372,8 +392,8 @@ async function entregarAvisos(
           where: { id: aviso.id },
           data: {
             estado: "ERROR",
-            errorCodigo: "PERMISO_DRIVE"
-          }
+            errorCodigo: "PERMISO_DRIVE",
+          },
         });
       }
       errores++;
@@ -385,7 +405,7 @@ async function entregarAvisos(
 /** Prepara destinatarios una sola vez por ocurrencia y envía los avisos pendientes con reclamo atómico. */
 export async function notificarGrabacionesZoom(
   deps: Dependencias,
-  cuentaZoomId: string
+  cuentaZoomId: string,
 ): Promise<Readonly<{ preparados: number; enviados: number; errores: number }>> {
   const preparados = await prepararAvisos(deps, cuentaZoomId);
   const resultado = await entregarAvisos(deps, cuentaZoomId);

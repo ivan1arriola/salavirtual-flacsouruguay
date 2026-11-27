@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { PrismaClient } from "@prisma/client";
 import {
   crearGoogleArtifactsProviderAdapter,
-  crearPrismaArchivosRepositoryAdapter
+  crearPrismaArchivosRepositoryAdapter,
 } from "@/src/modules/archivos/infrastructure";
 
 describe("archivos: infrastructure", () => {
@@ -14,9 +14,9 @@ describe("archivos: infrastructure", () => {
             activa: true,
             serviceAccountEmail: "sa@flacso.edu.uy",
             privateKeyCifrada: "enc_key",
-            driveDestinationId: "folder_1"
-          })
-        }
+            driveDestinationId: "folder_1",
+          }),
+        },
       } as unknown as PrismaClient;
 
       const repo = crearPrismaArchivosRepositoryAdapter(mockDb);
@@ -36,18 +36,23 @@ describe("archivos: infrastructure", () => {
               conferenceRecordName: "cr-1",
               cuentaProveedor: { emailOrganizador: "host@flacso.edu.uy" },
               archivos: [
-                { id: "arch-1", externalResourceName: "res-1", tipo: "GRABACION", mimeType: "video/mp4" }
+                {
+                  id: "arch-1",
+                  externalResourceName: "res-1",
+                  tipo: "GRABACION",
+                  mimeType: "video/mp4",
+                },
               ],
               instancia: {
                 inicioProgramadoAt: new Date("2026-09-19T14:00:00Z"),
                 finProgramadoAt: new Date("2026-09-19T16:00:00Z"),
                 timezone: "America/Montevideo",
                 requiereGrabacion: true,
-                solicitud: { titulo: "Clase 1" }
-              }
-            }
-          ])
-        }
+                solicitud: { titulo: "Clase 1" },
+              },
+            },
+          ]),
+        },
       } as unknown as PrismaClient;
 
       const repo = crearPrismaArchivosRepositoryAdapter(mockDb);
@@ -62,8 +67,8 @@ describe("archivos: infrastructure", () => {
     it("registra archivo sincronizado vía upsert", async () => {
       const mockDb = {
         archivoReunion: {
-          upsert: vi.fn().mockResolvedValue({})
-        }
+          upsert: vi.fn().mockResolvedValue({}),
+        },
       } as unknown as PrismaClient;
 
       const repo = crearPrismaArchivosRepositoryAdapter(mockDb);
@@ -71,7 +76,7 @@ describe("archivos: infrastructure", () => {
         "evt-1",
         "GRABACION",
         { resourceName: "rec-1", driveFileId: "drive-1", startTime: "2026-09-19T14:00:00Z" },
-        { id: "drive-1", name: "grabacion.mp4", mimeType: "video/mp4", size: "100" }
+        { id: "drive-1", name: "grabacion.mp4", mimeType: "video/mp4", size: "100" },
       );
 
       expect(mockDb.archivoReunion.upsert).toHaveBeenCalledWith(
@@ -79,18 +84,18 @@ describe("archivos: infrastructure", () => {
           where: {
             eventoProveedorId_externalResourceName: {
               eventoProveedorId: "evt-1",
-              externalResourceName: "rec-1"
-            }
-          }
-        })
+              externalResourceName: "rec-1",
+            },
+          },
+        }),
       );
     });
 
     it("actualiza estado y registra error en evento", async () => {
       const mockDb = {
         eventoProveedor: {
-          update: vi.fn().mockResolvedValue({})
-        }
+          update: vi.fn().mockResolvedValue({}),
+        },
       } as unknown as PrismaClient;
 
       const repo = crearPrismaArchivosRepositoryAdapter(mockDb);
@@ -98,7 +103,7 @@ describe("archivos: infrastructure", () => {
         conferenceRecordName: "cr-1",
         driveFolderId: "f-1",
         archivosSincronizadosAt: new Date(),
-        errorArchivos: null
+        errorArchivos: null,
       });
 
       expect(mockDb.eventoProveedor.update).toHaveBeenCalledTimes(1);
@@ -115,10 +120,10 @@ describe("archivos: infrastructure", () => {
             cuentaProveedor: { emailOrganizador: "sala01@flacso.edu.uy" },
             instancia: {
               inicioProgramadoAt: new Date("2026-09-19T14:00:00Z"),
-              finProgramadoAt: new Date("2026-09-19T16:00:00Z")
-            }
-          })
-        }
+              finProgramadoAt: new Date("2026-09-19T16:00:00Z"),
+            },
+          }),
+        },
       } as unknown as PrismaClient;
 
       const repo = crearPrismaArchivosRepositoryAdapter(mockDb);
@@ -131,7 +136,7 @@ describe("archivos: infrastructure", () => {
     it("aplica filtros de alcance para docente y asistente en listados", async () => {
       const mockDb = {
         archivoReunion: { findMany: vi.fn().mockResolvedValue([]) },
-        eventoProveedor: { findMany: vi.fn().mockResolvedValue([]) }
+        eventoProveedor: { findMany: vi.fn().mockResolvedValue([]) },
       } as unknown as PrismaClient;
 
       const repo = crearPrismaArchivosRepositoryAdapter(mockDb);
@@ -142,11 +147,11 @@ describe("archivos: infrastructure", () => {
           where: expect.objectContaining({
             eventoProveedor: {
               instancia: expect.objectContaining({
-                solicitud: expect.any(Object)
-              })
-            }
-          })
-        })
+                solicitud: expect.any(Object),
+              }),
+            },
+          }),
+        }),
       );
 
       await repo.listarArchivosVisibles({ id: "asist-1", rol: "ASISTENTE_TECNICO" });
@@ -155,11 +160,11 @@ describe("archivos: infrastructure", () => {
           where: expect.objectContaining({
             eventoProveedor: {
               instancia: expect.objectContaining({
-                asignaciones: expect.any(Object)
-              })
-            }
-          })
-        })
+                asignaciones: expect.any(Object),
+              }),
+            },
+          }),
+        }),
       );
     });
   });
@@ -168,8 +173,9 @@ describe("archivos: infrastructure", () => {
     it("inicializa el adaptador con las credenciales", () => {
       const adapter = crearGoogleArtifactsProviderAdapter({
         serviceAccountEmail: "sa@flacso.edu.uy",
-        privateKey: "-----BEGIN RSA PRIVATE KEY-----\nMIIEowIBAAKCAQEA0...\n-----END RSA PRIVATE KEY-----\n",
-        subject: "sala01@flacso.edu.uy"
+        privateKey:
+          "-----BEGIN RSA PRIVATE KEY-----\nMIIEowIBAAKCAQEA0...\n-----END RSA PRIVATE KEY-----\n",
+        subject: "sala01@flacso.edu.uy",
       });
       expect(adapter).toBeDefined();
       expect(typeof adapter.buscarConferencia).toBe("function");
@@ -194,7 +200,7 @@ it("incluye encuentros Zoom con todos sus archivos del inventario, proveedor rea
         mimeType: "video/mp4",
         nombreDestino: "clase.mp4",
         webViewUrl: "https://drive.google.com/file/d/x/view",
-        errorCodigo: null
+        errorCodigo: null,
       },
       {
         id: "az2",
@@ -206,7 +212,7 @@ it("incluye encuentros Zoom con todos sus archivos del inventario, proveedor rea
         mimeType: null,
         nombreDestino: "audio.m4a",
         webViewUrl: null,
-        errorCodigo: null
+        errorCodigo: null,
       },
       {
         id: "az3",
@@ -218,9 +224,9 @@ it("incluye encuentros Zoom con todos sus archivos del inventario, proveedor rea
         mimeType: "text/plain",
         nombreDestino: "chat.txt",
         webViewUrl: null,
-        errorCodigo: "TOPE_DIARIO"
-      }
-    ]
+        errorCodigo: "TOPE_DIARIO",
+      },
+    ],
   };
   const instancia = {
     id: "inst-z",
@@ -232,8 +238,8 @@ it("incluye encuentros Zoom con todos sus archivos del inventario, proveedor rea
       titulo: "Clase Zoom",
       docentePrograma: {
         programa: { nombre: "Prog" },
-        docente: { usuario: { nombres: "Ana", apellidos: "P" } }
-      }
+        docente: { usuario: { nombres: "Ana", apellidos: "P" } },
+      },
     },
     eventosProveedor: [
       {
@@ -245,9 +251,9 @@ it("incluye encuentros Zoom con todos sus archivos del inventario, proveedor rea
         proveedor: { tipo: "ZOOM" },
         archivos: [],
         ocurrenciasArchivoZoom: [ocurrencia],
-        _count: { asistenciaZoom: 3 }
-      }
-    ]
+        _count: { asistenciaZoom: 3 },
+      },
+    ],
   };
   const count = vi.fn().mockResolvedValue(1);
   const findMany = vi.fn().mockResolvedValue([instancia]);
@@ -255,7 +261,7 @@ it("incluye encuentros Zoom con todos sus archivos del inventario, proveedor rea
   const repo = crearPrismaArchivosRepositoryAdapter(mockDb);
   const r = await repo.listarGrabacionesDb!(
     { id: "a", rol: "ADMINISTRACION" },
-    { pagina: 1, busqueda: "", filtro: "TODOS" }
+    { pagina: 1, busqueda: "", filtro: "TODOS" },
   );
   expect(r.encuentros).toHaveLength(1);
   const g = r.encuentros[0]!;
@@ -264,21 +270,21 @@ it("incluye encuentros Zoom con todos sus archivos del inventario, proveedor rea
     solicitudId: "sol-9",
     proveedor: "ZOOM",
     folderId: "carpeta-zoom",
-    asistenciaZoom: true
+    asistenciaZoom: true,
   });
   expect(g.archivos).toHaveLength(3);
   expect(g.archivos[0]).toMatchObject({
     tipo: "GRABACION",
     webViewUrl: "https://drive.google.com/file/d/x/view",
     etiquetaZoom: "Video",
-    pendienteZoom: false
+    pendienteZoom: false,
   });
   expect(g.archivos[1]).toMatchObject({
     tipo: "OTRO",
     etiquetaZoom: "Audio",
     pendienteZoom: true,
     webViewUrl: null,
-    estadoZoomEtiqueta: "Pendiente de copia"
+    estadoZoomEtiqueta: "Pendiente de copia",
   });
   expect(g.archivos[2]).toMatchObject({ etiquetaZoom: "Chat", errorCodigo: "TOPE_DIARIO" });
   // El listado considera eventos Zoom en el alcance de la consulta.
@@ -292,12 +298,12 @@ it("el filtro GRABACIONES exige MP4 en Zoom y el de asistencias acepta registros
   const repo = crearPrismaArchivosRepositoryAdapter(mockDb);
   await repo.listarGrabacionesDb!(
     { id: "a", rol: "ADMINISTRACION" },
-    { pagina: 1, busqueda: "", filtro: "GRABACIONES" }
+    { pagina: 1, busqueda: "", filtro: "GRABACIONES" },
   );
   expect(JSON.stringify(findMany.mock.calls[0]![0].where)).toContain("MP4");
   await repo.listarGrabacionesDb!(
     { id: "a", rol: "ADMINISTRACION" },
-    { pagina: 1, busqueda: "", filtro: "ASISTENCIAS" }
+    { pagina: 1, busqueda: "", filtro: "ASISTENCIAS" },
   );
   expect(JSON.stringify(findMany.mock.calls[1]![0].where)).toContain("asistenciaZoom");
 });
@@ -309,15 +315,15 @@ it("pagina encuentros desde Prisma después del archivo 300 y mantiene alcance, 
   const repo = crearPrismaArchivosRepositoryAdapter(mockDb);
   const result = await repo.listarGrabacionesDb!(
     { id: "doc-1", rol: "DOCENTE" },
-    { pagina: 26, busqueda: "clase", filtro: "ASISTENCIAS" }
+    { pagina: 26, busqueda: "clase", filtro: "ASISTENCIAS" },
   );
   expect(result).toMatchObject({ pagina: 26, totalPaginas: 26, totalEncuentros: 301 });
   expect(findMany).toHaveBeenCalledWith(
     expect.objectContaining({
       skip: 300,
       take: 12,
-      orderBy: [{ inicioProgramadoAt: "desc" }, { id: "desc" }]
-    })
+      orderBy: [{ inicioProgramadoAt: "desc" }, { id: "desc" }],
+    }),
   );
   const where = findMany.mock.calls[0]![0].where;
   expect(where.AND).toHaveLength(4);

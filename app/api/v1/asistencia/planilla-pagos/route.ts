@@ -18,7 +18,7 @@ export async function GET() {
   // The role in an existing session can be stale after a demotion or deactivation.
   const actor = await resolveSessionActor(db, {
     id: session.user.id,
-    email: session.user.email
+    email: session.user.email,
   });
   if (!actor?.activo || actor.rol !== "ADMINISTRACION") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -34,7 +34,7 @@ export async function GET() {
     headers: {
       "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       "Content-Disposition": `attachment; filename="${filename}"`,
-      "Cache-Control": "no-store"
-    }
+      "Cache-Control": "no-store",
+    },
   });
 }

@@ -14,7 +14,7 @@ import { bloquearSolicitudSala } from "./reserva-salas.adapter";
 export async function cancelarSolicitudesAtomicas(
   db: PrismaClient,
   actor: SessionActor,
-  solicitudIds: readonly string[]
+  solicitudIds: readonly string[],
 ): Promise<Readonly<{ solicitudesCanceladas: number; eventoProveedorIds: readonly string[] }>> {
   const ids = [...new Set(solicitudIds)].sort();
   if (ids.length === 0 || ids.length > 50) {
@@ -30,14 +30,16 @@ export async function cancelarSolicitudesAtomicas(
       const solicitudes = await tx.solicitudSala.findMany({
         where: { id: { in: ids } },
         include: {
-          docentePrograma: { select: { programaId: true, docente: { select: { usuarioId: true } } } },
+          docentePrograma: {
+            select: { programaId: true, docente: { select: { usuarioId: true } } },
+          },
           instancias: {
             include: {
               eventosProveedor: { include: { proveedor: { select: { tipo: true } } } },
-              detallesLiquidacion: { select: { id: true } }
-            }
-          }
-        }
+              detallesLiquidacion: { select: { id: true } },
+            },
+          },
+        },
       });
       if (solicitudes.length !== ids.length) {
         throw new NotFoundApiError("Una solicitud de la serie no existe.");
@@ -48,7 +50,7 @@ export async function cancelarSolicitudesAtomicas(
           (solicitud) =>
             solicitud.docenteProgramaId !== primera.docenteProgramaId ||
             solicitud.titulo !== primera.titulo ||
-            solicitud.createdAt.getTime() !== primera.createdAt.getTime()
+            solicitud.createdAt.getTime() !== primera.createdAt.getTime(),
         )
       ) {
         throw new ConflictApiError("Las solicitudes no pertenecen a la misma serie.");
@@ -58,7 +60,11 @@ export async function cancelarSolicitudesAtomicas(
       for (const solicitud of solicitudes) {
         if (
           !(await puedeGestionarPrograma(tx, actor, solicitud.docentePrograma.programaId)) ||
-          !puedeGestionarEncuentros(actor.rol, actor.id, solicitud.docentePrograma.docente?.usuarioId ?? "")
+          !puedeGestionarEncuentros(
+            actor.rol,
+            actor.id,
+            solicitud.docentePrograma.docente?.usuarioId ?? "",
+          )
         ) {
           throw new ForbiddenApiError("No tenés permisos para cancelar toda la serie.");
         }
@@ -79,8 +85,11 @@ export async function cancelarSolicitudesAtomicas(
         }
         const meetIds = solicitud.instancias.flatMap((instancia) =>
           instancia.eventosProveedor
-            .filter((evento) => evento.proveedor.tipo === "GOOGLE_MEET" || evento.proveedor.tipo === "ZOOM")
-            .map((evento) => evento.id)
+            .filter(
+              (evento) =>
+                evento.proveedor.tipo === "GOOGLE_MEET" || evento.proveedor.tipo === "ZOOM",
+            )
+            .map((evento) => evento.id),
         );
         pending.push(...meetIds);
         await tx.auditoria.create({
@@ -90,12 +99,12 @@ export async function cancelarSolicitudesAtomicas(
             entidadTipo: "SolicitudSala",
             entidadId: solicitud.id,
             valorAnterior: { titulo: solicitud.titulo, encuentros: solicitud.instancias.length },
-            valorNuevo: Prisma.JsonNull
-          }
+            valorNuevo: Prisma.JsonNull,
+          },
         });
         await tx.instanciaSala.updateMany({
           where: { solicitudSalaId: solicitud.id },
-          data: { estado: "CANCELADA" }
+          data: { estado: "CANCELADA" },
         });
         if (meetIds.length) {
           await tx.eventoProveedor.updateMany({
@@ -105,8 +114,8 @@ export async function cancelarSolicitudesAtomicas(
               estadoIntegracion: "PENDIENTE",
               reclamoIntegracionAt: null,
               reclamoIntegracionToken: null,
-              errorIntegracion: null
-            }
+              errorIntegracion: null,
+            },
           });
         }
         await tx.solicitudSala.update({
@@ -114,12 +123,12 @@ export async function cancelarSolicitudesAtomicas(
           data: {
             estado: "CANCELADA",
             canceladaAt: new Date(),
-            canceladaMotivo: "Cancelación de serie; enlaces externos pendientes."
-          }
+            canceladaMotivo: "Cancelación de serie; enlaces externos pendientes.",
+          },
         });
       }
       return { solicitudesCanceladas: nuevas.length, eventoProveedorIds: [...new Set(pending)] };
     },
-    { maxWait: 10000, timeout: 30000 }
+    { maxWait: 10000, timeout: 30000 },
   );
 }

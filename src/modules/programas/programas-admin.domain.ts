@@ -14,7 +14,7 @@ export const programaAdminSchema = z.object({
   nombre: z.string().trim().min(2, "El nombre debe tener al menos 2 caracteres.").max(180),
   codigo: optionalText(60),
   unidadAcademicaId: optionalText(100),
-  activo: z.boolean()
+  activo: z.boolean(),
 });
 
 export type ActorProgramasAdmin = Readonly<{

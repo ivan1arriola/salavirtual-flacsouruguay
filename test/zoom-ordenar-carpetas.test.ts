@@ -8,39 +8,54 @@ const oc = (id: string, inicio: string, titulo = "Encuentros sincrónicos IAPE")
   ocurrenciaId: id,
   driveFolderId: `f-${id}`,
   inicioRealAt: new Date(inicio),
-  titulo
+  titulo,
 });
 
 function armar(
   filas: ReturnType<typeof oc>[],
   pendientes: string[],
-  opciones: { raiz?: string | null; mover?: (id: string) => Promise<string> } = {}
+  opciones: { raiz?: string | null; mover?: (id: string) => Promise<string> } = {},
 ) {
   const repo = {
     listarPendientes: vi.fn(async () => filas.filter((f) => pendientes.includes(f.ocurrenciaId))),
     listarVinculadasCercanas: vi.fn(async () => filas),
-    marcarCarpetaVinculada: vi.fn(async () => true)
+    marcarCarpetaVinculada: vi.fn(async () => true),
   };
   const storage = {
-    asegurarCarpeta: vi.fn(async (_c: string, nombre: string, padre: string) => `${padre}/${nombre}`),
+    asegurarCarpeta: vi.fn(
+      async (_c: string, nombre: string, padre: string) => `${padre}/${nombre}`,
+    ),
     moverCarpeta: vi.fn(async (id: string) => (opciones.mover ? opciones.mover(id) : "MOVIDA")),
-    renombrarCarpeta: vi.fn(async (_id: string, _nombre: string, _signal?: AbortSignal) => "RENOMBRADA")
+    renombrarCarpeta: vi.fn(
+      async (_id: string, _nombre: string, _signal?: AbortSignal) => "RENOMBRADA",
+    ),
   };
   const deps = {
     repo,
     storage,
     hash,
     raizVinculados: opciones.raiz === undefined ? "RAIZ" : opciones.raiz,
-    ahora: () => AHORA
+    ahora: () => AHORA,
   };
-  return { repo, storage, run: () => ordenarCarpetasVinculadasZoomUseCase(deps as never, { limite: 10 }) };
+  return {
+    repo,
+    storage,
+    run: () => ordenarCarpetasVinculadasZoomUseCase(deps as never, { limite: 10 }),
+  };
 }
 
 describe("ordenarCarpetasVinculadasZoomUseCase", () => {
   it("una sola grabación: la carpeta queda directo en la raíz como 'AAAAMMDD - Tema'", async () => {
-    const { storage, repo, run } = armar([oc("o1", "2026-11-10T14:00:00Z", "Curso básico")], ["o1"]);
+    const { storage, repo, run } = armar(
+      [oc("o1", "2026-11-10T14:00:00Z", "Curso básico")],
+      ["o1"],
+    );
     const r = await run();
-    expect(storage.renombrarCarpeta).toHaveBeenCalledWith("f-o1", "20261110 - Curso básico", undefined);
+    expect(storage.renombrarCarpeta).toHaveBeenCalledWith(
+      "f-o1",
+      "20261110 - Curso básico",
+      undefined,
+    );
     expect(storage.moverCarpeta).toHaveBeenCalledWith("f-o1", "RAIZ", undefined);
     expect(storage.asegurarCarpeta).not.toHaveBeenCalled();
     expect(repo.marcarCarpetaVinculada).toHaveBeenCalledWith("o1", AHORA);
@@ -73,7 +88,7 @@ describe("ordenarCarpetasVinculadasZoomUseCase", () => {
   it("encuentros distintos el mismo día no se mezclan", async () => {
     const filas = [
       oc("o1", "2026-11-05T14:00:00Z", "Taller A"),
-      oc("o2", "2026-11-05T15:00:00Z", "Taller B")
+      oc("o2", "2026-11-05T15:00:00Z", "Taller B"),
     ];
     const { storage, run } = armar(filas, ["o1", "o2"]);
     await run();
@@ -94,7 +109,7 @@ describe("ordenarCarpetasVinculadasZoomUseCase", () => {
     const { repo, run } = armar([oc("o1", "2026-11-10T14:00:00Z")], ["o1"], {
       mover: async () => {
         throw new Error("403 secreto");
-      }
+      },
     });
     const r = await run();
     expect(r).toMatchObject({ ordenadas: 0, fallidas: 1 });
@@ -104,14 +119,16 @@ describe("ordenarCarpetasVinculadasZoomUseCase", () => {
 
   it("carpeta inexistente en Drive: se cuenta y no se marca", async () => {
     const { repo, run } = armar([oc("o1", "2026-11-10T14:00:00Z")], ["o1"], {
-      mover: async () => "NO_ENCONTRADO"
+      mover: async () => "NO_ENCONTRADO",
     });
     expect(await run()).toMatchObject({ ordenadas: 0, noEncontradas: 1 });
     expect(repo.marcarCarpetaVinculada).not.toHaveBeenCalled();
   });
 
   it("sin raíz de vinculados no hay destino seguro: no hace nada", async () => {
-    const { repo, storage, run } = armar([oc("o1", "2026-11-10T14:00:00Z")], ["o1"], { raiz: null });
+    const { repo, storage, run } = armar([oc("o1", "2026-11-10T14:00:00Z")], ["o1"], {
+      raiz: null,
+    });
     expect(await run()).toMatchObject({ ordenadas: 0, sinRaiz: true });
     expect(storage.moverCarpeta).not.toHaveBeenCalled();
     expect(repo.listarPendientes).not.toHaveBeenCalled();

@@ -43,14 +43,14 @@ function errorDetails(error: unknown): unknown {
     message: typeof candidate.message === "string" ? candidate.message : String(error),
     code: candidate.code ?? null,
     status: candidate.response?.status ?? null,
-    response: candidate.response?.data ?? null
+    response: candidate.response?.data ?? null,
   };
 }
 
 async function main(): Promise<void> {
   const serviceAccountEmail = requiredEnv("GOOGLE_SERVICE_ACCOUNT_EMAIL");
   const privateKey = normalizePrivateKey(requiredEnv("GOOGLE_PRIVATE_KEY"));
-  const subject = process.env.GOOGLE_SERVICE_ACCOUNT_SUBJECT?.trim() || "sala01@flacso.edu.uy";
+  const subject = process.env["GOOGLE_SERVICE_ACCOUNT_SUBJECT"]?.trim() || "sala01@flacso.edu.uy";
   const cohost = argValue("cohost") || "coordinacion.edutic@flacso.edu.uy";
 
   if (subject.toLowerCase() === cohost.toLowerCase()) {
@@ -61,13 +61,13 @@ async function main(): Promise<void> {
     email: serviceAccountEmail,
     key: privateKey,
     subject,
-    scopes: [MEET_CREATED_SCOPE, MEET_SETTINGS_SCOPE, MEET_READ_SCOPE]
+    scopes: [MEET_CREATED_SCOPE, MEET_SETTINGS_SCOPE, MEET_READ_SCOPE],
   });
   const calendarAuth = new JWT({
     email: serviceAccountEmail,
     key: privateKey,
     subject,
-    scopes: [CALENDAR_SCOPE]
+    scopes: [CALENDAR_SCOPE],
   });
 
   const createdSpace = await meetAuth.request<{
@@ -81,9 +81,9 @@ async function main(): Promise<void> {
     data: {
       config: {
         moderation: "ON",
-        accessType: "TRUSTED"
-      }
-    }
+        accessType: "TRUSTED",
+      },
+    },
   });
 
   const spaceName = createdSpace.data.name;
@@ -97,7 +97,7 @@ async function main(): Promise<void> {
     url: `${MEET_API}/${spaceName}/members`,
     method: "POST",
     timeout: 30_000,
-    data: { email: cohost, role: "COHOST" }
+    data: { email: cohost, role: "COHOST" },
   });
 
   const start = new Date(Date.now() + 60 * 60 * 1000);
@@ -128,23 +128,23 @@ async function main(): Promise<void> {
           conferenceId: meetingCode,
           conferenceSolution: {
             key: { type: "hangoutsMeet" },
-            name: "Google Meet"
+            name: "Google Meet",
           },
           entryPoints: [
             {
               entryPointType: "video",
               uri: meetingUri,
               label: meetingUri.replace(/^https?:\/\//, ""),
-              meetingCode
-            }
-          ]
-        }
-      }
+              meetingCode,
+            },
+          ],
+        },
+      },
     });
 
     calendarEventId = inserted.data.id;
     const attachedUri = inserted.data.conferenceData?.entryPoints?.find(
-      ({ entryPointType }) => entryPointType === "video"
+      ({ entryPointType }) => entryPointType === "video",
     )?.uri;
     const bridgeOk = attachedUri === meetingUri || inserted.data.hangoutLink === meetingUri;
 
@@ -164,13 +164,14 @@ async function main(): Promise<void> {
           calendarHtmlLink: inserted.data.htmlLink ?? null,
           calendarHangoutLink: inserted.data.hangoutLink ?? null,
           calendarConferenceId: inserted.data.conferenceData?.conferenceId ?? null,
-          calendarConferenceType: inserted.data.conferenceData?.conferenceSolution?.key?.type ?? null,
+          calendarConferenceType:
+            inserted.data.conferenceData?.conferenceSolution?.key?.type ?? null,
           calendarVideoUri: attachedUri ?? null,
-          bridgeOk
+          bridgeOk,
         },
         null,
-        2
-      )
+        2,
+      ),
     );
 
     if (!bridgeOk) {
@@ -185,11 +186,11 @@ async function main(): Promise<void> {
           meetingUri,
           cohostCreated: true,
           calendarBridgeCreated: false,
-          error: errorDetails(error)
+          error: errorDetails(error),
         },
         null,
-        2
-      )
+        2,
+      ),
     );
     process.exitCode = 2;
   } finally {
@@ -198,20 +199,22 @@ async function main(): Promise<void> {
         await calendarAuth.request({
           url: `${CALENDAR_API}/calendars/${encodeURIComponent(subject)}/events/${encodeURIComponent(calendarEventId)}?sendUpdates=none`,
           method: "DELETE",
-          timeout: 30_000
+          timeout: 30_000,
         });
-        console.log(JSON.stringify({ temporaryCalendarEventDeleted: true, calendarEventId }, null, 2));
+        console.log(
+          JSON.stringify({ temporaryCalendarEventDeleted: true, calendarEventId }, null, 2),
+        );
       } catch (error) {
         console.error(
           JSON.stringify(
             {
               temporaryCalendarEventDeleted: false,
               calendarEventId,
-              deleteError: errorDetails(error)
+              deleteError: errorDetails(error),
             },
             null,
-            2
-          )
+            2,
+          ),
         );
         process.exitCode = 3;
       }

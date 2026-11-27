@@ -10,7 +10,7 @@ import { extraerCohostEmailsDeInstancia, type MeetChange } from "@/src/modules/c
 import styles from "./search.module.css";
 
 export default async function ReverseMeetPage({
-  searchParams
+  searchParams,
 }: Readonly<{
   searchParams: Promise<{ q?: string | string[] }>;
 }>) {
@@ -34,15 +34,15 @@ export default async function ReverseMeetPage({
     }
   }
   return (
-    <div className={styles.page}>
+    <div className={styles["page"]}>
       <header>
         <Link href="/reuniones">Reuniones</Link>
         <h1>Buscar reunión por Google Meet</h1>
         <p>Consultá enlaces vigentes y anteriores, en cualquier fecha.</p>
       </header>
-      <form action="/reuniones/buscar-meet" method="get" className={styles.form}>
+      <form action="/reuniones/buscar-meet" method="get" className={styles["form"]}>
         <label htmlFor="meet-search">Enlace o código de Meet</label>
-        <div className={styles.inputRow}>
+        <div className={styles["inputRow"]}>
           <input
             id="meet-search"
             name="q"
@@ -63,7 +63,7 @@ export default async function ReverseMeetPage({
         </div>
       </form>
       {error && (
-        <p id="meet-search-error" role="alert" className={styles.notice}>
+        <p id="meet-search-error" role="alert" className={styles["notice"]}>
           {error}
         </p>
       )}
@@ -73,14 +73,15 @@ export default async function ReverseMeetPage({
             Meet buscado: <strong>{data.searched.code}</strong> · {data.results.length} encuentro(s)
           </p>
           {data.multiple && (
-            <p className={styles.notice}>
-              Atención: el código coincide con varias reuniones. Revisá todas las fechas. Una serie puede
-              compartir el enlace; también puede indicar una anomalía.
+            <p className={styles["notice"]}>
+              Atención: el código coincide con varias reuniones. Revisá todas las fechas. Una serie
+              puede compartir el enlace; también puede indicar una anomalía.
             </p>
           )}
           {!data.results.length && !data.series.length && (
-            <p className={styles.empty}>
-              No se encontraron coincidencias. Un enlace anterior sin auditoría conservada puede no aparecer.
+            <p className={styles["empty"]}>
+              No se encontraron coincidencias. Un enlace anterior sin auditoría conservada puede no
+              aparecer.
             </p>
           )}
           {data.results.map(({ event, current, inconsistent, currentLinks, history }) => {
@@ -92,20 +93,20 @@ export default async function ReverseMeetPage({
               ...event.archivos.map((file) => ({
                 id: file.id,
                 title: file.nombre,
-                url: `https://drive.google.com/file/d/${encodeURIComponent(file.driveFileId)}/view`
+                url: `https://drive.google.com/file/d/${encodeURIComponent(file.driveFileId)}/view`,
               })),
               ...meeting.grabaciones.map((file) => ({
                 id: file.id,
                 title: file.titulo,
                 url: file.driveFileId
                   ? `https://drive.google.com/file/d/${encodeURIComponent(file.driveFileId)}/view`
-                  : safeUrl(file.urlHistorica)
-              }))
+                  : safeUrl(file.urlHistorica),
+              })),
             ];
             return (
-              <article key={event.id} className={styles.result}>
+              <article key={event.id} className={styles["result"]}>
                 <header>
-                  <span className={current ? styles.badge : styles.historical}>
+                  <span className={current ? styles["badge"] : styles["historical"]}>
                     {current ? "Enlace vigente" : "Enlace histórico"}
                   </span>
                   <h2>{request.titulo}</h2>
@@ -116,15 +117,19 @@ export default async function ReverseMeetPage({
                   <p>{request.docentePrograma.programa.nombre}</p>
                 </header>
                 {!current && (
-                  <p className={styles.notice}>Este código pertenece a un enlace anterior de esta reunión.</p>
+                  <p className={styles["notice"]}>
+                    Este código pertenece a un enlace anterior de esta reunión.
+                  </p>
                 )}
                 {inconsistent && (
-                  <p className={styles.notice}>
+                  <p className={styles["notice"]}>
                     El código y la URL guardados no coinciden. Hay que verificar el enlace vigente.
                   </p>
                 )}
-                <div className={styles.current}>
-                  <strong>{inconsistent ? "Enlaces actuales en conflicto" : "Enlace vigente"}</strong>
+                <div className={styles["current"]}>
+                  <strong>
+                    {inconsistent ? "Enlaces actuales en conflicto" : "Enlace vigente"}
+                  </strong>
                   {currentLinks.length ? (
                     currentLinks.map((link) => (
                       <div key={link.code}>
@@ -139,11 +144,13 @@ export default async function ReverseMeetPage({
                     <p>No hay un enlace vigente registrado.</p>
                   )}
                 </div>
-                <dl className={styles.facts}>
+                <dl className={styles["facts"]}>
                   {event.cuentaProveedor && (
                     <>
                       <dt>Host / sala asignada</dt>
-                      <dd>{event.cuentaProveedor.emailOrganizador || event.cuentaProveedor.nombre}</dd>
+                      <dd>
+                        {event.cuentaProveedor.emailOrganizador || event.cuentaProveedor.nombre}
+                      </dd>
                     </>
                   )}
                   {!!cohosts.length && (
@@ -151,7 +158,9 @@ export default async function ReverseMeetPage({
                       <dt>Cohosts registrados</dt>
                       <dd>
                         {cohosts.join(", ")}
-                        <small>Configuración local; consultá la verificación de Google en el detalle.</small>
+                        <small>
+                          Configuración local; consultá la verificación de Google en el detalle.
+                        </small>
                       </dd>
                     </>
                   )}
@@ -163,9 +172,9 @@ export default async function ReverseMeetPage({
                     {creator.emailPrincipal ? ` · ${creator.emailPrincipal}` : ""}
                   </dd>
                 </dl>
-                <details className={styles.details}>
+                <details className={styles["details"]}>
                   <summary>Diagnóstico e historial de enlaces</summary>
-                  <dl className={styles.facts}>
+                  <dl className={styles["facts"]}>
                     <dt>Encuentro</dt>
                     <dd>{meeting.id}</dd>
                     <dt>Solicitud</dt>
@@ -217,23 +226,28 @@ export default async function ReverseMeetPage({
                     </section>
                   )}
                 </details>
-                <Link className="secondary-action" href={`/reuniones/${encodeURIComponent(request.id)}`}>
+                <Link
+                  className="secondary-action"
+                  href={`/reuniones/${encodeURIComponent(request.id)}`}
+                >
                   Ver reunión
                 </Link>
               </article>
             );
           })}
           {!!data.series.length && (
-            <section className={styles.result}>
+            <section className={styles["result"]}>
               <h2>Evidencia histórica de series</h2>
               <p>
-                Estos registros vinculan el código a una serie, pero no permiten demostrar qué encuentro lo
-                utilizó.
+                Estos registros vinculan el código a una serie, pero no permiten demostrar qué
+                encuentro lo utilizó.
               </p>
               {data.series.map((series) => (
                 <article key={series.id}>
                   <h3>
-                    <Link href={`/reuniones/${encodeURIComponent(series.id)}`}>{series.titulo}</Link>
+                    <Link href={`/reuniones/${encodeURIComponent(series.id)}`}>
+                      {series.titulo}
+                    </Link>
                   </h3>
                   <History changes={series.history} timezone="America/Montevideo" />
                 </article>
@@ -246,9 +260,12 @@ export default async function ReverseMeetPage({
   );
 }
 
-function History({ changes, timezone }: Readonly<{ changes: readonly MeetChange[]; timezone: string }>) {
+function History({
+  changes,
+  timezone,
+}: Readonly<{ changes: readonly MeetChange[]; timezone: string }>) {
   return (
-    <ol className={styles.history}>
+    <ol className={styles["history"]}>
       {[...changes].reverse().map((change) => (
         <li key={change.auditId}>
           <strong>{date(change.at, timezone)}</strong>
@@ -276,7 +293,7 @@ function date(value: Date, timezone: string) {
   return new Intl.DateTimeFormat("es-UY", {
     timeZone: timezone,
     dateStyle: "short",
-    timeStyle: "short"
+    timeStyle: "short",
   }).format(value);
 }
 function time(value: Date, timezone: string) {

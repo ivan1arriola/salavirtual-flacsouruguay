@@ -1,4 +1,7 @@
-import type { EstadoIntegracionConferencia, IntegracionConferenciaHealth } from "./conferencias.types";
+import type {
+  EstadoIntegracionConferencia,
+  IntegracionConferenciaHealth,
+} from "./conferencias.types";
 
 /**
  * Un fallo de scopes de la API de Meet afecta la configuración adicional del
@@ -20,7 +23,9 @@ export function requiereAtencionIntegracionMeet(event: IntegracionConferenciaHea
   return event.estadoIntegracion === "ERROR" || Boolean(event.errorIntegracion);
 }
 
-export function estadoIntegracionEfectivo(event: IntegracionConferenciaHealth): EstadoIntegracionConferencia {
+export function estadoIntegracionEfectivo(
+  event: IntegracionConferenciaHealth,
+): EstadoIntegracionConferencia {
   return esErrorNoBloqueanteDeScopesMeet(event) ? "SINCRONIZADA" : event.estadoIntegracion;
 }
 

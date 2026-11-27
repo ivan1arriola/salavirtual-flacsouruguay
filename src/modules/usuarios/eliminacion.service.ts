@@ -10,7 +10,7 @@ export async function eliminarUsuarioCompleto(
   db: PrismaClient,
   actor: ActorAdministrativo,
   usuarioId: string,
-  confirmacion: string
+  confirmacion: string,
 ): Promise<void> {
   const id = usuarioId.trim();
   if (!id) {
@@ -30,7 +30,7 @@ export async function eliminarUsuarioCompleto(
     const [actorActual, usuario] = await Promise.all([
       tx.usuario.findUnique({
         where: { id: actor.id },
-        select: { id: true, rol: true, activo: true }
+        select: { id: true, rol: true, activo: true },
       }),
       tx.usuario.findUnique({
         where: { id },
@@ -40,9 +40,9 @@ export async function eliminarUsuarioCompleto(
           emailPrincipal: true,
           docente: { select: { id: true } },
           asistenteTecnico: { select: { id: true } },
-          cuentasGoogle: { select: { id: true, email: true } }
-        }
-      })
+          cuentasGoogle: { select: { id: true, email: true } },
+        },
+      }),
     ]);
 
     if (!actorActual?.activo || actorActual.rol !== "ADMINISTRACION") {
@@ -56,14 +56,14 @@ export async function eliminarUsuarioCompleto(
     const emails = Array.from(
       new Set(
         [usuario.emailPrincipal, ...usuario.cuentasGoogle.map(({ email }) => email)].filter(
-          (email): email is string => Boolean(email)
-        )
-      )
+          (email): email is string => Boolean(email),
+        ),
+      ),
     );
 
     if (cuentaGoogleIds.length) {
       await tx.cohostReunion.deleteMany({
-        where: { cuentaGoogleId: { in: cuentaGoogleIds } }
+        where: { cuentaGoogleId: { in: cuentaGoogleIds } },
       });
     }
 
@@ -71,7 +71,7 @@ export async function eliminarUsuarioCompleto(
     if (usuario.docente) {
       const docenteProgramas = await tx.docentePrograma.findMany({
         where: { docenteId: usuario.docente.id },
-        select: { id: true }
+        select: { id: true },
       });
       docenteProgramaIds = docenteProgramas.map(({ id: docenteProgramaId }) => docenteProgramaId);
     }
@@ -80,28 +80,28 @@ export async function eliminarUsuarioCompleto(
       where: {
         OR: [
           { creadaPorUsuarioId: id },
-          ...(docenteProgramaIds.length ? [{ docenteProgramaId: { in: docenteProgramaIds } }] : [])
-        ]
+          ...(docenteProgramaIds.length ? [{ docenteProgramaId: { in: docenteProgramaIds } }] : []),
+        ],
       },
-      select: { id: true }
+      select: { id: true },
     });
     const solicitudIds = solicitudes.map(({ id: solicitudId }) => solicitudId);
 
     if (solicitudIds.length) {
       const instancias = await tx.instanciaSala.findMany({
         where: { solicitudSalaId: { in: solicitudIds } },
-        select: { id: true }
+        select: { id: true },
       });
       const instanciaIds = instancias.map(({ id: instanciaId }) => instanciaId);
 
       if (instanciaIds.length) {
         await tx.detalleLiquidacionAsistenciaTecnica.deleteMany({
-          where: { instanciaSalaId: { in: instanciaIds } }
+          where: { instanciaSalaId: { in: instanciaIds } },
         });
       }
 
       await tx.solicitudSala.deleteMany({
-        where: { id: { in: solicitudIds } }
+        where: { id: { in: solicitudIds } },
       });
     }
 
@@ -110,12 +110,12 @@ export async function eliminarUsuarioCompleto(
       const [asignaciones, liquidaciones] = await Promise.all([
         tx.asignacionAsistenciaTecnica.findMany({
           where: { asistenteTecnicoId },
-          select: { id: true }
+          select: { id: true },
         }),
         tx.liquidacionAsistenciaTecnica.findMany({
           where: { asistenteTecnicoId },
-          select: { id: true }
-        })
+          select: { id: true },
+        }),
       ]);
       const asignacionIds = asignaciones.map(({ id: asignacionId }) => asignacionId);
       const liquidacionIds = liquidaciones.map(({ id: liquidacionId }) => liquidacionId);
@@ -124,21 +124,25 @@ export async function eliminarUsuarioCompleto(
         await tx.detalleLiquidacionAsistenciaTecnica.deleteMany({
           where: {
             OR: [
-              ...(asignacionIds.length ? [{ asignacionAsistenciaTecnicaId: { in: asignacionIds } }] : []),
-              ...(liquidacionIds.length ? [{ liquidacionAsistenciaTecnicaId: { in: liquidacionIds } }] : [])
-            ]
-          }
+              ...(asignacionIds.length
+                ? [{ asignacionAsistenciaTecnicaId: { in: asignacionIds } }]
+                : []),
+              ...(liquidacionIds.length
+                ? [{ liquidacionAsistenciaTecnicaId: { in: liquidacionIds } }]
+                : []),
+            ],
+          },
         });
       }
 
       if (liquidacionIds.length) {
         await tx.liquidacionAsistenciaTecnica.deleteMany({
-          where: { id: { in: liquidacionIds } }
+          where: { id: { in: liquidacionIds } },
         });
       }
       if (asignacionIds.length) {
         await tx.asignacionAsistenciaTecnica.deleteMany({
-          where: { id: { in: asignacionIds } }
+          where: { id: { in: asignacionIds } },
         });
       }
       await tx.asistenteTecnico.delete({ where: { id: asistenteTecnicoId } });
@@ -147,7 +151,7 @@ export async function eliminarUsuarioCompleto(
     if (usuario.docente) {
       if (docenteProgramaIds.length) {
         await tx.docentePrograma.deleteMany({
-          where: { id: { in: docenteProgramaIds } }
+          where: { id: { in: docenteProgramaIds } },
         });
       }
       await tx.docente.delete({ where: { id: usuario.docente.id } });
@@ -155,23 +159,23 @@ export async function eliminarUsuarioCompleto(
 
     await tx.usuarioFusion.deleteMany({
       where: {
-        OR: [{ usuarioOrigenId: id }, { usuarioDestinoId: id }, { ejecutadaPorId: id }]
-      }
+        OR: [{ usuarioOrigenId: id }, { usuarioDestinoId: id }, { ejecutadaPorId: id }],
+      },
     });
     await tx.usuario.updateMany({
       where: { fusionadoEnId: id },
-      data: { fusionadoEnId: null, fusionadoAt: null }
+      data: { fusionadoEnId: null, fusionadoAt: null },
     });
 
     await tx.configuracionGoogleWorkspace.updateMany({
       where: { actualizadaPorId: id },
-      data: { actualizadaPorId: actorActual.id }
+      data: { actualizadaPorId: actorActual.id },
     });
 
     if (emails.length) {
       await Promise.all([
         tx.tokenVerificacion.deleteMany({ where: { identifier: { in: emails } } }),
-        tx.solicitudAccesoGoogle.deleteMany({ where: { email: { in: emails } } })
+        tx.solicitudAccesoGoogle.deleteMany({ where: { email: { in: emails } } }),
       ]);
     }
 
@@ -181,8 +185,8 @@ export async function eliminarUsuarioCompleto(
         accion: "USUARIO_ELIMINADO",
         entidadTipo: "Usuario",
         entidadId: id,
-        valorAnterior: { rol: usuario.rol }
-      }
+        valorAnterior: { rol: usuario.rol },
+      },
     });
 
     await tx.usuario.delete({ where: { id } });

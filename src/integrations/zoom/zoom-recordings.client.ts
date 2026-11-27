@@ -1,18 +1,18 @@
 import type {
   ReferenciaOcurrenciaZoom,
-  ResultadoPagina
+  ResultadoPagina,
 } from "@/src/modules/archivos/domain/zoom-archivos.types";
 import {
   DIAS_VENTANA_LISTADO_GRABACIONES,
   particionarPeriodoZoom,
-  type VentanaZoom
+  type VentanaZoom,
 } from "@/src/modules/archivos/domain/zoom-recuperacion.domain";
 import {
   ZoomApiError,
   codificarUuidZoom,
   errorPorRespuesta,
   pedirZoom,
-  type AutenticacionZoom
+  type AutenticacionZoom,
 } from "./zoom-http";
 
 const API = "https://api.zoom.us/v2";
@@ -60,7 +60,7 @@ const CAMPOS_SENSIBLES = new Set([
   "share_url",
   "download_access_token",
   "start_url",
-  "join_url"
+  "join_url",
 ]);
 
 function esRegistro(valor: unknown): valor is Registro {
@@ -87,7 +87,7 @@ function fechaMontevideo(fecha: Date): string {
     timeZone: ZONA_NEGOCIO,
     year: "numeric",
     month: "2-digit",
-    day: "2-digit"
+    day: "2-digit",
   }).format(fecha);
 }
 
@@ -98,7 +98,10 @@ function desplazarDia(fecha: string, dias: number): string {
 
 function validarVentana(ventana: VentanaZoom): void {
   try {
-    if (particionarPeriodoZoom(ventana.desde, ventana.hasta, DIAS_VENTANA_LISTADO_GRABACIONES).length === 1) {
+    if (
+      particionarPeriodoZoom(ventana.desde, ventana.hasta, DIAS_VENTANA_LISTADO_GRABACIONES)
+        .length === 1
+    ) {
       return;
     }
   } catch {
@@ -117,14 +120,14 @@ export async function listarGrabacionesAnfitrionZoomHttp(
   auth: AutenticacionZoom,
   anfitrionId: string,
   ventana: VentanaConsultaZoom,
-  cursor: string | null
+  cursor: string | null,
 ): Promise<ResultadoPagina<ReferenciaOcurrenciaZoom>> {
   const recurso = ventana.papelera ? "grabaciones.papelera" : "grabaciones.listado";
   validarVentana(ventana);
   const params = new URLSearchParams({
     from: desplazarDia(ventana.desde, -1),
     to: desplazarDia(ventana.hasta, 1),
-    page_size: "300"
+    page_size: "300",
   });
   if (ventana.papelera) {
     params.set("trash", "true");
@@ -138,29 +141,29 @@ export async function listarGrabacionesAnfitrionZoomHttp(
     fetch(`${API}/users/${encodeURIComponent(anfitrionId)}/recordings?${params.toString()}`, {
       headers: { Authorization: `Bearer ${token}` },
       cache: "no-store",
-      signal: AbortSignal.timeout(TIEMPO_MAXIMO_MS)
-    })
+      signal: AbortSignal.timeout(TIEMPO_MAXIMO_MS),
+    }),
   );
   if (!response.ok) {
     throw await errorPorRespuesta(recurso, response);
   }
 
   const datos = await leerJson(response, recurso);
-  if (!Array.isArray(datos.meetings)) {
+  if (!Array.isArray(datos["meetings"])) {
     throw new ZoomApiError("RESPUESTA_INCOMPLETA", recurso);
   }
-  const siguiente = texto(datos.next_page_token);
+  const siguiente = texto(datos["next_page_token"]);
   if (siguiente !== null && siguiente === cursor) {
     throw new ZoomApiError("PAGINACION_REPETIDA", recurso);
   }
 
-  const elementos = datos.meetings.flatMap((reunion: unknown): ReferenciaOcurrenciaZoom[] => {
+  const elementos = datos["meetings"].flatMap((reunion: unknown): ReferenciaOcurrenciaZoom[] => {
     if (!esRegistro(reunion)) {
       throw new ZoomApiError("RESPUESTA_INCOMPLETA", recurso);
     }
-    const uuid = texto(reunion.uuid);
-    const meetingId = texto(reunion.id);
-    const inicio = texto(reunion.start_time) ? new Date(String(reunion.start_time)) : null;
+    const uuid = texto(reunion["uuid"]);
+    const meetingId = texto(reunion["id"]);
+    const inicio = texto(reunion["start_time"]) ? new Date(String(reunion["start_time"])) : null;
     if (!uuid || !meetingId || !inicio || Number.isNaN(inicio.getTime())) {
       throw new ZoomApiError("RESPUESTA_INCOMPLETA", recurso);
     }
@@ -173,10 +176,10 @@ export async function listarGrabacionesAnfitrionZoomHttp(
         cuentaZoomId: ventana.cuentaZoomId,
         uuid,
         meetingId,
-        anfitrionZoomId: texto(reunion.host_id) ?? anfitrionId,
+        anfitrionZoomId: texto(reunion["host_id"]) ?? anfitrionId,
         inicioRealAt: inicio,
-        titulo: texto(reunion.topic) ?? ""
-      }
+        titulo: texto(reunion["topic"]) ?? "",
+      },
     ];
   });
 
@@ -206,7 +209,7 @@ function sanearInventario(datos: Registro): Registro {
   return Object.fromEntries(
     Object.entries(datos)
       .filter(([clave]) => !CAMPOS_SENSIBLES.has(clave))
-      .map(([clave, valor]) => [clave, Array.isArray(valor) ? valor.map(sanearElemento) : valor])
+      .map(([clave, valor]) => [clave, Array.isArray(valor) ? valor.map(sanearElemento) : valor]),
   );
 }
 
@@ -217,15 +220,15 @@ function sanearInventario(datos: Registro): Registro {
  */
 export async function obtenerInventarioOcurrenciaZoomHttp(
   auth: AutenticacionZoom,
-  uuid: string
+  uuid: string,
 ): Promise<InventarioZoomHttp | null> {
   const recurso = "grabaciones.inventario";
   const response = await pedirZoom(auth, recurso, (token) =>
     fetch(`${API}/meetings/${codificarUuidZoom(uuid)}/recordings`, {
       headers: { Authorization: `Bearer ${token}` },
       cache: "no-store",
-      signal: AbortSignal.timeout(TIEMPO_MAXIMO_MS)
-    })
+      signal: AbortSignal.timeout(TIEMPO_MAXIMO_MS),
+    }),
   );
   if (response.status === 404) {
     await response.body?.cancel().catch(() => undefined);
@@ -236,7 +239,7 @@ export async function obtenerInventarioOcurrenciaZoomHttp(
   }
 
   const datos = await leerJson(response, recurso);
-  const uuidRespuesta = texto(datos.uuid);
+  const uuidRespuesta = texto(datos["uuid"]);
   if (uuidRespuesta !== null && uuidRespuesta !== uuid) {
     throw new ZoomApiError("IDENTIDAD_INCONSISTENTE", recurso);
   }
@@ -248,14 +251,14 @@ export async function obtenerInventarioOcurrenciaZoomHttp(
         continue;
       }
       for (const elemento of valor) {
-        if (esRegistro(elemento) && texto(elemento.id) === archivoZoomId) {
-          return texto(elemento.download_url);
+        if (esRegistro(elemento) && texto(elemento["id"]) === archivoZoomId) {
+          return texto(elemento["download_url"]);
         }
       }
     }
     return null;
   };
-  return { uuid, meetingId: texto(datos.id), respuesta, urlDescarga };
+  return { uuid, meetingId: texto(datos["id"]), respuesta, urlDescarga };
 }
 
 /**
@@ -264,15 +267,15 @@ export async function obtenerInventarioOcurrenciaZoomHttp(
  */
 export async function obtenerResumenReunionZoomHttp(
   auth: AutenticacionZoom,
-  meetingUuid: string
+  meetingUuid: string,
 ): Promise<ResumenReunionZoom> {
   const recurso = "meeting_summary";
   const response = await pedirZoom(auth, recurso, (token) =>
     fetch(`${API}/meetings/${codificarUuidZoom(meetingUuid)}/meeting_summary`, {
       headers: { Authorization: `Bearer ${token}` },
       cache: "no-store",
-      signal: AbortSignal.timeout(TIEMPO_MAXIMO_MS)
-    })
+      signal: AbortSignal.timeout(TIEMPO_MAXIMO_MS),
+    }),
   );
   if (response.status === 403) {
     await response.body?.cancel().catch(() => undefined);

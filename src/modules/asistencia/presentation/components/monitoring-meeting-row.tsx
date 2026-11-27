@@ -1,4 +1,11 @@
-import { ArrowRight, CheckCircle2, ChevronDown, CircleAlert, Clock3, UsersRound } from "lucide-react";
+import {
+  ArrowRight,
+  CheckCircle2,
+  ChevronDown,
+  CircleAlert,
+  Clock3,
+  UsersRound,
+} from "lucide-react";
 import Link from "next/link";
 import { MeetLinkActions } from "@/src/components/copy-meet-link-button";
 
@@ -50,14 +57,14 @@ function estadoAsignacion(covered: boolean, assistantName: string | null) {
       className: "status-ok",
       label: "Cubierta",
       description: assistantName,
-      Icon: CheckCircle2
+      Icon: CheckCircle2,
     };
   }
   return {
     className: "status-warning",
     label: "Pendiente",
     description: "Necesita asignación",
-    Icon: CircleAlert
+    Icon: CircleAlert,
   };
 }
 
@@ -80,7 +87,9 @@ export function MonitoringMeetingRow({ data }: Readonly<{ data: MonitoringMeetin
 
   return (
     <article
-      className={"monitoring-row monitoring-account-card " + (data.covered ? "is-covered" : "is-pending")}
+      className={
+        "monitoring-row monitoring-account-card " + (data.covered ? "is-covered" : "is-pending")
+      }
       data-cuenta={data.cuenta}
     >
       <div className="monitoring-row-main">
@@ -142,7 +151,8 @@ export function MonitoringMeetingRow({ data }: Readonly<{ data: MonitoringMeetin
             </span>
           ) : null}
           <span>
-            {data.applicantsCount} {data.applicantsCount === 1 ? "persona postulada" : "personas postuladas"}
+            {data.applicantsCount}{" "}
+            {data.applicantsCount === 1 ? "persona postulada" : "personas postuladas"}
           </span>
           <div className="coverage-quick-links">
             {data.joinUrl ? (

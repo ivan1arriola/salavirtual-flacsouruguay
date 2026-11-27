@@ -4,13 +4,13 @@ import { useRouter } from "next/navigation";
 import {
   desvincularOcurrenciaZoomCliente,
   reintentarAsistenciaZoomCliente,
-  type ResultadoAccionZoom
+  type ResultadoAccionZoom,
 } from "@/src/lib/zoom-pasadas-cliente";
 
 export function ZoomPasadaAcciones({
   ocurrenciaId,
   eventoId,
-  instanciaId
+  instanciaId,
 }: {
   ocurrenciaId: string;
   eventoId: string;
@@ -42,7 +42,7 @@ export function ZoomPasadaAcciones({
         disabled={cargando}
         onClick={() =>
           ejecutar("¿Volver a calcular la asistencia de este encuentro desde Zoom?", () =>
-            reintentarAsistenciaZoomCliente(instanciaId)
+            reintentarAsistenciaZoomCliente(instanciaId),
           )
         }
       >
@@ -55,7 +55,7 @@ export function ZoomPasadaAcciones({
         onClick={() =>
           ejecutar(
             "¿Desvincular esta ejecución del encuentro? Se quitan sus referencias locales; los archivos de Drive no se borran.",
-            () => desvincularOcurrenciaZoomCliente(ocurrenciaId, eventoId)
+            () => desvincularOcurrenciaZoomCliente(ocurrenciaId, eventoId),
           )
         }
       >

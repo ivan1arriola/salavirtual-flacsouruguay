@@ -3,7 +3,7 @@ import {
   PREFERENCIA_PREDETERMINADA,
   TIPOS_NOTIFICACION,
   esTipoNotificacion,
-  etiquetaTipoNotificacion
+  etiquetaTipoNotificacion,
 } from "../src/modules/notificaciones/notificaciones.domain";
 
 describe("notificaciones", () => {
@@ -27,7 +27,7 @@ describe("notificaciones", () => {
     ["ASISTENCIA_ASIGNACION", "Asignaciones de monitoreo"],
     ["ASISTENCIA_POSTULACION", "Postulaciones de asistentes de monitoreo"],
     ["ASISTENCIA_POSTULACION_RETIRADA", "Retiros de postulación"],
-    ["CREDENCIALES_SALA_CAMBIADAS", "Cambios de credenciales de salas Meet"]
+    ["CREDENCIALES_SALA_CAMBIADAS", "Cambios de credenciales de salas Meet"],
   ] as const)("etiqueta %s correctamente", (tipo, expected) => {
     expect(etiquetaTipoNotificacion(tipo)).toBe(expected);
   });

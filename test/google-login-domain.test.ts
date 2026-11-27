@@ -5,13 +5,13 @@ import {
   esPerfilGoogleVerificado,
   resolverVinculacionSubjectGoogle,
   type CuentaGoogleVinculada,
-  type PerfilGoogle
+  type PerfilGoogle,
 } from "../src/modules/usuarios/google-login.domain";
 
 const perfil: PerfilGoogle = {
   subject: "google-subject",
   email: "docente@flacso.edu.uy",
-  emailVerificado: true
+  emailVerificado: true,
 };
 
 const cuenta: CuentaGoogleVinculada = {
@@ -24,8 +24,8 @@ const cuenta: CuentaGoogleVinculada = {
     activo: true,
     fusionadoEnId: null,
     nombre: "Docente FLACSO",
-    email: "docente@flacso.edu.uy"
-  }
+    email: "docente@flacso.edu.uy",
+  },
 };
 
 describe("login funcional con Google", () => {
@@ -35,7 +35,9 @@ describe("login funcional con Google", () => {
 
   it("acepta cuentas externas verificadas cuando están vinculadas", () => {
     const cuentaExterna = { ...cuenta, email: "docente@gmail.com" };
-    expect(evaluarAccesoGoogle({ ...perfil, email: "docente@gmail.com" }, cuentaExterna)?.id).toBe("docente");
+    expect(evaluarAccesoGoogle({ ...perfil, email: "docente@gmail.com" }, cuentaExterna)?.id).toBe(
+      "docente",
+    );
   });
 
   it("rechaza perfiles no verificados o no vinculados", () => {
@@ -57,8 +59,14 @@ describe("login funcional con Google", () => {
 
   it("permite revalidar el subject de una cuenta Google", () => {
     expect(resolverVinculacionSubjectGoogle(null, "subject-nuevo", false)).toBe("REVINCULAR");
-    expect(resolverVinculacionSubjectGoogle("subject-anterior", "subject-nuevo", false)).toBe("REVINCULAR");
-    expect(resolverVinculacionSubjectGoogle("subject-nuevo", "subject-nuevo", false)).toBe("MANTENER");
-    expect(resolverVinculacionSubjectGoogle("subject-anterior", "subject-nuevo", true)).toBe("RECHAZAR");
+    expect(resolverVinculacionSubjectGoogle("subject-anterior", "subject-nuevo", false)).toBe(
+      "REVINCULAR",
+    );
+    expect(resolverVinculacionSubjectGoogle("subject-nuevo", "subject-nuevo", false)).toBe(
+      "MANTENER",
+    );
+    expect(resolverVinculacionSubjectGoogle("subject-anterior", "subject-nuevo", true)).toBe(
+      "RECHAZAR",
+    );
   });
 });

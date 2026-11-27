@@ -6,7 +6,7 @@ export const TIPOS_NOTIFICACION = Object.freeze([
   "ASISTENCIA_POSTULACION",
   "ASISTENCIA_POSTULACION_RETIRADA",
   "CREDENCIALES_SALA_CAMBIADAS",
-  "HOST_NO_CONECTADO"
+  "HOST_NO_CONECTADO",
 ] as const);
 
 export type TipoNotificacion = (typeof TIPOS_NOTIFICACION)[number];
@@ -18,7 +18,7 @@ export type PreferenciaCanales = Readonly<{
 
 export const PREFERENCIA_PREDETERMINADA: PreferenciaCanales = Object.freeze({
   push: true,
-  email: true
+  email: true,
 });
 
 export type NotificationRecipient = Readonly<{

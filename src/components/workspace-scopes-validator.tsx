@@ -5,14 +5,14 @@ import { useState } from "react";
 import {
   validateWorkspaceScopes,
   type WorkspaceScopeAccountValidation,
-  type WorkspaceScopesResult
+  type WorkspaceScopesResult,
 } from "./workspace-config.client";
 
 const SCOPE_LABELS = [
   ["Calendar", "calendar.events", "https://www.googleapis.com/auth/calendar.events"],
   ["Drive", "drive", "https://www.googleapis.com/auth/drive"],
   ["Gmail", "gmail.send", "https://www.googleapis.com/auth/gmail.send"],
-  ["Sheets · asistencia", "spreadsheets", "https://www.googleapis.com/auth/spreadsheets"]
+  ["Sheets · asistencia", "spreadsheets", "https://www.googleapis.com/auth/spreadsheets"],
 ] as const;
 
 export function WorkspaceScopesValidator() {
@@ -22,7 +22,7 @@ export function WorkspaceScopesValidator() {
   const roomAccounts = accounts.filter(({ tipo }) => tipo === "SALA");
   const okRooms = roomAccounts.filter(({ ok }) => ok).length;
   const missingScopes = accounts.flatMap((account) =>
-    account.scopes.filter(({ autorizado }) => !autorizado).map((scope) => ({ account, scope }))
+    account.scopes.filter(({ autorizado }) => !autorizado).map((scope) => ({ account, scope })),
   );
 
   async function validate() {

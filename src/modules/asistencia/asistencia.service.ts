@@ -6,7 +6,7 @@ import {
   notificacionAsistenciaSchema,
   puedeAsignarAsistencia,
   puedeGestionarPostulacion,
-  postulacionAsistenciaSchema
+  postulacionAsistenciaSchema,
 } from "./asistencia.domain";
 import type { SessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { cargarCredencialesEncuentro } from "../reuniones/encuentros-persistence.adapter";
@@ -21,14 +21,14 @@ export type SincronizarCohostsDependencies = Readonly<{
   configurarEspacio: (
     credentials: GoogleCalendarCredentials,
     codigoReunion: string,
-    settings: Readonly<{ cohostEmails?: readonly string[] }>
+    settings: Readonly<{ cohostEmails?: readonly string[] }>,
   ) => Promise<void>;
 }>;
 
 export async function actualizarPostulacionAsistencia(
   db: PrismaClient,
   actor: SessionActor,
-  rawInput: unknown
+  rawInput: unknown,
 ) {
   if (!puedeGestionarPostulacion(actor.rol) || !actor.activo) {
     throw new ForbiddenApiError("Solo un asistente de monitoreo puede gestionar postulaciones.");
@@ -41,15 +41,17 @@ export async function actualizarPostulacionAsistencia(
       select: {
         id: true,
         cesadoHastaProximoInicioSesion: true,
-        usuario: { select: { activo: true, rol: true, nombres: true, apellidos: true } }
-      }
+        usuario: { select: { activo: true, rol: true, nombres: true, apellidos: true } },
+      },
     });
     if (
       !assistant?.usuario.activo ||
       assistant.usuario.rol !== "ASISTENTE_TECNICO" ||
       assistant.cesadoHastaProximoInicioSesion
     ) {
-      throw new ForbiddenApiError("No existe un perfil de asistente de monitoreo activo para esta sesión.");
+      throw new ForbiddenApiError(
+        "No existe un perfil de asistente de monitoreo activo para esta sesión.",
+      );
     }
     const meeting = await tx.instanciaSala.findUnique({
       where: { id: input.instanciaSalaId },
@@ -62,9 +64,9 @@ export async function actualizarPostulacionAsistencia(
         asignaciones: {
           where: { estado: { in: [...ACTIVE_ASSIGNMENTS] } },
           select: { id: true },
-          take: 1
-        }
-      }
+          take: 1,
+        },
+      },
     });
     if (
       !meeting?.requiereAsistenciaTecnica ||
@@ -85,17 +87,17 @@ export async function actualizarPostulacionAsistencia(
       where: {
         instanciaSalaId_asistenteTecnicoId: {
           instanciaSalaId: meeting.id,
-          asistenteTecnicoId: assistant.id
-        }
+          asistenteTecnicoId: assistant.id,
+        },
       },
       create: {
         instanciaSalaId: meeting.id,
         asistenteTecnicoId: assistant.id,
         estado,
-        comentario: input.comentario
+        comentario: input.comentario,
       },
       update: { estado, comentario: input.comentario },
-      select: { id: true, estado: true }
+      select: { id: true, estado: true },
     });
     await tx.auditoria.create({
       data: {
@@ -103,12 +105,12 @@ export async function actualizarPostulacionAsistencia(
         accion: estado === "ME_INTERESA" ? "ASISTENTE_POSTULADO" : "POSTULACION_RETIRADA",
         entidadTipo: "InstanciaSala",
         entidadId: meeting.id,
-        valorNuevo: { asistenteTecnicoId: assistant.id, estado }
-      }
+        valorNuevo: { asistenteTecnicoId: assistant.id, estado },
+      },
     });
     const admins = await tx.usuario.findMany({
       where: { activo: true, rol: "ADMINISTRACION" },
-      select: { id: true, emailPrincipal: true }
+      select: { id: true, emailPrincipal: true },
     });
     const notificationType =
       estado === "ME_INTERESA"
@@ -120,18 +122,21 @@ export async function actualizarPostulacionAsistencia(
         recipients: admins.map((admin) => ({ usuarioId: admin.id, email: admin.emailPrincipal })),
         message: {
           tipo: notificationType,
-          titulo: estado === "ME_INTERESA" ? "Nueva postulación de monitoreo" : "Postulación retirada",
+          titulo:
+            estado === "ME_INTERESA" ? "Nueva postulación de monitoreo" : "Postulación retirada",
           cuerpo: `${assistantName} ${estado === "ME_INTERESA" ? "se postuló a" : "retiró su postulación de"} ${meeting.solicitud.titulo}.`,
           href: "/monitoreo?estado=pendientes",
           metadata: { instanciaSalaId: meeting.id, asistenteTecnicoId: assistant.id, estado },
           emailSubject:
-            estado === "ME_INTERESA" ? "Nueva postulación de monitoreo" : "Postulación de monitoreo retirada"
-        }
-      }
+            estado === "ME_INTERESA"
+              ? "Nueva postulación de monitoreo"
+              : "Postulación de monitoreo retirada",
+        },
+      },
     };
   });
   await safelyNotify(() =>
-    notificarUsuarios(db, result.notification.recipients, result.notification.message)
+    notificarUsuarios(db, result.notification.recipients, result.notification.message),
   );
   return result.interest;
 }
@@ -139,10 +144,12 @@ export async function actualizarPostulacionAsistencia(
 export async function renotificarAsistentesDisponibles(
   db: PrismaClient,
   actor: SessionActor,
-  rawInput: unknown
+  rawInput: unknown,
 ): Promise<number> {
   if (!puedeAsignarAsistencia(actor.rol) || !actor.activo) {
-    throw new ForbiddenApiError("Solo Administración puede volver a notificar asistentes de monitoreo.");
+    throw new ForbiddenApiError(
+      "Solo Administración puede volver a notificar asistentes de monitoreo.",
+    );
   }
   const input = notificacionAsistenciaSchema.parse(rawInput);
   const result = await db.$transaction(async (tx) => {
@@ -159,24 +166,24 @@ export async function renotificarAsistentesDisponibles(
           solicitud: {
             select: {
               titulo: true,
-              docentePrograma: { select: { programa: { select: { nombre: true } } } }
-            }
+              docentePrograma: { select: { programa: { select: { nombre: true } } } },
+            },
           },
           asignaciones: {
             where: { estado: { in: [...ACTIVE_ASSIGNMENTS] } },
             select: { id: true },
-            take: 1
-          }
-        }
+            take: 1,
+          },
+        },
       }),
       tx.asistenteTecnico.findMany({
         where: {
           disponibleGeneral: true,
           cesadoHastaProximoInicioSesion: false,
-          usuario: { activo: true, rol: "ASISTENTE_TECNICO" }
+          usuario: { activo: true, rol: "ASISTENTE_TECNICO" },
         },
-        select: { usuario: { select: { id: true, emailPrincipal: true } } }
-      })
+        select: { usuario: { select: { id: true, emailPrincipal: true } } },
+      }),
     ]);
     if (!admin?.activo || !puedeAsignarAsistencia(admin.rol)) {
       throw new ForbiddenApiError("La sesión de Administración ya no es válida.");
@@ -197,11 +204,14 @@ export async function renotificarAsistentesDisponibles(
         accion: "ASISTENTES_RENOTIFICADOS",
         entidadTipo: "InstanciaSala",
         entidadId: meeting.id,
-        valorNuevo: { destinatarios: assistants.length }
-      }
+        valorNuevo: { destinatarios: assistants.length },
+      },
     });
     return {
-      recipients: assistants.map(({ usuario }) => ({ usuarioId: usuario.id, email: usuario.emailPrincipal })),
+      recipients: assistants.map(({ usuario }) => ({
+        usuarioId: usuario.id,
+        email: usuario.emailPrincipal,
+      })),
       message: {
         tipo: "ASISTENCIA_REQUERIDA" as const,
         titulo: "Cobertura de monitoreo disponible",
@@ -209,12 +219,12 @@ export async function renotificarAsistentesDisponibles(
         href: "/agenda-abierta",
         metadata: {
           instanciaSalaId: meeting.id,
-          inicioProgramadoAt: meeting.inicioProgramadoAt.toISOString()
+          inicioProgramadoAt: meeting.inicioProgramadoAt.toISOString(),
         },
         emailSubject: `Recordatorio de cobertura de monitoreo disponible: ${meeting.solicitud.titulo}`,
         emailText: `La reunión "${meeting.solicitud.titulo}" (${meeting.solicitud.docentePrograma.programa.nombre}) requiere monitoreo y está disponible para postularse en Agenda abierta.\n\nAl asignarte la reunión, tu cuenta de Google será configurada automáticamente como anfitriona en Google Meet para que ingreses directamente a brindar soporte y moderación sin requerir credenciales de sala.`,
-        emailActionLabel: "Ver agenda abierta"
-      }
+        emailActionLabel: "Ver agenda abierta",
+      },
     };
   });
   await safelyNotify(() => notificarUsuarios(db, result.recipients, result.message));
@@ -231,15 +241,15 @@ async function safelyNotify(action: () => Promise<void>): Promise<void> {
 
 export async function sincronizarCohostsDeInstancia(
   dependencies: SincronizarCohostsDependencies,
-  instanciaSalaId: string
+  instanciaSalaId: string,
 ): Promise<void> {
   return sincronizarCohostsDeInstanciaUseCase(
     {
       db: dependencies.db,
       descifrar: dependencies.descifrar,
       cargarCredencialesEncuentro,
-      configurarEspacio: dependencies.configurarEspacio
+      configurarEspacio: dependencies.configurarEspacio,
     },
-    instanciaSalaId
+    instanciaSalaId,
   );
 }

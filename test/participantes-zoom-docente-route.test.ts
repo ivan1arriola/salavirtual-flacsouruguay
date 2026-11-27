@@ -6,17 +6,17 @@ const mocks = vi.hoisted(() => ({
   instancia: vi.fn(),
   permiso: vi.fn(),
   credenciales: vi.fn(),
-  token: vi.fn()
+  token: vi.fn(),
 }));
 
 vi.mock("@/auth", () => ({ auth: mocks.auth }));
 vi.mock("@/src/lib/auth/session-actor.adapter", () => ({ resolveSessionActor: mocks.actor }));
 vi.mock("@/src/lib/db", () => ({ db: { instanciaSala: { findUnique: mocks.instancia } } }));
 vi.mock("@/src/modules/reuniones/permisos-programa.service", () => ({
-  puedeGestionarPrograma: mocks.permiso
+  puedeGestionarPrograma: mocks.permiso,
 }));
 vi.mock("@/src/modules/configuracion/zoom-config.service", () => ({
-  obtenerCredencialesZoom: mocks.credenciales
+  obtenerCredencialesZoom: mocks.credenciales,
 }));
 vi.mock("@/src/integrations/zoom/zoom-client", () => ({ crearProveedorTokenZoom: mocks.token }));
 
@@ -37,7 +37,7 @@ describe("participantes Zoom en vivo para docentes", () => {
       finProgramadoAt: new Date(Date.now() + 3600000),
       proveedorActivoTipo: "ZOOM",
       solicitud: { docentePrograma: { programaId: "programa-1" } },
-      eventosProveedor: [{ proveedor: { tipo: "ZOOM" }, codigoReunion: "123456" }]
+      eventosProveedor: [{ proveedor: { tipo: "ZOOM" }, codigoReunion: "123456" }],
     });
     mocks.credenciales.mockResolvedValue({ disponible: false });
     mocks.token.mockReturnValue("token");
@@ -57,7 +57,7 @@ describe("participantes Zoom en vivo para docentes", () => {
     expect(mocks.permiso).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({ id: "docente-1" }),
-      "programa-1"
+      "programa-1",
     );
   });
 
@@ -68,7 +68,7 @@ describe("participantes Zoom en vivo para docentes", () => {
       finProgramadoAt: new Date(Date.now() + 3600000),
       proveedorActivoTipo: "GOOGLE_MEET",
       solicitud: { docentePrograma: { programaId: "programa-1" } },
-      eventosProveedor: [{ proveedor: { tipo: "GOOGLE_MEET" }, codigoReunion: null }]
+      eventosProveedor: [{ proveedor: { tipo: "GOOGLE_MEET" }, codigoReunion: null }],
     });
     const response = await pedir();
     expect((await response.json()).estado).toBe("NO_DISPONIBLE");
@@ -80,15 +80,17 @@ describe("participantes Zoom en vivo para docentes", () => {
       disponible: true,
       accountId: "a",
       clientId: "c",
-      clientSecret: "s"
+      clientSecret: "s",
     });
     const fetchZoom = vi
       .spyOn(globalThis, "fetch")
       .mockResolvedValueOnce(
         new Response(
-          JSON.stringify({ participants: [{ id: "p1", user_name: "Ana", email: "ana@example.org" }] }),
-          { status: 200 }
-        )
+          JSON.stringify({
+            participants: [{ id: "p1", user_name: "Ana", email: "ana@example.org" }],
+          }),
+          { status: 200 },
+        ),
       );
     try {
       const response = await pedir();
@@ -96,7 +98,7 @@ describe("participantes Zoom en vivo para docentes", () => {
       expect(response.headers.get("Cache-Control")).toContain("no-store");
       expect(await response.json()).toMatchObject({
         estado: "DISPONIBLE",
-        participantes: [{ nombre: "Ana" }]
+        participantes: [{ nombre: "Ana" }],
       });
       expect(fetchZoom.mock.calls[0][0].toString()).toContain("type=live");
     } finally {
@@ -109,12 +111,14 @@ describe("participantes Zoom en vivo para docentes", () => {
       disponible: true,
       accountId: "a",
       clientId: "c",
-      clientSecret: "s"
+      clientSecret: "s",
     });
     const fetchZoom = vi
       .spyOn(globalThis, "fetch")
       .mockResolvedValueOnce(
-        new Response(JSON.stringify({ message: "private credentials", code: 200 }), { status: 403 })
+        new Response(JSON.stringify({ message: "private credentials", code: 200 }), {
+          status: 403,
+        }),
       );
     try {
       const response = await pedir();

@@ -4,7 +4,7 @@ import { formatMinutes, formatMoney } from "@/src/lib/ui/assistant-format";
 import { AssistantUnassignButton } from "./assistant-unassign-button";
 
 export function AssistantMeetingsTable({
-  meetings
+  meetings,
 }: Readonly<{ meetings: readonly RegistroAsistenciaPersonal[] }>) {
   return (
     <div className="table-wrap">
@@ -32,7 +32,9 @@ export function AssistantMeetingsTable({
               <td>{meeting.programa}</td>
               <td>{meeting.modalidad === "HIBRIDA" ? "Híbrida" : "Virtual"}</td>
               <td>{formatMinutes(meeting.minutos)}</td>
-              <td>{meeting.monto === null ? "Sin tarifa" : formatMoney(meeting.monto, meeting.moneda)}</td>
+              <td>
+                {meeting.monto === null ? "Sin tarifa" : formatMoney(meeting.monto, meeting.moneda)}
+              </td>
               <td>
                 <span
                   className={`status ${meeting.estado === "FINALIZADA" ? "status-ok" : "status-neutral"}`}

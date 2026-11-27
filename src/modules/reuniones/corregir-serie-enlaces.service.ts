@@ -3,10 +3,13 @@ import type { Prisma } from "@prisma/client";
 import { ForbiddenApiError, ValidationApiError } from "@/src/lib/http/api-error";
 import { notificarCambioEnlaceSerie } from "./aviso-enlace-serie.service";
 import { CUENTA_ZOOM_ASIGNABLE } from "./cuenta-asignable.domain";
-import { planificarCorreccionSerie, type PlanCorreccionSerie } from "./corregir-serie-enlaces.domain";
+import {
+  planificarCorreccionSerie,
+  type PlanCorreccionSerie,
+} from "./corregir-serie-enlaces.domain";
 import {
   MARGEN_SEGURIDAD_HORAS_APLICAR,
-  type DependenciasMigracionZoom
+  type DependenciasMigracionZoom,
 } from "./migracion-zoom-aplicar.service";
 import { esUrlZoom } from "./migracion-zoom-aviso-email.domain";
 import { prepararCambioEnlaceZoomACalendar } from "./migracion-zoom-calendar.domain";
@@ -16,14 +19,17 @@ import { bloquearReservaSalas } from "./reserva-salas.adapter";
 import {
   claveBloqueoSerieMigracion,
   filtroSerieDesdeClave,
-  normalizarClaveSerie
+  normalizarClaveSerie,
 } from "./serie-reunion.domain";
-import { evaluarEnlacesDeSerie, type EncuentroEnlaceSerie } from "./series-enlaces-distintos.domain";
+import {
+  evaluarEnlacesDeSerie,
+  type EncuentroEnlaceSerie,
+} from "./series-enlaces-distintos.domain";
 import type { ZoomCreateRecurringMeetingInput } from "@/src/integrations/zoom/zoom-client";
 import {
   calcularRecurrenciaZoom,
   detectarOcurrenciasSobrantes,
-  detectarOcurrenciasAjustar
+  detectarOcurrenciasAjustar,
 } from "../conferencias/domain/zoom-recurrence.domain";
 
 type Actor = Readonly<{ id: string; rol: string }>;
@@ -39,12 +45,12 @@ export type DependenciasCorreccionSerie = DependenciasMigracionZoom &
       /** Reunión del anfitrión que lleve la marca en su agenda (recupera una creada por un intento que murió). */
       buscarPorMarca: (
         hostEmail: string,
-        marca: string
+        marca: string,
       ) => Promise<Readonly<{ meetingId: string; joinUrl: string }> | null>;
       /** Crea la reunión recurrente (tipo 8) con un `join_url` estable. */
       crearRecurrente: (
         hostEmail: string,
-        input: ZoomCreateRecurringMeetingInput
+        input: ZoomCreateRecurringMeetingInput,
       ) => Promise<
         Readonly<{
           meetingId: string;
@@ -60,7 +66,7 @@ export type DependenciasCorreccionSerie = DependenciasMigracionZoom &
       actualizarOcurrencia?: (
         meetingId: string,
         occurrenceId: string,
-        input: Readonly<{ startTime?: Date; durationMinutes?: number }>
+        input: Readonly<{ startTime?: Date; durationMinutes?: number }>,
       ) => Promise<void>;
     }>;
     /** Aviso por serie; por defecto el real. Se inyecta en las pruebas. */
@@ -82,7 +88,7 @@ class FalloEtapa extends Error {
     public readonly etapa: ResultadoCorreccionSerie["etapa"],
     message: string,
     public readonly reintentable = true,
-    public readonly omitida = false
+    public readonly omitida = false,
   ) {
     super(message);
   }
@@ -106,9 +112,9 @@ const seleccionInstancia = {
       reunionProveedorId: true,
       cuentaProveedorId: true,
       cuentaProveedor: { select: { emailOrganizador: true } },
-      proveedor: { select: { tipo: true } }
-    }
-  }
+      proveedor: { select: { tipo: true } },
+    },
+  },
 } satisfies Prisma.InstanciaSalaSelect;
 
 type InstanciaSerie = Prisma.InstanciaSalaGetPayload<{ select: typeof seleccionInstancia }>;
@@ -151,7 +157,7 @@ type PreparacionSerie =
 export async function corregirSerieEnlaces(
   deps: DependenciasCorreccionSerie,
   actor: Actor,
-  input: Readonly<{ serieClave: string }>
+  input: Readonly<{ serieClave: string }>,
 ): Promise<ResultadoCorreccionSerie> {
   exigirAdministracionCorreccion(actor);
   const serieClave = normalizarClaveSerie(input.serieClave);
@@ -164,7 +170,7 @@ export async function corregirSerieEnlaces(
         resultado: error.omitida ? "OMITIDA" : "ERROR",
         etapa: error.etapa,
         mensaje: error.message,
-        reintentable: error.reintentable
+        reintentable: error.reintentable,
       };
     }
     return {
@@ -172,7 +178,7 @@ export async function corregirSerieEnlaces(
       resultado: "ERROR",
       etapa: "VINCULACION",
       mensaje: error instanceof Error ? error.message : "Error inesperado.",
-      reintentable: true
+      reintentable: true,
     };
   }
 }
@@ -181,11 +187,13 @@ export async function corregirSerieEnlaces(
 export async function corregirSeriesEnlaces(
   deps: DependenciasCorreccionSerie,
   actor: Actor,
-  input: Readonly<{ modo: "PILOTO" | "LOTE"; serieClaves: readonly string[] }>
+  input: Readonly<{ modo: "PILOTO" | "LOTE"; serieClaves: readonly string[] }>,
 ): Promise<readonly ResultadoCorreccionSerie[]> {
   exigirAdministracionCorreccion(actor);
   const claves = [
-    ...new Set(input.serieClaves.filter((clave) => clave.trim().length > 0).map(normalizarClaveSerie))
+    ...new Set(
+      input.serieClaves.filter((clave) => clave.trim().length > 0).map(normalizarClaveSerie),
+    ),
   ];
   if (claves.length === 0) {
     throw new ValidationApiError("Indicá al menos una serie.");
@@ -221,7 +229,7 @@ function aEncuentroEnlace(instancia: InstanciaSerie): EncuentroEnlaceSerie {
     joinUrl: evento?.joinUrl ?? null,
     externalEventId: evento?.externalEventId ?? null,
     cuentaProveedorId: evento?.cuentaProveedorId ?? null,
-    reunionProveedorId: evento?.reunionProveedorId ?? null
+    reunionProveedorId: evento?.reunionProveedorId ?? null,
   };
 }
 
@@ -251,7 +259,7 @@ type Evaluada = Readonly<{
 async function evaluarSerie(
   tx: Prisma.TransactionClient,
   serieClave: string,
-  ahora: Date
+  ahora: Date,
 ): Promise<Evaluada> {
   const filtro = filtroSerieDesdeClave(serieClave);
   if (!filtro) {
@@ -264,9 +272,13 @@ async function evaluarSerie(
   await bloquearReservaSalas(tx, proveedorZoom.id);
 
   const instancias = await tx.instanciaSala.findMany({
-    where: { estado: { in: ["PROGRAMADA", "EN_CURSO"] }, finProgramadoAt: { gt: ahora }, solicitud: filtro },
+    where: {
+      estado: { in: ["PROGRAMADA", "EN_CURSO"] },
+      finProgramadoAt: { gt: ahora },
+      solicitud: filtro,
+    },
     orderBy: [{ inicioProgramadoAt: "asc" }, { id: "asc" }],
-    select: seleccionInstancia
+    select: seleccionInstancia,
   });
   if (instancias.length === 0) {
     throw new FalloEtapa("VALIDACION", "La serie no tiene encuentros futuros.", false, true);
@@ -280,13 +292,13 @@ async function evaluarSerie(
       externalId: true,
       joinUrl: true,
       estadoCreacion: true,
-      reclamoAt: true
-    }
+      reclamoAt: true,
+    },
   });
   const hostsDb = await tx.cuentaProveedor.findMany({
     where: { ...CUENTA_ZOOM_ASIGNABLE, proveedor: { tipo: "ZOOM" } },
     orderBy: [{ prioridad: "asc" }, { id: "asc" }],
-    select: { id: true, emailOrganizador: true, prioridad: true, limiteConcurrente: true }
+    select: { id: true, emailOrganizador: true, prioridad: true, limiteConcurrente: true },
   });
   // Reanudación: la sala de una reunión ya creada queda fija.
   const hosts =
@@ -300,12 +312,12 @@ async function evaluarSerie(
       proveedor: { tipo: "ZOOM" },
       cuentaProveedorId: { not: null },
       instanciaSalaId: { notIn: ids },
-      instancia: { estado: { in: ["PROGRAMADA", "EN_CURSO"] }, finProgramadoAt: { gt: ahora } }
+      instancia: { estado: { in: ["PROGRAMADA", "EN_CURSO"] }, finProgramadoAt: { gt: ahora } },
     },
     select: {
       cuentaProveedorId: true,
-      instancia: { select: { inicioProgramadoAt: true, finProgramadoAt: true } }
-    }
+      instancia: { select: { inicioProgramadoAt: true, finProgramadoAt: true } },
+    },
   });
 
   const evaluacion = evaluarEnlacesDeSerie(instancias.map(aEncuentroEnlace), ahora);
@@ -315,7 +327,9 @@ async function evaluarSerie(
     margenSeguridadHoras: MARGEN_SEGURIDAD_HORAS_APLICAR,
     encuentros: instancias.map((instancia) => {
       const zoom = instancia.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "ZOOM");
-      const meet = instancia.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET");
+      const meet = instancia.eventosProveedor.find(
+        ({ proveedor }) => proveedor.tipo === "GOOGLE_MEET",
+      );
       return {
         instanciaId: instancia.id,
         inicio: instancia.inicioProgramadoAt,
@@ -324,22 +338,36 @@ async function evaluarSerie(
         externalEventId: zoom?.externalEventId ?? null,
         cuentaProveedorId: zoom?.cuentaProveedorId ?? null,
         calendarId: meet?.cuentaProveedor?.emailOrganizador ?? null,
-        calendarEventId: meet?.externalEventId ?? null
+        calendarEventId: meet?.externalEventId ?? null,
       };
     }),
     hosts: hosts.map((host) => ({ ...host, limiteConcurrente: 1 })),
     reservasZoom: reservas.flatMap(({ cuentaProveedorId, instancia }) =>
       cuentaProveedorId
-        ? [{ cuentaProveedorId, inicio: instancia.inicioProgramadoAt, fin: instancia.finProgramadoAt }]
-        : []
-    )
+        ? [
+            {
+              cuentaProveedorId,
+              inicio: instancia.inicioProgramadoAt,
+              fin: instancia.finProgramadoAt,
+            },
+          ]
+        : [],
+    ),
   });
-  return { instancias, vigentes, evaluacion, plan, hosts, proveedorZoomId: proveedorZoom.id, reunion };
+  return {
+    instancias,
+    vigentes,
+    evaluacion,
+    plan,
+    hosts,
+    proveedorZoomId: proveedorZoom.id,
+    reunion,
+  };
 }
 
 async function prepararBajoBloqueo(
   deps: DependenciasCorreccionSerie,
-  serieClave: string
+  serieClave: string,
 ): Promise<PreparacionSerie> {
   const ahora = (deps.ahora ?? (() => new Date()))();
   return deps.db.$transaction(async (tx) => {
@@ -353,12 +381,13 @@ async function prepararBajoBloqueo(
     const instanciaIds = aCorregir.map(({ id }) => id);
     const pendientes = serie.reunion
       ? await tx.cambioEnlaceCita.count({
-          where: { reunionProveedorId: serie.reunion.id, estado: { not: "VERIFICADA" } }
+          where: { reunionProveedorId: serie.reunion.id, estado: { not: "VERIFICADA" } },
         })
       : 0;
 
     // Ya unificada (o con un solo enlace y cuenta) y sin citas pendientes: nada que corregir.
-    const necesitaCorreccion = serie.evaluacion.necesitaCorreccion || serie.evaluacion.mixtaSinUnificar;
+    const necesitaCorreccion =
+      serie.evaluacion.necesitaCorreccion || serie.evaluacion.mixtaSinUnificar;
     if (!necesitaCorreccion && pendientes === 0) {
       return { tipo: "SIN_CAMBIOS", reunionId: serie.reunion?.id ?? null, instanciaIds };
     }
@@ -367,7 +396,7 @@ async function prepararBajoBloqueo(
         "VALIDACION",
         `La serie no se puede corregir ahora (${serie.plan.estado}).`,
         serie.plan.estado !== "REVISAR",
-        true
+        true,
       );
     }
     const host = serie.hosts.find(({ id }) => id === serie.plan.hostId);
@@ -383,7 +412,7 @@ async function prepararBajoBloqueo(
           "VALIDACION",
           "Un encuentro de la serie no tiene reunión Zoom: revisá la serie.",
           false,
-          true
+          true,
         );
       }
       if (zoom.operacionPendiente) {
@@ -391,7 +420,7 @@ async function prepararBajoBloqueo(
           "VALIDACION",
           "Un encuentro tiene una operación de Zoom pendiente: esperá a que termine.",
           true,
-          true
+          true,
         );
       }
       if (zoom.reunionProveedorId && zoom.reunionProveedorId !== serie.reunion?.id) {
@@ -399,7 +428,7 @@ async function prepararBajoBloqueo(
           "VALIDACION",
           "Un encuentro ya pertenece a otra reunión compartida: revisá la serie.",
           false,
-          true
+          true,
         );
       }
       eventoIds.push(zoom.id);
@@ -410,8 +439,12 @@ async function prepararBajoBloqueo(
       serie.reunion?.id ??
       (
         await tx.reunionProveedor.create({
-          data: { proveedorId: serie.proveedorZoomId, cuentaProveedorId: serie.plan.hostId, serieClave },
-          select: { id: true }
+          data: {
+            proveedorId: serie.proveedorZoomId,
+            cuentaProveedorId: serie.plan.hostId,
+            serieClave,
+          },
+          select: { id: true },
         })
       ).id;
     const creada = serie.reunion?.estadoCreacion === "CREADA" && Boolean(serie.reunion.externalId);
@@ -424,26 +457,30 @@ async function prepararBajoBloqueo(
           OR: [
             { estadoCreacion: { in: ["PENDIENTE", "ELIMINADA"] } },
             { estadoCreacion: "CREANDO", reclamoAt: { lt: vencido } },
-            { estadoCreacion: "CREADA", externalId: null }
-          ]
+            { estadoCreacion: "CREADA", externalId: null },
+          ],
         },
         data: {
           estadoCreacion: "CREANDO",
           reclamoToken,
           reclamoAt: ahora,
           cuentaProveedorId: serie.plan.hostId,
-          ...(serie.reunion?.estadoCreacion === "ELIMINADA" ? { externalId: null, joinUrl: null } : {})
-        }
+          ...(serie.reunion?.estadoCreacion === "ELIMINADA"
+            ? { externalId: null, joinUrl: null }
+            : {}),
+        },
       });
       if (reclamo.count !== 1) {
         throw new FalloEtapa(
           "ZOOM",
-          "Otra corrección de esta serie está creando la reunión Zoom: reintentá en unos minutos."
+          "Otra corrección de esta serie está creando la reunión Zoom: reintentá en unos minutos.",
         );
       }
     }
     const externalId =
-      serie.reunion && serie.reunion.estadoCreacion !== "ELIMINADA" ? serie.reunion.externalId : null;
+      serie.reunion && serie.reunion.estadoCreacion !== "ELIMINADA"
+        ? serie.reunion.externalId
+        : null;
 
     return {
       tipo: "CORREGIR",
@@ -457,19 +494,21 @@ async function prepararBajoBloqueo(
       eventoIds,
       horarios: aCorregir.map((instancia) => ({
         inicio: instancia.inicioProgramadoAt,
-        fin: instancia.finProgramadoAt
+        fin: instancia.finProgramadoAt,
       })),
       timezone: aCorregir[0].timezone || "America/Montevideo",
       citas: aCorregir.map((instancia): CitaCorreccion => {
         const zoom = instancia.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "ZOOM");
-        const meet = instancia.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET");
+        const meet = instancia.eventosProveedor.find(
+          ({ proveedor }) => proveedor.tipo === "GOOGLE_MEET",
+        );
         return {
           instanciaId: instancia.id,
           calendarId: meet?.cuentaProveedor?.emailOrganizador ?? null,
           calendarEventId: meet?.externalEventId ?? null,
-          reunionAnteriorExternalId: zoom?.externalEventId ?? null
+          reunionAnteriorExternalId: zoom?.externalEventId ?? null,
         };
-      })
+      }),
     };
   });
 }
@@ -477,22 +516,26 @@ async function prepararBajoBloqueo(
 async function corregirSerie(
   deps: DependenciasCorreccionSerie,
   actor: Actor,
-  serieClave: string
+  serieClave: string,
 ): Promise<ResultadoCorreccionSerie> {
   const prep = await prepararBajoBloqueo(deps, serieClave);
   if (prep.tipo === "SIN_CAMBIOS") {
     // Reintento tras una corrección hecha: completa solo los avisos que falten. Una serie que ya
     // nació unificada (sin auditoría de corrección) no recibe aviso.
     const corregida = await deps.db.auditoria.findFirst({
-      where: { accion: "SERIE_ENLACE_UNIFICADO", entidadTipo: "SerieReunion", entidadId: serieClave },
-      select: { id: true }
+      where: {
+        accion: "SERIE_ENLACE_UNIFICADO",
+        entidadTipo: "SerieReunion",
+        entidadId: serieClave,
+      },
+      select: { id: true },
     });
     if (!corregida || !prep.reunionId) {
       return { serieClave, resultado: "YA_UNIFICADA", etapa: "VALIDACION", reintentable: false };
     }
     const reunion = await deps.db.reunionProveedor.findUnique({
       where: { id: prep.reunionId },
-      select: { joinUrl: true }
+      select: { joinUrl: true },
     });
     const avisos = reunion?.joinUrl
       ? await enviarAvisos(deps, serieClave, prep.instanciaIds, reunion.joinUrl)
@@ -502,7 +545,7 @@ async function corregirSerie(
       resultado: "YA_UNIFICADA",
       etapa: "AVISOS",
       reintentable: avisos?.estado === "PARCIAL",
-      avisos
+      avisos,
     };
   }
 
@@ -522,7 +565,7 @@ async function corregirSerie(
       if (serie.plan.estado !== "CORREGIBLE" || serie.plan.hostId !== prep.hostId) {
         throw new FalloEtapa(
           "VINCULACION",
-          "La serie cambió durante la corrección o la sala dejó de estar libre; reintentá."
+          "La serie cambió durante la corrección o la sala dejó de estar libre; reintentá.",
         );
       }
       const vinculados = await tx.eventoProveedor.updateMany({
@@ -537,13 +580,13 @@ async function corregirSerie(
           codigoReunion: externalId,
           joinUrl,
           estadoIntegracion: "SINCRONIZADA",
-          errorIntegracion: null
-        }
+          errorIntegracion: null,
+        },
       });
       if (vinculados.count !== prep.eventoIds.length) {
         throw new FalloEtapa(
           "VINCULACION",
-          "Algún encuentro cambió durante la corrección; revisá la serie y reintentá."
+          "Algún encuentro cambió durante la corrección; revisá la serie y reintentá.",
         );
       }
       // La limpieza de las reuniones antiguas queda diferida: nada se elimina ahora.
@@ -551,9 +594,13 @@ async function corregirSerie(
         where: {
           reunionProveedorId: prep.reunionId,
           reunionAnteriorExternalId: { not: null },
-          eliminarDespuesDe: null
+          eliminarDespuesDe: null,
         },
-        data: { eliminarDespuesDe: new Date(ahora.getTime() + DIAS_CONVIVENCIA_REUNION_ANTIGUA * 86_400_000) }
+        data: {
+          eliminarDespuesDe: new Date(
+            ahora.getTime() + DIAS_CONVIVENCIA_REUNION_ANTIGUA * 86_400_000,
+          ),
+        },
       });
       await tx.auditoria.create({
         data: {
@@ -563,16 +610,16 @@ async function corregirSerie(
           entidadId: serieClave,
           valorAnterior: {
             reunionesAnteriores: prep.citas.flatMap(({ reunionAnteriorExternalId }) =>
-              reunionAnteriorExternalId ? [reunionAnteriorExternalId] : []
-            )
+              reunionAnteriorExternalId ? [reunionAnteriorExternalId] : [],
+            ),
           },
           valorNuevo: {
             reunionProveedorId: prep.reunionId,
             zoomMeetingId: externalId,
             cuentaProveedorId: prep.hostId,
-            instanciaIds: [...prep.instanciaIds]
-          }
-        }
+            instanciaIds: [...prep.instanciaIds],
+          },
+        },
       });
     })
     .catch((error: unknown) => {
@@ -581,7 +628,7 @@ async function corregirSerie(
       }
       throw new FalloEtapa(
         "VINCULACION",
-        error instanceof Error ? error.message : "No se pudieron vincular los encuentros."
+        error instanceof Error ? error.message : "No se pudieron vincular los encuentros.",
       );
     });
 
@@ -593,14 +640,14 @@ async function corregirSerie(
     etapa: "AVISOS",
     encuentros: prep.instanciaIds.length,
     reintentable: avisos.estado === "PARCIAL",
-    avisos
+    avisos,
   };
 }
 
 async function asegurarReunionZoom(
   deps: DependenciasCorreccionSerie,
   serieClave: string,
-  prep: Extract<PreparacionSerie, { tipo: "CORREGIR" }>
+  prep: Extract<PreparacionSerie, { tipo: "CORREGIR" }>,
 ): Promise<Readonly<{ externalId: string; joinUrl: string }>> {
   try {
     const externalId = await (async () => {
@@ -620,12 +667,12 @@ async function asegurarReunionZoom(
           durationMinutes: recurrencia.durationMinutes,
           timezone: prep.timezone,
           agenda: marca,
-          recurrence: recurrencia.recurrence
+          recurrence: recurrencia.recurrence,
         }));
       // El ID se guarda apenas existe: si algo falla después, el reintento reutiliza esta reunión.
       const guardado = await deps.db.reunionProveedor.updateMany({
         where: { id: prep.reunionId, estadoCreacion: "CREANDO", reclamoToken: prep.reclamoToken },
-        data: { externalId: info.meetingId }
+        data: { externalId: info.meetingId },
       });
       if (guardado.count !== 1) {
         throw new Error("El reclamo de la reunión ya no es válido; otro proceso la tomó.");
@@ -634,7 +681,11 @@ async function asegurarReunionZoom(
       // Limpieza y reconciliación de ocurrencias en Zoom si se acaban de crear
       const occurrences =
         "occurrences" in info && Array.isArray(info.occurrences)
-          ? (info.occurrences as readonly { occurrenceId: string; startTime: string; duration?: number }[])
+          ? (info.occurrences as readonly {
+              occurrenceId: string;
+              startTime: string;
+              duration?: number;
+            }[])
           : undefined;
 
       if (occurrences && occurrences.length > 0) {
@@ -650,7 +701,7 @@ async function asegurarReunionZoom(
             await deps.zoom
               .actualizarOcurrencia(info.meetingId, ajuste.occurrenceId, {
                 startTime: ajuste.startTime,
-                durationMinutes: ajuste.durationMinutes
+                durationMinutes: ajuste.durationMinutes,
               })
               .catch(() => undefined);
           }
@@ -674,8 +725,8 @@ async function asegurarReunionZoom(
         joinUrl,
         errorIntegracion: null,
         reclamoToken: null,
-        reclamoAt: null
-      }
+        reclamoAt: null,
+      },
     });
     return { externalId, joinUrl };
   } catch (error) {
@@ -684,7 +735,7 @@ async function asegurarReunionZoom(
       await deps.db.reunionProveedor
         .updateMany({
           where: { id: prep.reunionId, estadoCreacion: "CREANDO", reclamoToken: prep.reclamoToken },
-          data: { estadoCreacion: "PENDIENTE", reclamoToken: null, reclamoAt: null }
+          data: { estadoCreacion: "PENDIENTE", reclamoToken: null, reclamoAt: null },
         })
         .catch(() => undefined);
     }
@@ -693,7 +744,7 @@ async function asegurarReunionZoom(
     }
     throw new FalloEtapa(
       "ZOOM",
-      error instanceof Error ? error.message : "Falló la creación de la reunión Zoom."
+      error instanceof Error ? error.message : "Falló la creación de la reunión Zoom.",
     );
   }
 }
@@ -701,11 +752,11 @@ async function asegurarReunionZoom(
 async function actualizarCitas(
   deps: DependenciasCorreccionSerie,
   prep: Extract<PreparacionSerie, { tipo: "CORREGIR" }>,
-  joinUrl: string
+  joinUrl: string,
 ): Promise<void> {
   const previas = await deps.db.cambioEnlaceCita.findMany({
     where: { reunionProveedorId: prep.reunionId, instanciaSalaId: { in: [...prep.instanciaIds] } },
-    select: { id: true, instanciaSalaId: true, enlaceNuevo: true, estado: true }
+    select: { id: true, instanciaSalaId: true, enlaceNuevo: true, estado: true },
   });
   const fallos: string[] = [];
   for (const cita of prep.citas) {
@@ -720,7 +771,7 @@ async function actualizarCitas(
         ? await deps.db.cambioEnlaceCita.update({
             where: { id: previa.id },
             data: { enlaceNuevo: joinUrl, estado: estadoInicial, sinCita },
-            select: { id: true, estado: true }
+            select: { id: true, estado: true },
           })
         : await deps.db.cambioEnlaceCita.create({
             data: {
@@ -729,21 +780,24 @@ async function actualizarCitas(
               enlaceNuevo: joinUrl,
               estado: estadoInicial,
               sinCita,
-              reunionAnteriorExternalId: cita.reunionAnteriorExternalId
+              reunionAnteriorExternalId: cita.reunionAnteriorExternalId,
             },
-            select: { id: true, estado: true }
+            select: { id: true, estado: true },
           }));
     if (registro.estado === "VERIFICADA" || sinCita) {
       continue;
     }
 
-    const ref = { calendarId: cita.calendarId!, eventId: cita.calendarEventId! };
+    const ref = { calendarId: cita.calendarId, eventId: cita.calendarEventId };
     try {
       const actual = await deps.calendar.obtener(ref);
       const cambio = prepararCambioEnlaceZoomACalendar(actual, null, joinUrl);
       if (registro.estado !== "PARCHEADA") {
         await deps.calendar.actualizar({ ...ref, cambio });
-        await deps.db.cambioEnlaceCita.update({ where: { id: registro.id }, data: { estado: "PARCHEADA" } });
+        await deps.db.cambioEnlaceCita.update({
+          where: { id: registro.id },
+          data: { estado: "PARCHEADA" },
+        });
       }
       const verificado = await deps.calendar.obtener(ref);
       const descripcion = verificado.description ?? "";
@@ -758,15 +812,20 @@ async function actualizarCitas(
       if (!sinMeet || !unSoloEnlace || !ubicacionIntacta) {
         throw new Error("Google Calendar no refleja el enlace único de Zoom.");
       }
-      await deps.db.cambioEnlaceCita.update({ where: { id: registro.id }, data: { estado: "VERIFICADA" } });
+      await deps.db.cambioEnlaceCita.update({
+        where: { id: registro.id },
+        data: { estado: "VERIFICADA" },
+      });
     } catch (error) {
-      fallos.push(error instanceof Error ? error.message : "Falló la actualización de Google Calendar.");
+      fallos.push(
+        error instanceof Error ? error.message : "Falló la actualización de Google Calendar.",
+      );
     }
   }
   if (fallos.length > 0) {
     throw new FalloEtapa(
       "CALENDAR",
-      `${fallos.length} de ${prep.citas.length} citas de Calendar quedaron pendientes: ${fallos[0]} Reintentá para retomarlas.`
+      `${fallos.length} de ${prep.citas.length} citas de Calendar quedaron pendientes: ${fallos[0]} Reintentá para retomarlas.`,
     );
   }
 }
@@ -775,7 +834,7 @@ async function enviarAvisos(
   deps: DependenciasCorreccionSerie,
   serieClave: string,
   instanciaIds: readonly string[],
-  joinUrl: string
+  joinUrl: string,
 ): Promise<ResumenAvisosMigracion> {
   if (!deps.enviarCorreo) {
     return {
@@ -786,7 +845,7 @@ async function enviarAvisos(
       yaEnviados: 0,
       enCurso: 0,
       errores: 0,
-      detalle: []
+      detalle: [],
     };
   }
   try {
@@ -795,10 +854,12 @@ async function enviarAvisos(
         db: deps.db,
         enviarCorreo: deps.enviarCorreo,
         leerInvitadosCalendar: async (calendarId, eventId) =>
-          (await deps.calendar.obtener({ calendarId, eventId })).attendees?.map(({ email }) => email) ?? [],
-        ahora: deps.ahora
+          (await deps.calendar.obtener({ calendarId, eventId })).attendees?.map(
+            ({ email }) => email,
+          ) ?? [],
+        ahora: deps.ahora,
       },
-      { serieClave, instanciaIds, tipo: "CORRECCION_ENLACE", joinUrl }
+      { serieClave, instanciaIds, tipo: "CORRECCION_ENLACE", joinUrl },
     );
   } catch (error) {
     return {
@@ -809,7 +870,7 @@ async function enviarAvisos(
       yaEnviados: 0,
       enCurso: 0,
       errores: 1,
-      detalle: []
+      detalle: [],
     };
   }
 }
@@ -828,22 +889,22 @@ export type ResultadoLimpiezaReuniones = Readonly<{
 export async function limpiarReunionesAntiguas(
   deps: DependenciasCorreccionSerie,
   actor: Actor,
-  ahora: Date = (deps.ahora ?? (() => new Date()))()
+  ahora: Date = (deps.ahora ?? (() => new Date()))(),
 ): Promise<ResultadoLimpiezaReuniones> {
   exigirAdministracionCorreccion(actor);
   const filas = await deps.db.cambioEnlaceCita.findMany({
     where: {
       reunionAnteriorExternalId: { not: null },
       reunionAnteriorEliminadaAt: null,
-      eliminarDespuesDe: { not: null }
+      eliminarDespuesDe: { not: null },
     },
     select: {
       id: true,
       reunionProveedorId: true,
       reunionAnteriorExternalId: true,
       eliminarDespuesDe: true,
-      reunion: { select: { externalId: true, cambiosCita: { select: { estado: true } } } }
-    }
+      reunion: { select: { externalId: true, cambiosCita: { select: { estado: true } } } },
+    },
   });
   const listas = filas.filter(
     (fila) =>
@@ -851,12 +912,12 @@ export async function limpiarReunionesAntiguas(
       fila.eliminarDespuesDe <= ahora &&
       fila.reunion.cambiosCita.every(({ estado }) => estado === "VERIFICADA") &&
       // Nunca se elimina la reunión vigente de la serie.
-      fila.reunionAnteriorExternalId !== fila.reunion.externalId
+      fila.reunionAnteriorExternalId !== fila.reunion.externalId,
   );
   const pendientes = filas.length - listas.length;
 
   const porReunion = [
-    ...new Set(listas.map(({ reunionAnteriorExternalId }) => reunionAnteriorExternalId as string))
+    ...new Set(listas.map(({ reunionAnteriorExternalId }) => reunionAnteriorExternalId as string)),
   ];
   const resultados = await porReunion.reduce<
     Promise<Readonly<{ eliminadas: number; errores: number; omitidas: number }>>
@@ -866,7 +927,7 @@ export async function limpiarReunionesAntiguas(
       try {
         // Si otro encuentro todavía usa esa reunión (por ejemplo, otra serie), no se elimina.
         const enUso = await deps.db.eventoProveedor.count({
-          where: { externalEventId: meetingId, proveedor: { tipo: "ZOOM" } }
+          where: { externalEventId: meetingId, proveedor: { tipo: "ZOOM" } },
         });
         if (enUso > 0) {
           return { ...acumulado, omitidas: acumulado.omitidas + 1 };
@@ -876,20 +937,20 @@ export async function limpiarReunionesAntiguas(
           where: {
             reunionAnteriorExternalId: meetingId,
             reunionAnteriorEliminadaAt: null,
-            id: { in: listas.map(({ id }) => id) }
+            id: { in: listas.map(({ id }) => id) },
           },
-          data: { reunionAnteriorEliminadaAt: ahora }
+          data: { reunionAnteriorEliminadaAt: ahora },
         });
         return { ...acumulado, eliminadas: acumulado.eliminadas + 1 };
       } catch {
         return { ...acumulado, errores: acumulado.errores + 1 };
       }
     },
-    Promise.resolve({ eliminadas: 0, errores: 0, omitidas: 0 })
+    Promise.resolve({ eliminadas: 0, errores: 0, omitidas: 0 }),
   );
   return {
     eliminadas: resultados.eliminadas,
     pendientes: pendientes + resultados.omitidas,
-    errores: resultados.errores
+    errores: resultados.errores,
   };
 }

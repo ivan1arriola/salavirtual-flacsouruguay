@@ -18,12 +18,12 @@ export async function sincronizarAgendaZoomCompleta() {
   const auth = crearProveedorTokenZoom({
     accountId: credenciales.accountId,
     clientId: credenciales.clientId,
-    clientSecret: credenciales.clientSecret
+    clientSecret: credenciales.clientSecret,
   });
   const cuentas = await db.cuentaProveedor.findMany({
     where: { proveedor: { tipo: "ZOOM" }, activa: true, fueraDelGrupoAt: null },
     select: { id: true, nombre: true, externalAccountId: true, emailOrganizador: true },
-    orderBy: { prioridad: "asc" }
+    orderBy: { prioridad: "asc" },
   });
   const consultables = cuentas.flatMap(({ id, nombre, externalAccountId, emailOrganizador }) => {
     const usuarioZoomId = externalAccountId ?? emailOrganizador;
@@ -32,11 +32,11 @@ export async function sincronizarAgendaZoomCompleta() {
   const resultados = await sincronizarAgendaZoom(db, {
     cuentaZoomId: credenciales.accountId,
     cuentas: consultables,
-    listar: (usuarioZoomId) => listarAgendaCuentaZoom(auth, usuarioZoomId)
+    listar: (usuarioZoomId) => listarAgendaCuentaZoom(auth, usuarioZoomId),
   });
   return {
     tipo: "OK",
     sinIdentidad: cuentas.length - consultables.length,
-    resultados
+    resultados,
   } as const;
 }

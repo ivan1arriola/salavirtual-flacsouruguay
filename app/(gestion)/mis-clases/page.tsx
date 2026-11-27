@@ -15,11 +15,11 @@ const PAGE_SIZE = 20;
 const fechaUY = new Intl.DateTimeFormat("es-UY", {
   timeZone: "America/Montevideo",
   dateStyle: "full",
-  timeStyle: "short"
+  timeStyle: "short",
 });
 
 export default async function MisClasesPage({
-  searchParams
+  searchParams,
 }: Readonly<{ searchParams: Promise<{ vista?: string; pagina?: string }> }>) {
   const session = await auth();
   if (!session?.user) {
@@ -57,10 +57,12 @@ export default async function MisClasesPage({
         docentePrograma: {
           programa: {
             activo: true,
-            docentes: { some: { activo: true, docente: { usuarioId: actor.id, usuario: { activo: true } } } }
-          }
-        }
-      }
+            docentes: {
+              some: { activo: true, docente: { usuarioId: actor.id, usuario: { activo: true } } },
+            },
+          },
+        },
+      },
     },
     select: {
       id: true,
@@ -70,7 +72,10 @@ export default async function MisClasesPage({
       proveedorActivoTipo: true,
       solicitudSalaId: true,
       solicitud: {
-        select: { titulo: true, docentePrograma: { select: { programa: { select: { nombre: true } } } } }
+        select: {
+          titulo: true,
+          docentePrograma: { select: { programa: { select: { nombre: true } } } },
+        },
       },
       invitados: { select: { id: true, nombre: true, email: true }, orderBy: { email: "asc" } },
       eventosProveedor: {
@@ -80,19 +85,19 @@ export default async function MisClasesPage({
           joinUrl: true,
           cuentaProveedor: { select: { nombre: true, emailOrganizador: true } },
           asistenciaZoom: { select: { id: true } },
-          ocurrenciasArchivoZoom: { select: { estadoAsistencia: true } }
-        }
-      }
+          ocurrenciasArchivoZoom: { select: { estadoAsistencia: true } },
+        },
+      },
     },
     orderBy: { inicioProgramadoAt: vista === "anteriores" ? "desc" : "asc" },
     skip: (pagina - 1) * PAGE_SIZE,
-    take: PAGE_SIZE + 1
+    take: PAGE_SIZE + 1,
   });
   const haySiguiente = instancias.length > PAGE_SIZE;
   const clases = instancias.slice(0, PAGE_SIZE);
 
   return (
-    <div className={styles.page}>
+    <div className={styles["page"]}>
       <header className="page-header">
         <div>
           <p className="page-eyebrow">Actividad académica</p>
@@ -100,22 +105,26 @@ export default async function MisClasesPage({
           <p>Consultá invitados, participantes conectados y asistencia de tus programas.</p>
         </div>
       </header>
-      <nav className={styles.tabs} aria-label="Estado de las clases">
+      <nav className={styles["tabs"]} aria-label="Estado de las clases">
         {(["proximas", "en-curso", "anteriores"] as const).map((tab) => (
-          <Link key={tab} href={`/mis-clases?vista=${tab}`} aria-current={vista === tab ? "page" : undefined}>
+          <Link
+            key={tab}
+            href={`/mis-clases?vista=${tab}`}
+            aria-current={vista === tab ? "page" : undefined}
+          >
             {{ proximas: "Próximas", "en-curso": "En curso", anteriores: "Anteriores" }[tab]}
           </Link>
         ))}
       </nav>
-      <div className={styles.list}>
+      <div className={styles["list"]}>
         {clases.length === 0 ? <p>No hay clases en esta sección.</p> : null}
         {clases.map((clase) => {
           const evento = seleccionarEventoProveedorActivo(clase);
           const zoom = evento?.proveedor.tipo === "ZOOM";
           const detalle = `/reuniones/${clase.solicitudSalaId}`;
           return (
-            <article className={styles.card} key={clase.id}>
-              <div className={styles.heading}>
+            <article className={styles["card"]} key={clase.id}>
+              <div className={styles["heading"]}>
                 <div>
                   <small>
                     {clase.solicitud.docentePrograma.programa.nombre} · {zoom ? "Zoom" : "Meet"}
@@ -126,13 +135,13 @@ export default async function MisClasesPage({
                     {new Intl.DateTimeFormat("es-UY", {
                       timeZone: "America/Montevideo",
                       hour: "2-digit",
-                      minute: "2-digit"
+                      minute: "2-digit",
                     }).format(clase.finProgramadoAt)}
                   </p>
                 </div>
                 <Link href={detalle}>Ver clase</Link>
               </div>
-              <dl className={styles.metadata}>
+              <dl className={styles["metadata"]}>
                 <div>
                   <dt>Cuenta anfitriona</dt>
                   <dd>
@@ -148,7 +157,7 @@ export default async function MisClasesPage({
                   </div>
                 ) : null}
               </dl>
-              <details className={styles.invited}>
+              <details className={styles["invited"]}>
                 <summary>Invitados ({clase.invitados.length}) · antes de la clase</summary>
                 {clase.invitados.length ? (
                   <ul>
@@ -163,9 +172,11 @@ export default async function MisClasesPage({
                   <p>No hay invitados cargados.</p>
                 )}
               </details>
-              {vista === "en-curso" && zoom ? <ParticipantesZoomVivo instanciaId={clase.id} /> : null}
+              {vista === "en-curso" && zoom ? (
+                <ParticipantesZoomVivo instanciaId={clase.id} />
+              ) : null}
               {vista === "anteriores" ? (
-                <div className={styles.attendance}>
+                <div className={styles["attendance"]}>
                   <strong>
                     Asistencia real{" "}
                     {zoom && evento.asistenciaZoom.length
@@ -189,8 +200,10 @@ export default async function MisClasesPage({
           );
         })}
       </div>
-      <nav className={styles.pagination} aria-label="Páginas de clases">
-        {pagina > 1 ? <Link href={`/mis-clases?vista=${vista}&pagina=${pagina - 1}`}>Anterior</Link> : null}
+      <nav className={styles["pagination"]} aria-label="Páginas de clases">
+        {pagina > 1 ? (
+          <Link href={`/mis-clases?vista=${vista}&pagina=${pagina - 1}`}>Anterior</Link>
+        ) : null}
         <span>Página {pagina}</span>
         {haySiguiente ? (
           <Link href={`/mis-clases?vista=${vista}&pagina=${pagina + 1}`}>Siguiente</Link>

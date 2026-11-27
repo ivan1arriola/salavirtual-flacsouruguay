@@ -3,13 +3,13 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const state = vi.hoisted(() => ({
   user: null as any,
   tokenRoles: [] as string[],
-  storedSessions: [] as unknown[]
+  storedSessions: [] as unknown[],
 }));
 
 vi.mock("next/server", () => ({
   NextResponse: {
-    json: (body: unknown, init?: { status?: number }) => ({ body, status: init?.status ?? 200 })
-  }
+    json: (body: unknown, init?: { status?: number }) => ({ body, status: init?.status ?? 200 }),
+  },
 }));
 vi.mock("@/src/lib/auth/config", () => ({ authConfig: { secret: "s".repeat(32) } }));
 vi.mock("@/src/lib/auth/local-login.adapter", () => ({ dependenciasLoginLocal: {} }));
@@ -18,20 +18,24 @@ vi.mock("@/src/lib/db", () => ({
     tokenVerificacion: {
       create: async ({ data }: { data: unknown }) => {
         state.storedSessions.push(data);
-      }
-    }
-  }
+      },
+    },
+  },
 }));
 vi.mock("@/src/modules/usuarios/credentials.service", () => ({
-  autenticarConCredenciales: async () => state.user
+  autenticarConCredenciales: async () => state.user,
 }));
 vi.mock("@/src/lib/auth/mobile-token", () => ({
   mobileSessionIdentifier: (userId: string) => "mobile-session:" + userId,
   mobileSessionHash: (sid: string) => "hashed-" + sid,
   issueMobileToken: (_id: string, _secret: string, role: string) => {
     state.tokenRoles.push(role);
-    return { accessToken: "token", sessionId: "session-random", expiresAt: "2027-01-01T00:00:00.000Z" };
-  }
+    return {
+      accessToken: "token",
+      sessionId: "session-random",
+      expiresAt: "2027-01-01T00:00:00.000Z",
+    };
+  },
 }));
 
 import { POST } from "../app/api/v1/mobile/auth/login/route";
@@ -39,7 +43,7 @@ import { POST } from "../app/api/v1/mobile/auth/login/route";
 function request() {
   return new Request("https://example.test/api/v1/mobile/auth/login", {
     method: "POST",
-    body: JSON.stringify({ usuario: "user", password: "password" })
+    body: JSON.stringify({ usuario: "user", password: "password" }),
   });
 }
 
@@ -62,7 +66,7 @@ describe("mobile login", () => {
       rol: "ASISTENTE_TECNICO",
       nombre: "Asistente",
       email: "a@example.test",
-      debeCambiarPassword: true
+      debeCambiarPassword: true,
     };
 
     const response = (await POST(request())) as any;
@@ -78,7 +82,7 @@ describe("mobile login", () => {
       rol: "DOCENTE",
       nombre: "Docente",
       email: "d@example.test",
-      debeCambiarPassword: false
+      debeCambiarPassword: false,
     };
 
     const response = (await POST(request())) as any;
@@ -93,7 +97,7 @@ describe("mobile login", () => {
       rol: "ADMINISTRACION",
       nombre: "Admin",
       email: "admin@example.test",
-      debeCambiarPassword: false
+      debeCambiarPassword: false,
     };
 
     const response = (await POST(request())) as any;
@@ -104,7 +108,7 @@ describe("mobile login", () => {
     expect(state.storedSessions).toHaveLength(1);
     expect(state.storedSessions[0]).toMatchObject({
       identifier: "mobile-session:admin",
-      token: "hashed-session-random"
+      token: "hashed-session-random",
     });
     expect(response.body).not.toHaveProperty("sessionId");
   });

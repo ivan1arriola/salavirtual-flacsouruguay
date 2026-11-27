@@ -20,7 +20,7 @@ export {
   esPerfilGoogleInstitucional,
   resolverVinculacionSubjectGoogle,
   parseAuthConfig,
-  resolverRedireccionAutorizada
+  resolverRedireccionAutorizada,
 } from "./domain";
 
 export type { IdentityRepository, CalendarioAsistenteDispatcher } from "./ports";
@@ -28,12 +28,12 @@ export type { IdentityRepository, CalendarioAsistenteDispatcher } from "./ports"
 export {
   crearAutenticarCredencialesUseCase,
   type PasswordVerifier,
-  crearResolverUsuarioGoogleUseCase
+  crearResolverUsuarioGoogleUseCase,
 } from "./application";
 
 export {
   crearPrismaIdentityAdapter,
   crearAsistenciaCalendarioDispatcher,
   type AsistenciaCalendarioDependencies,
-  type SincronizarCalendariosAsistenteUsuarioFn
+  type SincronizarCalendariosAsistenteUsuarioFn,
 } from "./infrastructure";

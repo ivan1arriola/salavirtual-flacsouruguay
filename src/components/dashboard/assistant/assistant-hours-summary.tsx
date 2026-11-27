@@ -4,7 +4,7 @@ import { ASSISTANT_AGENDA_HREF } from "@/src/components/app-navigation";
 import { formatMinutes } from "@/src/lib/ui/assistant-format";
 
 export function AssistantHoursSummary({
-  stats
+  stats,
 }: Readonly<{
   stats: {
     readonly currentMonthMinutes: number;
@@ -39,7 +39,9 @@ export function AssistantHoursSummary({
             </span>
             <small>Horas registradas este mes</small>
           </div>
-          <strong className="assistant-stat-value">{formatMinutes(stats.currentMonthMinutes)} h</strong>
+          <strong className="assistant-stat-value">
+            {formatMinutes(stats.currentMonthMinutes)} h
+          </strong>
           <p className="assistant-stat-breakdown">
             Virtual {formatMinutes(stats.currentMonthVirtualMinutes)} h · Híbrida{" "}
             {formatMinutes(stats.currentMonthHybridMinutes)} h
@@ -53,7 +55,9 @@ export function AssistantHoursSummary({
             </span>
             <small>Mes anterior</small>
           </div>
-          <strong className="assistant-stat-value">{formatMinutes(stats.previousMonthMinutes)} h</strong>
+          <strong className="assistant-stat-value">
+            {formatMinutes(stats.previousMonthMinutes)} h
+          </strong>
           <p className="assistant-stat-breakdown">
             Virtual {formatMinutes(stats.previousMonthVirtualMinutes)} h · Híbrida{" "}
             {formatMinutes(stats.previousMonthHybridMinutes)} h
@@ -69,7 +73,8 @@ export function AssistantHoursSummary({
           </div>
           <strong className="assistant-stat-value">{stats.postulacionesCount}</strong>
           <p className="assistant-stat-breakdown">
-            {stats.respondidas} oportunidades respondidas · {stats.pendientesRespuesta} sin responder
+            {stats.respondidas} oportunidades respondidas · {stats.pendientesRespuesta} sin
+            responder
           </p>
         </article>
 

@@ -22,9 +22,10 @@ export type EstadoActualZoom = Readonly<{
 export function resolverEstadoActualZoom(
   ejecuciones: readonly EjecucionZoomObservada[],
   api: EstadoApiZoom | null,
-  cuentaApi: string | null
+  cuentaApi: string | null,
 ): EstadoActualZoom {
-  const ultima = [...ejecuciones].sort((a, b) => b.inicio.getTime() - a.inicio.getTime())[0] ?? null;
+  const ultima =
+    [...ejecuciones].sort((a, b) => b.inicio.getTime() - a.inicio.getTime())[0] ?? null;
   if (api?.estado === "started") {
     const vinculada = ejecuciones.find((e) => e.uuid === api.uuid && e.cuentaZoomId === cuentaApi);
     if (vinculada) {

@@ -14,7 +14,7 @@ const categorias = [
   "Inscripciones",
   "Configuración",
   "Transmisión",
-  "Otros"
+  "Otros",
 ] as const;
 
 function categoria(tipo: string): (typeof categorias)[number] {
@@ -56,17 +56,17 @@ function categoria(tipo: string): (typeof categorias)[number] {
 
 export function ZoomActividadCategorias({
   actividad,
-  id
+  id,
 }: Readonly<{ actividad: readonly EntradaActividadZoom[]; id: string }>) {
   return (
-    <section className={styles.card} aria-labelledby={id}>
-      <h2 id={id} className={styles.sectionTitle}>
+    <section className={styles["card"]} aria-labelledby={id}>
+      <h2 id={id} className={styles["sectionTitle"]}>
         Actividad por categoría
       </h2>
-      <p className={styles.note}>
+      <p className={styles["note"]}>
         Avisos recibidos de Zoom. La ausencia de avisos no confirma ausencia de actividad.
       </p>
-      <div className={styles.categoryList}>
+      <div className={styles["categoryList"]}>
         {categorias.map((nombre) => {
           const avisos = actividad.filter((a) => categoria(a.tipo) === nombre).reverse();
           const total = avisos.reduce((n, a) => n + a.cantidad, 0);
@@ -76,13 +76,16 @@ export function ZoomActividadCategorias({
                 {nombre} <span>· {total} avisos</span>
               </summary>
               {avisos.length ? (
-                <ol className={styles.timeline}>
+                <ol className={styles["timeline"]}>
                   {avisos.map((a, i) => (
-                    <ItemActividad key={a.huella ?? a.tipo + "-" + a.desde.toISOString() + "-" + i} a={a} />
+                    <ItemActividad
+                      key={a.huella ?? a.tipo + "-" + a.desde.toISOString() + "-" + i}
+                      a={a}
+                    />
                   ))}
                 </ol>
               ) : (
-                <p className={styles.note}>Sin avisos recibidos.</p>
+                <p className={styles["note"]}>Sin avisos recibidos.</p>
               )}
             </details>
           );

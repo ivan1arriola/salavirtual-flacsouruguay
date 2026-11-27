@@ -24,7 +24,7 @@ export function EmailListEditor({
   googleOnly = false,
   placeholder,
   addLabel,
-  onChange
+  onChange,
 }: EmailEditorProps) {
   const errorId = useId();
   const [draft, setDraft] = useState("");
@@ -80,8 +80,8 @@ export function EmailListEditor({
             <div>
               <strong>Debe ser una cuenta Google</strong>
               <span>
-                El correo tiene que estar asociado a Gmail o Google Workspace. Si no es una cuenta Google, no
-                podrá configurarse como cohost.
+                El correo tiene que estar asociado a Gmail o Google Workspace. Si no es una cuenta
+                Google, no podrá configurarse como cohost.
               </span>
             </div>
           </div>
@@ -90,7 +90,9 @@ export function EmailListEditor({
             <Mail size={17} />
             <div>
               <strong>Puede ser cualquier correo electrónico válido</strong>
-              <span>No es necesario que sea una cuenta Google ni que pertenezca a flacso.edu.uy.</span>
+              <span>
+                No es necesario que sea una cuenta Google ni que pertenezca a flacso.edu.uy.
+              </span>
             </div>
           </div>
         )}

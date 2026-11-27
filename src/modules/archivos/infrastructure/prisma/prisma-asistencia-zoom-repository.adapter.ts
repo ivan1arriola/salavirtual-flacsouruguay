@@ -10,7 +10,7 @@ const mismaFecha = (a: Date | null | undefined, b: Date | null | undefined): boo
   (a?.getTime() ?? null) === (b?.getTime() ?? null);
 
 export function crearPrismaAsistenciaZoomRepositoryAdapter(
-  deps: PrismaAsistenciaZoomRepositoryDeps
+  deps: PrismaAsistenciaZoomRepositoryDeps,
 ): AsistenciaZoomRepositoryPort {
   const { db } = deps;
 
@@ -19,13 +19,18 @@ export function crearPrismaAsistenciaZoomRepositoryAdapter(
     uuid: true,
     eventoProveedorId: true,
     eventoProveedor: {
-      select: { instancia: { select: { inicioProgramadoAt: true, finProgramadoAt: true } } }
-    }
+      select: { instancia: { select: { inicioProgramadoAt: true, finProgramadoAt: true } } },
+    },
   } as const;
 
   const adaptador: AsistenciaZoomRepositoryPort = {
     async guardarSesionesYResumen(ocurrenciaId, version, sesiones, resumen) {
-      const r = await adaptador.guardarSesionesYConsolidar(ocurrenciaId, version, sesiones, () => resumen);
+      const r = await adaptador.guardarSesionesYConsolidar(
+        ocurrenciaId,
+        version,
+        sesiones,
+        () => resumen,
+      );
       // Un resumen fijo nunca devuelve SIN_VENTANA.
       return r.tipo === "SIN_VENTANA" ? { tipo: "REPROGRAMADO" as const } : r;
     },
@@ -34,13 +39,13 @@ export function crearPrismaAsistenciaZoomRepositoryAdapter(
       ocurrenciaId,
       version,
       sesiones,
-      consolidar
+      consolidar,
     ): Promise<ResultadoConsolidacionAsistencia> {
       try {
         return await db.$transaction(async (tx) => {
           const previa = await tx.ocurrenciaArchivoZoom.findUnique({
             where: { id: ocurrenciaId },
-            select: { id: true, eventoProveedorId: true }
+            select: { id: true, eventoProveedorId: true },
           });
           if (!previa) {
             return { tipo: "OCURRENCIA_NO_ENCONTRADA" as const };
@@ -53,7 +58,7 @@ export function crearPrismaAsistenciaZoomRepositoryAdapter(
           await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`zoom-asistencia:${claveBloqueo}`}, 0))`;
           const ocurrencia = await tx.ocurrenciaArchivoZoom.findUnique({
             where: { id: ocurrenciaId },
-            select: seleccion
+            select: seleccion,
           });
           if (!ocurrencia) {
             return { tipo: "OCURRENCIA_NO_ENCONTRADA" as const };
@@ -82,9 +87,9 @@ export function crearPrismaAsistenciaZoomRepositoryAdapter(
               entradaAt: s.entradaAt,
               salidaAt: s.salidaAt,
               status: s.status,
-              rol: s.rol
+              rol: s.rol,
             })),
-            skipDuplicates: true
+            skipDuplicates: true,
           });
 
           const claveAmbito = ocurrencia.eventoProveedorId
@@ -95,7 +100,7 @@ export function crearPrismaAsistenciaZoomRepositoryAdapter(
             where: ocurrencia.eventoProveedorId
               ? { eventoProveedorId: ocurrencia.eventoProveedorId }
               : { id: ocurrencia.id },
-            select: { id: true, sesionesAsistencia: true }
+            select: { id: true, sesionesAsistencia: true },
           });
           const resumen = consolidar(
             ocurrenciasAmbito.map((o) => ({
@@ -109,9 +114,9 @@ export function crearPrismaAsistenciaZoomRepositoryAdapter(
                 entradaAt: s.entradaAt,
                 salidaAt: s.salidaAt,
                 status: s.status as "in_meeting" | "in_waiting_room" | null,
-                rol: s.rol as "HOST" | "COHOST" | null
-              }))
-            }))
+                rol: s.rol as "HOST" | "COHOST" | null,
+              })),
+            })),
           );
           // Sin ventana no se guarda nada: se revierte lo insertado en esta transacción.
           if (resumen === null) {
@@ -121,10 +126,13 @@ export function crearPrismaAsistenciaZoomRepositoryAdapter(
           const existentes = new Set(
             (
               await tx.registroAsistenciaZoom.findMany({
-                where: { claveAmbito, claveParticipante: { in: unicos.map((r) => r.claveParticipante) } },
-                select: { claveParticipante: true }
+                where: {
+                  claveAmbito,
+                  claveParticipante: { in: unicos.map((r) => r.claveParticipante) },
+                },
+                select: { claveParticipante: true },
               })
-            ).map((e) => e.claveParticipante)
+            ).map((e) => e.claveParticipante),
           );
 
           const nuevos = unicos.filter((r) => !existentes.has(r.claveParticipante));
@@ -143,9 +151,9 @@ export function crearPrismaAsistenciaZoomRepositoryAdapter(
                 sesiones: r.sesiones,
                 primeraEntradaAt: r.primeraEntradaAt,
                 ultimaSalidaAt: r.ultimaSalidaAt,
-                esHostOCohost: r.esHostOCohost
+                esHostOCohost: r.esHostOCohost,
               })),
-              skipDuplicates: true
+              skipDuplicates: true,
             });
             registrosCreados = count;
           }
@@ -163,8 +171,8 @@ export function crearPrismaAsistenciaZoomRepositoryAdapter(
                 sesiones: r.sesiones,
                 primeraEntradaAt: r.primeraEntradaAt,
                 ultimaSalidaAt: r.ultimaSalidaAt,
-                esHostOCohost: r.esHostOCohost
-              }
+                esHostOCohost: r.esHostOCohost,
+              },
             });
             registrosActualizados += count;
           }
@@ -181,12 +189,17 @@ export function crearPrismaAsistenciaZoomRepositoryAdapter(
                 estadoConciliacion: "SIN_CONCILIAR",
                 invitadoReunionId: null,
                 esExterno: null,
-                notasOperador: null
-              }
+                notasOperador: null,
+              },
             });
           }
 
-          return { tipo: "GUARDADO" as const, sesionesNuevas, registrosCreados, registrosActualizados };
+          return {
+            tipo: "GUARDADO" as const,
+            sesionesNuevas,
+            registrosCreados,
+            registrosActualizados,
+          };
         });
       } catch (error) {
         if (error === SIN_VENTANA) {
@@ -194,7 +207,7 @@ export function crearPrismaAsistenciaZoomRepositoryAdapter(
         }
         throw error;
       }
-    }
+    },
   };
   return adaptador;
 }

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   resolverPeriodoMes,
   resumirAsignacionesPorAsistente,
-  resumirTotales
+  resumirTotales,
 } from "../src/modules/asistencia/resumen-administracion.domain";
 
 describe("resumen administrativo de asistentes", () => {
@@ -11,12 +11,23 @@ describe("resumen administrativo de asistentes", () => {
       [{ id: "a1", usuarioId: "u1", slug: "ana", nombre: "Ana", email: null, activo: true }],
       [
         { asistenteTecnicoId: "a1", modalidad: "VIRTUAL", minutos: 90, monto: 600, moneda: "UYU" },
-        { asistenteTecnicoId: "a1", modalidad: "HIBRIDA", minutos: 60, monto: null, moneda: "UYU" }
-      ]
+        { asistenteTecnicoId: "a1", modalidad: "HIBRIDA", minutos: 60, monto: null, moneda: "UYU" },
+      ],
     );
-    expect(rows[0]).toMatchObject({ reuniones: 2, virtuales: 1, hibridas: 1, minutos: 150, sinTarifa: 1 });
+    expect(rows[0]).toMatchObject({
+      reuniones: 2,
+      virtuales: 1,
+      hibridas: 1,
+      minutos: 150,
+      sinTarifa: 1,
+    });
     expect(rows[0].montos).toEqual([{ moneda: "UYU", monto: 600 }]);
-    expect(resumirTotales(rows)).toMatchObject({ asistentes: 1, reuniones: 2, minutos: 150, sinTarifa: 1 });
+    expect(resumirTotales(rows)).toMatchObject({
+      asistentes: 1,
+      reuniones: 2,
+      minutos: 150,
+      sinTarifa: 1,
+    });
   });
 
   it("resuelve el mes en UTC-3 y permite navegar entre años", () => {

@@ -3,20 +3,22 @@ import {
   consultarResumenAsistentesUseCase,
   consultarTarifaVigenteUseCase,
   enviarReportesMensualesUseCase,
-  generarPlanillaPagosUseCase
+  generarPlanillaPagosUseCase,
 } from "@/src/modules/liquidaciones/application";
 import type {
   CandidatoReporteMensual,
   LiquidacionesRepositoryPort,
   PlanillaPagosExporterPort,
-  TarifasRepositoryPort
+  TarifasRepositoryPort,
 } from "@/src/modules/liquidaciones/ports";
 import type { FilaPlanillaPago, FilaResumenAsistente } from "@/src/modules/liquidaciones/domain";
 
 describe("liquidaciones application", () => {
   it("consulta la tarifa vigente delegando al puerto", async () => {
     const mockTarifasRepo: TarifasRepositoryPort = {
-      obtenerTarifaVigente: vi.fn().mockResolvedValue({ id: "tar-1", valorHora: 500, moneda: "UYU" })
+      obtenerTarifaVigente: vi
+        .fn()
+        .mockResolvedValue({ id: "tar-1", valorHora: 500, moneda: "UYU" }),
     };
 
     const res = await consultarTarifaVigenteUseCase({ tarifasRepo: mockTarifasRepo }, "VIRTUAL");
@@ -36,24 +38,24 @@ describe("liquidaciones application", () => {
         tarifaHora: 500,
         montoConfirmado: null,
         montoCalculado: 500,
-        moneda: "UYU"
-      }
+        moneda: "UYU",
+      },
     ];
     const mockBuffer = Buffer.from("excel-content");
     const mockLiquidacionesRepo: Partial<LiquidacionesRepositoryPort> = {
-      obtenerFilasPlanillaPagos: vi.fn().mockResolvedValue(filas)
+      obtenerFilasPlanillaPagos: vi.fn().mockResolvedValue(filas),
     };
     const mockExporter: PlanillaPagosExporterPort = {
-      generarPlanillaPagosExcel: vi.fn().mockResolvedValue(mockBuffer)
+      generarPlanillaPagosExcel: vi.fn().mockResolvedValue(mockBuffer),
     };
 
     const periodo = { clave: "2026-05", desdeMs: 1000, hastaMs: 2000 };
     const res = await generarPlanillaPagosUseCase(
       {
         liquidacionesRepo: mockLiquidacionesRepo as LiquidacionesRepositoryPort,
-        exporter: mockExporter
+        exporter: mockExporter,
       },
-      periodo
+      periodo,
     );
 
     expect(res).toBe(mockBuffer);
@@ -75,17 +77,23 @@ describe("liquidaciones application", () => {
         hibridas: 0,
         minutos: 60,
         montos: [{ moneda: "UYU", monto: 500 }],
-        sinTarifa: 0
-      }
+        sinTarifa: 0,
+      },
     ];
     const mockRepo: Partial<LiquidacionesRepositoryPort> = {
-      obtenerResumenAsistentes: vi.fn().mockResolvedValue(mockFilas)
+      obtenerResumenAsistentes: vi.fn().mockResolvedValue(mockFilas),
     };
 
-    const periodo = { clave: "2026-05", desdeMs: 0, hastaMs: 10, anterior: "2026-04", siguiente: "2026-06" };
+    const periodo = {
+      clave: "2026-05",
+      desdeMs: 0,
+      hastaMs: 10,
+      anterior: "2026-04",
+      siguiente: "2026-06",
+    };
     const res = await consultarResumenAsistentesUseCase(
       { liquidacionesRepo: mockRepo as LiquidacionesRepositoryPort },
-      periodo
+      periodo,
     );
     expect(res).toBe(mockFilas);
   });
@@ -103,8 +111,8 @@ describe("liquidaciones application", () => {
         minutosHibridos: 0,
         montoVirtual: 500,
         montoHibrido: 0,
-        monto: 500
-      }
+        monto: 500,
+      },
     };
     const candidatoSinEmail: CandidatoReporteMensual = {
       asistenteTecnicoId: "asist-2",
@@ -118,16 +126,18 @@ describe("liquidaciones application", () => {
         minutosHibridos: 0,
         montoVirtual: 0,
         montoHibrido: 0,
-        monto: 0
-      }
+        monto: 0,
+      },
     };
 
     const mockRepo: Partial<LiquidacionesRepositoryPort> = {
-      obtenerCandidatosReporteMensual: vi.fn().mockResolvedValue([candidatoConEmail, candidatoSinEmail]),
+      obtenerCandidatosReporteMensual: vi
+        .fn()
+        .mockResolvedValue([candidatoConEmail, candidatoSinEmail]),
       obtenerCopiasAdministracion: vi.fn().mockResolvedValue(["admin@flacso.edu.uy"]),
       reservarEnvioReporte: vi.fn().mockResolvedValue({ id: "reserva-1" }),
       marcarEnvioReporteExitoso: vi.fn().mockResolvedValue(undefined),
-      marcarEnvioReporteError: vi.fn().mockResolvedValue(undefined)
+      marcarEnvioReporteError: vi.fn().mockResolvedValue(undefined),
     };
 
     const mockEnviarCorreo = vi.fn().mockResolvedValue({ sent: true });
@@ -135,9 +145,9 @@ describe("liquidaciones application", () => {
     const resultado = await enviarReportesMensualesUseCase(
       {
         liquidacionesRepo: mockRepo as LiquidacionesRepositoryPort,
-        enviarCorreo: mockEnviarCorreo
+        enviarCorreo: mockEnviarCorreo,
       },
-      new Date("2026-06-01T12:00:00Z")
+      new Date("2026-06-01T12:00:00Z"),
     );
 
     expect(resultado.periodo).toBe("2026-05");

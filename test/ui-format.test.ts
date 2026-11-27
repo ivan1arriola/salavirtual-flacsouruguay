@@ -17,6 +17,8 @@ describe("formato de fecha y hora", () => {
   });
 
   it("muestra el día de la semana en la fecha completa", () => {
-    expect(formatLongDate(new Date("2026-08-12T21:30:00Z"))).toMatch(/miércoles.*12.*agosto.*2026/i);
+    expect(formatLongDate(new Date("2026-08-12T21:30:00Z"))).toMatch(
+      /miércoles.*12.*agosto.*2026/i,
+    );
   });
 });

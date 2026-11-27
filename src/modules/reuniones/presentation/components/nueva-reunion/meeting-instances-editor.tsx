@@ -1,7 +1,7 @@
 import { Copy, Plus, Trash2 } from "lucide-react";
 import {
   horarioAsistenciaCumpleMargen,
-  sugerirHorarioAsistencia
+  sugerirHorarioAsistencia,
 } from "@/src/modules/reuniones/horarios-asistencia.domain";
 import { Field } from "./form-primitives";
 import type { MeetingDate, MeetingDateMode } from "./tipos";
@@ -31,7 +31,7 @@ export function MeetingInstancesEditor({
   onRemove,
   onAdd,
   onDuplicate,
-  onSort
+  onSort,
 }: MeetingInstancesEditorProps) {
   const requiereHorarioPresencial = meetingMode === "HIBRIDA" && requiresAssistance;
   const desordenadas = ordenarEncuentros(dates).some((fila, i) => fila.id !== dates[i].id);
@@ -40,15 +40,18 @@ export function MeetingInstancesEditor({
     <>
       {solapamientos.length ? (
         <p className="meeting-date-warning" role="note">
-          <strong>Hay encuentros que se solapan.</strong> Revisá las fechas y horarios. Podés continuar si son
-          correctos.
+          <strong>Hay encuentros que se solapan.</strong> Revisá las fechas y horarios. Podés
+          continuar si son correctos.
         </p>
       ) : null}
       <div className="date-rows">
         {dates.map((date, index) => {
           const posicion = index;
           return (
-            <div className={dateMode === "SINGLE" ? "date-row date-row-single" : "date-row"} key={date.id}>
+            <div
+              className={dateMode === "SINGLE" ? "date-row date-row-single" : "date-row"}
+              key={date.id}
+            >
               {dateMode !== "SINGLE" ? (
                 <span className="date-row-number" aria-hidden="true">
                   {posicion + 1}
@@ -89,7 +92,9 @@ export function MeetingInstancesEditor({
                         type="time"
                         required
                         value={date.horaAsistenciaInicio}
-                        onChange={(event) => onFieldChange(index, "horaAsistenciaInicio", event.target.value)}
+                        onChange={(event) =>
+                          onFieldChange(index, "horaAsistenciaInicio", event.target.value)
+                        }
                       />
                     </Field>
                     <Field label="Salida del asistente">
@@ -97,7 +102,9 @@ export function MeetingInstancesEditor({
                         type="time"
                         required
                         value={date.horaAsistenciaFin}
-                        onChange={(event) => onFieldChange(index, "horaAsistenciaFin", event.target.value)}
+                        onChange={(event) =>
+                          onFieldChange(index, "horaAsistenciaFin", event.target.value)
+                        }
                       />
                     </Field>
                   </div>
@@ -112,7 +119,8 @@ export function MeetingInstancesEditor({
                     <div className="meeting-assistance-readonly">
                       <span>Llegada del asistente</span>
                       <strong>
-                        {sugerirHorarioAsistencia(date.horaInicio, date.horaFin, "VIRTUAL").llegada || "—"}
+                        {sugerirHorarioAsistencia(date.horaInicio, date.horaFin, "VIRTUAL")
+                          .llegada || "—"}
                       </strong>
                     </div>
                     <div className="meeting-assistance-readonly">
@@ -170,7 +178,8 @@ export function MeetingInstancesEditor({
               date.horaAsistenciaFin &&
               !horarioAsistenciaCumpleMargen(date) ? (
                 <p className="meeting-date-warning" role="alert">
-                  El asistente debe llegar al menos 30 minutos antes y salir 30 minutos después del encuentro.
+                  El asistente debe llegar al menos 30 minutos antes y salir 30 minutos después del
+                  encuentro.
                 </p>
               ) : null}
             </div>

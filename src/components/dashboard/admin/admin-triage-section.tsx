@@ -5,19 +5,19 @@ import {
   Files,
   GitCompareArrows,
   Siren,
-  UserRoundCheck
+  UserRoundCheck,
 } from "lucide-react";
 import Link from "next/link";
 import {
   AdminQuickAssignAction,
   AdminRetryMeetAction,
-  AdminSyncRecordingsAction
+  AdminSyncRecordingsAction,
 } from "@/src/components/admin-attention-actions";
 import { formatDate, formatTime } from "@/src/lib/ui/format";
 import type { AdminDashboardData } from "@/src/modules/dashboard/admin-dashboard.adapter";
 
 export function AdminTriageSection({
-  attentionData
+  attentionData,
 }: Readonly<{
   attentionData: AdminDashboardData["attentionData"];
 }>) {
@@ -32,7 +32,10 @@ export function AdminTriageSection({
     duplicateRisks.count;
 
   return (
-    <section className="dashboard-content-section admin-triage-section" aria-labelledby="admin-triage-title">
+    <section
+      className="dashboard-content-section admin-triage-section"
+      aria-labelledby="admin-triage-title"
+    >
       <div className="section-heading admin-dashboard-section-heading">
         <div className="admin-section-heading-copy">
           <span className="admin-section-icon is-attention">
@@ -59,7 +62,10 @@ export function AdminTriageSection({
           <CheckCircle2 size={24} />
           <div>
             <strong>Todo bajo control</strong>
-            <p>No hay excepciones operativas que requieran intervención inmediata en las salas de FLACSO.</p>
+            <p>
+              No hay excepciones operativas que requieran intervención inmediata en las salas de
+              FLACSO.
+            </p>
           </div>
         </div>
       ) : (
@@ -113,7 +119,8 @@ export function AdminTriageSection({
               <ul>
                 {pendingCoverage.examples.map((item) => (
                   <li key={item.id}>
-                    {item.title} · {formatDate(new Date(item.time))} {formatTime(new Date(item.time))}
+                    {item.title} · {formatDate(new Date(item.time))}{" "}
+                    {formatTime(new Date(item.time))}
                   </li>
                 ))}
               </ul>

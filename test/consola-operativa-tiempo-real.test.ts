@@ -5,7 +5,7 @@ import {
   controlOperativoReunionSchema,
   derivarEstadoGrabacionOperativa,
   derivarEstadoTranscripcionOperativa,
-  registroAsistenciaOperativoSchema
+  registroAsistenciaOperativoSchema,
 } from "@/src/modules/reuniones/reunion-operativa.domain";
 
 describe("consola operativa en tiempo real y registro de asistencia en base de datos", () => {
@@ -15,22 +15,22 @@ describe("consola operativa en tiempo real y registro de asistencia en base de d
         requiereGrabacion: true,
         estadoReunion: "EN_CURSO",
         estadoProveedor: "PROCESANDO",
-        grabandoEnVivo: true
-      })
+        grabandoEnVivo: true,
+      }),
     ).toBe("GRABANDO");
 
     expect(
       derivarEstadoTranscripcionOperativa({
         transcribiendoEnVivo: true,
-        estadoProveedor: "TRANSCRIBIENDO"
-      })
+        estadoProveedor: "TRANSCRIBIENDO",
+      }),
     ).toBe("TRANSCRIBIENDO");
 
     expect(
       derivarEstadoTranscripcionOperativa({
         transcribiendoEnVivo: false,
-        estadoProveedor: "AUSENTE"
-      })
+        estadoProveedor: "AUSENTE",
+      }),
     ).toBe("NO_TRANSCRIBIENDO");
   });
 
@@ -39,7 +39,7 @@ describe("consola operativa en tiempo real y registro de asistencia en base de d
       tipoAccesoMeet: "OPEN",
       requiereGrabacion: true,
       modalidad: "VIRTUAL",
-      agregarCohostEmail: "cohost@flacso.edu.uy"
+      agregarCohostEmail: "cohost@flacso.edu.uy",
     });
     expect(control.tipoAccesoMeet).toBe("OPEN");
     expect(control.agregarCohostEmail).toBe("cohost@flacso.edu.uy");
@@ -51,7 +51,7 @@ describe("consola operativa en tiempo real y registro de asistencia en base de d
       rolEnReunion: "COHOST",
       conectado: true,
       enGrupoPequeno: true,
-      salaGrupoPequeno: "Grupo 2"
+      salaGrupoPequeno: "Grupo 2",
     });
     expect(asistente.email).toBe("ana.perez@flacso.edu.uy");
     expect(asistente.enGrupoPequeno).toBe(true);
@@ -61,7 +61,7 @@ describe("consola operativa en tiempo real y registro de asistencia en base de d
   it("expone endpoint de control operativo y componentes de edición en tiempo real", () => {
     const routePath = join(
       process.cwd(),
-      "app/api/v1/reuniones/instancias/[instanciaId]/control-operativo/route.ts"
+      "app/api/v1/reuniones/instancias/[instanciaId]/control-operativo/route.ts",
     );
     expect(existsSync(routePath)).toBe(true);
     const routeSource = readFileSync(routePath, "utf8");
@@ -72,7 +72,7 @@ describe("consola operativa en tiempo real y registro de asistencia en base de d
 
     const pageSource = readFileSync(
       join(process.cwd(), "src/bootstrap/ui/reuniones/reunion-operativa-page.server.tsx"),
-      "utf8"
+      "utf8",
     );
     expect(pageSource).toContain("OperationalAttendeeDatabaseManager");
     expect(pageSource).toContain("OperationalRemoteControlPanel");
@@ -84,19 +84,26 @@ describe("consola operativa en tiempo real y registro de asistencia en base de d
 
   it("evita asignar el correo equivocado cuando existen homónimos y evita falsos positivos de grupos pequeños", () => {
     const adapterSource = readFileSync(
-      join(process.cwd(), "src/modules/archivos/infrastructure/google/google-artifacts-provider.adapter.ts"),
-      "utf8"
+      join(
+        process.cwd(),
+        "src/modules/archivos/infrastructure/google/google-artifacts-provider.adapter.ts",
+      ),
+      "utf8",
     );
-    expect(adapterSource).not.toContain('salaGrupoPequeno: enGrupoPequeno ? "Sala de grupo pequeño"');
+    expect(adapterSource).not.toContain(
+      'salaGrupoPequeno: enGrupoPequeno ? "Sala de grupo pequeño"',
+    );
     expect(adapterSource).toContain("mergedIntervals");
 
     const bootstrapSource = readFileSync(
       join(process.cwd(), "src/bootstrap/reunion-operativa.server.ts"),
-      "utf8"
+      "utf8",
     );
     expect(bootstrapSource).toContain("crearIndiceUnicoPorNombre");
 
-    const servicePath = existsSync(join(process.cwd(), "src/modules/reuniones/reunion-operativa.service.ts"))
+    const servicePath = existsSync(
+      join(process.cwd(), "src/modules/reuniones/reunion-operativa.service.ts"),
+    )
       ? join(process.cwd(), "src/modules/reuniones/reunion-operativa.service.ts")
       : join(process.cwd(), "src/bootstrap/reunion-operativa.server.ts");
     const serviceSource = readFileSync(servicePath, "utf8");

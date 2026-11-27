@@ -19,7 +19,7 @@ export type LoteEventosOperativos = Readonly<{
 export async function seleccionarLoteEventosOperativosUseCase(
   repository: EventosOperativosRepositoryPort,
   ahora: Date,
-  limite = 25
+  limite = 25,
 ): Promise<LoteEventosOperativos> {
   const cuatroHoras = new Date(ahora.getTime() - 4 * 60 * 60 * 1000);
   const cuarentaYOchoHoras = new Date(ahora.getTime() - 48 * 60 * 60 * 1000);
@@ -27,7 +27,7 @@ export async function seleccionarLoteEventosOperativosUseCase(
   const ventanas: readonly Omit<ListarEventosOperativosInput, "limite">[] = [
     { ventana: "CALIENTE", desde: cuatroHoras, hasta: ahora },
     { ventana: "INTERMEDIA", desde: cuarentaYOchoHoras, hasta: cuatroHoras },
-    { ventana: "CIERRE", desde: treintaDias, hasta: cuarentaYOchoHoras }
+    { ventana: "CIERRE", desde: treintaDias, hasta: cuarentaYOchoHoras },
   ];
   const seleccionados: string[] = [];
   const vistos = new Set<string>();
@@ -60,7 +60,8 @@ export async function seleccionarLoteEventosOperativosUseCase(
 export async function seleccionarEventosOperativosUseCase(
   repository: EventosOperativosRepositoryPort,
   ahora: Date,
-  limite = 25
+  limite = 25,
 ): Promise<readonly string[]> {
-  return (await seleccionarLoteEventosOperativosUseCase(repository, ahora, limite)).eventoProveedorIds;
+  return (await seleccionarLoteEventosOperativosUseCase(repository, ahora, limite))
+    .eventoProveedorIds;
 }

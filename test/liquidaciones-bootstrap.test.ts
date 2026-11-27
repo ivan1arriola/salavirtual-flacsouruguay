@@ -3,14 +3,14 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
 vi.mock("@/src/lib/db", () => ({ db: {} }));
 vi.mock("@/src/modules/configuracion/correo.service", () => ({
-  enviarCorreoConfigurado: vi.fn()
+  enviarCorreoConfigurado: vi.fn(),
 }));
 
 import {
   crearLiquidacionesRepository,
   crearPlanillaPagosExporter,
   crearTarifasRepository,
-  obtenerServicioLiquidaciones
+  obtenerServicioLiquidaciones,
 } from "@/src/bootstrap/liquidaciones.server";
 
 describe("liquidaciones bootstrap", () => {

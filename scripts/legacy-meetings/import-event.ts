@@ -1,6 +1,6 @@
 import {
   mapearEstadoAsignacionLegacy,
-  mapearEstadoInstanciaLegacy
+  mapearEstadoInstanciaLegacy,
 } from "../../src/modules/migracion/reuniones-legacy.domain";
 import type { MapeosLegacy } from "./catalogs";
 import { jsonValue, target } from "./clients";
@@ -16,7 +16,7 @@ export async function importarEvento(
   modalidad: ModalidadReunion,
   requiereGrabacion: boolean,
   zoomProviderId: string,
-  mapeos: MapeosLegacy
+  mapeos: MapeosLegacy,
 ): Promise<void> {
   const instancia = await target.instanciaSala.upsert({
     where: { legacyZoomEventoId: evento.id },
@@ -35,7 +35,7 @@ export async function importarEvento(
       minutosReportados: evento.minutosReportados,
       comentariosReporte: evento.comentariosReporte,
       costoEstimado: evento.costoEstimado?.toString(),
-      costoReal: evento.costoReal?.toString()
+      costoReal: evento.costoReal?.toString(),
     },
     update: {
       ordinal: index + 1,
@@ -47,8 +47,8 @@ export async function importarEvento(
       finRealAt: evento.finRealAt,
       minutosReportados: evento.minutosReportados,
       costoEstimado: evento.costoEstimado?.toString(),
-      costoReal: evento.costoReal?.toString()
-    }
+      costoReal: evento.costoReal?.toString(),
+    },
   });
   const cuentaProveedorId = mapeos.cuentasPorLegacy.get(evento.cuentaZoomId);
   if (!cuentaProveedorId) {
@@ -58,8 +58,8 @@ export async function importarEvento(
     where: {
       instanciaSalaId_proveedorId: {
         instanciaSalaId: instancia.id,
-        proveedorId: zoomProviderId
-      }
+        proveedorId: zoomProviderId,
+      },
     },
     create: {
       instanciaSalaId: instancia.id,
@@ -73,7 +73,7 @@ export async function importarEvento(
       estadoIntegracion: "HISTORICA",
       errorIntegracion: evento.errorIntegracion,
       createdAt: evento.createdAt,
-      updatedAt: evento.updatedAt
+      updatedAt: evento.updatedAt,
     },
     update: {
       cuentaProveedorId,
@@ -83,8 +83,8 @@ export async function importarEvento(
       payloadUltimo: jsonValue(evento.zoomPayloadUltimo),
       sincronizadoAt: evento.sincronizadoConZoomAt,
       estadoIntegracion: "HISTORICA",
-      errorIntegracion: evento.errorIntegracion
-    }
+      errorIntegracion: evento.errorIntegracion,
+    },
   });
   await importarAsignaciones(evento, instancia.id, modalidad, mapeos);
 }
@@ -93,13 +93,14 @@ async function importarAsignaciones(
   evento: EventoLegacy,
   instanciaSalaId: string,
   modalidad: ModalidadReunion,
-  mapeos: MapeosLegacy
+  mapeos: MapeosLegacy,
 ): Promise<void> {
   const asignaciones = [...evento.asignaciones]
     .sort((left, right) => right.updatedAt.getTime() - left.updatedAt.getTime())
     .filter(
       (asignacion, position, all) =>
-        all.findIndex((candidate) => candidate.asistenteZoomId === asignacion.asistenteZoomId) === position
+        all.findIndex((candidate) => candidate.asistenteZoomId === asignacion.asistenteZoomId) ===
+        position,
     );
   for (const asignacion of asignaciones) {
     const usuario = mapeos.usuariosPorLegacy.get(asignacion.asistente.usuarioId);
@@ -111,19 +112,19 @@ async function importarAsignaciones(
         where: {
           modalidad,
           valorHora: asignacion.tarifaAplicadaHora.toString(),
-          moneda: asignacion.moneda
+          moneda: asignacion.moneda,
         },
         orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-        select: { id: true }
+        select: { id: true },
       })) ??
       (await target.tarifaAsistenciaTecnica.create({
         data: {
           modalidad,
           valorHora: asignacion.tarifaAplicadaHora.toString(),
           moneda: asignacion.moneda,
-          createdAt: asignacion.createdAt
+          createdAt: asignacion.createdAt,
         },
-        select: { id: true }
+        select: { id: true },
       }));
     await target.asignacionAsistenciaTecnica.upsert({
       where: { legacyZoomAsignacionId: asignacion.id },
@@ -137,15 +138,15 @@ async function importarAsignaciones(
         moneda: asignacion.moneda,
         montoConfirmado: asignacion.montoConfirmado?.toString(),
         createdAt: asignacion.createdAt,
-        updatedAt: asignacion.updatedAt
+        updatedAt: asignacion.updatedAt,
       },
       update: {
         estado: mapearEstadoAsignacionLegacy(asignacion.estadoAsignacion),
         tarifaAsistenciaTecnicaId: tarifa.id,
         tarifaHoraAplicada: asignacion.tarifaAplicadaHora.toString(),
         moneda: asignacion.moneda,
-        montoConfirmado: asignacion.montoConfirmado?.toString()
-      }
+        montoConfirmado: asignacion.montoConfirmado?.toString(),
+      },
     });
   }
 }

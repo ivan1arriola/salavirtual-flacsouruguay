@@ -7,7 +7,7 @@ import {
   SlidersHorizontal,
   UsersRound,
   Video,
-  Wallet
+  Wallet,
 } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -19,13 +19,18 @@ import { obtenerResumenAsistentes } from "@/src/modules/asistencia/resumen-admin
 import {
   resolverPeriodoMes,
   resumirTotales,
-  type MontoMoneda
+  type MontoMoneda,
 } from "@/src/modules/asistencia/resumen-administracion.domain";
-import { etiquetaMes, periodoMesAnteriorUtc3 } from "@/src/modules/asistencia/reporte-mensual.domain";
+import {
+  etiquetaMes,
+  periodoMesAnteriorUtc3,
+} from "@/src/modules/asistencia/reporte-mensual.domain";
 
 export default async function AsistentesPage({
-  searchParams
-}: Readonly<{ searchParams: Promise<{ mes?: string; estado?: string; q?: string; orden?: string }> }>) {
+  searchParams,
+}: Readonly<{
+  searchParams: Promise<{ mes?: string; estado?: string; q?: string; orden?: string }>;
+}>) {
   const session = await auth();
   if (session?.user.role !== "ADMINISTRACION") {
     redirect("/");
@@ -45,38 +50,43 @@ export default async function AsistentesPage({
           select: {
             activo: true,
             ultimoAccesoAt: true,
-            cuentasGoogle: { select: { id: true } }
-          }
-        }
-      }
+            cuentasGoogle: { select: { id: true } },
+          },
+        },
+      },
     }),
     db.asignacionAsistenciaTecnica.findMany({
       where: {
         estado: { in: ["ASIGNADO", "ACEPTADO"] },
         instancia: {
           estado: "PROGRAMADA",
-          finProgramadoAt: { gte: now }
-        }
+          finProgramadoAt: { gte: now },
+        },
       },
       select: {
         asistenteTecnicoId: true,
-        instancia: { select: { inicioProgramadoAt: true } }
+        instancia: { select: { inicioProgramadoAt: true } },
       },
-      orderBy: { instancia: { inicioProgramadoAt: "asc" } }
-    })
+      orderBy: { instancia: { inicioProgramadoAt: "asc" } },
+    }),
   ]);
   const totals = resumirTotales(assistants);
   const profileById = new Map(profiles.map((profile) => [profile.id, profile]));
   const futureByAssistant = new Map<string, { count: number; next: Date | null }>();
   for (const assignment of futureAssignments) {
-    const current = futureByAssistant.get(assignment.asistenteTecnicoId) ?? { count: 0, next: null };
+    const current = futureByAssistant.get(assignment.asistenteTecnicoId) ?? {
+      count: 0,
+      next: null,
+    };
     futureByAssistant.set(assignment.asistenteTecnicoId, {
       count: current.count + 1,
-      next: current.next ?? assignment.instancia.inicioProgramadoAt
+      next: current.next ?? assignment.instancia.inicioProgramadoAt,
     });
   }
   const q = (query.q ?? "").trim().toLocaleLowerCase("es");
-  const estado = ["todos", "operativos", "pausados", "cesados", "inactivos"].includes(query.estado ?? "")
+  const estado = ["todos", "operativos", "pausados", "cesados", "inactivos"].includes(
+    query.estado ?? "",
+  )
     ? (query.estado ?? "todos")
     : "todos";
   const visibleAssistants = assistants.filter((assistant) => {
@@ -84,7 +94,7 @@ export default async function AsistentesPage({
     const status = assistantStatus(
       assistant.activo,
       profile?.disponibleGeneral ?? false,
-      profile?.cesadoHastaProximoInicioSesion ?? false
+      profile?.cesadoHastaProximoInicioSesion ?? false,
     );
     if (estado !== "todos" && status !== estado) {
       return false;
@@ -105,7 +115,8 @@ export default async function AsistentesPage({
     const byName = collator.compare(left.nombre, right.nombre);
     if (orden === "proximas") {
       return (
-        (futureByAssistant.get(right.id)?.count ?? 0) - (futureByAssistant.get(left.id)?.count ?? 0) || byName
+        (futureByAssistant.get(right.id)?.count ?? 0) -
+          (futureByAssistant.get(left.id)?.count ?? 0) || byName
       );
     }
     if (orden === "reuniones") {
@@ -121,7 +132,7 @@ export default async function AsistentesPage({
     { value: "operativos", label: "Operativos" },
     { value: "pausados", label: "Pausados" },
     { value: "cesados", label: "Cesados" },
-    { value: "inactivos", label: "Inactivos" }
+    { value: "inactivos", label: "Inactivos" },
   ];
   const hrefForStatus = (value: string) => {
     const params = new URLSearchParams({ mes: period.clave, estado: value });
@@ -135,11 +146,14 @@ export default async function AsistentesPage({
   };
   const operationalCount = profiles.filter(
     (profile) =>
-      profile.usuario.activo && profile.disponibleGeneral && !profile.cesadoHastaProximoInicioSesion
+      profile.usuario.activo &&
+      profile.disponibleGeneral &&
+      !profile.cesadoHastaProximoInicioSesion,
   ).length;
   const pausedCount = profiles.filter(
     (profile) =>
-      profile.usuario.activo && (!profile.disponibleGeneral || profile.cesadoHastaProximoInicioSesion)
+      profile.usuario.activo &&
+      (!profile.disponibleGeneral || profile.cesadoHastaProximoInicioSesion),
   ).length;
 
   return (
@@ -195,7 +209,9 @@ export default async function AsistentesPage({
               <span>Pago estimado</span>
               <strong>{formatAmounts(totals.montos)}</strong>
               <small>
-                {totals.sinTarifa ? `${totals.sinTarifa} sin tarifa definida` : "Según tarifas registradas"}
+                {totals.sinTarifa
+                  ? `${totals.sinTarifa} sin tarifa definida`
+                  : "Según tarifas registradas"}
               </small>
             </div>
           </article>
@@ -288,7 +304,7 @@ export default async function AsistentesPage({
             const status = assistantStatus(
               assistant.activo,
               profile?.disponibleGeneral ?? false,
-              profile?.cesadoHastaProximoInicioSesion ?? false
+              profile?.cesadoHastaProximoInicioSesion ?? false,
             );
             return (
               <article className="assistant-monitor-card" key={assistant.id}>
@@ -300,14 +316,18 @@ export default async function AsistentesPage({
                     <Link className="assistant-monitor-name" href={detailHref}>
                       {assistant.nombre}
                     </Link>
-                    <span className="assistant-monitor-email">{assistant.email ?? assistant.usuarioId}</span>
+                    <span className="assistant-monitor-email">
+                      {assistant.email ?? assistant.usuarioId}
+                    </span>
                     <small>
                       {profile?.usuario.cuentasGoogle.length
                         ? `${profile.usuario.cuentasGoogle.length} cuenta(s) Google`
                         : "Sin cuenta Google"}
                     </small>
                   </div>
-                  <span className={`status assistant-monitor-status ${assistantStatusClass(status)}`}>
+                  <span
+                    className={`status assistant-monitor-status ${assistantStatusClass(status)}`}
+                  >
                     <span className="assistant-monitor-status-dot" aria-hidden="true" />
                     {assistantStatusLabel(status)}
                   </span>
@@ -332,7 +352,7 @@ export default async function AsistentesPage({
                           ? future.next.toLocaleDateString("es-UY", {
                               timeZone: "America/Montevideo",
                               day: "2-digit",
-                              month: "short"
+                              month: "short",
                             })
                           : "Sin próximas"}
                       </small>
@@ -393,7 +413,9 @@ export default async function AsistentesPage({
 function assistantInitials(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
   return (
-    parts.length > 1 ? `${parts[0][0]}${parts[parts.length - 1][0]}` : (parts[0]?.slice(0, 2) ?? "AM")
+    parts.length > 1
+      ? `${parts[0][0]}${parts[parts.length - 1][0]}`
+      : (parts[0]?.slice(0, 2) ?? "AM")
   ).toLocaleUpperCase("es-UY");
 }
 
@@ -402,7 +424,7 @@ type AssistantStatus = "operativos" | "pausados" | "cesados" | "inactivos";
 function assistantStatus(
   activo: boolean,
   disponibleGeneral: boolean,
-  cesadoHastaProximoInicioSesion: boolean
+  cesadoHastaProximoInicioSesion: boolean,
 ): AssistantStatus {
   if (!activo) {
     return "inactivos";

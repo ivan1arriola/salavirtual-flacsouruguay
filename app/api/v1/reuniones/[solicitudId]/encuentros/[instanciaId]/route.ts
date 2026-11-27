@@ -6,16 +6,19 @@ import { db } from "@/src/lib/db";
 import { toHttpError } from "@/src/lib/http/api-error";
 import {
   eliminarEventoCalendarioAsistente,
-  publicarEventoCalendarioAsistente
+  publicarEventoCalendarioAsistente,
 } from "@/src/modules/asistencia/calendario-asistente-google.adapter";
 import { intentarSincronizacionCalendarioAsistente } from "@/src/modules/asistencia/calendario-asistente-safe.service";
 import {
   hayErroresSincronizacionCalendarioAsistente,
-  sincronizarCalendarioAsistenteInstancia
+  sincronizarCalendarioAsistenteInstancia,
 } from "@/src/modules/asistencia/calendario-asistente.service";
 import { obtenerServicioConferencias } from "@/src/bootstrap/conferencias.server";
 import type { ProvisionConferenciaResult } from "@/src/modules/conferencias/api";
-import { actualizarEncuentro, eliminarEncuentro } from "@/src/modules/reuniones/gestionar-encuentros.service";
+import {
+  actualizarEncuentro,
+  eliminarEncuentro,
+} from "@/src/modules/reuniones/gestionar-encuentros.service";
 
 type RouteContext = Readonly<{
   params: Promise<{ solicitudId: string; instanciaId: string }>;
@@ -50,11 +53,11 @@ async function execute(request: Request, context: RouteContext, method: "PATCH" 
             actor,
             solicitudId,
             instanciaId,
-            await request.json().catch(() => null)
+            await request.json().catch(() => null),
           );
 
     const sincronizacion = await obtenerServicioConferencias().sincronizarEventosPendientes(
-      local.eventoProveedorIds
+      local.eventoProveedorIds,
     );
     const intentoCalendario = await intentarSincronizacionCalendarioAsistente(() =>
       sincronizarCalendarioAsistenteInstancia(
@@ -62,13 +65,17 @@ async function execute(request: Request, context: RouteContext, method: "PATCH" 
           db,
           descifrar: descifrarConfiguracion,
           publicarEvento: publicarEventoCalendarioAsistente,
-          eliminarEvento: eliminarEventoCalendarioAsistente
+          eliminarEvento: eliminarEventoCalendarioAsistente,
         },
-        instanciaId
-      )
+        instanciaId,
+      ),
     );
     const calendarioAsistente = intentoCalendario.resultados;
-    const warning = advertenciaSincronizacion(sincronizacion, calendarioAsistente, intentoCalendario.error);
+    const warning = advertenciaSincronizacion(
+      sincronizacion,
+      calendarioAsistente,
+      intentoCalendario.error,
+    );
     const hasPending =
       sincronizacion.some(({ estado }) => estado !== "SINCRONIZADA") ||
       intentoCalendario.error !== null ||
@@ -79,9 +86,9 @@ async function execute(request: Request, context: RouteContext, method: "PATCH" 
         message: method === "DELETE" ? "Encuentro eliminado." : "Encuentro actualizado.",
         warning,
         sincronizacion,
-        calendarioAsistente
+        calendarioAsistente,
       },
-      { status: hasPending ? 202 : 200 }
+      { status: hasPending ? 202 : 200 },
     );
   } catch (error) {
     const mapped = toHttpError(error);
@@ -92,12 +99,12 @@ async function execute(request: Request, context: RouteContext, method: "PATCH" 
 function advertenciaSincronizacion(
   results: readonly ProvisionConferenciaResult[],
   calendarioAsistente: readonly Readonly<{ estado: string }>[],
-  errorCalendario: string | null
+  errorCalendario: string | null,
 ): string | null {
   const warnings: string[] = [];
   if (results.some(({ estado }) => estado !== "SINCRONIZADA")) {
     warnings.push(
-      "El cambio quedó guardado en la aplicación, pero la sincronización de la reunión todavía tiene pendientes."
+      "El cambio quedó guardado en la aplicación, pero la sincronización de la reunión todavía tiene pendientes.",
     );
   }
   if (errorCalendario || calendarioAsistente.some(({ estado }) => estado === "ERROR")) {

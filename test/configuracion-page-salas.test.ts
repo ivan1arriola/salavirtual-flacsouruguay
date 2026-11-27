@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { obtenerDatosPaginaConfiguracion } from "../src/modules/configuracion/configuracion-page.service";
 
 vi.mock("../src/modules/configuracion/google-workspace.service", () => ({
-  obtenerCredencialPrincipalGoogleWorkspace: vi.fn(async () => null)
+  obtenerCredencialPrincipalGoogleWorkspace: vi.fn(async () => null),
 }));
 
 const AHORA = new Date("2026-11-05T12:00:00.000Z");
@@ -24,7 +24,7 @@ function cuenta(id: string, tipo: "GOOGLE_MEET" | "ZOOM", extra: Record<string, 
     fueraDelGrupoAt: null,
     proveedor: { tipo, nombre: tipo },
     _count: { eventosProveedor: 0 },
-    ...extra
+    ...extra,
   };
 }
 
@@ -32,25 +32,29 @@ function crearDb() {
   const cuentas = [
     cuenta("zoom-dentro", "ZOOM"),
     cuenta("zoom-fuera", "ZOOM", { fueraDelGrupoAt: FUERA }),
-    cuenta("zoom-inactiva", "ZOOM", { activa: false })
+    cuenta("zoom-inactiva", "ZOOM", { activa: false }),
   ];
   const mock = {
     configuracionAsistenciaTecnica: { findUnique: vi.fn(async () => null) },
     cuentaProveedor: { findMany: vi.fn(async (_consulta: unknown) => cuentas) },
     programa: { count: vi.fn(async () => 0) },
-    usuario: { findMany: vi.fn(async (_consulta: unknown) => [{ emailPrincipal: "admin@flacso.edu.uy" }]) },
+    usuario: {
+      findMany: vi.fn(async (_consulta: unknown) => [{ emailPrincipal: "admin@flacso.edu.uy" }]),
+    },
     eventoProveedor: {
       findMany: vi.fn(async () => []),
-      groupBy: vi.fn(async (_consulta: unknown) => [{ cuentaProveedorId: "zoom-fuera", _count: { _all: 2 } }])
+      groupBy: vi.fn(async (_consulta: unknown) => [
+        { cuentaProveedorId: "zoom-fuera", _count: { _all: 2 } },
+      ]),
     },
     configuracionZoom: {
       findUnique: vi.fn(async (_consulta: unknown) => ({
         grupoId: "g-1",
         grupoNombre: "Salas FLACSO",
         ultimaSincronizacionAt: ULTIMA,
-        ultimaSincronizacionResultado: "1 nueva"
-      }))
-    }
+        ultimaSincronizacionResultado: "1 nueva",
+      })),
+    },
   };
   return { mock, db: mock as unknown as PrismaClient };
 }
@@ -70,13 +74,13 @@ describe("datos de Configuración › Salas", () => {
     expect(consulta.by).toEqual(["cuentaProveedorId"]);
     expect(consulta.where.proveedor).toEqual({ tipo: "ZOOM" });
     expect(consulta.where.instancia).toMatchObject({
-      OR: [{ estado: "PROGRAMADA", finProgramadoAt: { gt: AHORA } }, { estado: "EN_CURSO" }]
+      OR: [{ estado: "PROGRAMADA", finProgramadoAt: { gt: AHORA } }, { estado: "EN_CURSO" }],
     });
 
     expect(datos.hosts.map(({ id, reunionesFuturas }) => [id, reunionesFuturas])).toEqual([
       ["zoom-dentro", 0],
       ["zoom-fuera", 2],
-      ["zoom-inactiva", 0]
+      ["zoom-inactiva", 0],
     ]);
     expect(datos.zoomGrupo).toBeNull();
   });
@@ -89,7 +93,7 @@ describe("datos de Configuración › Salas", () => {
       grupoId: "g-1",
       grupoNombre: "Salas FLACSO",
       ultimaSincronizacionAt: ULTIMA,
-      ultimaSincronizacionResultado: "1 nueva"
+      ultimaSincronizacionResultado: "1 nueva",
     });
   });
 
@@ -111,7 +115,9 @@ describe("datos de Configuración › Salas", () => {
 
   it("solo la sección Notificaciones consulta a las personas de administración", async () => {
     const { mock, db } = crearDb();
-    expect((await obtenerDatosPaginaConfiguracion(db, "salas", AHORA)).adminReportRecipients).toEqual([]);
+    expect(
+      (await obtenerDatosPaginaConfiguracion(db, "salas", AHORA)).adminReportRecipients,
+    ).toEqual([]);
     expect(mock.usuario.findMany).not.toHaveBeenCalled();
     const datos = await obtenerDatosPaginaConfiguracion(db, "notificaciones", AHORA);
     expect(datos.adminReportRecipients).toEqual([{ emailPrincipal: "admin@flacso.edu.uy" }]);

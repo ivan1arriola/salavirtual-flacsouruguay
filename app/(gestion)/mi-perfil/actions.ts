@@ -5,7 +5,10 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
-import { actualizarPerfilPersonal, cambiarPasswordPersonal } from "@/src/modules/usuarios/perfil.service";
+import {
+  actualizarPerfilPersonal,
+  cambiarPasswordPersonal,
+} from "@/src/modules/usuarios/perfil.service";
 import { tiposNotificacionPerfil } from "./preferencias";
 
 async function actorActual() {
@@ -56,12 +59,12 @@ export async function guardarPreferenciasNotificacion(formData: FormData): Promi
             usuarioId: actor.id,
             tipo,
             push: formData.get(`${tipo}:push`) === "on",
-            email: formData.get(`${tipo}:email`) === "on"
+            email: formData.get(`${tipo}:email`) === "on",
           },
           update: {
             push: formData.get(`${tipo}:push`) === "on",
-            email: formData.get(`${tipo}:email`) === "on"
-          }
+            email: formData.get(`${tipo}:email`) === "on",
+          },
         });
       }
     });

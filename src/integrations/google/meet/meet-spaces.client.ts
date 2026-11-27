@@ -9,7 +9,10 @@ export type GoogleMeetSpaceConfig = Readonly<{
   entryPointAccess?: "ENTRY_POINT_ACCESS_UNSPECIFIED" | "ALL" | "CREATOR_APP_ONLY" | string;
   moderation?: "MODERATION_UNSPECIFIED" | "OFF" | "ON" | string;
   attendanceReportGenerationType?:
-    "ATTENDANCE_REPORT_GENERATION_TYPE_UNSPECIFIED" | "DO_NOT_GENERATE" | "GENERATE_REPORT" | string;
+    | "ATTENDANCE_REPORT_GENERATION_TYPE_UNSPECIFIED"
+    | "DO_NOT_GENERATE"
+    | "GENERATE_REPORT"
+    | string;
   [key: string]: unknown;
 }>;
 
@@ -28,7 +31,10 @@ export type GoogleMeetSpaceMember = Readonly<{
   [key: string]: unknown;
 }>;
 
-export async function obtenerEspacioMeet(auth: JWT, spaceNameOrCode: string): Promise<GoogleMeetSpace> {
+export async function obtenerEspacioMeet(
+  auth: JWT,
+  spaceNameOrCode: string,
+): Promise<GoogleMeetSpace> {
   const path = spaceNameOrCode.startsWith("spaces/")
     ? spaceNameOrCode
     : `spaces/${encodeURIComponent(spaceNameOrCode)}`;
@@ -37,21 +43,21 @@ export async function obtenerEspacioMeet(auth: JWT, spaceNameOrCode: string): Pr
     auth.request<GoogleMeetSpace>({
       url,
       method: "GET",
-      timeout: GOOGLE_HTTP_READ_TIMEOUT_MS
-    })
+      timeout: GOOGLE_HTTP_READ_TIMEOUT_MS,
+    }),
   );
   return response.data;
 }
 
 export async function crearEspacioMeetHttp(
   auth: JWT,
-  config?: GoogleMeetSpaceConfig
+  config?: GoogleMeetSpaceConfig,
 ): Promise<GoogleMeetSpace> {
   const response = await auth.request<GoogleMeetSpace>({
     url: `${MEET_API_BASE_URL}/spaces`,
     method: "POST",
     timeout: GOOGLE_HTTP_TIMEOUT_MS,
-    data: config ? { config } : {}
+    data: config ? { config } : {},
   });
   return response.data;
 }
@@ -60,21 +66,21 @@ export async function actualizarEspacioMeetHttp(
   auth: JWT,
   spaceName: string,
   config: GoogleMeetSpaceConfig,
-  updateMask: readonly string[]
+  updateMask: readonly string[],
 ): Promise<GoogleMeetSpace> {
   const url = `${MEET_API_BASE_URL}/${spaceName}?updateMask=${encodeURIComponent(updateMask.join(","))}`;
   const response = await auth.request<GoogleMeetSpace>({
     url,
     method: "PATCH",
     timeout: GOOGLE_HTTP_TIMEOUT_MS,
-    data: { name: spaceName, config }
+    data: { name: spaceName, config },
   });
   return response.data;
 }
 
 export async function listarMiembrosMeetHttp(
   auth: JWT,
-  spaceName: string
+  spaceName: string,
 ): Promise<readonly GoogleMeetSpaceMember[]> {
   const members: GoogleMeetSpaceMember[] = [];
   let pageToken: string | undefined;
@@ -97,8 +103,8 @@ export async function listarMiembrosMeetHttp(
       }>({
         url: `${MEET_API_BASE_URL}/${spaceName}/members?${query.toString()}`,
         method: "GET",
-        timeout: GOOGLE_HTTP_READ_TIMEOUT_MS
-      })
+        timeout: GOOGLE_HTTP_READ_TIMEOUT_MS,
+      }),
     );
 
     if (response.data.members) {
@@ -120,13 +126,13 @@ export async function crearMiembroMeetHttp(
   auth: JWT,
   spaceName: string,
   email: string,
-  role: "COHOST" | "CONTRIBUTOR" | string
+  role: "COHOST" | "CONTRIBUTOR" | string,
 ): Promise<GoogleMeetSpaceMember> {
   const response = await auth.request<GoogleMeetSpaceMember>({
     url: `${MEET_API_BASE_URL}/${spaceName}/members`,
     method: "POST",
     timeout: GOOGLE_HTTP_TIMEOUT_MS,
-    data: { email, role }
+    data: { email, role },
   });
   return response.data;
 }
@@ -135,13 +141,13 @@ export async function crearMiembroMeetHttp(
 export async function actualizarRolMiembroMeetHttp(
   auth: JWT,
   memberName: string,
-  role: "COHOST" | "ROLE_UNSPECIFIED"
+  role: "COHOST" | "ROLE_UNSPECIFIED",
 ): Promise<GoogleMeetSpaceMember> {
   const response = await auth.request<GoogleMeetSpaceMember>({
     url: `${MEET_API_BASE_URL}/${memberName}?updateMask=role`,
     method: "PATCH",
     timeout: GOOGLE_HTTP_TIMEOUT_MS,
-    data: { name: memberName, role }
+    data: { name: memberName, role },
   });
   return response.data;
 }
@@ -150,7 +156,7 @@ export async function eliminarMiembroMeetHttp(auth: JWT, memberName: string): Pr
   await auth.request({
     url: `${MEET_API_BASE_URL}/${memberName}`,
     method: "DELETE",
-    timeout: GOOGLE_HTTP_TIMEOUT_MS
+    timeout: GOOGLE_HTTP_TIMEOUT_MS,
   });
 }
 
@@ -191,7 +197,7 @@ export function isMemberPermissionError(error: unknown): boolean {
   const status = candidate.response?.status ?? candidate.code;
   const text = [
     typeof candidate.message === "string" ? candidate.message : "",
-    JSON.stringify(candidate.response?.data ?? "")
+    JSON.stringify(candidate.response?.data ?? ""),
   ]
     .join(" ")
     .toLowerCase();

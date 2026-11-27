@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   prepararCambioEnlaceCalendarZoom,
-  prepararCambioEnlaceZoomACalendar
+  prepararCambioEnlaceZoomACalendar,
 } from "../src/modules/reuniones/migracion-zoom-calendar.domain";
 
 const meet = "https://meet.google.com/abc-defg-hij";
@@ -14,16 +14,16 @@ describe("prepararCambioEnlaceCalendarZoom", () => {
         summary: "Clase",
         description: `Material del curso\nAcceso: ${meet}`,
         location: meet,
-        conferenceData: { conferenceId: "abc-defg-hij" }
+        conferenceData: { conferenceId: "abc-defg-hij" },
       },
       meet,
-      zoom
+      zoom,
     );
 
     expect(patch).toEqual({
       conferenceData: null,
       description: `Material del curso\nAcceso: ${zoom}`,
-      location: zoom
+      location: zoom,
     });
   });
 
@@ -45,7 +45,7 @@ describe("prepararCambioEnlaceZoomACalendar", () => {
     const patch = prepararCambioEnlaceZoomACalendar(
       { description: `Clase\nZoom: ${viejo1}\nOtra vez: ${viejo2}`, location: viejo1 },
       viejo1,
-      zoom
+      zoom,
     );
     expect(patch.description.split(zoom)).toHaveLength(2);
     expect(patch.description).not.toContain("111");
@@ -57,9 +57,12 @@ describe("prepararCambioEnlaceZoomACalendar", () => {
   it("conserva otros campos y la sede física, y es repetible", () => {
     const actual = { description: "Aula 4", location: "Sede FLACSO" };
     const primero = prepararCambioEnlaceZoomACalendar(actual, null, zoom);
-    expect(primero).toEqual({ conferenceData: null, description: `Aula 4\nAcceso a Zoom: ${zoom}` });
-    expect(prepararCambioEnlaceZoomACalendar({ ...actual, ...primero }, zoom, zoom).description).toBe(
-      primero.description
-    );
+    expect(primero).toEqual({
+      conferenceData: null,
+      description: `Aula 4\nAcceso a Zoom: ${zoom}`,
+    });
+    expect(
+      prepararCambioEnlaceZoomACalendar({ ...actual, ...primero }, zoom, zoom).description,
+    ).toBe(primero.description);
   });
 });

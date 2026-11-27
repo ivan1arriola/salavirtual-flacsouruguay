@@ -29,7 +29,7 @@ export type MeetSheetInput = Readonly<{
 
 export async function buscarPlanillaAsistenciaDrive(
   auth: JWT,
-  operationMarker: string
+  operationMarker: string,
 ): Promise<MovedDriveFile | null> {
   const escapeQuery = (value: string) => value.replaceAll("\\", "\\\\").replaceAll("'", "\\'");
   const q = `appProperties has { key='meetAttendanceOperation' and value='${escapeQuery(operationMarker)}' } and mimeType = '${MIME}' and trashed = false`;
@@ -39,7 +39,7 @@ export async function buscarPlanillaAsistenciaDrive(
     const params = new URLSearchParams({
       q,
       fields: "nextPageToken,files(id,name,mimeType,webViewLink)",
-      pageSize: "100"
+      pageSize: "100",
     });
     if (pageToken) {
       params.set("pageToken", pageToken);
@@ -47,15 +47,15 @@ export async function buscarPlanillaAsistenciaDrive(
     const response = await conReintentosGoogleLectura(() =>
       auth.request<{ files?: typeof files; nextPageToken?: string }>({
         url: `${DRIVE}?${params}`,
-        method: "GET"
-      })
+        method: "GET",
+      }),
     );
     files.push(...(response.data.files ?? []));
     pageToken = response.data.nextPageToken;
   } while (pageToken);
   if (files.length > 1) {
     throw new Error(
-      "Hay varias planillas con el mismo nombre en la carpeta; requiere conciliación administrativa."
+      "Hay varias planillas con el mismo nombre en la carpeta; requiere conciliación administrativa.",
     );
   }
   const file = files[0];
@@ -68,7 +68,10 @@ const MIME = "application/vnd.google-apps.spreadsheet";
 const SHEETS = "https://sheets.googleapis.com/v4/spreadsheets";
 const DRIVE = "https://www.googleapis.com/drive/v3/files";
 
-export async function planillaAsistenciaGoogleVacia(auth: JWT, spreadsheetId: string): Promise<boolean> {
+export async function planillaAsistenciaGoogleVacia(
+  auth: JWT,
+  spreadsheetId: string,
+): Promise<boolean> {
   // Los encabezados y las filas informativas del host no prueban que haya
   // asistencia. Inspeccionar únicamente filas de datos de ambas pestañas.
   const params = new URLSearchParams({ fields: "valueRanges(range,values)" });
@@ -80,15 +83,15 @@ export async function planillaAsistenciaGoogleVacia(auth: JWT, spreadsheetId: st
       valueRanges?: Array<{ range?: string; values?: Array<Array<string | number | boolean>> }>;
     }>({
       url: `${SHEETS}/${encodeURIComponent(spreadsheetId)}/values:batchGet?${params}`,
-      method: "GET"
-    })
+      method: "GET",
+    }),
   );
   const valueRanges = response.data.valueRanges;
   if (!valueRanges || valueRanges.length !== 2) {
     throw new Error("Google Sheets no devolvió las pestañas de asistencia y datos brutos.");
   }
   return valueRanges.every(
-    ({ values }) => !values?.some((row) => row.some((value) => value !== "" && value !== null))
+    ({ values }) => !values?.some((row) => row.some((value) => value !== "" && value !== null)),
   );
 }
 
@@ -103,7 +106,7 @@ function asUtcHour(iso: string): string {
     day: "2-digit",
     hour: "2-digit",
     minute: "2-digit",
-    hour12: false
+    hour12: false,
   }).format(new Date(iso));
 }
 
@@ -116,15 +119,15 @@ function values(rows: readonly (readonly (string | number)[])[]) {
     row.map((v) =>
       typeof v === "number"
         ? { userEnteredValue: { numberValue: v } }
-        : { userEnteredValue: { stringValue: safeCell(v) } }
-    )
+        : { userEnteredValue: { stringValue: safeCell(v) } },
+    ),
   );
 }
 
 export async function crearPlanillaAsistenciaGoogle(
   auth: JWT,
   input: MeetSheetInput,
-  spreadsheetId?: string
+  spreadsheetId?: string,
 ) {
   const start = input.inicio.getTime(),
     end = input.fin.getTime();
@@ -141,8 +144,8 @@ export async function crearPlanillaAsistenciaGoogle(
       "Asistencia (%)",
       "Umbral de 5/6",
       "Conexiones",
-      "Observaciones"
-    ]
+      "Observaciones",
+    ],
   ];
   const responsables: (string | number)[][] = [
     [
@@ -152,8 +155,8 @@ export async function crearPlanillaAsistenciaGoogle(
       "Primera conexión (UY)",
       "Última desconexión (UY)",
       "Minutos conectados",
-      "Conexiones"
-    ]
+      "Conexiones",
+    ],
   ];
   const raw: (string | number)[][] = [
     [
@@ -170,8 +173,8 @@ export async function crearPlanillaAsistenciaGoogle(
       "Código Meet original",
       "Tipo identificador",
       "Timestamp auditoría",
-      "Parámetros originales"
-    ]
+      "Parámetros originales",
+    ],
   ];
   // Meet es la fuente primaria. Las identidades Reports sin clave común se
   // conservan para revisión, pero no sustituyen ni duplican personas Meet.
@@ -185,21 +188,21 @@ export async function crearPlanillaAsistenciaGoogle(
       endpointId: e.endpointId,
       inicio: new Date(Date.parse(e.timestamp) - e.durationSeconds * 1000).toISOString(),
       fin: e.timestamp,
-      timestamp: e.timestamp
+      timestamp: e.timestamp,
     })),
     input.inicio,
-    input.fin
+    input.fin,
   );
   // Host y cohosts configurados se separan del resto por correo (atribuido por
   // horario o verificado); nunca por coincidencia de nombres.
   const rolPorCorreo = new Map<string, string>([
     [input.organizador.toLowerCase(), "HOST"],
-    ...input.cohosts.map((email) => [email.toLowerCase(), "COHOST"] as const)
+    ...input.cohosts.map((email) => [email.toLowerCase(), "COHOST"] as const),
   ]);
   const duracionMin = (end - start) / 60_000;
   const correoCompartido = conciliacion.meet.reduce<Readonly<Record<string, readonly string[]>>>(
     (acc, p) => (p.correo ? { ...acc, [p.correo]: [...(acc[p.correo] ?? []), p.nombre] } : acc),
-    {}
+    {},
   );
   const umbralMin = (duracionMin * 5) / 6;
   const observaciones = (p: (typeof conciliacion.meet)[number]): string =>
@@ -213,14 +216,16 @@ export async function crearPlanillaAsistenciaGoogle(
         : Math.abs(p.resumen.minutosConectados - umbralMin) <= 5
           ? "Cerca del umbral (±5 min)"
           : null,
-      p.sesiones >= 5 ? `Muchas reconexiones (${p.sesiones})` : null
+      p.sesiones >= 5 ? `Muchas reconexiones (${p.sesiones})` : null,
     ]
       .filter((x): x is string => x !== null)
       .join("; ");
   const responsablesMeet = new Set<string>();
   for (const participante of conciliacion.meet) {
     const summary = participante.resumen;
-    const rol = participante.correo ? rolPorCorreo.get(participante.correo.toLowerCase()) : undefined;
+    const rol = participante.correo
+      ? rolPorCorreo.get(participante.correo.toLowerCase())
+      : undefined;
     if (rol) {
       responsablesMeet.add(participante.correo!.toLowerCase());
       responsables.push([
@@ -230,7 +235,7 @@ export async function crearPlanillaAsistenciaGoogle(
         asUtcHour(summary.primeraConexion ?? ""),
         asUtcHour(summary.ultimaDesconexion ?? ""),
         summary.minutosConectados,
-        summary.conexiones
+        summary.conexiones,
       ]);
       continue;
     }
@@ -243,7 +248,7 @@ export async function crearPlanillaAsistenciaGoogle(
       summary.porcentaje / 100,
       summary.cumpleCincoSextos ? "CUMPLE" : "MENOS DE 5/6",
       summary.conexiones,
-      observaciones(participante)
+      observaciones(participante),
     ]);
   }
 
@@ -269,10 +274,10 @@ export async function crearPlanillaAsistenciaGoogle(
         endpointId: s.endpointId ?? "",
         inicio: s.inicio,
         fin: s.fin,
-        timestamp: s.timestamp ?? s.fin
+        timestamp: s.timestamp ?? s.fin,
       })),
       input.inicio,
-      input.fin
+      input.fin,
     ).reports[0]?.resumen;
     responsables.push([
       r.nombre || r.correo,
@@ -281,7 +286,7 @@ export async function crearPlanillaAsistenciaGoogle(
       asUtcHour(summary?.primeraConexion ?? ""),
       asUtcHour(summary?.ultimaDesconexion ?? ""),
       summary?.minutosConectados ?? 0,
-      summary?.conexiones ?? 0
+      summary?.conexiones ?? 0,
     ]);
   }
 
@@ -300,7 +305,7 @@ export async function crearPlanillaAsistenciaGoogle(
       event.meetingCode,
       event.identifierType,
       event.timestamp,
-      JSON.stringify(event.parameters)
+      JSON.stringify(event.parameters),
     ]);
   }
   // Mantener también la atribución de correos cuando el endpoint de auditoría
@@ -321,17 +326,17 @@ export async function crearPlanillaAsistenciaGoogle(
         s.meetingCode ?? "",
         "email_address",
         s.timestamp ?? s.fin,
-        ""
+        "",
       ]);
     }
   }
   const reported = new Set([
     ...input.correosAuditados.map((r) => r.correo.toLowerCase()),
-    ...responsablesMeet
+    ...responsablesMeet,
   ]);
   for (const [email, rol] of [
     [input.organizador, "HOST"],
-    ...input.cohosts.map((e) => [e, "COHOST CONFIGURADO"])
+    ...input.cohosts.map((e) => [e, "COHOST CONFIGURADO"]),
   ] as string[][]) {
     if (!reported.has(email.toLowerCase())) {
       responsables.push(["Sin registro de conexión", email, rol, "", "", 0, 0]);
@@ -352,7 +357,7 @@ export async function crearPlanillaAsistenciaGoogle(
       "",
       s.tipo,
       s.inicio,
-      ""
+      "",
     ]);
   }
   // Las sesiones de Meet se conservan en bruto, sin asociarlas por coincidencia de nombres.
@@ -360,7 +365,7 @@ export async function crearPlanillaAsistenciaGoogle(
   const tabs = [
     { title: "Asistencia", sheetId: 0, rows: resumen },
     { title: "Host y cohosts", sheetId: 1, rows: responsables },
-    { title: "Datos brutos", sheetId: 2, rows: raw }
+    { title: "Datos brutos", sheetId: 2, rows: raw },
   ];
   const created = spreadsheetId
     ? null
@@ -376,30 +381,31 @@ export async function crearPlanillaAsistenciaGoogle(
               gridProperties: {
                 frozenRowCount: 1,
                 rowCount: Math.max(1000, t.rows.length + 10),
-                columnCount: Math.max(10, t.rows[0]!.length)
-              }
-            }
-          }))
-        }
+                columnCount: Math.max(10, t.rows[0]!.length),
+              },
+            },
+          })),
+        },
       });
   const id = spreadsheetId ?? created!.data.spreadsheetId;
   await auth.request({
     url: `${DRIVE}/${encodeURIComponent(id)}?fields=id`,
     method: "PATCH",
-    data: { appProperties: { meetAttendanceOperation: input.operationMarker } }
+    data: { appProperties: { meetAttendanceOperation: input.operationMarker } },
   });
   const requests: unknown[] = [];
   if (spreadsheetId && resumen.length > 1) {
     const current = await conReintentosGoogleLectura(() =>
-      auth.request<{ sheets?: Array<{ properties?: { sheetId?: number }; conditionalFormats?: unknown[] }> }>(
-        {
-          url: `${SHEETS}/${encodeURIComponent(id)}?fields=sheets(properties(sheetId),conditionalFormats)`,
-          method: "GET"
-        }
-      )
+      auth.request<{
+        sheets?: Array<{ properties?: { sheetId?: number }; conditionalFormats?: unknown[] }>;
+      }>({
+        url: `${SHEETS}/${encodeURIComponent(id)}?fields=sheets(properties(sheetId),conditionalFormats)`,
+        method: "GET",
+      }),
     );
     const rules =
-      current.data.sheets?.find((sheet) => sheet.properties?.sheetId === 0)?.conditionalFormats ?? [];
+      current.data.sheets?.find((sheet) => sheet.properties?.sheetId === 0)?.conditionalFormats ??
+      [];
     for (let index = rules.length - 1; index >= 0; index -= 1) {
       requests.push({ deleteConditionalFormatRule: { sheetId: 0, index } });
     }
@@ -410,8 +416,8 @@ export async function crearPlanillaAsistenciaGoogle(
         repeatCell: {
           range: { sheetId: tab.sheetId, startRowIndex: 0, endRowIndex: 50000 },
           cell: {},
-          fields: "userEnteredValue"
-        }
+          fields: "userEnteredValue",
+        },
       });
     }
     for (let i = 0; i < tab.rows.length; i += 400) {
@@ -419,8 +425,8 @@ export async function crearPlanillaAsistenciaGoogle(
         updateCells: {
           start: { sheetId: tab.sheetId, rowIndex: i, columnIndex: 0 },
           rows: values(tab.rows.slice(i, i + 400)).map((row) => ({ values: row })),
-          fields: "userEnteredValue"
-        }
+          fields: "userEnteredValue",
+        },
       });
     }
     requests.push({
@@ -429,11 +435,11 @@ export async function crearPlanillaAsistenciaGoogle(
         cell: {
           userEnteredFormat: {
             backgroundColor: { red: 0.173, green: 0.278, blue: 0.467 },
-            textFormat: { foregroundColor: { red: 1, green: 1, blue: 1 }, bold: true }
-          }
+            textFormat: { foregroundColor: { red: 1, green: 1, blue: 1 }, bold: true },
+          },
         },
-        fields: "userEnteredFormat"
-      }
+        fields: "userEnteredFormat",
+      },
     });
     requests.push({
       autoResizeDimensions: {
@@ -441,9 +447,9 @@ export async function crearPlanillaAsistenciaGoogle(
           sheetId: tab.sheetId,
           dimension: "COLUMNS",
           startIndex: 0,
-          endIndex: tab.rows[0]!.length
-        }
-      }
+          endIndex: tab.rows[0]!.length,
+        },
+      },
     });
   }
   if (resumen.length > 1) {
@@ -454,21 +460,27 @@ export async function crearPlanillaAsistenciaGoogle(
           startRowIndex: 1,
           endRowIndex: resumen.length,
           startColumnIndex: 5,
-          endColumnIndex: 6
+          endColumnIndex: 6,
         },
         cell: { userEnteredFormat: { numberFormat: { type: "PERCENT", pattern: "0.0%" } } },
-        fields: "userEnteredFormat.numberFormat"
-      }
+        fields: "userEnteredFormat.numberFormat",
+      },
     });
 
     // Semáforo sobre porcentaje y umbral: verde = cumple 5/6, amarillo = desde 75 %, rojo = menos de 75 %.
     const rango = [
-      { sheetId: 0, startRowIndex: 1, endRowIndex: resumen.length, startColumnIndex: 5, endColumnIndex: 7 }
+      {
+        sheetId: 0,
+        startRowIndex: 1,
+        endRowIndex: resumen.length,
+        startColumnIndex: 5,
+        endColumnIndex: 7,
+      },
     ];
     const reglas: ReadonlyArray<readonly [string, { red: number; green: number; blue: number }]> = [
       ["=$F2>=5/6", { red: 0.776, green: 0.937, blue: 0.808 }],
       ["=($F2>=3/4)*($F2<5/6)>0", { red: 1, green: 0.922, blue: 0.612 }],
-      ["=$F2<3/4", { red: 1, green: 0.78, blue: 0.808 }]
+      ["=$F2<3/4", { red: 1, green: 0.78, blue: 0.808 }],
     ];
     reglas.forEach(([formula, color], index) =>
       requests.push({
@@ -478,11 +490,11 @@ export async function crearPlanillaAsistenciaGoogle(
             ranges: rango,
             booleanRule: {
               condition: { type: "CUSTOM_FORMULA", values: [{ userEnteredValue: formula }] },
-              format: { backgroundColor: color }
-            }
-          }
-        }
-      })
+              format: { backgroundColor: color },
+            },
+          },
+        },
+      }),
     );
   }
   if (spreadsheetId) {
@@ -494,40 +506,48 @@ export async function crearPlanillaAsistenciaGoogle(
           updateSheetProperties: {
             properties: {
               sheetId: t.sheetId,
-              gridProperties: { rowCount: Math.max(50000, t.rows.length + 1) }
+              gridProperties: { rowCount: Math.max(50000, t.rows.length + 1) },
             },
-            fields: "gridProperties.rowCount"
-          }
-        }))
-      }
+            fields: "gridProperties.rowCount",
+          },
+        })),
+      },
     });
   }
   await auth.request({
     url: `${SHEETS}/${encodeURIComponent(id)}:batchUpdate`,
     method: "POST",
-    data: { requests }
+    data: { requests },
   });
   // Move the spreadsheet into the meeting folder; leave it in My Drive on permission failures rather than re-create it.
   const file = await conReintentosGoogleLectura(() =>
     auth.request<{ parents?: string[] }>({
       url: `${DRIVE}/${encodeURIComponent(id)}?fields=parents`,
-      method: "GET"
-    })
+      method: "GET",
+    }),
   );
-  const query = new URLSearchParams({ addParents: input.folderId, fields: "id,name,mimeType,webViewLink" });
+  const query = new URLSearchParams({
+    addParents: input.folderId,
+    fields: "id,name,mimeType,webViewLink",
+  });
   if (file.data.parents?.length) {
     query.set("removeParents", file.data.parents.join(","));
   }
   try {
-    const moved = await auth.request<{ id: string; name: string; mimeType?: string; webViewLink?: string }>({
+    const moved = await auth.request<{
+      id: string;
+      name: string;
+      mimeType?: string;
+      webViewLink?: string;
+    }>({
       url: `${DRIVE}/${encodeURIComponent(id)}?${query}`,
-      method: "PATCH"
+      method: "PATCH",
     });
     return {
       id,
       name: moved.data.name || input.titulo,
       mimeType: MIME,
-      webViewLink: moved.data.webViewLink || `https://docs.google.com/spreadsheets/d/${id}/edit`
+      webViewLink: moved.data.webViewLink || `https://docs.google.com/spreadsheets/d/${id}/edit`,
     };
   } catch (error) {
     const status = (error as { response?: { status?: number } })?.response?.status;
@@ -539,7 +559,7 @@ export async function crearPlanillaAsistenciaGoogle(
       id,
       name: input.titulo,
       mimeType: MIME,
-      webViewLink: `https://docs.google.com/spreadsheets/d/${id}/edit`
+      webViewLink: `https://docs.google.com/spreadsheets/d/${id}/edit`,
     };
   }
 }

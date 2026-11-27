@@ -1,7 +1,7 @@
 import {
   mapearEstadoSolicitudLegacy,
   mapearTipoInstanciasLegacy,
-  normalizarNombrePrograma
+  normalizarNombrePrograma,
 } from "../../src/modules/migracion/reuniones-legacy.domain";
 import type { MapeosLegacy } from "./catalogs";
 import { jsonValue, target } from "./clients";
@@ -11,9 +11,11 @@ import type { SolicitudLegacy } from "./source";
 export async function importarSolicitud(
   solicitud: SolicitudLegacy,
   zoomProviderId: string,
-  mapeos: MapeosLegacy
+  mapeos: MapeosLegacy,
 ): Promise<void> {
-  const eventosVigentes = solicitud.eventos.filter(({ estadoEvento }) => estadoEvento !== "CANCELADO");
+  const eventosVigentes = solicitud.eventos.filter(
+    ({ estadoEvento }) => estadoEvento !== "CANCELADO",
+  );
   if (eventosVigentes.length === 0) return;
   const estadoSolicitud = solicitud.estadoSolicitud.startsWith("CANCELADA")
     ? "PROVISIONADA"
@@ -21,7 +23,7 @@ export async function importarSolicitud(
   const docenteUsuario = mapeos.usuariosPorLegacy.get(solicitud.docente.usuarioId);
   const creador = mapeos.usuariosPorLegacy.get(solicitud.createdBy.id);
   const programaId = mapeos.programasPorNombre.get(
-    normalizarNombrePrograma(solicitud.programaNombre ?? "").toLowerCase()
+    normalizarNombrePrograma(solicitud.programaNombre ?? "").toLowerCase(),
   );
   if (!docenteUsuario?.docente || !creador || !programaId) {
     throw new Error(`No se pudo resolver docente, creador o programa de ${solicitud.id}.`);
@@ -31,11 +33,11 @@ export async function importarSolicitud(
     where: {
       docenteId_programaId: {
         docenteId: docenteUsuario.docente.id,
-        programaId
-      }
+        programaId,
+      },
     },
     create: { docenteId: docenteUsuario.docente.id, programaId },
-    update: { activo: true }
+    update: { activo: true },
   });
   const solicitudNueva = await target.solicitudSala.upsert({
     where: { legacyZoomSolicitudId: solicitud.id },
@@ -51,12 +53,13 @@ export async function importarSolicitud(
       tipoInstancias: mapearTipoInstanciasLegacy(solicitud.tipoInstancias),
       timezone: solicitud.timezone,
       fechaInicioSolicitada: eventosVigentes.reduce(
-        (earliest, evento) => (evento.inicioProgramadoAt < earliest ? evento.inicioProgramadoAt : earliest),
-        eventosVigentes[0].inicioProgramadoAt
+        (earliest, evento) =>
+          evento.inicioProgramadoAt < earliest ? evento.inicioProgramadoAt : earliest,
+        eventosVigentes[0].inicioProgramadoAt,
       ),
       fechaFinSolicitada: eventosVigentes.reduce(
         (latest, evento) => (evento.finProgramadoAt > latest ? evento.finProgramadoAt : latest),
-        eventosVigentes[0].finProgramadoAt
+        eventosVigentes[0].finProgramadoAt,
       ),
       cantidadInstancias: eventosVigentes.length,
       capacidadEstimada: solicitud.capacidadEstimada,
@@ -71,7 +74,7 @@ export async function importarSolicitud(
       canceladaAt: solicitud.canceladaPorDocenteAt,
       canceladaMotivo: solicitud.canceladaMotivo,
       createdAt: solicitud.createdAt,
-      updatedAt: solicitud.updatedAt
+      updatedAt: solicitud.updatedAt,
     },
     update: {
       docenteProgramaId: docentePrograma.id,
@@ -81,15 +84,15 @@ export async function importarSolicitud(
       responsableNombre: solicitud.responsableNombre,
       finalidadAcademica: solicitud.finalidadAcademica,
       cantidadInstancias: eventosVigentes.length,
-      estado: estadoSolicitud
-    }
+      estado: estadoSolicitud,
+    },
   });
 
   await target.instanciaSala.deleteMany({
     where: {
       solicitudSalaId: solicitudNueva.id,
-      estado: "CANCELADA"
-    }
+      estado: "CANCELADA",
+    },
   });
 
   for (const [index, evento] of eventosVigentes.entries()) {
@@ -100,7 +103,7 @@ export async function importarSolicitud(
       solicitud.modalidadReunion,
       solicitud.requiereGrabacion,
       zoomProviderId,
-      mapeos
+      mapeos,
     );
   }
 }

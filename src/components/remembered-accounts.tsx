@@ -4,8 +4,14 @@ import { X } from "lucide-react";
 import { signIn, signOut } from "next-auth/react";
 import { iniciarGoogleConSesionLimpia } from "@/src/lib/auth/google-login-browser-flow";
 import { useEffect, useState } from "react";
-import { olvidarCuenta, type CuentaRecordada } from "@/src/modules/usuarios/cuentas-recordadas.domain";
-import { readRememberedAccounts, writeRememberedAccounts } from "@/src/lib/browser/remembered-accounts";
+import {
+  olvidarCuenta,
+  type CuentaRecordada,
+} from "@/src/modules/usuarios/cuentas-recordadas.domain";
+import {
+  readRememberedAccounts,
+  writeRememberedAccounts,
+} from "@/src/lib/browser/remembered-accounts";
 
 export function RememberedAccounts() {
   const [accounts, setAccounts] = useState<readonly CuentaRecordada[]>([]);

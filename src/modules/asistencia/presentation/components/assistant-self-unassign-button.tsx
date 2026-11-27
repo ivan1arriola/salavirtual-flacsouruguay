@@ -6,7 +6,7 @@ import { useState } from "react";
 
 export function AssistantSelfUnassignButton({
   assignmentId,
-  title
+  title,
 }: Readonly<{
   assignmentId: string;
   title: string;
@@ -17,7 +17,7 @@ export function AssistantSelfUnassignButton({
 
   async function unassign() {
     const confirmed = window.confirm(
-      `¿Darte de baja del monitoreo de “${title}”?\n\nLa reunión volverá a quedar disponible en la agenda abierta para que otra persona pueda cubrirla.`
+      `¿Darte de baja del monitoreo de “${title}”?\n\nLa reunión volverá a quedar disponible en la agenda abierta para que otra persona pueda cubrirla.`,
     );
     if (!confirmed) {
       return;
@@ -29,7 +29,7 @@ export function AssistantSelfUnassignButton({
       const response = await fetch("/api/v1/asistencia/asignaciones/desvincular", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ asignacionId: assignmentId })
+        body: JSON.stringify({ asignacionId: assignmentId }),
       });
       const result = (await response.json().catch(() => ({}))) as Readonly<{
         error?: string;
@@ -54,7 +54,12 @@ export function AssistantSelfUnassignButton({
 
   return (
     <div className="assistant-self-unassign-action">
-      <button className="assistant-self-unassign-button" type="button" disabled={saving} onClick={unassign}>
+      <button
+        className="assistant-self-unassign-button"
+        type="button"
+        disabled={saving}
+        onClick={unassign}
+      >
         <UserMinus size={15} aria-hidden="true" />
         {saving ? "Dando de baja…" : "Darme de baja"}
       </button>

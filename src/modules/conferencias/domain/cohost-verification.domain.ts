@@ -29,20 +29,22 @@ export function registrarVerificacionCohosts(
   codigoReunion: string,
   organizer: string,
   emails: readonly string[],
-  verifiedAt: string
+  verifiedAt: string,
 ): Record<string, unknown> {
   const previous = record(payload);
   return {
     ...previous,
     salaVirtual: {
-      ...record(previous.salaVirtual),
+      ...record(previous["salaVirtual"]),
       cohostVerification: {
         codigoReunion: canonicalMeetCode(codigoReunion) || codigoReunion.trim().toLowerCase(),
         organizer: organizer.trim().toLowerCase(),
-        emails: normalizeCohostEmails(emails).filter((email) => email !== organizer.trim().toLowerCase()),
-        verifiedAt
-      }
-    }
+        emails: normalizeCohostEmails(emails).filter(
+          (email) => email !== organizer.trim().toLowerCase(),
+        ),
+        verifiedAt,
+      },
+    },
   };
 }
 
@@ -50,7 +52,7 @@ export function invalidarVerificacionCohosts(payload: unknown): Record<string, u
   const previous = record(payload);
   return {
     ...previous,
-    salaVirtual: { ...record(previous.salaVirtual), cohostVerification: null }
+    salaVirtual: { ...record(previous["salaVirtual"]), cohostVerification: null },
   };
 }
 
@@ -58,16 +60,18 @@ export function detalleCohostsVerificados(
   payload: unknown,
   codigoReunion: string | null | undefined,
   organizer: string | null | undefined,
-  emails: readonly string[]
+  emails: readonly string[],
 ): DetalleCohostsVerificados {
-  const desired = normalizeCohostEmails(emails).filter((email) => email !== organizer?.trim().toLowerCase());
+  const desired = normalizeCohostEmails(emails).filter(
+    (email) => email !== organizer?.trim().toLowerCase(),
+  );
   if (desired.length === 0) {
     return { confirmados: true, emailsConfirmados: [], emailsPendientes: [] };
   }
-  const verification = record(record(record(payload).salaVirtual).cohostVerification);
+  const verification = record(record(record(payload)["salaVirtual"])["cohostVerification"]);
   const codeCandidate = canonicalMeetCode(codigoReunion);
   const storedCode = canonicalMeetCode(
-    typeof verification.codigoReunion === "string" ? verification.codigoReunion : ""
+    typeof verification["codigoReunion"] === "string" ? verification["codigoReunion"] : "",
   );
 
   if (
@@ -76,20 +80,20 @@ export function detalleCohostsVerificados(
     !codeCandidate ||
     !storedCode ||
     codeCandidate !== storedCode ||
-    verification.organizer !== organizer.trim().toLowerCase() ||
-    typeof verification.verifiedAt !== "string" ||
-    !Number.isFinite(Date.parse(verification.verifiedAt)) ||
-    !Array.isArray(verification.emails)
+    verification["organizer"] !== organizer.trim().toLowerCase() ||
+    typeof verification["verifiedAt"] !== "string" ||
+    !Number.isFinite(Date.parse(verification["verifiedAt"])) ||
+    !Array.isArray(verification["emails"])
   ) {
     return { confirmados: false, emailsConfirmados: [], emailsPendientes: desired };
   }
-  const confirmed = new Set(verification.emails);
+  const confirmed = new Set(verification["emails"]);
   const emailsConfirmados = desired.filter((email) => confirmed.has(email));
   const emailsPendientes = desired.filter((email) => !confirmed.has(email));
   return {
     confirmados: emailsPendientes.length === 0 && desired.length > 0,
     emailsConfirmados,
-    emailsPendientes
+    emailsPendientes,
   };
 }
 
@@ -97,7 +101,7 @@ export function cohostsConfirmados(
   payload: unknown,
   codigoReunion: string | null | undefined,
   organizer: string | null | undefined,
-  emails: readonly string[]
+  emails: readonly string[],
 ): boolean {
   return detalleCohostsVerificados(payload, codigoReunion, organizer, emails).confirmados;
 }

@@ -1,10 +1,13 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-const source = readFileSync(new URL("../src/components/recordings-library.tsx", import.meta.url), "utf8");
+const source = readFileSync(
+  new URL("../src/components/recordings-library.tsx", import.meta.url),
+  "utf8",
+);
 const stylesheet = readFileSync(
   new URL("../app/(gestion)/grabaciones/grabaciones.css", import.meta.url),
-  "utf8"
+  "utf8",
 );
 
 describe("accesibilidad de filtros de grabaciones", () => {

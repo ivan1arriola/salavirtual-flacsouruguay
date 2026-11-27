@@ -4,7 +4,11 @@ import { compare, hash } from "bcryptjs";
 import type { SessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { cambioPasswordSchema, perfilPersonalSchema } from "./perfil.domain";
 
-export async function actualizarPerfilPersonal(db: PrismaClient, actor: SessionActor, rawInput: unknown) {
+export async function actualizarPerfilPersonal(
+  db: PrismaClient,
+  actor: SessionActor,
+  rawInput: unknown,
+) {
   if (!actor.activo) {
     throw new Error("La sesión ya no está activa.");
   }
@@ -13,7 +17,7 @@ export async function actualizarPerfilPersonal(db: PrismaClient, actor: SessionA
   return db.$transaction(async (tx) => {
     const anterior = await tx.usuario.findUnique({
       where: { id: actor.id },
-      select: { nombres: true, apellidos: true, telefono: true, imagenUrl: true, activo: true }
+      select: { nombres: true, apellidos: true, telefono: true, imagenUrl: true, activo: true },
     });
     if (!anterior?.activo) {
       throw new Error("El usuario ya no está activo.");
@@ -22,7 +26,7 @@ export async function actualizarPerfilPersonal(db: PrismaClient, actor: SessionA
     const actualizado = await tx.usuario.update({
       where: { id: actor.id },
       data: input,
-      select: { nombres: true, apellidos: true, telefono: true, imagenUrl: true }
+      select: { nombres: true, apellidos: true, telefono: true, imagenUrl: true },
     });
     await tx.auditoria.create({
       data: {
@@ -31,21 +35,25 @@ export async function actualizarPerfilPersonal(db: PrismaClient, actor: SessionA
         entidadTipo: "Usuario",
         entidadId: actor.id,
         valorAnterior: anterior,
-        valorNuevo: actualizado
-      }
+        valorNuevo: actualizado,
+      },
     });
     return actualizado;
   });
 }
 
-export async function cambiarPasswordPersonal(db: PrismaClient, actor: SessionActor, rawInput: unknown) {
+export async function cambiarPasswordPersonal(
+  db: PrismaClient,
+  actor: SessionActor,
+  rawInput: unknown,
+) {
   if (!actor.activo) {
     throw new Error("La sesión ya no está activa.");
   }
   const input = cambioPasswordSchema.parse(rawInput);
   const usuario = await db.usuario.findUnique({
     where: { id: actor.id },
-    select: { passwordHash: true, activo: true }
+    select: { passwordHash: true, activo: true },
   });
   if (!usuario?.activo) {
     throw new Error("El usuario ya no está activo.");
@@ -61,9 +69,11 @@ export async function cambiarPasswordPersonal(db: PrismaClient, actor: SessionAc
   return db.$transaction(async (tx) => {
     await tx.usuario.update({
       where: { id: actor.id },
-      data: { passwordHash, passwordInicialCifrada: null, debeCambiarPassword: false }
+      data: { passwordHash, passwordInicialCifrada: null, debeCambiarPassword: false },
     });
-    await tx.tokenVerificacion.deleteMany({ where: { identifier: mobileSessionIdentifier(actor.id) } });
+    await tx.tokenVerificacion.deleteMany({
+      where: { identifier: mobileSessionIdentifier(actor.id) },
+    });
     await tx.auditoria.create({
       data: {
         actorUsuarioId: actor.id,
@@ -71,8 +81,8 @@ export async function cambiarPasswordPersonal(db: PrismaClient, actor: SessionAc
         entidadTipo: "Usuario",
         entidadId: actor.id,
         valorAnterior: { tienePassword: Boolean(usuario.passwordHash) },
-        valorNuevo: { tienePassword: true }
-      }
+        valorNuevo: { tienePassword: true },
+      },
     });
   });
 }

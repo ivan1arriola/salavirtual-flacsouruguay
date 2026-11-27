@@ -5,13 +5,13 @@ const POR_PAGINA = 12;
 
 /** Lectura de solo consulta: nunca selecciona URLs de descarga, sesiones de subida ni claves de origen. */
 export function crearPrismaZoomInventarioLecturaAdapter(
-  deps: Readonly<{ db: PrismaClient }>
+  deps: Readonly<{ db: PrismaClient }>,
 ): ZoomInventarioLecturaPort {
   return {
     async listarInventario({ pagina, vinculo }) {
       const where: Prisma.OcurrenciaArchivoZoomWhereInput = {
         archivos: { some: {} },
-        ...(vinculo === "SIN_VINCULO" ? { eventoProveedorId: null } : {})
+        ...(vinculo === "SIN_VINCULO" ? { eventoProveedorId: null } : {}),
       };
       const total = await deps.db.ocurrenciaArchivoZoom.count({ where });
       const totalPaginas = Math.max(1, Math.ceil(total / POR_PAGINA));
@@ -41,12 +41,12 @@ export function crearPrismaZoomInventarioLecturaAdapter(
               tamanoBytes: true,
               descargable: true,
               webViewUrl: true,
-              errorCodigo: true
-            }
-          }
-        }
+              errorCodigo: true,
+            },
+          },
+        },
       });
       return { pagina: actual, totalPaginas, totalOcurrencias: total, ocurrencias: filas };
-    }
+    },
   };
 }

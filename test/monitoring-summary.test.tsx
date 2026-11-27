@@ -5,7 +5,7 @@ import { MonitoringSummary } from "../src/modules/asistencia/presentation/compon
 describe("resumen de monitoreo", () => {
   it("muestra los cuatro indicadores y el porcentaje de cobertura", () => {
     const html = renderToStaticMarkup(
-      <MonitoringSummary total={10} covered={9} pending={1} applicantsCount={3} />
+      <MonitoringSummary total={10} covered={9} pending={1} applicantsCount={3} />,
     );
     expect(html).toContain("Reuniones próximas");
     expect(html).toContain("Con cobertura");
@@ -28,7 +28,9 @@ describe("resumen de monitoreo", () => {
   });
 
   it("conserva la búsqueda en el enlace de pendientes", () => {
-    const html = renderToStaticMarkup(<MonitoringSummary total={2} covered={1} pending={1} q="china" />);
+    const html = renderToStaticMarkup(
+      <MonitoringSummary total={2} covered={1} pending={1} q="china" />,
+    );
     expect(html).toContain("/monitoreo?estado=pendientes&amp;q=china");
   });
 

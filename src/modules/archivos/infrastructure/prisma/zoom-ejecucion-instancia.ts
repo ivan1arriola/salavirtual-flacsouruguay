@@ -7,16 +7,16 @@ import type { Prisma } from "@prisma/client";
  */
 export async function aplicarEjecucionZoomAInstancia(
   tx: Prisma.TransactionClient,
-  entrada: Readonly<{ instanciaSalaId: string; cuentaZoomId: string; uuid: string }>
+  entrada: Readonly<{ instanciaSalaId: string; cuentaZoomId: string; uuid: string }>,
 ): Promise<void> {
   const avisos = await tx.eventoWebhookZoom.findMany({
     where: {
       cuentaZoomId: entrada.cuentaZoomId,
       uuid: entrada.uuid,
-      tipo: { in: ["meeting.started", "meeting.ended"] }
+      tipo: { in: ["meeting.started", "meeting.ended"] },
     },
     select: { tipo: true, inicioRealAt: true, finRealAt: true },
-    orderBy: { ocurridoAt: "asc" }
+    orderBy: { ocurridoAt: "asc" },
   });
   const inicio = avisos[0]?.inicioRealAt ?? null;
   const fin = avisos.filter(({ tipo }) => tipo === "meeting.ended").at(-1)?.finRealAt ?? null;
@@ -24,17 +24,20 @@ export async function aplicarEjecucionZoomAInstancia(
     return;
   }
   const { instanciaSalaId: id } = entrada;
-  await tx.instanciaSala.updateMany({ where: { id, inicioRealAt: null }, data: { inicioRealAt: inicio } });
+  await tx.instanciaSala.updateMany({
+    where: { id, inicioRealAt: null },
+    data: { inicioRealAt: inicio },
+  });
   if (!fin) {
     await tx.instanciaSala.updateMany({
       where: { id, estado: "PROGRAMADA" },
-      data: { estado: "EN_CURSO" }
+      data: { estado: "EN_CURSO" },
     });
     return;
   }
   await tx.instanciaSala.updateMany({ where: { id, finRealAt: null }, data: { finRealAt: fin } });
   await tx.instanciaSala.updateMany({
     where: { id, estado: { in: ["PROGRAMADA", "EN_CURSO"] } },
-    data: { estado: "FINALIZADA" }
+    data: { estado: "FINALIZADA" },
   });
 }

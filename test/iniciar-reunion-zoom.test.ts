@@ -3,7 +3,7 @@ import type { PrismaClient } from "@prisma/client";
 import { obtenerEnlaceInicioZoom } from "../src/modules/reuniones/iniciar-reunion-zoom.service";
 
 vi.mock("../src/modules/reuniones/permisos-programa.service", () => ({
-  puedeGestionarPrograma: vi.fn(async () => true)
+  puedeGestionarPrograma: vi.fn(async () => true),
 }));
 
 const manana = new Date(Date.now() + 24 * 60 * 60 * 1000);
@@ -16,10 +16,10 @@ function instancia(extra: Record<string, unknown> = {}) {
     proveedorActivoTipo: "ZOOM",
     eventosProveedor: [
       { externalEventId: "999", proveedor: { tipo: "GOOGLE_MEET" } },
-      { externalEventId: "123", proveedor: { tipo: "ZOOM" } }
+      { externalEventId: "123", proveedor: { tipo: "ZOOM" } },
     ],
     solicitud: { docentePrograma: { programaId: "p1", docente: { usuarioId: "docente-1" } } },
-    ...extra
+    ...extra,
   };
 }
 
@@ -32,7 +32,11 @@ const ajeno = { id: "docente-2", rol: "DOCENTE" as const, activo: true };
 describe("enlace de inicio de Zoom para el anfitrión", () => {
   it("pide a Zoom un enlace nuevo del evento Zoom activo para el docente titular", async () => {
     const obtenerStartUrl = vi.fn(async () => "https://zoom.us/s/123?zak=fresco");
-    const url = await obtenerEnlaceInicioZoom({ db: db(instancia()), obtenerStartUrl }, titular, "i1");
+    const url = await obtenerEnlaceInicioZoom(
+      { db: db(instancia()), obtenerStartUrl },
+      titular,
+      "i1",
+    );
     expect(url).toBe("https://zoom.us/s/123?zak=fresco");
     expect(obtenerStartUrl).toHaveBeenCalledWith("123");
   });
@@ -45,9 +49,9 @@ describe("enlace de inicio de Zoom para el anfitrión", () => {
           externalEventId: "123",
           reunionProveedorId: "r1",
           reunionProveedor: { externalId: "555" },
-          proveedor: { tipo: "ZOOM" }
-        }
-      ]
+          proveedor: { tipo: "ZOOM" },
+        },
+      ],
     });
     await obtenerEnlaceInicioZoom({ db: db(compartida), obtenerStartUrl }, titular, "i1");
     expect(obtenerStartUrl).toHaveBeenCalledWith("555");
@@ -61,12 +65,12 @@ describe("enlace de inicio de Zoom para el anfitrión", () => {
           externalEventId: "123",
           reunionProveedorId: "r1",
           reunionProveedor: { externalId: null },
-          proveedor: { tipo: "ZOOM" }
-        }
-      ]
+          proveedor: { tipo: "ZOOM" },
+        },
+      ],
     });
     await expect(
-      obtenerEnlaceInicioZoom({ db: db(compartida), obtenerStartUrl }, titular, "i1")
+      obtenerEnlaceInicioZoom({ db: db(compartida), obtenerStartUrl }, titular, "i1"),
     ).rejects.toThrow(/Zoom activa/);
     expect(obtenerStartUrl).not.toHaveBeenCalled();
   });
@@ -74,14 +78,14 @@ describe("enlace de inicio de Zoom para el anfitrión", () => {
   it("administración también puede", async () => {
     const obtenerStartUrl = vi.fn(async () => "https://zoom.us/s/123?zak=x");
     await expect(
-      obtenerEnlaceInicioZoom({ db: db(instancia()), obtenerStartUrl }, admin, "i1")
+      obtenerEnlaceInicioZoom({ db: db(instancia()), obtenerStartUrl }, admin, "i1"),
     ).resolves.toContain("zoom.us");
   });
 
   it("un docente ajeno recibe 403 y no se consulta a Zoom", async () => {
     const obtenerStartUrl = vi.fn(async () => "x");
     await expect(
-      obtenerEnlaceInicioZoom({ db: db(instancia()), obtenerStartUrl }, ajeno, "i1")
+      obtenerEnlaceInicioZoom({ db: db(instancia()), obtenerStartUrl }, ajeno, "i1"),
     ).rejects.toThrow(/permisos/);
     expect(obtenerStartUrl).not.toHaveBeenCalled();
   });
@@ -89,10 +93,18 @@ describe("enlace de inicio de Zoom para el anfitrión", () => {
   it("rechaza un encuentro cancelado o terminado", async () => {
     const obtenerStartUrl = vi.fn(async () => "x");
     await expect(
-      obtenerEnlaceInicioZoom({ db: db(instancia({ estado: "CANCELADA" })), obtenerStartUrl }, admin, "i1")
+      obtenerEnlaceInicioZoom(
+        { db: db(instancia({ estado: "CANCELADA" })), obtenerStartUrl },
+        admin,
+        "i1",
+      ),
     ).rejects.toThrow(/no está disponible/);
     await expect(
-      obtenerEnlaceInicioZoom({ db: db(instancia({ finProgramadoAt: ayer })), obtenerStartUrl }, admin, "i1")
+      obtenerEnlaceInicioZoom(
+        { db: db(instancia({ finProgramadoAt: ayer })), obtenerStartUrl },
+        admin,
+        "i1",
+      ),
     ).rejects.toThrow(/no está disponible/);
     expect(obtenerStartUrl).not.toHaveBeenCalled();
   });
@@ -103,20 +115,24 @@ describe("enlace de inicio de Zoom para el anfitrión", () => {
       obtenerEnlaceInicioZoom(
         { db: db(instancia({ proveedorActivoTipo: "GOOGLE_MEET" })), obtenerStartUrl },
         admin,
-        "i1"
-      )
+        "i1",
+      ),
     ).rejects.toThrow(/Zoom/);
   });
 
   it("devuelve 404 si el encuentro no existe", async () => {
     await expect(
-      obtenerEnlaceInicioZoom({ db: db(null), obtenerStartUrl: vi.fn() }, admin, "nada")
+      obtenerEnlaceInicioZoom({ db: db(null), obtenerStartUrl: vi.fn() }, admin, "nada"),
     ).rejects.toThrow(/no existe/);
   });
 
   it("falla con mensaje claro si Zoom no devuelve el enlace", async () => {
     await expect(
-      obtenerEnlaceInicioZoom({ db: db(instancia()), obtenerStartUrl: vi.fn(async () => null) }, admin, "i1")
+      obtenerEnlaceInicioZoom(
+        { db: db(instancia()), obtenerStartUrl: vi.fn(async () => null) },
+        admin,
+        "i1",
+      ),
     ).rejects.toThrow(/enlace de inicio/);
   });
 });

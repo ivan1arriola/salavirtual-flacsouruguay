@@ -6,7 +6,7 @@ import type {
   EstadoIntegracionConferencia,
   OperacionPendienteConferencia,
   ProvisionConferenciaResult,
-  ReclasificarLoteResult
+  ReclasificarLoteResult,
 } from "../domain/conferencias.types";
 
 export type EventoProveedorSnapshot = Readonly<{
@@ -87,13 +87,13 @@ export type ConferenciasRepositoryPort = Readonly<{
 
   buscarConferenceDataCompartida: (
     solicitudSalaId: string,
-    excludeEventoId: string
+    excludeEventoId: string,
   ) => Promise<Readonly<Record<string, unknown>> | undefined>;
 
   guardarExternalEventIdTemprano: (
     claim: ClaimInfo,
     externalEventId: string,
-    payload: unknown
+    payload: unknown,
   ) => Promise<void>;
 
   persistirMeetDetectado: (claim: ClaimInfo, result: ConferenceProvisionResult) => Promise<void>;
@@ -101,13 +101,13 @@ export type ConferenciasRepositoryPort = Readonly<{
   finalizarOperacion: (
     claim: ClaimInfo,
     result: ConferenceProvisionResult | null,
-    cancelacion: boolean
+    cancelacion: boolean,
   ) => Promise<boolean>;
 
   registrarErrorReclamado: (
     claim: ClaimInfo,
     error: string,
-    scopeConfiguracionMeet?: boolean
+    scopeConfiguracionMeet?: boolean,
   ) => Promise<ProvisionConferenciaResult>;
 
   registrarErrorSinClaim: (id: string, error: string) => Promise<ProvisionConferenciaResult>;
@@ -126,17 +126,21 @@ export type ConferenciasRepositoryPort = Readonly<{
   reclamarCreacionReunionCompartida?: (
     eventoProveedorId: string,
     token: string,
-    ahora: Date
+    ahora: Date,
   ) => Promise<ReclamoReunionCompartida | null>;
 
   /** Guarda el ID de Zoom apenas se recibe; solo si el token sigue siendo el del reclamo. */
-  registrarExternalIdTemprano?: (reunionId: string, token: string, externalId: string) => Promise<void>;
+  registrarExternalIdTemprano?: (
+    reunionId: string,
+    token: string,
+    externalId: string,
+  ) => Promise<void>;
 
   /** Pasa la reunión a CREADA y copia `externalEventId`/`joinUrl` a sus eventos. */
   guardarReunionCompartida?: (
     reunionId: string,
     token: string,
-    datos: Readonly<{ externalId: string; joinUrl: string }>
+    datos: Readonly<{ externalId: string; joinUrl: string }>,
   ) => Promise<void>;
 
   usosDeReunionCompartida?: (reunionId: string) => Promise<EstadoReunionCompartida>;
@@ -150,7 +154,7 @@ export type ConferenciasRepositoryPort = Readonly<{
    */
   vincularEventoReunionCompartida?: (
     claim: ClaimInfo,
-    datos: Readonly<{ externalId: string; joinUrl: string }>
+    datos: Readonly<{ externalId: string; joinUrl: string }>,
   ) => Promise<void>;
 
   /** Limpia el reclamo del evento sin tocar su operación pendiente, para reintentar enseguida. */

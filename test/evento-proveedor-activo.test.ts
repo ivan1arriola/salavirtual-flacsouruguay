@@ -4,13 +4,13 @@ import { seleccionarEventoProveedorActivo } from "../src/modules/reuniones/event
 const meet = {
   id: "meet-1",
   proveedor: { tipo: "GOOGLE_MEET" },
-  joinUrl: "https://meet.google.com/abc-defg-hij"
+  joinUrl: "https://meet.google.com/abc-defg-hij",
 };
 const zoom = { id: "zoom-1", proveedor: { tipo: "ZOOM" }, joinUrl: "https://zoom.us/j/123" };
 const historico = {
   id: "historico-1",
   proveedor: { tipo: "ZOOM_HISTORICO" },
-  joinUrl: "https://zoom.us/j/old"
+  joinUrl: "https://zoom.us/j/old",
 };
 
 describe("seleccionarEventoProveedorActivo", () => {
@@ -19,17 +19,23 @@ describe("seleccionarEventoProveedorActivo", () => {
   });
 
   it("selecciona Zoom para un encuentro nuevo explícitamente Zoom", () => {
-    expect(seleccionarEventoProveedorActivo({ proveedorActivoTipo: "ZOOM", eventosProveedor: [zoom] })).toBe(
-      zoom
-    );
+    expect(
+      seleccionarEventoProveedorActivo({ proveedorActivoTipo: "ZOOM", eventosProveedor: [zoom] }),
+    ).toBe(zoom);
   });
 
   it("respeta el proveedor explícito cuando conviven ambos eventos", () => {
     expect(
-      seleccionarEventoProveedorActivo({ proveedorActivoTipo: "ZOOM", eventosProveedor: [meet, zoom] })
+      seleccionarEventoProveedorActivo({
+        proveedorActivoTipo: "ZOOM",
+        eventosProveedor: [meet, zoom],
+      }),
     ).toBe(zoom);
     expect(
-      seleccionarEventoProveedorActivo({ proveedorActivoTipo: "GOOGLE_MEET", eventosProveedor: [zoom, meet] })
+      seleccionarEventoProveedorActivo({
+        proveedorActivoTipo: "GOOGLE_MEET",
+        eventosProveedor: [zoom, meet],
+      }),
     ).toBe(meet);
   });
 
@@ -39,7 +45,7 @@ describe("seleccionarEventoProveedorActivo", () => {
 
   it("no recurre a Meet si Zoom es explícito pero su evento falta", () => {
     expect(
-      seleccionarEventoProveedorActivo({ proveedorActivoTipo: "ZOOM", eventosProveedor: [meet] })
+      seleccionarEventoProveedorActivo({ proveedorActivoTipo: "ZOOM", eventosProveedor: [meet] }),
     ).toBeNull();
   });
 

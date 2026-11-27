@@ -10,7 +10,7 @@ const WEEKDAYS = [
   { value: 4, label: "Jue" },
   { value: 5, label: "Vie" },
   { value: 6, label: "Sáb" },
-  { value: 0, label: "Dom" }
+  { value: 0, label: "Dom" },
 ] as const;
 
 export function RecurrenceRuleEditor({
@@ -20,7 +20,7 @@ export function RecurrenceRuleEditor({
   message,
   onChange,
   onTimeChange,
-  onGenerate
+  onGenerate,
 }: Readonly<{
   recurrence: RecurrenceState;
   requiresAssistance: boolean;
@@ -93,8 +93,8 @@ export function RecurrenceRuleEditor({
             recurrence.horaAsistenciaFin &&
             !horarioAsistenciaCumpleMargen(recurrence, "HIBRIDA") ? (
               <span className="meeting-date-warning" role="alert">
-                La llegada debe ser al menos 30 min antes del inicio y la salida al menos 30 min después del
-                final.
+                La llegada debe ser al menos 30 min antes del inicio y la salida al menos 30 min
+                después del final.
               </span>
             ) : null}
           </div>
@@ -125,7 +125,10 @@ export function RecurrenceRuleEditor({
               type="checkbox"
               checked={recurrence.diasSemana.includes(day.value)}
               onChange={(event) =>
-                onChange("diasSemana", toggleWeekday(recurrence.diasSemana, day.value, event.target.checked))
+                onChange(
+                  "diasSemana",
+                  toggleWeekday(recurrence.diasSemana, day.value, event.target.checked),
+                )
               }
             />
             <span>{day.label}</span>
@@ -133,7 +136,10 @@ export function RecurrenceRuleEditor({
         ))}
       </fieldset>
       <div className="recurrence-actions">
-        <span className={message ? "recurrence-feedback has-result" : "recurrence-feedback"} role="status">
+        <span
+          className={message ? "recurrence-feedback has-result" : "recurrence-feedback"}
+          role="status"
+        >
           {message || "Luego podrás revisar y ajustar cada encuentro."}
         </span>
         <button className="secondary-action" type="button" onClick={onGenerate}>

@@ -3,7 +3,7 @@ import {
   puedeGestionarCuentasGoogle,
   reemplazarCuentasGoogleSchema,
   resolverEmailPrincipal,
-  tieneMetodoDeAcceso
+  tieneMetodoDeAcceso,
 } from "../src/modules/usuarios/cuentas-google.domain";
 
 describe("cuentas Google permitidas", () => {
@@ -12,26 +12,26 @@ describe("cuentas Google permitidas", () => {
       puedeGestionarCuentasGoogle({
         id: "admin",
         rol: "ADMINISTRACION",
-        activo: true
-      })
+        activo: true,
+      }),
     ).toBe(true);
     expect(
       puedeGestionarCuentasGoogle({
         id: "docente",
         rol: "DOCENTE",
-        activo: true
-      })
+        activo: true,
+      }),
     ).toBe(false);
   });
 
   it("normaliza cuentas Google y elimina duplicados", () => {
     expect(
       reemplazarCuentasGoogleSchema.parse({
-        emails: ["DOCENTE@FLACSO.EDU.UY", "docente@flacso.edu.uy"]
-      }).emails
+        emails: ["DOCENTE@FLACSO.EDU.UY", "docente@flacso.edu.uy"],
+      }).emails,
     ).toEqual(["docente@flacso.edu.uy"]);
     expect(reemplazarCuentasGoogleSchema.parse({ emails: ["persona@gmail.com"] }).emails).toEqual([
-      "persona@gmail.com"
+      "persona@gmail.com",
     ]);
   });
 
@@ -39,8 +39,8 @@ describe("cuentas Google permitidas", () => {
     expect(
       reemplazarCuentasGoogleSchema.parse({
         emails: [],
-        emailPrincipal: " Persona@Ejemplo.COM "
-      }).emailPrincipal
+        emailPrincipal: " Persona@Ejemplo.COM ",
+      }).emailPrincipal,
     ).toBe("persona@ejemplo.com");
   });
 
@@ -49,8 +49,8 @@ describe("cuentas Google permitidas", () => {
       resolverEmailPrincipal({
         emailsGoogle: ["google@flacso.edu.uy"],
         emailPrincipalActual: "otro@ejemplo.com",
-        emailPrincipalSolicitado: "manual@ejemplo.com"
-      })
+        emailPrincipalSolicitado: "manual@ejemplo.com",
+      }),
     ).toBe("google@flacso.edu.uy");
   });
 
@@ -58,8 +58,8 @@ describe("cuentas Google permitidas", () => {
     expect(
       resolverEmailPrincipal({
         emailsGoogle: ["secundaria@gmail.com", "principal@flacso.edu.uy"],
-        emailPrincipalActual: "PRINCIPAL@FLACSO.EDU.UY"
-      })
+        emailPrincipalActual: "PRINCIPAL@FLACSO.EDU.UY",
+      }),
     ).toBe("principal@flacso.edu.uy");
   });
 
@@ -68,8 +68,8 @@ describe("cuentas Google permitidas", () => {
       resolverEmailPrincipal({
         emailsGoogle: [],
         emailPrincipalActual: "anterior@ejemplo.com",
-        emailPrincipalSolicitado: "nuevo@ejemplo.com"
-      })
+        emailPrincipalSolicitado: "nuevo@ejemplo.com",
+      }),
     ).toBe("nuevo@ejemplo.com");
   });
 

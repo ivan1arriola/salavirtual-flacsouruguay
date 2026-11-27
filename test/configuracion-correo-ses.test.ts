@@ -9,13 +9,13 @@ describe("configuración Amazon SES", () => {
         activa: true,
         awsRegion: "us-east-1",
         fromEmail: " Avisos@flacso.edu.uy ",
-        replyToEmail: " Respuestas@flacso.edu.uy "
-      })
+        replyToEmail: " Respuestas@flacso.edu.uy ",
+      }),
     ).toEqual({
       activa: true,
       awsRegion: "us-east-1",
       fromEmail: "avisos@flacso.edu.uy",
-      replyToEmail: "respuestas@flacso.edu.uy"
+      replyToEmail: "respuestas@flacso.edu.uy",
     });
   });
 
@@ -24,8 +24,8 @@ describe("configuración Amazon SES", () => {
       normalizarConfiguracionCorreoSes({
         activa: true,
         awsRegion: "",
-        fromEmail: ""
-      })
+        fromEmail: "",
+      }),
     ).toThrow();
   });
 
@@ -33,7 +33,7 @@ describe("configuración Amazon SES", () => {
     const db = {
       $transaction: () => {
         throw new Error("No debe acceder a la base");
-      }
+      },
     } as never;
     await expect(
       actualizarConfiguracionCorreoSes(
@@ -43,9 +43,9 @@ describe("configuración Amazon SES", () => {
           activa: false,
           awsRegion: "",
           fromEmail: "",
-          replyToEmail: ""
-        }
-      )
+          replyToEmail: "",
+        },
+      ),
     ).rejects.toThrow("Solo Administración");
   });
 
@@ -54,37 +54,39 @@ describe("configuración Amazon SES", () => {
       activa: true,
       awsRegion: "us-east-1",
       fromEmail: "avisos@flacso.edu.uy",
-      replyToEmail: null
+      replyToEmail: null,
     };
     const tx = {
       usuario: {
-        findUnique: vi.fn().mockResolvedValue({ id: "admin", rol: "ADMINISTRACION", activo: true })
+        findUnique: vi.fn().mockResolvedValue({ id: "admin", rol: "ADMINISTRACION", activo: true }),
       },
       configuracionCorreoSes: {
         findUnique: vi.fn().mockResolvedValue(null),
-        upsert: vi.fn().mockResolvedValue({ id: "principal", ...config })
+        upsert: vi.fn().mockResolvedValue({ id: "principal", ...config }),
       },
-      auditoria: { create: vi.fn().mockResolvedValue({}) }
+      auditoria: { create: vi.fn().mockResolvedValue({}) },
     };
-    const db = { $transaction: vi.fn((callback: (value: typeof tx) => unknown) => callback(tx)) } as never;
+    const db = {
+      $transaction: vi.fn((callback: (value: typeof tx) => unknown) => callback(tx)),
+    } as never;
     const saved = await actualizarConfiguracionCorreoSes(
       db,
       { id: "admin", rol: "ADMINISTRACION", activo: true },
-      config
+      config,
     );
     expect(saved).toMatchObject(config);
     expect(tx.usuario.findUnique).toHaveBeenCalledWith({
       where: { id: "admin" },
-      select: { id: true, rol: true, activo: true }
+      select: { id: true, rol: true, activo: true },
     });
     expect(tx.auditoria.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
           accion: "CONFIGURACION_CORREO_SES_ACTUALIZADA",
           entidadId: "principal",
-          valorNuevo: config
-        })
-      })
+          valorNuevo: config,
+        }),
+      }),
     );
   });
 });

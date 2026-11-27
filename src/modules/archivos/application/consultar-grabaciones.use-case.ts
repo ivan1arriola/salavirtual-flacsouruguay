@@ -3,7 +3,7 @@ import type { ListarGrabacionesDbInput } from "../ports";
 
 export async function listarArchivosVisiblesUseCase(
   repositorio: ArchivosRepositoryPort,
-  actor: SessionActor
+  actor: SessionActor,
 ): Promise<readonly ArchivoMeetVisibleModel[]> {
   return repositorio.listarArchivosVisibles(actor);
 }
@@ -11,7 +11,7 @@ export async function listarArchivosVisiblesUseCase(
 export async function listarGrabacionesDbUseCase(
   repositorio: ArchivosRepositoryPort,
   actor: SessionActor,
-  input: ListarGrabacionesDbInput
+  input: ListarGrabacionesDbInput,
 ) {
   if (!repositorio.listarGrabacionesDb) {
     throw new Error("El repositorio no implementa paginación de encuentros.");

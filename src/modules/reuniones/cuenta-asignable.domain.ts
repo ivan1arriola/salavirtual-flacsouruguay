@@ -1,4 +1,8 @@
-export const CUENTA_ZOOM_ASIGNABLE = { activa: true, tieneLicencia: true, fueraDelGrupoAt: null } as const;
+export const CUENTA_ZOOM_ASIGNABLE = {
+  activa: true,
+  tieneLicencia: true,
+  fueraDelGrupoAt: null,
+} as const;
 
 type CuentaLeida = Readonly<{
   activa: boolean;

@@ -12,7 +12,9 @@ export type ZoomAsistenciaProvider = Readonly<{
   obtenerSesiones(uuidOcurrencia: string): Promise<ResultadoSesionesZoom>;
 }>;
 
-export function crearZoomAsistenciaProviderAdapter(deps: ZoomAsistenciaProviderDeps): ZoomAsistenciaProvider {
+export function crearZoomAsistenciaProviderAdapter(
+  deps: ZoomAsistenciaProviderDeps,
+): ZoomAsistenciaProvider {
   return {
     async obtenerSesiones(uuid) {
       const token = typeof deps.auth === "string" ? deps.auth : await deps.auth.obtener();
@@ -29,7 +31,7 @@ export function crearZoomAsistenciaProviderAdapter(deps: ZoomAsistenciaProviderD
           userId: fila.userId,
           nombre: fila.nombre,
           entradaAt: fila.joinTime,
-          salidaAt: fila.leaveTime
+          salidaAt: fila.leaveTime,
         }),
         participanteId: fila.participantId,
         userId: fila.userId,
@@ -39,9 +41,9 @@ export function crearZoomAsistenciaProviderAdapter(deps: ZoomAsistenciaProviderD
         salidaAt: fila.leaveTime,
         status: fila.status,
         // El reporte de participantes no comprueba roles: host/cohost se asigna por otra vía verificada.
-        rol: null
+        rol: null,
       }));
       return { estado: "DISPONIBLE", sesiones };
-    }
+    },
   };
 }

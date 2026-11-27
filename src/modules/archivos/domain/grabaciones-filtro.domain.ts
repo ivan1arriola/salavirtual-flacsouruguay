@@ -1,6 +1,7 @@
 import type { TipoArtefactoMeet } from "./meet-artifacts.domain";
 
-export type TipoFiltroArtefacto = "TODOS" | "GRABACIONES" | "ASISTENCIAS" | "NOTAS_Y_TRANSCRIPCIONES";
+export type TipoFiltroArtefacto =
+  "TODOS" | "GRABACIONES" | "ASISTENCIAS" | "NOTAS_Y_TRANSCRIPCIONES";
 
 export type EstadoVisualGrabacion =
   "DISPONIBLE" | "EN_CURSO" | "PROCESANDO" | "NO_REGISTRADA" | "NO_REQUERIDA";
@@ -71,7 +72,7 @@ export function resolverEstadoVisualGrabacion(datos: {
 export function filtrarEncuentrosConArchivos(
   grupos: readonly GrupoEncuentroConArchivos[],
   filtro: TipoFiltroArtefacto,
-  busqueda: string
+  busqueda: string,
 ): readonly GrupoEncuentroConArchivos[] {
   const query = busqueda.trim().toLowerCase();
 

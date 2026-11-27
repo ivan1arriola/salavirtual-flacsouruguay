@@ -8,31 +8,41 @@ const mocks = vi.hoisted(() => ({
   cargar: vi.fn(),
   instancia: vi.fn(),
   leerPlanilla: vi.fn(),
-  crearJwt: vi.fn()
+  crearJwt: vi.fn(),
 }));
 
 vi.mock("@/auth", () => ({ auth: mocks.auth }));
 vi.mock("@/src/lib/db", () => ({ db: { instanciaSala: { findUnique: mocks.instancia } } }));
-vi.mock("@/src/lib/auth/session-actor.adapter", () => ({ resolveSessionActor: mocks.resolveSessionActor }));
+vi.mock("@/src/lib/auth/session-actor.adapter", () => ({
+  resolveSessionActor: mocks.resolveSessionActor,
+}));
 vi.mock("@/src/lib/config/encryption", () => ({ descifrarConfiguracion: (v: string) => v }));
 vi.mock("@/src/integrations/google", () => ({ crearGoogleAuthJwt: mocks.crearJwt }));
 vi.mock("@/src/bootstrap/archivos.server", () => ({
-  crearArchivosRepository: () => ({ obtenerConfiguracionWorkspacePrincipal: vi.fn() })
+  crearArchivosRepository: () => ({ obtenerConfiguracionWorkspacePrincipal: vi.fn() }),
 }));
 vi.mock("@/src/modules/reuniones/permisos-programa.service", () => ({
-  puedeGestionarPrograma: mocks.puedeGestionarPrograma
+  puedeGestionarPrograma: mocks.puedeGestionarPrograma,
 }));
-vi.mock("@/src/modules/archivos/infrastructure/google/google-attendance-sheet-reader.client", () => ({
-  leerPlanillaAsistenciaGoogle: mocks.leerPlanilla
-}));
-vi.mock("@/src/modules/archivos/infrastructure/prisma/prisma-lectura-planilla-zoom.adapter", () => ({
-  crearPrismaLecturaPlanillaZoomAdapter: () => ({ cargarAsistenciaInstancia: mocks.cargar })
-}));
+vi.mock(
+  "@/src/modules/archivos/infrastructure/google/google-attendance-sheet-reader.client",
+  () => ({
+    leerPlanillaAsistenciaGoogle: mocks.leerPlanilla,
+  }),
+);
+vi.mock(
+  "@/src/modules/archivos/infrastructure/prisma/prisma-lectura-planilla-zoom.adapter",
+  () => ({
+    crearPrismaLecturaPlanillaZoomAdapter: () => ({ cargarAsistenciaInstancia: mocks.cargar }),
+  }),
+);
 
 import { GET } from "../app/api/v1/reuniones/instancias/[instanciaId]/asistencia/exportar/[fuente]/route";
 
 const pedir = (fuente: string, query = "") =>
-  GET(new Request(`http://x/api${query}`), { params: Promise.resolve({ instanciaId: "i1", fuente }) });
+  GET(new Request(`http://x/api${query}`), {
+    params: Promise.resolve({ instanciaId: "i1", fuente }),
+  });
 const t = (hhmm: string) => new Date(`2026-11-09T${hhmm}:00Z`);
 const registro = {
   nombre: "=Ana",
@@ -44,7 +54,7 @@ const registro = {
   porcentaje: 50,
   sesiones: 1,
   estadoConciliacion: "SIN_CONCILIAR",
-  rolComprobado: null
+  rolComprobado: null,
 };
 
 describe("exportación de asistencia Zoom", () => {
@@ -57,7 +67,7 @@ describe("exportación de asistencia Zoom", () => {
       inicioProgramadoAt: t("13:00"),
       finProgramadoAt: t("14:00"),
       solicitud: { docentePrograma: { programaId: "p1" } },
-      eventosProveedor: []
+      eventosProveedor: [],
     });
     mocks.cargar.mockResolvedValue({ registros: [registro], sesiones: [] });
   });
@@ -83,14 +93,18 @@ describe("exportación de asistencia Zoom", () => {
           entradaAt: t("13:00"),
           salidaAt: t("13:10"),
           status: "in_meeting",
-          participanteId: "p"
-        }
-      ]
+          participanteId: "p",
+        },
+      ],
     });
     const r = await pedir("zoom", "?conjunto=sesiones&formato=json");
     expect(r.status).toBe(200);
     const json = await r.json();
-    expect(json).toMatchObject({ fuente: "zoom", conjunto: "sesiones", origenDatos: "base_de_datos" });
+    expect(json).toMatchObject({
+      fuente: "zoom",
+      conjunto: "sesiones",
+      origenDatos: "base_de_datos",
+    });
     expect(json.columnas).toContain("Entrada (UTC)");
   });
 
@@ -124,17 +138,20 @@ describe("exportación de asistencia Zoom", () => {
 });
 
 describe("reporte procesado: mismos permisos que el JSON original", () => {
-  it.each(["resumen", "sesiones"])("sin permiso sobre el programa el conjunto %s no se sirve", async (c) => {
-    mocks.puedeGestionarPrograma.mockResolvedValue(false);
-    expect((await pedir("zoom", `?formato=csv&conjunto=${c}`)).status).toBe(404);
-    expect(mocks.cargar).not.toHaveBeenCalled();
-  });
+  it.each(["resumen", "sesiones"])(
+    "sin permiso sobre el programa el conjunto %s no se sirve",
+    async (c) => {
+      mocks.puedeGestionarPrograma.mockResolvedValue(false);
+      expect((await pedir("zoom", `?formato=csv&conjunto=${c}`)).status).toBe(404);
+      expect(mocks.cargar).not.toHaveBeenCalled();
+    },
+  );
 
   it("ambas rutas se protegen con sesión, actor activo y puedeGestionarPrograma", () => {
     const base = "app/api/v1/reuniones/instancias/[instanciaId]/asistencia";
     for (const ruta of [
       `${base}/exportar/[fuente]/route.ts`,
-      `${base}/zoom-original/[ocurrenciaId]/route.ts`
+      `${base}/zoom-original/[ocurrenciaId]/route.ts`,
     ]) {
       const fuente = readFileSync(ruta, "utf8");
       expect(fuente).toMatch(/await auth\(\)/);

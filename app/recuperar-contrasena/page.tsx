@@ -3,7 +3,7 @@ import { solicitarRecuperacion } from "./actions";
 import "../acceso/acceso.css";
 
 export default async function RecuperarContrasenaPage({
-  searchParams
+  searchParams,
 }: Readonly<{ searchParams: Promise<{ enviado?: string }> }>) {
   const { enviado } = await searchParams;
 
@@ -11,7 +11,12 @@ export default async function RecuperarContrasenaPage({
     <main className="login-shell">
       <section className="login-experience" aria-labelledby="recovery-title">
         <aside className="login-brand-panel">
-          <a className="login-logo-wrap" href="https://flacso.edu.uy/" target="_blank" rel="noreferrer">
+          <a
+            className="login-logo-wrap"
+            href="https://flacso.edu.uy/"
+            target="_blank"
+            rel="noreferrer"
+          >
             <img
               className="login-logo"
               src="https://flacso.edu.uy/wp-content/uploads/2026/04/cropped-flacso_20_anos_horizontal_azul.png"
@@ -24,8 +29,8 @@ export default async function RecuperarContrasenaPage({
             <p className="login-product-label">Seguridad de la cuenta</p>
             <h2>Recuperá el acceso de forma segura.</h2>
             <p>
-              Te enviaremos un enlace temporal al correo asociado a tu cuenta para que puedas elegir una nueva
-              contraseña.
+              Te enviaremos un enlace temporal al correo asociado a tu cuenta para que puedas elegir
+              una nueva contraseña.
             </p>
           </div>
           <ul className="login-feature-list" aria-label="Características de recuperación">
@@ -51,7 +56,9 @@ export default async function RecuperarContrasenaPage({
               </span>
             </li>
           </ul>
-          <p className="login-brand-footer">FLACSO Uruguay · Facultad Latinoamericana de Ciencias Sociales</p>
+          <p className="login-brand-footer">
+            FLACSO Uruguay · Facultad Latinoamericana de Ciencias Sociales
+          </p>
         </aside>
 
         <div className="login-panel">

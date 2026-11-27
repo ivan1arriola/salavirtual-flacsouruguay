@@ -6,7 +6,7 @@ import {
   filtrarArchivosZoomPorCategoria,
   respaldoCompletoZoom,
   resumirArchivosZoom,
-  type ArchivoInventarioZoomVista
+  type ArchivoInventarioZoomVista,
 } from "../src/modules/archivos/domain";
 
 function archivo(over: Partial<ArchivoInventarioZoomVista> = {}): ArchivoInventarioZoomVista {
@@ -20,7 +20,7 @@ function archivo(over: Partial<ArchivoInventarioZoomVista> = {}): ArchivoInventa
     descargable: true,
     webViewUrl: "https://drive.google.com/file/d/abc/view",
     errorCodigo: null,
-    ...over
+    ...over,
   };
 }
 
@@ -38,7 +38,7 @@ describe("categoriaArchivoZoom", () => {
       ["SUMMARY", "RESUMEN"],
       ["POLL", "OTROS"],
       ["ALGO_NUEVO", "OTROS"],
-      ["mp4 ", "VIDEO"]
+      ["mp4 ", "VIDEO"],
     ];
     for (const [tipo, categoria] of casos) {
       expect(categoriaArchivoZoom(tipo)).toBe(categoria);
@@ -56,10 +56,15 @@ describe("filtrarArchivosZoomPorCategoria", () => {
     archivo({ id: "v" }),
     archivo({ id: "a", tipoOriginal: "M4A" }),
     archivo({ id: "c", tipoOriginal: "CHAT" }),
-    archivo({ id: "x", tipoOriginal: "NUEVO" })
+    archivo({ id: "x", tipoOriginal: "NUEVO" }),
   ];
   it("TODOS incluye cada archivo, también OTROS", () => {
-    expect(filtrarArchivosZoomPorCategoria(lista, "TODOS").map((a) => a.id)).toEqual(["v", "a", "c", "x"]);
+    expect(filtrarArchivosZoomPorCategoria(lista, "TODOS").map((a) => a.id)).toEqual([
+      "v",
+      "a",
+      "c",
+      "x",
+    ]);
   });
   it("una categoría solo trae sus archivos", () => {
     expect(filtrarArchivosZoomPorCategoria(lista, "AUDIO").map((a) => a.id)).toEqual(["a"]);
@@ -76,9 +81,15 @@ describe("resumirArchivosZoom", () => {
       archivo({ estado: "ERROR_REINTENTABLE", errorCodigo: "RED" }),
       archivo({ estado: "REQUIERE_REVISION" }),
       archivo({ estado: "DESCUBIERTO" }),
-      archivo({ estado: "PROCESANDO_ORIGEN" })
+      archivo({ estado: "PROCESANDO_ORIGEN" }),
     ]);
-    expect(r).toMatchObject({ descubiertos: 7, conservados: 1, pendientes: 5, revision: 1, conError: 1 });
+    expect(r).toMatchObject({
+      descubiertos: 7,
+      conservados: 1,
+      pendientes: 5,
+      revision: 1,
+      conError: 1,
+    });
   });
 
   it("no suma bytes totales si algún tamaño se desconoce: lo declara", () => {
@@ -96,18 +107,18 @@ describe("resumirArchivosZoom", () => {
 
 describe("respaldoCompletoZoom", () => {
   it("un video conservado NO presenta el conjunto como respaldado si falta otro archivo", () => {
-    expect(respaldoCompletoZoom([archivo(), archivo({ tipoOriginal: "CHAT", estado: "PENDIENTE" })])).toBe(
-      false
-    );
+    expect(
+      respaldoCompletoZoom([archivo(), archivo({ tipoOriginal: "CHAT", estado: "PENDIENTE" })]),
+    ).toBe(false);
   });
   it("solo es completo si todos los descargables están conservados y no hay revisión", () => {
     expect(respaldoCompletoZoom([archivo(), archivo({ tipoOriginal: "CHAT" })])).toBe(true);
     expect(respaldoCompletoZoom([archivo(), archivo({ estado: "REQUIERE_REVISION" })])).toBe(false);
   });
   it("un recurso descubierto sin descarga disponible NO permite declarar respaldo completo; sin archivos tampoco", () => {
-    expect(respaldoCompletoZoom([archivo(), archivo({ descargable: false, estado: "DESCUBIERTO" })])).toBe(
-      false
-    );
+    expect(
+      respaldoCompletoZoom([archivo(), archivo({ descargable: false, estado: "DESCUBIERTO" })]),
+    ).toBe(false);
     expect(respaldoCompletoZoom([])).toBe(false);
   });
   it("un inventario con procesamiento pendiente en Zoom no es completo", () => {
@@ -123,7 +134,9 @@ describe("enlaceArchivoZoom", () => {
   });
   it("rechaza esquemas peligrosos y hosts ajenos a Google", () => {
     expect(enlaceArchivoZoom(archivo({ webViewUrl: "javascript:alert(1)" }))).toBeNull();
-    expect(enlaceArchivoZoom(archivo({ webViewUrl: "http://drive.google.com/file/d/abc" }))).toBeNull();
+    expect(
+      enlaceArchivoZoom(archivo({ webViewUrl: "http://drive.google.com/file/d/abc" })),
+    ).toBeNull();
     expect(enlaceArchivoZoom(archivo({ webViewUrl: "https://evil.example/x" }))).toBeNull();
   });
 });

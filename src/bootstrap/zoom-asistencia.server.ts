@@ -10,7 +10,7 @@ import {
   conciliarAsistenciaZoomUseCase,
   generarPlanillaAsistenciaZoomUseCase,
   sincronizarAsistenciaZoomUseCase,
-  type EntradaConciliacionZoom
+  type EntradaConciliacionZoom,
 } from "../modules/archivos/application";
 import type { ActorConciliacionZoom } from "../modules/archivos/domain";
 import {
@@ -19,7 +19,7 @@ import {
   crearPrismaConciliacionAsistenciaZoomRepositoryAdapter,
   crearPrismaLecturaPlanillaZoomAdapter,
   crearPrismaSincronizacionAsistenciaZoomAdapter,
-  crearZoomAsistenciaProviderAdapter
+  crearZoomAsistenciaProviderAdapter,
 } from "../modules/archivos/infrastructure";
 
 const hash = (texto: string): string => createHash("sha256").update(texto).digest("hex");
@@ -33,30 +33,33 @@ export async function sincronizarAsistenciaOcurrenciaZoom(ocurrenciaId: string) 
   const auth = crearProveedorTokenZoom({
     accountId: zoom.accountId,
     clientId: zoom.clientId,
-    clientSecret: zoom.clientSecret
+    clientSecret: zoom.clientSecret,
   });
   return sincronizarAsistenciaZoomUseCase(
     {
       sync: crearPrismaSincronizacionAsistenciaZoomAdapter({ db }),
       repo: crearPrismaAsistenciaZoomRepositoryAdapter({ db }),
-      provider: crearZoomAsistenciaProviderAdapter({ auth, hash })
+      provider: crearZoomAsistenciaProviderAdapter({ auth, hash }),
     },
-    ocurrenciaId
+    ocurrenciaId,
   );
 }
 
-export function conciliarAsistenciaZoom(actor: ActorConciliacionZoom, entrada: EntradaConciliacionZoom) {
+export function conciliarAsistenciaZoom(
+  actor: ActorConciliacionZoom,
+  entrada: EntradaConciliacionZoom,
+) {
   return conciliarAsistenciaZoomUseCase(
     { repo: crearPrismaConciliacionAsistenciaZoomRepositoryAdapter({ db }) },
     actor,
-    entrada
+    entrada,
   );
 }
 
 /** Genera o actualiza la planilla de Drive (solo administración) desde lo ya guardado. Usa el subject general de Workspace. */
 export async function generarPlanillaAsistenciaOcurrenciaZoom(ocurrenciaId: string) {
   const workspace = await obtenerCredencialPrincipalGoogleWorkspace(db, descifrarConfiguracion, {
-    requireActiva: true
+    requireActiva: true,
   });
   if (!workspace) {
     return { tipo: "ERROR", codigo: "WORKSPACE_NO_CONFIGURADO" } as const;
@@ -65,16 +68,16 @@ export async function generarPlanillaAsistenciaOcurrenciaZoom(ocurrenciaId: stri
     {
       serviceAccountEmail: workspace.serviceAccountEmail,
       privateKey: workspace.privateKey,
-      subject: workspace.serviceAccountSubject ?? undefined
+      subject: workspace.serviceAccountSubject ?? undefined,
     },
-    ["https://www.googleapis.com/auth/drive", "https://www.googleapis.com/auth/spreadsheets"]
+    ["https://www.googleapis.com/auth/drive", "https://www.googleapis.com/auth/spreadsheets"],
   );
   return generarPlanillaAsistenciaZoomUseCase(
     {
       lectura: crearPrismaLecturaPlanillaZoomAdapter({ db }),
-      planillas: crearGoogleZoomAsistenciaSheetsAdapter(jwt)
+      planillas: crearGoogleZoomAsistenciaSheetsAdapter(jwt),
     },
-    ocurrenciaId
+    ocurrenciaId,
   );
 }
 
@@ -83,13 +86,13 @@ export async function regenerarAsistenciaInstanciaZoom(instanciaId: string) {
   const ocurrencias = await db.ocurrenciaArchivoZoom.findMany({
     where: { eventoProveedor: { instanciaSalaId: instanciaId, proveedor: { tipo: "ZOOM" } } },
     select: { id: true },
-    orderBy: { inicioRealAt: "asc" }
+    orderBy: { inicioRealAt: "asc" },
   });
   const resultados = [];
   for (const { id } of ocurrencias) {
     const sincronizacion = await sincronizarAsistenciaOcurrenciaZoom(id);
     const planilla = await generarPlanillaAsistenciaOcurrenciaZoom(id).catch(
-      () => ({ tipo: "ERROR", codigo: "ERROR_PLANILLA" }) as const
+      () => ({ tipo: "ERROR", codigo: "ERROR_PLANILLA" }) as const,
     );
     resultados.push({ ocurrenciaId: id, sincronizacion, planilla });
   }

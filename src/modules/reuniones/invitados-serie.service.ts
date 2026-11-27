@@ -8,34 +8,43 @@ import { construirCorreoParticipacion, type AvisoEncuentro } from "./avisos-part
 import { seleccionarEventoProveedorActivo } from "./evento-proveedor-activo.domain";
 
 export const invitadosSchema = z.object({
-  emails: z.array(z.email().transform((s) => s.trim().toLowerCase())).max(100)
+  emails: z.array(z.email().transform((s) => s.trim().toLowerCase())).max(100),
 });
 
-type CalendarGuestState = Readonly<{ attendees: readonly { email: string; [key: string]: unknown }[] }>;
+type CalendarGuestState = Readonly<{
+  attendees: readonly { email: string; [key: string]: unknown }[];
+}>;
 export type GuestsDeps = Readonly<{
   db: PrismaClient;
   leerCalendario: (host: string, eventId: string) => Promise<CalendarGuestState>;
   actualizarCalendario: (
     host: string,
     eventId: string,
-    attendees: CalendarGuestState["attendees"]
+    attendees: CalendarGuestState["attendees"],
   ) => Promise<void>;
-  enviarCorreo: (to: string, message: ReturnType<typeof construirCorreoParticipacion>) => Promise<boolean>;
+  enviarCorreo: (
+    to: string,
+    message: ReturnType<typeof construirCorreoParticipacion>,
+  ) => Promise<boolean>;
 }>;
 
 export function conciliarInvitadosCalendar(
   previos: CalendarGuestState["attendees"],
   invitadosAnteriores: readonly string[],
-  invitadosNuevos: readonly string[]
+  invitadosNuevos: readonly string[],
 ): CalendarGuestState["attendees"] {
   const removed = new Set(
-    invitadosAnteriores.map((email) => email.toLowerCase()).filter((e) => !invitadosNuevos.includes(e))
+    invitadosAnteriores
+      .map((email) => email.toLowerCase())
+      .filter((e) => !invitadosNuevos.includes(e)),
   );
   const kept = previos.filter((item) => !removed.has(item.email.toLowerCase()));
   const existing = new Set(kept.map((item) => item.email.toLowerCase()));
   return [
     ...kept,
-    ...invitadosNuevos.filter((email) => !existing.has(email)).map((email) => ({ email, optional: false }))
+    ...invitadosNuevos
+      .filter((email) => !existing.has(email))
+      .map((email) => ({ email, optional: false })),
   ];
 }
 
@@ -43,9 +52,14 @@ export async function actualizarInvitadosSerie(
   deps: GuestsDeps,
   actor: SessionActor,
   solicitudId: string,
-  input: unknown
+  input: unknown,
 ): Promise<
-  Readonly<{ encuentros: number; invitados: number; correosEnviados: number; erroresCorreo: number }>
+  Readonly<{
+    encuentros: number;
+    invitados: number;
+    correosEnviados: number;
+    erroresCorreo: number;
+  }>
 > {
   const { emails: raw } = invitadosSchema.parse(input);
   const emails = [...new Set(raw)];
@@ -57,8 +71,8 @@ export async function actualizarInvitadosSerie(
       titulo: true,
       docenteProgramaId: true,
       createdAt: true,
-      docentePrograma: { select: { programaId: true } }
-    }
+      docentePrograma: { select: { programaId: true } },
+    },
   });
   if (!request) {
     throw new NotFoundApiError("La serie no existe.");
@@ -71,7 +85,7 @@ export async function actualizarInvitadosSerie(
     where: {
       solicitud: construirFiltroSerieSolicitud(request),
       estado: "PROGRAMADA",
-      inicioProgramadoAt: { gt: new Date() }
+      inicioProgramadoAt: { gt: new Date() },
     },
     orderBy: { inicioProgramadoAt: "asc" },
     include: {
@@ -81,10 +95,10 @@ export async function actualizarInvitadosSerie(
       eventosProveedor: {
         include: {
           proveedor: { select: { tipo: true } },
-          cuentaProveedor: { select: { emailOrganizador: true } }
-        }
-      }
-    }
+          cuentaProveedor: { select: { emailOrganizador: true } },
+        },
+      },
+    },
   });
   if (!meetings.length) {
     throw new ConflictApiError("No hay encuentros futuros para modificar.");
@@ -100,16 +114,19 @@ export async function actualizarInvitadosSerie(
       ...m.eventosProveedor
         .filter(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET")
         .flatMap((e) =>
-          e.cuentaProveedor?.emailOrganizador ? [e.cuentaProveedor.emailOrganizador.toLowerCase()] : []
-        )
-    ])
+          e.cuentaProveedor?.emailOrganizador
+            ? [e.cuentaProveedor.emailOrganizador.toLowerCase()]
+            : [],
+        ),
+    ]),
   );
   if (emails.some((email) => forbidden.has(email))) {
     throw new ConflictApiError(
-      "Una cuenta anfitriona o coanfitriona no puede agregarse también como invitada."
+      "Una cuenta anfitriona o coanfitriona no puede agregarse también como invitada.",
     );
   }
-  const updates: Array<{ host: string; eventId: string; previo: CalendarGuestState["attendees"] }> = [];
+  const updates: Array<{ host: string; eventId: string; previo: CalendarGuestState["attendees"] }> =
+    [];
   try {
     for (const meeting of meetings) {
       const event = eventoCalendar(meeting);
@@ -143,7 +160,7 @@ export async function actualizarInvitadosSerie(
         await tx.invitadoReunion.deleteMany({ where: { instanciaSalaId: meeting.id } });
         if (emails.length) {
           await tx.invitadoReunion.createMany({
-            data: emails.map((email) => ({ instanciaSalaId: meeting.id, email }))
+            data: emails.map((email) => ({ instanciaSalaId: meeting.id, email })),
           });
         }
       }
@@ -153,8 +170,8 @@ export async function actualizarInvitadosSerie(
           accion: "INVITADOS_SERIE_ACTUALIZADOS",
           entidadTipo: "SolicitudSala",
           entidadId: solicitudId,
-          valorNuevo: { encuentros: meetings.length, invitados: emails.length }
-        }
+          valorNuevo: { encuentros: meetings.length, invitados: emails.length },
+        },
       });
     });
   } catch (error) {
@@ -162,7 +179,9 @@ export async function actualizarInvitadosSerie(
       try {
         await deps.actualizarCalendario(entry.host, entry.eventId, entry.previo);
       } catch {
-        console.error("No fue posible revertir Calendar después de fallar el guardado de invitados.");
+        console.error(
+          "No fue posible revertir Calendar después de fallar el guardado de invitados.",
+        );
       }
     }
     throw error;
@@ -170,7 +189,9 @@ export async function actualizarInvitadosSerie(
   let correosEnviados = 0;
   let erroresCorreo = 0;
   for (const email of emails) {
-    const nuevos = meetings.filter((m) => !m.invitados.some((g) => g.email.toLowerCase() === email));
+    const nuevos = meetings.filter(
+      (m) => !m.invitados.some((g) => g.email.toLowerCase() === email),
+    );
     if (!nuevos.length) {
       continue;
     }
@@ -182,11 +203,16 @@ export async function actualizarInvitadosSerie(
         inicio: m.inicioProgramadoAt,
         fin: m.finProgramadoAt,
         urlMeet: activo?.joinUrl ?? null,
-        proveedor: activo?.proveedor.tipo === "ZOOM" ? "ZOOM" : "GOOGLE_MEET"
+        proveedor: activo?.proveedor.tipo === "ZOOM" ? "ZOOM" : "GOOGLE_MEET",
       };
     });
     try {
-      if (await deps.enviarCorreo(email, construirCorreoParticipacion("INVITACION", avisos, "INVITADO"))) {
+      if (
+        await deps.enviarCorreo(
+          email,
+          construirCorreoParticipacion("INVITACION", avisos, "INVITADO"),
+        )
+      ) {
         correosEnviados++;
       } else {
         erroresCorreo++;

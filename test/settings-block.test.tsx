@@ -7,7 +7,7 @@ describe("bloque de configuración", () => {
     const html = renderToStaticMarkup(
       <SettingsBlock title="Conexión" summary={<span>Credenciales guardadas</span>}>
         <input name="clave" />
-      </SettingsBlock>
+      </SettingsBlock>,
     );
     expect(html).toContain("<h2");
     expect(html).toContain("Conexión");
@@ -19,7 +19,7 @@ describe("bloque de configuración", () => {
     const html = renderToStaticMarkup(
       <SettingsBlock title="Conexión" summary="x" defaultOpen>
         <input />
-      </SettingsBlock>
+      </SettingsBlock>,
     );
     expect(html).toMatch(/<details[^>]*\sopen/);
   });
@@ -28,7 +28,7 @@ describe("bloque de configuración", () => {
     const html = renderToStaticMarkup(
       <SettingsBlock title="t" summary="s" status={{ tone: "warning", label: "Falta configurar" }}>
         <p />
-      </SettingsBlock>
+      </SettingsBlock>,
     );
     expect(html).toContain("settings-section-status is-warning");
     expect(html).toContain("Falta configurar");
@@ -38,7 +38,9 @@ describe("bloque de configuración", () => {
 describe("avisos de configuración", () => {
   const mensajes = { listo: "Guardado." };
   it("muestra el mensaje conocido y el error", () => {
-    const html = renderToStaticMarkup(<SettingsNotices estado="listo" error="Falló" mensajes={mensajes} />);
+    const html = renderToStaticMarkup(
+      <SettingsNotices estado="listo" error="Falló" mensajes={mensajes} />,
+    );
     expect(html).toContain("Guardado.");
     expect(html).toContain("Falló");
     expect(html).toContain('role="alert"');

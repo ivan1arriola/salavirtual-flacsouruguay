@@ -6,30 +6,41 @@ const state = vi.hoisted(() => ({
   calls: [] as Array<{ kind: string; input: any }>,
   queued: true,
   outcome: "SINCRONIZADA",
-  meetings: [] as any[]
+  meetings: [] as any[],
 }));
 vi.mock("next/server", () => ({
   NextResponse: {
-    json: (body: unknown, init?: { status: number }) => ({ body, status: init?.status ?? 200 })
-  }
+    json: (body: unknown, init?: { status: number }) => ({ body, status: init?.status ?? 200 }),
+  },
 }));
 vi.mock("@/auth", () => ({
-  auth: async () => ({ user: { id: "admin", email: "admin@flacso.edu.uy", role: "ADMINISTRACION" } })
+  auth: async () => ({
+    user: { id: "admin", email: "admin@flacso.edu.uy", role: "ADMINISTRACION" },
+  }),
 }));
-vi.mock("@/src/lib/auth/session-actor.adapter", () => ({ resolveSessionActor: async () => state.actor }));
+vi.mock("@/src/lib/auth/session-actor.adapter", () => ({
+  resolveSessionActor: async () => state.actor,
+}));
 vi.mock("@/src/lib/config/encryption", () => ({ descifrarConfiguracion: () => "test-only" }));
 vi.mock("@/src/modules/conferencias/api", () => ({
   normalizeCohostEmails: (emails: readonly string[]) => [
-    ...new Set(emails.map((email) => email.toLowerCase().trim()).filter(Boolean))
+    ...new Set(emails.map((email) => email.toLowerCase().trim()).filter(Boolean)),
   ],
   crearGoogleConferenceProvider: () => ({}),
   crearPrismaConferenciasRepository: () => ({ mocked: true }),
-  sincronizarEventosPendientesUseCase: async (_repo: unknown, _provider: unknown, ids: string[]) => {
+  sincronizarEventosPendientesUseCase: async (
+    _repo: unknown,
+    _provider: unknown,
+    ids: string[],
+  ) => {
     state.calls.push({ kind: "sync", input: ids });
     return [
-      { estado: state.outcome, error: state.outcome === "ERROR" ? "Google rejected cohost" : undefined }
+      {
+        estado: state.outcome,
+        error: state.outcome === "ERROR" ? "Google rejected cohost" : undefined,
+      },
     ];
-  }
+  },
 }));
 vi.mock("@/src/lib/db", () => {
   const tx = {
@@ -37,27 +48,27 @@ vi.mock("@/src/lib/db", () => {
       updateMany: async (input: unknown) => {
         state.calls.push({ kind: "queue", input });
         return { count: state.queued ? 1 : 0 };
-      }
+      },
     },
     cohostReunion: {
       createMany: async (input: any) => {
         state.calls.push({ kind: "linked", input });
         return { count: input.data.length };
-      }
+      },
     },
     cohostEmailReunion: {
       createMany: async (input: any) => {
         state.calls.push({ kind: "manual", input });
         return { count: input.data.length };
-      }
-    }
+      },
+    },
   };
   return {
     db: {
       instanciaSala: { findMany: async () => state.meetings },
       $transaction: async (callback: (client: typeof tx) => Promise<unknown>) => callback(tx),
-      auditoria: { create: async () => ({}) }
-    }
+      auditoria: { create: async () => ({}) },
+    },
   };
 });
 
@@ -78,30 +89,30 @@ beforeEach(() => {
           docente: {
             usuario: {
               emailPrincipal: "docente@gmail.com",
-              cuentasGoogle: []
-            }
-          }
-        }
+              cuentasGoogle: [],
+            },
+          },
+        },
       },
       asignaciones: [
         {
           asistenteTecnico: {
             usuario: {
               emailPrincipal: "tecnico@otra.edu.uy",
-              cuentasGoogle: [{ id: "assistant-google", email: "tecnico@otra.edu.uy" }]
-            }
-          }
-        }
+              cuentasGoogle: [{ id: "assistant-google", email: "tecnico@otra.edu.uy" }],
+            },
+          },
+        },
       ],
       eventosProveedor: [
         {
           id: "event",
           externalEventId: "calendar-event",
           codigoReunion: "abc-defg-hij",
-          cuentaProveedor: { emailOrganizador: "sala01@flacso.edu.uy" }
-        }
-      ]
-    }
+          cuentaProveedor: { emailOrganizador: "sala01@flacso.edu.uy" },
+        },
+      ],
+    },
   ];
 });
 
@@ -111,10 +122,10 @@ describe("reparación de reuniones existentes", () => {
     assert.equal(response.body.sincronizadas, 1);
     assert.equal(response.body.cohostsExternosPendientes, 0);
     assert.deepEqual(state.calls.find(({ kind }) => kind === "manual")?.input.data, [
-      { instanciaSalaId: "meeting", email: "docente@gmail.com" }
+      { instanciaSalaId: "meeting", email: "docente@gmail.com" },
     ]);
     assert.deepEqual(state.calls.find(({ kind }) => kind === "linked")?.input.data, [
-      { instanciaSalaId: "meeting", cuentaGoogleId: "assistant-google" }
+      { instanciaSalaId: "meeting", cuentaGoogleId: "assistant-google" },
     ]);
     assert.deepEqual(state.calls.find(({ kind }) => kind === "sync")?.input, ["event"]);
   });
@@ -143,11 +154,11 @@ describe("reparación de reuniones existentes", () => {
     assert.equal(response.body.omitidas, 1);
     assert.equal(
       state.calls.some(({ kind }) => kind === "sync" || kind === "manual" || kind === "linked"),
-      false
+      false,
     );
     assert.deepEqual(state.calls[0].input.where.OR, [
       { operacionPendiente: null },
-      { operacionPendiente: "CONFIGURAR_MEET" }
+      { operacionPendiente: "CONFIGURAR_MEET" },
     ]);
     assert.equal(state.calls[0].input.where.reclamoIntegracionAt, null);
   });

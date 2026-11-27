@@ -1,7 +1,7 @@
 import type {
   ModalidadAsistencia,
   RegistroAsistenciaPersonal,
-  RegistroHistorialAsistenciaPersonal
+  RegistroHistorialAsistenciaPersonal,
 } from "../domain";
 
 export type AssistantProfile = Readonly<{
@@ -68,7 +68,7 @@ export type AsistenciaRepositoryPort = Readonly<{
   reservarYAsignarAsistente(
     instanciaSalaId: string,
     asistenteTecnicoId: string,
-    adminUsuarioId: string
+    adminUsuarioId: string,
   ): Promise<AsignacionRow>;
   desvincularAsistente(asignacionId: string, actorUsuarioId: string): Promise<AsignacionRow>;
   reportarDuracion(input: ReportarDuracionInput, ahora?: Date): Promise<void>;
@@ -76,13 +76,13 @@ export type AsistenciaRepositoryPort = Readonly<{
   obtenerAsistenciasPersonales(
     usuarioId: string,
     periodo: "MES_ACTUAL" | "HISTORICO",
-    ahora?: Date
+    ahora?: Date,
   ): Promise<readonly RegistroAsistenciaPersonal[]>;
   obtenerHistorialAsistenteEnRango(
     usuarioId: string,
     desde: Date,
     hasta: Date,
-    limite?: number
+    limite?: number,
   ): Promise<readonly RegistroHistorialAsistenciaPersonal[]>;
   obtenerSlugAsistente(usuarioId: string): Promise<string | null>;
   obtenerAsistentesParaNotificacion(instanciaSalaId: string): Promise<

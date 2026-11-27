@@ -25,14 +25,16 @@ export type WorkspaceScopesResult = Readonly<{
   accounts: readonly WorkspaceScopeAccountValidation[];
 }>;
 
-export async function saveWorkspaceSection(payload: Readonly<Record<string, unknown>>): Promise<ApiResult> {
+export async function saveWorkspaceSection(
+  payload: Readonly<Record<string, unknown>>,
+): Promise<ApiResult> {
   return requestWorkspace(
     "/api/v1/configuracion/google-workspace",
     {
       method: "PUT",
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
     },
-    "Configuración guardada."
+    "Configuración guardada.",
   );
 }
 
@@ -41,9 +43,9 @@ export async function testWorkspaceSection(objetivo: WorkspaceTestTarget): Promi
     "/api/v1/configuracion/google-workspace/test",
     {
       method: "POST",
-      body: JSON.stringify({ objetivo })
+      body: JSON.stringify({ objetivo }),
     },
-    "Prueba completada."
+    "Prueba completada.",
   );
 }
 
@@ -52,9 +54,9 @@ export async function testWorkspaceCredential(credentialId: string): Promise<Api
     "/api/v1/configuracion/google-workspace/test",
     {
       method: "POST",
-      body: JSON.stringify({ objetivo: "CREDENCIAL", credentialId })
+      body: JSON.stringify({ objetivo: "CREDENCIAL", credentialId }),
     },
-    "Credencial válida."
+    "Credencial válida.",
   );
 }
 
@@ -63,7 +65,7 @@ export async function validateWorkspaceScopes(): Promise<WorkspaceScopesResult> 
     const response = await fetch("/api/v1/configuracion/google-workspace/test", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ objetivo: "SCOPES" })
+      body: JSON.stringify({ objetivo: "SCOPES" }),
     });
     const result = await response.json().catch(() => ({}));
     const accounts = Array.isArray(result.accounts)
@@ -74,45 +76,51 @@ export async function validateWorkspaceScopes(): Promise<WorkspaceScopesResult> 
       message: response.ok
         ? (result.message ?? "Validación de scopes completada.")
         : (result.error ?? "No se pudieron validar los scopes."),
-      accounts
+      accounts,
     };
   } catch {
     return {
       ok: false,
       message: "No se pudo conectar con el servidor.",
-      accounts: []
+      accounts: [],
     };
   }
 }
 
-function legacyScopeAccounts(result: Record<string, unknown>): readonly WorkspaceScopeAccountValidation[] {
-  if (typeof result.subject !== "string" || !Array.isArray(result.scopes)) {
+function legacyScopeAccounts(
+  result: Record<string, unknown>,
+): readonly WorkspaceScopeAccountValidation[] {
+  if (typeof result["subject"] !== "string" || !Array.isArray(result["scopes"])) {
     return [];
   }
-  const scopes = result.scopes as readonly WorkspaceScopeValidation[];
+  const scopes = result["scopes"] as readonly WorkspaceScopeValidation[];
   return [
     {
-      subject: result.subject,
+      subject: result["subject"],
       tipo: "SALA",
       activa: true,
       ok: scopes.length > 0 && scopes.every(({ autorizado }) => autorizado),
-      scopes
-    }
+      scopes,
+    },
   ];
 }
 
-async function requestWorkspace(url: string, init: RequestInit, fallback: string): Promise<ApiResult> {
+async function requestWorkspace(
+  url: string,
+  init: RequestInit,
+  fallback: string,
+): Promise<ApiResult> {
   try {
     const response = await fetch(url, {
       ...init,
-      headers: { "Content-Type": "application/json" }
+      headers: { "Content-Type": "application/json" },
     });
     const result = await response.json().catch(() => ({}));
     return {
       ok: response.ok,
       message: response.ok
         ? (result.message ?? fallback)
-        : (result.error ?? "No se pudo completar la operación.")
+        : (result.error ?? "No se pudo completar la operación."),
     };
   } catch {
     return { ok: false, message: "No se pudo conectar con el servidor." };

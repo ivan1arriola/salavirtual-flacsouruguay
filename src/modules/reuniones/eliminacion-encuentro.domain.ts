@@ -16,14 +16,14 @@ export function planEliminacionEncuentro(
     ocupado: boolean;
     encuentrosEnSolicitud: number;
     encuentrosEnPagina: number;
-  }>
+  }>,
 ): PlanEliminacionEncuentro {
   const unico = entrada.encuentrosEnSolicitud <= 1;
   if (unico && entrada.encuentrosEnPagina <= 1) {
     return {
       modo: null,
       habilitado: false,
-      motivo: "Es el único encuentro de la reunión: usá Eliminar serie."
+      motivo: "Es el único encuentro de la reunión: usá Eliminar serie.",
     };
   }
   const modo = unico ? "SOLICITUD" : "ENCUENTRO";
@@ -31,7 +31,7 @@ export function planEliminacionEncuentro(
     return {
       modo,
       habilitado: false,
-      motivo: "Solo se pueden eliminar encuentros programados que no empezaron."
+      motivo: "Solo se pueden eliminar encuentros programados que no empezaron.",
     };
   }
   if (entrada.ocupado) {

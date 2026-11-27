@@ -8,7 +8,7 @@ import { db } from "@/src/lib/db";
 export const runtime = "nodejs";
 
 const tokenSchema = z.object({
-  secretToken: z.string().trim().min(1, "Ingresá el Secret Token de Zoom.").max(512)
+  secretToken: z.string().trim().min(1, "Ingresá el Secret Token de Zoom.").max(512),
 });
 
 async function requireAdmin() {
@@ -18,7 +18,7 @@ async function requireAdmin() {
   }
   const actor = await resolveSessionActor(db, {
     id: session.user.id,
-    email: session.user.email
+    email: session.user.email,
   });
   return actor?.activo && actor.rol === "ADMINISTRACION" ? actor : null;
 }
@@ -32,7 +32,7 @@ export async function PUT(request: Request) {
   if (!parsed.success) {
     return NextResponse.json(
       { error: "Ingresá un Secret Token válido (hasta 512 caracteres)." },
-      { status: 400 }
+      { status: 400 },
     );
   }
   try {
@@ -42,12 +42,12 @@ export async function PUT(request: Request) {
         create: {
           id: "principal",
           webhookSecretCifrado: cifrarConfiguracion(parsed.data.secretToken),
-          actualizadaPorId: actor.id
+          actualizadaPorId: actor.id,
         },
         update: {
           webhookSecretCifrado: cifrarConfiguracion(parsed.data.secretToken),
-          actualizadaPorId: actor.id
-        }
+          actualizadaPorId: actor.id,
+        },
       });
       await tx.auditoria.create({
         data: {
@@ -55,13 +55,16 @@ export async function PUT(request: Request) {
           accion: "ZOOM_WEBHOOK_SECRET_ACTUALIZADO",
           entidadTipo: "ConfiguracionZoom",
           entidadId: "principal",
-          valorNuevo: { configurado: true }
-        }
+          valorNuevo: { configurado: true },
+        },
       });
     });
     return NextResponse.json({ ok: true });
   } catch {
-    return NextResponse.json({ error: "No se pudo guardar el secreto del webhook." }, { status: 503 });
+    return NextResponse.json(
+      { error: "No se pudo guardar el secreto del webhook." },
+      { status: 503 },
+    );
   }
 }
 
@@ -74,7 +77,7 @@ export async function DELETE() {
     await db.$transaction(async (tx) => {
       await tx.configuracionZoom.update({
         where: { id: "principal" },
-        data: { webhookSecretCifrado: null, actualizadaPorId: actor.id }
+        data: { webhookSecretCifrado: null, actualizadaPorId: actor.id },
       });
       await tx.auditoria.create({
         data: {
@@ -82,12 +85,15 @@ export async function DELETE() {
           accion: "ZOOM_WEBHOOK_SECRET_ELIMINADO",
           entidadTipo: "ConfiguracionZoom",
           entidadId: "principal",
-          valorNuevo: { configurado: false }
-        }
+          valorNuevo: { configurado: false },
+        },
       });
     });
     return NextResponse.json({ ok: true });
   } catch {
-    return NextResponse.json({ error: "No se pudo eliminar el secreto del webhook." }, { status: 503 });
+    return NextResponse.json(
+      { error: "No se pudo eliminar el secreto del webhook." },
+      { status: 503 },
+    );
   }
 }

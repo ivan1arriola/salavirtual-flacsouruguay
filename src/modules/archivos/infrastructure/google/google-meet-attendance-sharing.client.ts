@@ -2,7 +2,7 @@ import type { JWT } from "google-auth-library";
 import {
   conReintentosGoogleLectura,
   GOOGLE_HTTP_TIMEOUT_MS,
-  GOOGLE_HTTP_READ_TIMEOUT_MS
+  GOOGLE_HTTP_READ_TIMEOUT_MS,
 } from "@/src/integrations/google";
 
 /**
@@ -29,7 +29,7 @@ async function obtenerPermisoEnlace(auth: JWT, fileId: string): Promise<DrivePer
     const params = new URLSearchParams({
       fields: "nextPageToken,permissions(id,type,domain,role,allowFileDiscovery)",
       pageSize: "100",
-      supportsAllDrives: "true"
+      supportsAllDrives: "true",
     });
     if (pageToken) {
       params.set("pageToken", pageToken);
@@ -41,8 +41,8 @@ async function obtenerPermisoEnlace(auth: JWT, fileId: string): Promise<DrivePer
       }>({
         method: "GET",
         url: `${DRIVE_FILES}/${encodeURIComponent(fileId)}/permissions?${params}`,
-        timeout: GOOGLE_HTTP_READ_TIMEOUT_MS
-      })
+        timeout: GOOGLE_HTTP_READ_TIMEOUT_MS,
+      }),
     );
     permissions.push(...(response.data.permissions ?? []));
     pageToken = response.data.nextPageToken ?? undefined;
@@ -69,7 +69,7 @@ export async function asegurarLecturaPorEnlacePlanilla(auth: JWT, fileId: string
         method: "POST",
         url: `${DRIVE_FILES}/${encodeURIComponent(fileId)}/permissions?supportsAllDrives=true&sendNotificationEmail=false&fields=id`,
         timeout: GOOGLE_HTTP_TIMEOUT_MS,
-        data: { type: "anyone", role: "reader", allowFileDiscovery: false }
+        data: { type: "anyone", role: "reader", allowFileDiscovery: false },
       });
     } catch (error) {
       const candidate = error as { code?: number; response?: { status?: number } };
@@ -94,7 +94,7 @@ export async function asegurarLecturaPorEnlacePlanilla(auth: JWT, fileId: string
       method: "PATCH",
       url: `${DRIVE_FILES}/${encodeURIComponent(fileId)}/permissions/${encodeURIComponent(permission.id)}?supportsAllDrives=true&fields=id`,
       timeout: GOOGLE_HTTP_TIMEOUT_MS,
-      data: { role: "reader", allowFileDiscovery: false }
+      data: { role: "reader", allowFileDiscovery: false },
     });
     permission = await obtenerPermisoEnlace(auth, fileId);
   }

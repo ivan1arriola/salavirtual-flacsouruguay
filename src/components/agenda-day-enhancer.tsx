@@ -9,21 +9,21 @@ const DAY_TONE_CLASSES = [
   "agenda-day-tone-1",
   "agenda-day-tone-2",
   "agenda-day-tone-3",
-  "agenda-day-tone-4"
+  "agenda-day-tone-4",
 ] as const;
 
 const shortDateFormatter = new Intl.DateTimeFormat("es-UY", {
   timeZone: MONTEVIDEO_TIME_ZONE,
   weekday: "short",
   day: "2-digit",
-  month: "short"
+  month: "short",
 });
 
 const timePartsFormatter = new Intl.DateTimeFormat("en-GB", {
   timeZone: MONTEVIDEO_TIME_ZONE,
   hour: "2-digit",
   minute: "2-digit",
-  hourCycle: "h23"
+  hourCycle: "h23",
 });
 
 export function AgendaDayEnhancer() {
@@ -61,8 +61,12 @@ function enhanceAgenda(): void {
 
   const now = new Date();
   const todayLabel = normalizeDateLabel(shortDateFormatter.format(now));
-  const tomorrowLabel = normalizeDateLabel(shortDateFormatter.format(new Date(now.getTime() + 86_400_000)));
-  const yesterdayLabel = normalizeDateLabel(shortDateFormatter.format(new Date(now.getTime() - 86_400_000)));
+  const tomorrowLabel = normalizeDateLabel(
+    shortDateFormatter.format(new Date(now.getTime() + 86_400_000)),
+  );
+  const yesterdayLabel = normalizeDateLabel(
+    shortDateFormatter.format(new Date(now.getTime() - 86_400_000)),
+  );
 
   root.querySelectorAll<HTMLElement>(".agenda-meeting-list").forEach((list) => {
     const cards = [...list.querySelectorAll<HTMLElement>(":scope > .agenda-meeting-card")];
@@ -73,7 +77,8 @@ function enhanceAgenda(): void {
     cards.forEach((card) => {
       clearDayClasses(card);
 
-      const dateText = card.querySelector<HTMLElement>(".agenda-meeting-date > span")?.textContent ?? "";
+      const dateText =
+        card.querySelector<HTMLElement>(".agenda-meeting-date > span")?.textContent ?? "";
       const dayLabel = normalizeDateLabel(dateText.split("→")[0] ?? "");
       if (!dayLabel) {
         return;
@@ -87,8 +92,8 @@ function enhanceAgenda(): void {
           createDayHeading(
             dayLabel,
             relativeDayLabel(dayLabel, todayLabel, tomorrowLabel, yesterdayLabel),
-            toneIndex
-          )
+            toneIndex,
+          ),
         );
       }
 
@@ -107,14 +112,16 @@ function cleanupAgendaEnhancement(): void {
   document
     .querySelectorAll<HTMLElement>(".agenda-day-heading[data-agenda-enhanced='true']")
     .forEach((heading) => heading.remove());
-  document.querySelectorAll<HTMLElement>(".agenda-day-card").forEach((card) => clearDayClasses(card));
+  document
+    .querySelectorAll<HTMLElement>(".agenda-day-card")
+    .forEach((card) => clearDayClasses(card));
 }
 
 function createDayHeading(dayLabel: string, relative: string, toneIndex: number): HTMLElement {
   const isToday = relative === "Hoy";
   const heading = document.createElement("div");
   heading.className = `agenda-day-heading ${DAY_TONE_CLASSES[toneIndex]}${isToday ? " is-today" : ""}`;
-  heading.dataset.agendaEnhanced = "true";
+  heading.dataset["agendaEnhanced"] = "true";
   heading.setAttribute("role", "heading");
   heading.setAttribute("aria-level", "2");
 
@@ -132,7 +139,7 @@ function relativeDayLabel(
   dayLabel: string,
   todayLabel: string,
   tomorrowLabel: string,
-  yesterdayLabel: string
+  yesterdayLabel: string,
 ): string {
   if (dayLabel === todayLabel) {
     return "Hoy";

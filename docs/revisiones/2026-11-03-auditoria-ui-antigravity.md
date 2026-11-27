@@ -260,11 +260,11 @@ Las pantallas de reuniones Zoom resuelven los flujos principales con HTML livian
   const ESTADO_INSTANCIA: Record<string, { label: string; clase: string }> = {
     PROGRAMADA: { label: "Programada", clase: "status-ok" },
     CANCELADA: { label: "Cancelada", clase: "status-error" },
-    FINALIZADA: { label: "Finalizada", clase: "status-neutral" }
+    FINALIZADA: { label: "Finalizada", clase: "status-neutral" },
   };
   const infoEstado = ESTADO_INSTANCIA[encuentro.estado] ?? {
     label: encuentro.estado.toLowerCase().replaceAll("_", " "),
-    clase: "status-neutral"
+    clase: "status-neutral",
   };
   // <span className={`status ${infoEstado.clase}`}>{infoEstado.label}</span>
   ```

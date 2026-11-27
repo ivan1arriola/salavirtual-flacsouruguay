@@ -18,7 +18,7 @@ export async function guardarRegistroInstitucional(formData: FormData): Promise<
   try {
     await completarRegistroInstitucional(db, actor, {
       programaId: formData.get("programaId"),
-      programaNuevo: formData.get("programaNuevo")
+      programaNuevo: formData.get("programaNuevo"),
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "No se pudo completar el registro.";

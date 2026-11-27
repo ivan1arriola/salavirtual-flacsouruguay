@@ -4,7 +4,7 @@ import type { ActorVincularZoom } from "./vincular-archivo-zoom.use-case";
 export async function reintentarArchivoZoomUseCase(
   repo: Pick<ZoomArchivoRepositoryPort, "reintentarArchivo">,
   actor: ActorVincularZoom,
-  archivoId: string
+  archivoId: string,
 ) {
   if (actor.rol !== "ADMINISTRACION") {
     return { tipo: "PROHIBIDO" } as const;

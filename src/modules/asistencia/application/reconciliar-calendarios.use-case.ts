@@ -5,11 +5,13 @@ import { sincronizarCalendarioAsistenteInstanciaUseCase } from "./sincronizar-ca
 export async function reconciliarCalendariosAsistentesUseCase(
   repository: AssistantCalendarRepositoryPort,
   provider: AssistantCalendarProvider,
-  now = new Date()
+  now = new Date(),
 ): Promise<readonly ResultadoSincronizacionCalendarioAsistente[]> {
   const instances = await repository.obtenerInstanciasFuturasParaReconciliar(now);
   const results = await Promise.all(
-    instances.map((id) => sincronizarCalendarioAsistenteInstanciaUseCase(repository, provider, id, now))
+    instances.map((id) =>
+      sincronizarCalendarioAsistenteInstanciaUseCase(repository, provider, id, now),
+    ),
   );
   return results.flat();
 }

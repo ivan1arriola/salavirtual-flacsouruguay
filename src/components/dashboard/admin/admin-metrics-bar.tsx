@@ -4,7 +4,7 @@ import type { AdminDashboardData } from "@/src/modules/dashboard/admin-dashboard
 import { getAdminSummaryMetrics } from "@/src/modules/dashboard/admin-dashboard-summary";
 
 export function AdminMetricsBar({
-  metrics
+  metrics,
 }: Readonly<{
   metrics: AdminDashboardData["metrics"];
 }>) {

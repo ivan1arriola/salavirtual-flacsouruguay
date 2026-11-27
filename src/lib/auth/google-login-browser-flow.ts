@@ -9,9 +9,9 @@ export async function iniciarGoogleConSesionLimpia(
   iniciarSesion: (
     provider: "google",
     options: { redirectTo: "/" },
-    authorizationParams?: { login_hint: string }
+    authorizationParams?: { login_hint: string },
   ) => Promise<unknown>,
-  loginHint?: string
+  loginHint?: string,
 ): Promise<void> {
   await cerrarSesion({ redirect: false });
   const hint = loginHint?.trim();

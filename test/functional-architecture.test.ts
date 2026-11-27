@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 const MODULES_ROOT = new URL("../src/modules/", import.meta.url);
 const ALL_TS_FILES = readdirSync(MODULES_ROOT, {
   recursive: true,
-  encoding: "utf8"
+  encoding: "utf8",
 })
   .filter((relativePath) => relativePath.endsWith(".ts") && !relativePath.endsWith(".d.ts"))
   .slice()
@@ -47,15 +47,17 @@ const FORBIDDEN_EFFECTS = [
   { name: "variables reasignables", pattern: /\b(?:let|var)\s+/ },
   {
     name: "mutacion de colecciones",
-    pattern: /\.(?:push|pop|shift|unshift|splice|reverse|sort|set|delete|clear|add)\s*\(/
-  }
+    pattern: /\.(?:push|pop|shift|unshift|splice|reverse|sort|set|delete|clear|add)\s*\(/,
+  },
 ] as const;
 
 describe("arquitectura funcional", () => {
   for (const relativePath of PURE_MODULES) {
     it(`${relativePath} permanece libre de efectos externos`, () => {
       const source = readFileSync(new URL(relativePath, MODULES_ROOT), "utf8");
-      const effects = FORBIDDEN_EFFECTS.filter(({ pattern }) => pattern.test(source)).map(({ name }) => name);
+      const effects = FORBIDDEN_EFFECTS.filter(({ pattern }) => pattern.test(source)).map(
+        ({ name }) => name,
+      );
 
       expect(effects).toEqual([]);
     });

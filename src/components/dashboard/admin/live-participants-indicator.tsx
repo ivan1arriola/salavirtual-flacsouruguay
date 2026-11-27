@@ -26,7 +26,7 @@ type LiveParticipantsResponse =
     }>;
 
 export function LiveParticipantsIndicator({
-  instanciaId
+  instanciaId,
 }: Readonly<{
   instanciaId: string;
 }>) {
@@ -47,8 +47,8 @@ export function LiveParticipantsIndicator({
           `/api/v1/reuniones/instancias/${encodeURIComponent(instanciaId)}/participantes-activos`,
           {
             cache: "no-store",
-            signal: controller.signal
-          }
+            signal: controller.signal,
+          },
         );
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}`);
@@ -77,8 +77,10 @@ export function LiveParticipantsIndicator({
   if (!data) {
     return (
       <span
-        className={`${styles.summary} ${falloActualizacion ? styles.error : styles.loading}`}
-        title={falloActualizacion ? "No se pudo consultar Google Meet." : "Consultando Google Meet…"}
+        className={`${styles["summary"]} ${falloActualizacion ? styles["error"] : styles["loading"]}`}
+        title={
+          falloActualizacion ? "No se pudo consultar Google Meet." : "Consultando Google Meet…"
+        }
       >
         <Users size={13} />
         {falloActualizacion ? "Sin datos en vivo" : "Consultando…"}
@@ -89,7 +91,7 @@ export function LiveParticipantsIndicator({
   if (data.estado === "NO_DISPONIBLE") {
     return (
       <span
-        className={`${styles.summary} ${styles.muted}`}
+        className={`${styles["summary"]} ${styles["muted"]}`}
         title="La reunión no dispone de datos de presencia en Meet."
       >
         <Users size={13} />
@@ -101,7 +103,7 @@ export function LiveParticipantsIndicator({
   if (!data.conferenciaExiste) {
     return (
       <span
-        className={`${styles.summary} ${styles.muted}`}
+        className={`${styles["summary"]} ${styles["muted"]}`}
         title="Meet todavía no informó una conferencia activa."
       >
         <Users size={13} />
@@ -114,8 +116,12 @@ export function LiveParticipantsIndicator({
   if (total === 0) {
     return (
       <span
-        className={styles.summary}
-        title={falloActualizacion ? "Mostrando el último dato disponible." : "Se actualiza cada 15 segundos."}
+        className={styles["summary"]}
+        title={
+          falloActualizacion
+            ? "Mostrando el último dato disponible."
+            : "Se actualiza cada 15 segundos."
+        }
         aria-live="polite"
       >
         <Users size={13} />
@@ -126,20 +132,24 @@ export function LiveParticipantsIndicator({
 
   return (
     <details
-      className={`${styles.root} ${falloActualizacion ? styles.stale : ""}`}
-      title={falloActualizacion ? "Mostrando el último dato disponible." : "Se actualiza cada 15 segundos."}
+      className={`${styles["root"]} ${falloActualizacion ? styles["stale"] : ""}`}
+      title={
+        falloActualizacion
+          ? "Mostrando el último dato disponible."
+          : "Se actualiza cada 15 segundos."
+      }
     >
       <summary aria-live="polite">
         <Users size={13} />
         <strong>{total}</strong> {total === 1 ? "conectado" : "conectados"}
       </summary>
-      <div className={styles.panel}>
-        <strong className={styles.heading}>En la reunión ahora</strong>
+      <div className={styles["panel"]}>
+        <strong className={styles["heading"]}>En la reunión ahora</strong>
         <ul>
           {data.participantes.map((participante, index) => (
             <li key={participante.user ?? `${participante.tipo}-${participante.nombre}-${index}`}>
-              <span className={styles.dot} aria-hidden="true" />
-              <span className={styles.name}>{participante.nombre}</span>
+              <span className={styles["dot"]} aria-hidden="true" />
+              <span className={styles["name"]}>{participante.nombre}</span>
               <small>{etiquetaTipo(participante.tipo)}</small>
             </li>
           ))}

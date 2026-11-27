@@ -2,5 +2,5 @@
 export {
   claveMesAnteriorUtc3,
   contarPostulacionesAbiertas,
-  formatTiempoRestante
+  formatTiempoRestante,
 } from "./domain/dashboard-asistente.domain";

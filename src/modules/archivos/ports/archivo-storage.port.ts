@@ -30,32 +30,32 @@ export interface ArchivoStoragePort {
   consultarSubida(
     sesionCifrada: string,
     total: bigint | null,
-    signal?: AbortSignal
+    signal?: AbortSignal,
   ): Promise<EstadoSubidaArchivo>;
   subirBloque(
     sesionCifrada: string,
     offset: bigint,
     bytes: Uint8Array,
     total: bigint | null,
-    opciones?: Readonly<{ ultimo?: boolean; signal?: AbortSignal }>
+    opciones?: Readonly<{ ultimo?: boolean; signal?: AbortSignal }>,
   ): Promise<EstadoSubidaArchivo>;
   /** Primero `files.get(fileId)`, después búsqueda por marca de origen. */
   buscarConservado(
     origenKey: string,
     fileId: string | null,
-    signal?: AbortSignal
+    signal?: AbortSignal,
   ): Promise<BusquedaConservadoArchivo>;
   verificarArchivo(id: string, signal?: AbortSignal): Promise<DestinoConservadoZoom | null>;
   /** Mueve una carpeta (con todo su contenido) al padre indicado conservando su ID; idempotente. */
   moverCarpeta(
     carpetaId: string,
     nuevoPadreId: string,
-    signal?: AbortSignal
+    signal?: AbortSignal,
   ): Promise<"MOVIDA" | "YA_EN_DESTINO" | "NO_ENCONTRADO">;
   /** Cambia el nombre de una carpeta conservando su ID; idempotente. */
   renombrarCarpeta(
     carpetaId: string,
     nombre: string,
-    signal?: AbortSignal
+    signal?: AbortSignal,
   ): Promise<"RENOMBRADA" | "YA_NOMBRADA" | "NO_ENCONTRADO">;
 }

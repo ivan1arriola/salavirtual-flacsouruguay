@@ -25,15 +25,15 @@ export async function PUT(request: Request, context: RouteContext) {
       {
         db,
         descifrar: descifrarConfiguracion,
-        sincronizarGoogle: sincronizarCohostsGoogleExistente
+        sincronizarGoogle: sincronizarCohostsGoogleExistente,
       },
       actor,
       solicitudId,
-      await request.json().catch(() => null)
+      await request.json().catch(() => null),
     );
     return NextResponse.json({
       ...result,
-      message: `Cohosts actualizados en ${result.encuentros} ${result.encuentros === 1 ? "encuentro" : "encuentros"}.`
+      message: `Cohosts actualizados en ${result.encuentros} ${result.encuentros === 1 ? "encuentro" : "encuentros"}.`,
     });
   } catch (error) {
     const mapped = toHttpError(error);

@@ -2,11 +2,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const request = vi.fn();
 vi.mock("@/src/integrations/google", () => ({
   crearGoogleAuthJwt: () => ({ request }),
-  conReintentosGoogleLectura: (fn: () => unknown) => fn()
+  conReintentosGoogleLectura: (fn: () => unknown) => fn(),
 }));
 import {
   obtenerEventosAuditoriaMeet,
-  obtenerCorreosAuditoriaMeet
+  obtenerCorreosAuditoriaMeet,
 } from "../src/modules/archivos/infrastructure/google/google-meet-audit-emails.client";
 const input = {
   serviceAccountEmail: "svc@example.com",
@@ -14,7 +14,7 @@ const input = {
   adminEmail: "admin@example.com",
   meetingCode: "abc-def-ghi",
   startTime: "2026-05-01T00:00:00Z",
-  endTime: "2026-05-02T00:00:00Z"
+  endTime: "2026-05-02T00:00:00Z",
 };
 beforeEach(() => request.mockReset());
 describe("Reports API de Meet", () => {
@@ -34,14 +34,14 @@ describe("Reports API de Meet", () => {
                     { name: "meeting_code", value: "abcdefghi" },
                     { name: "identifier", value: "anon" },
                     { name: "identifier_type", value: "device" },
-                    { name: "duration_seconds", intValue: "600" }
-                  ]
-                }
-              ]
-            }
+                    { name: "duration_seconds", intValue: "600" },
+                  ],
+                },
+              ],
+            },
           ],
-          nextPageToken: "next"
-        }
+          nextPageToken: "next",
+        },
       })
       .mockResolvedValueOnce({
         data: {
@@ -57,13 +57,13 @@ describe("Reports API de Meet", () => {
                     { name: "meeting_code", value: "abc-def-ghi" },
                     { name: "identifier", value: "s@example.com" },
                     { name: "identifier_type", value: "email_address" },
-                    { name: "duration_seconds", intValue: "600" }
-                  ]
-                }
-              ]
-            }
-          ]
-        }
+                    { name: "duration_seconds", intValue: "600" },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
       });
     const rows = await obtenerEventosAuditoriaMeet(input);
     expect(rows).toHaveLength(2);
@@ -72,7 +72,7 @@ describe("Reports API de Meet", () => {
       endpointId: "end1",
       meetingCode: "abcdefghi",
       identifier: "anon",
-      identifierType: "device"
+      identifierType: "device",
     });
     expect(request).toHaveBeenCalledTimes(2);
   });
@@ -89,13 +89,13 @@ describe("Reports API de Meet", () => {
                   { name: "conference_id", value: "conf1" },
                   { name: "meeting_code", value: "abcdefghi" },
                   { name: "identifier", value: "person@example.com" },
-                  { name: "identifier_type", value: "device" }
-                ]
-              }
-            ]
-          }
-        ]
-      }
+                  { name: "identifier_type", value: "device" },
+                ],
+              },
+            ],
+          },
+        ],
+      },
     });
     await expect(obtenerCorreosAuditoriaMeet(input)).resolves.toEqual([]);
   });

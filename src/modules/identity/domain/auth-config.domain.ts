@@ -3,7 +3,7 @@ import type { AuthConfig } from "./identity.types";
 
 const optionalCredential = z.preprocess(
   (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
-  z.string().min(1).optional()
+  z.string().min(1).optional(),
 );
 
 const authEnvironmentSchema = z
@@ -12,11 +12,11 @@ const authEnvironmentSchema = z
     AUTH_TRUST_HOST: z.enum(["true", "false"]),
     APP_BASE_URL: z.string().url(),
     AUTH_GOOGLE_ID: optionalCredential,
-    AUTH_GOOGLE_SECRET: optionalCredential
+    AUTH_GOOGLE_SECRET: optionalCredential,
   })
   .refine(
     (value) => Boolean(value.AUTH_GOOGLE_ID) === Boolean(value.AUTH_GOOGLE_SECRET),
-    "AUTH_GOOGLE_ID y AUTH_GOOGLE_SECRET deben configurarse juntos."
+    "AUTH_GOOGLE_ID y AUTH_GOOGLE_SECRET deben configurarse juntos.",
   );
 
 export type AuthEnvironment = Readonly<{
@@ -38,9 +38,9 @@ export function parseAuthConfig(environment: AuthEnvironment): AuthConfig {
       parsed.AUTH_GOOGLE_ID && parsed.AUTH_GOOGLE_SECRET
         ? {
             clientId: parsed.AUTH_GOOGLE_ID,
-            clientSecret: parsed.AUTH_GOOGLE_SECRET
+            clientSecret: parsed.AUTH_GOOGLE_SECRET,
           }
-        : null
+        : null,
   };
 }
 

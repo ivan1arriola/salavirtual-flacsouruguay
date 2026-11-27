@@ -29,14 +29,21 @@ export async function POST(request: Request, context: RouteContext) {
 
   try {
     const { ocurrenciaId } = await context.params;
-    const r = await desvincularOcurrenciaZoomAdmin({ id: actor.id, rol: actor.rol }, ocurrenciaId, eventoId);
+    const r = await desvincularOcurrenciaZoomAdmin(
+      { id: actor.id, rol: actor.rol },
+      ocurrenciaId,
+      eventoId,
+    );
     switch (r.tipo) {
       case "DESVINCULADA":
-        return NextResponse.json({ referenciasEliminadas: r.referenciasEliminadas }, { status: 200 });
+        return NextResponse.json(
+          { referenciasEliminadas: r.referenciasEliminadas },
+          { status: 200 },
+        );
       case "NO_VINCULADA":
         return NextResponse.json(
           { error: "La ocurrencia no está vinculada a ese encuentro." },
-          { status: 409 }
+          { status: 409 },
         );
       case "NO_ENCONTRADA":
         return NextResponse.json({ error: "No encontrada." }, { status: 404 });

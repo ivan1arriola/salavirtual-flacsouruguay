@@ -37,7 +37,7 @@ describe("conciliación de asistencia Zoom: accesibilidad y responsive", () => {
   it("regla móvil (máx 640px) con controles de 44px", () => {
     const bloque = css.slice(css.indexOf("@media (max-width: 640px)"));
     expect(bloque).toMatch(
-      /\.zoom-person__body[^{]*\{\s*min-height: 44px|:is\(select, button\)\s*\{\s*min-height: 44px/
+      /\.zoom-person__body[^{]*\{\s*min-height: 44px|:is\(select, button\)\s*\{\s*min-height: 44px/,
     );
   });
 });

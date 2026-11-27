@@ -41,7 +41,7 @@ function formatearFechaZoom(ms: number): string {
 export function particionarPeriodoZoom(
   desde: string,
   hasta: string,
-  diasVentana: number = DIAS_MAXIMOS_VENTANA_ZOOM
+  diasVentana: number = DIAS_MAXIMOS_VENTANA_ZOOM,
 ): readonly VentanaZoom[] {
   if (!Number.isInteger(diasVentana) || diasVentana < 1) {
     throw new RangeError(`Tamano de ventana invalido: ${diasVentana}`);

@@ -2,7 +2,7 @@ import { z } from "zod";
 import type {
   AccionHistorialAsistencia,
   PeriodoAsistencia,
-  RegistroAsistenciaPersonal
+  RegistroAsistenciaPersonal,
 } from "./asistencia.types";
 
 export const SEPARACION_MINIMA_ASISTENCIAS_MINUTOS = 30;
@@ -10,20 +10,20 @@ export const SEPARACION_MINIMA_ASISTENCIAS_MINUTOS = 30;
 export const postulacionAsistenciaSchema = z.object({
   instanciaSalaId: z.string().trim().min(1),
   accion: z.enum(["POSTULAR", "RETIRAR"]),
-  comentario: z.string().trim().max(500).optional()
+  comentario: z.string().trim().max(500).optional(),
 });
 
 export const asignacionAsistenciaSchema = z.object({
   instanciaSalaId: z.string().trim().min(1),
-  asistenteTecnicoId: z.string().trim().min(1)
+  asistenteTecnicoId: z.string().trim().min(1),
 });
 
 export const desvinculacionAsistenciaSchema = z.object({
-  asignacionId: z.string().trim().min(1)
+  asignacionId: z.string().trim().min(1),
 });
 
 export const notificacionAsistenciaSchema = z.object({
-  instanciaSalaId: z.string().trim().min(1)
+  instanciaSalaId: z.string().trim().min(1),
 });
 
 const horaSchema = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/);
@@ -37,13 +37,13 @@ export const disponibilidadSemanalSchema = z.object({
           diaSemana: z.number().int().min(0).max(6),
           horaDesde: horaSchema,
           horaHasta: horaSchema,
-          tipo: z.enum(["DISPONIBLE", "NO_DISPONIBLE", "PREFERENTE"])
+          tipo: z.enum(["DISPONIBLE", "NO_DISPONIBLE", "PREFERENTE"]),
         })
         .refine(({ horaDesde, horaHasta }) => horaDesde < horaHasta, {
-          message: "La hora de fin debe ser posterior a la hora de inicio."
-        })
+          message: "La hora de fin debe ser posterior a la hora de inicio.",
+        }),
     )
-    .max(7)
+    .max(7),
 });
 
 export const reporteDuracionSchema = z
@@ -56,9 +56,9 @@ export const reporteDuracionSchema = z
       .object({
         tipo: z.string().trim().min(2).max(80),
         severidad: z.enum(["BAJA", "MEDIA", "ALTA", "CRITICA"]),
-        descripcion: z.string().trim().min(3).max(1000)
+        descripcion: z.string().trim().min(3).max(1000),
       })
-      .optional()
+      .optional(),
   })
   .superRefine((input, context) => {
     const minutos = Math.round((input.finReal.getTime() - input.inicioReal.getTime()) / 60_000);
@@ -66,7 +66,8 @@ export const reporteDuracionSchema = z
       context.addIssue({
         code: "custom",
         path: ["finReal"],
-        message: "La hora de fin debe ser posterior al inicio y la duración no puede superar 24 horas."
+        message:
+          "La hora de fin debe ser posterior al inicio y la duración no puede superar 24 horas.",
       });
     }
   });
@@ -81,7 +82,7 @@ export function puedeAsignarAsistencia(rol: string): boolean {
 
 export function cumpleSeparacionMinimaAsistencias(
   izquierda: PeriodoAsistencia,
-  derecha: PeriodoAsistencia
+  derecha: PeriodoAsistencia,
 ): boolean {
   const separacionMs = SEPARACION_MINIMA_ASISTENCIAS_MINUTOS * 60_000;
   return (
@@ -90,11 +91,17 @@ export function cumpleSeparacionMinimaAsistencias(
   );
 }
 
-export function estadoInteresParaAccion(accion: "POSTULAR" | "RETIRAR"): "ME_INTERESA" | "RETIRADO" {
+export function estadoInteresParaAccion(
+  accion: "POSTULAR" | "RETIRAR",
+): "ME_INTERESA" | "RETIRADO" {
   return accion === "POSTULAR" ? "ME_INTERESA" : "RETIRADO";
 }
 
-export function esAsistenciaCompletada(estado: string, finProgramadoMs: number, ahoraMs: number): boolean {
+export function esAsistenciaCompletada(
+  estado: string,
+  finProgramadoMs: number,
+  ahoraMs: number,
+): boolean {
   return estado === "FINALIZADA" || finProgramadoMs <= ahoraMs;
 }
 
@@ -102,7 +109,7 @@ export function resolverAccionHistorialAsistente(
   accion: string,
   asistenteAnteriorId: string | null,
   asistenteNuevoId: string | null,
-  asistenteTecnicoId: string
+  asistenteTecnicoId: string,
 ): AccionHistorialAsistencia | null {
   if (accion === "ASISTENTE_ASIGNADO" && asistenteNuevoId === asistenteTecnicoId) {
     return "ASIGNADO";
@@ -122,12 +129,12 @@ export function resolverAccionHistorialAsistente(
 }
 
 export function agruparPorMes(
-  registros: readonly RegistroAsistenciaPersonal[]
+  registros: readonly RegistroAsistenciaPersonal[],
 ): ReadonlyArray<Readonly<{ clave: string; registros: readonly RegistroAsistenciaPersonal[] }>> {
   const claves = [...new Set(registros.map(({ inicioAt }) => claveMesUtc3Local(inicioAt)))];
   return claves.map((clave) => ({
     clave,
-    registros: registros.filter(({ inicioAt }) => claveMesUtc3Local(inicioAt) === clave)
+    registros: registros.filter(({ inicioAt }) => claveMesUtc3Local(inicioAt) === clave),
   }));
 }
 
@@ -135,7 +142,7 @@ function claveMesUtc3Local(fecha: Date): string {
   const parts = new Intl.DateTimeFormat("en-CA", {
     timeZone: "America/Montevideo",
     year: "numeric",
-    month: "2-digit"
+    month: "2-digit",
   }).formatToParts(fecha);
   const value = (type: "year" | "month") => Number(parts.find((part) => part.type === type)?.value);
   return `${value("year")}-${String(value("month")).padStart(2, "0")}`;

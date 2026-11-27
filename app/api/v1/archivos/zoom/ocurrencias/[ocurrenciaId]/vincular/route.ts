@@ -29,7 +29,11 @@ export async function POST(request: Request, context: RouteContext) {
 
   try {
     const { ocurrenciaId } = await context.params;
-    const r = await vincularOcurrenciaZoomAdmin({ id: actor.id, rol: actor.rol }, ocurrenciaId, eventoId);
+    const r = await vincularOcurrenciaZoomAdmin(
+      { id: actor.id, rol: actor.rol },
+      ocurrenciaId,
+      eventoId,
+    );
     switch (r.tipo) {
       case "VINCULADA":
         return NextResponse.json(
@@ -37,21 +41,21 @@ export async function POST(request: Request, context: RouteContext) {
             referenciasCreadas: r.referenciasCreadas,
             // El worker mueve la carpeta (conservando los IDs) en su próximo ciclo; hasta entonces no hereda el acceso del encuentro.
             advertencia:
-              "El vínculo se registró. La carpeta de Drive se moverá a las grabaciones vinculadas en el próximo ciclo del worker (unos minutos); hasta entonces los archivos no heredan el acceso del encuentro."
+              "El vínculo se registró. La carpeta de Drive se moverá a las grabaciones vinculadas en el próximo ciclo del worker (unos minutos); hasta entonces los archivos no heredan el acceso del encuentro.",
           },
-          { status: 200 }
+          { status: 200 },
         );
       case "YA_VINCULADA":
         return NextResponse.json({ yaVinculada: true }, { status: 200 });
       case "VINCULADA_A_OTRO":
         return NextResponse.json(
           { error: "La ocurrencia ya está vinculada a otro encuentro." },
-          { status: 409 }
+          { status: 409 },
         );
       case "CONFLICTO_DRIVE":
         return NextResponse.json(
           { error: "Un archivo ya está referenciado por otra grabación." },
-          { status: 409 }
+          { status: 409 },
         );
       case "EVENTO_NO_ZOOM":
         return NextResponse.json({ error: "El encuentro no es de Zoom." }, { status: 422 });

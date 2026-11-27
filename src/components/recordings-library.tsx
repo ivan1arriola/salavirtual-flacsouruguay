@@ -13,17 +13,20 @@ import {
   Search,
   UsersRound,
   Video,
-  X
+  X,
 } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { formatDateTime } from "@/src/lib/ui/format";
 import {
   type GrupoEncuentroConArchivos,
-  type TipoFiltroArtefacto
+  type TipoFiltroArtefacto,
 } from "@/src/modules/archivos/presentation";
 import { crearHrefGrabaciones } from "@/src/modules/archivos/domain/grabaciones-query.domain";
-import { etiquetaTipoArtefactoMeet, type TipoArtefactoMeet } from "@/src/modules/archivos/presentation";
+import {
+  etiquetaTipoArtefactoMeet,
+  type TipoArtefactoMeet,
+} from "@/src/modules/archivos/presentation";
 
 export type RecordingsLibraryProps = Readonly<{
   grupos: readonly GrupoEncuentroConArchivos[];
@@ -61,21 +64,29 @@ export function RecordingsLibrary({
   filtro,
   conteos,
   totalEncuentros,
-  esAdmin = false
+  esAdmin = false,
 }: RecordingsLibraryProps) {
   const router = useRouter();
   const [busquedaEditada, setBusquedaEditada] = useState(busqueda);
   const [regenerandoId, setRegenerandoId] = useState<string | null>(null);
-  const [feedback, setFeedback] = useState<{ id: string; tipo: "ok" | "error"; mensaje: string } | null>(
-    null
-  );
+  const [feedback, setFeedback] = useState<{
+    id: string;
+    tipo: "ok" | "error";
+    mensaje: string;
+  } | null>(null);
   const [reparandoPlanillasVacias, setReparandoPlanillasVacias] = useState(false);
-  const [feedbackPlanillasVacias, setFeedbackPlanillasVacias] = useState<FeedbackPlanillas | null>(null);
+  const [feedbackPlanillasVacias, setFeedbackPlanillasVacias] = useState<FeedbackPlanillas | null>(
+    null,
+  );
 
   const filteredGrupos = grupos;
   const gruposPagina = grupos;
-  const navegar = (cambios: Partial<{ pagina: number; busqueda: string; filtro: TipoFiltroArtefacto }>) => {
-    window.location.assign(crearHrefGrabaciones({ pagina: paginaVisible, busqueda, filtro }, cambios));
+  const navegar = (
+    cambios: Partial<{ pagina: number; busqueda: string; filtro: TipoFiltroArtefacto }>,
+  ) => {
+    window.location.assign(
+      crearHrefGrabaciones({ pagina: paginaVisible, busqueda, filtro }, cambios),
+    );
   };
 
   async function handleGenerarPlanilla(instanciaId: string) {
@@ -84,19 +95,21 @@ export function RecordingsLibrary({
     try {
       const response = await fetch(
         `/api/v1/reuniones/instancias/${encodeURIComponent(instanciaId)}/asistencia/regenerar`,
-        { method: "POST", cache: "no-store" }
+        { method: "POST", cache: "no-store" },
       );
       const data = await response.json();
       if (!response.ok) {
         const detalle = typeof data.detalle === "string" ? data.detalle.trim() : "";
         throw new Error(
-          [data.error ?? "No se pudo generar la planilla de asistencia.", detalle].filter(Boolean).join(" ")
+          [data.error ?? "No se pudo generar la planilla de asistencia.", detalle]
+            .filter(Boolean)
+            .join(" "),
         );
       }
       setFeedback({
         id: instanciaId,
         tipo: "ok",
-        mensaje: "¡Planilla de Google Sheets generada con éxito!"
+        mensaje: "¡Planilla de Google Sheets generada con éxito!",
       });
       setTimeout(() => {
         window.location.reload();
@@ -105,7 +118,7 @@ export function RecordingsLibrary({
       setFeedback({
         id: instanciaId,
         tipo: "error",
-        mensaje: err instanceof Error ? err.message : "Error inesperado al generar planilla."
+        mensaje: err instanceof Error ? err.message : "Error inesperado al generar planilla.",
       });
     } finally {
       setRegenerandoId(null);
@@ -120,12 +133,12 @@ export function RecordingsLibrary({
         method: "POST",
         cache: "no-store",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(eventoProveedorIds ? { eventoProveedorIds } : {})
+        body: JSON.stringify(eventoProveedorIds ? { eventoProveedorIds } : {}),
       });
       const data = await response.json();
       if (!response.ok) {
         throw new Error(
-          typeof data.error === "string" ? data.error : "No se pudieron revisar las planillas."
+          typeof data.error === "string" ? data.error : "No se pudieron revisar las planillas.",
         );
       }
       const errores: ErrorPlanilla[] = Array.isArray(data.errores)
@@ -134,7 +147,7 @@ export function RecordingsLibrary({
               Boolean(item) &&
               typeof item === "object" &&
               typeof (item as ErrorPlanilla).eventoProveedorId === "string" &&
-              typeof (item as ErrorPlanilla).detalle === "string"
+              typeof (item as ErrorPlanilla).detalle === "string",
           )
         : [];
       const fallidas = Number(data.fallidas) || 0;
@@ -142,8 +155,8 @@ export function RecordingsLibrary({
       const revisadas = Number(data.revisadas) || 0;
       const bloqueoGoogle = errores.some(({ detalle }) =>
         /unauthorized_client|delegation denied|insufficient authentication scopes|insufficient oauth|admin_policy_enforced/i.test(
-          detalle
-        )
+          detalle,
+        ),
       );
       const mensaje = bloqueoGoogle
         ? `Google Workspace no autorizó la revisión de ${fallidas} planilla(s). Revisá la delegación y los permisos OAuth antes de reintentar.`
@@ -159,7 +172,7 @@ export function RecordingsLibrary({
         fallidas,
         revisadas,
         errores,
-        bloqueoGoogle
+        bloqueoGoogle,
       });
       if (reparadas > 0) {
         router.refresh();
@@ -172,7 +185,7 @@ export function RecordingsLibrary({
         fallidas: 0,
         revisadas: 0,
         errores: [],
-        bloqueoGoogle: false
+        bloqueoGoogle: false,
       });
     } finally {
       setReparandoPlanillasVacias(false);
@@ -181,7 +194,8 @@ export function RecordingsLibrary({
 
   function tienePlanillaSheets(grupo: GrupoEncuentroConArchivos): boolean {
     return grupo.archivos.some(
-      (a) => a.tipo === "LISTA_ASISTENCIA" && a.mimeType === "application/vnd.google-apps.spreadsheet"
+      (a) =>
+        a.tipo === "LISTA_ASISTENCIA" && a.mimeType === "application/vnd.google-apps.spreadsheet",
     );
   }
 
@@ -214,7 +228,11 @@ export function RecordingsLibrary({
           ) : null}
         </div>
 
-        <div className="recordings-filter-tabs" role="group" aria-label="Filtrar por tipo de archivo">
+        <div
+          className="recordings-filter-tabs"
+          role="group"
+          aria-label="Filtrar por tipo de archivo"
+        >
           <button
             type="button"
             aria-pressed={filtro === "TODOS"}
@@ -280,7 +298,8 @@ export function RecordingsLibrary({
                   <>
                     <details className="recordings-repair-details">
                       <summary>
-                        Ver detalles técnicos por encuentro ({feedbackPlanillasVacias.errores.length})
+                        Ver detalles técnicos por encuentro (
+                        {feedbackPlanillasVacias.errores.length})
                       </summary>
                       <ul>
                         {feedbackPlanillasVacias.errores.map((error, index) => (
@@ -296,7 +315,9 @@ export function RecordingsLibrary({
                       disabled={reparandoPlanillasVacias}
                       onClick={() =>
                         void handleRepararPlanillasVacias([
-                          ...new Set(feedbackPlanillasVacias.errores.map((item) => item.eventoProveedorId))
+                          ...new Set(
+                            feedbackPlanillasVacias.errores.map((item) => item.eventoProveedorId),
+                          ),
                         ])
                       }
                     >
@@ -339,11 +360,13 @@ export function RecordingsLibrary({
 
           {gruposPagina.map((grupo) => {
             const fecha =
-              typeof grupo.fechaInicio === "string" ? new Date(grupo.fechaInicio) : grupo.fechaInicio;
+              typeof grupo.fechaInicio === "string"
+                ? new Date(grupo.fechaInicio)
+                : grupo.fechaInicio;
             const orderedArtifacts = [...grupo.archivos].sort(
               (a, b) =>
                 artifactSortOrder(a.tipo, a.etiquetaZoom, a.secundarioZoom) -
-                artifactSortOrder(b.tipo, b.etiquetaZoom, b.secundarioZoom)
+                artifactSortOrder(b.tipo, b.etiquetaZoom, b.secundarioZoom),
             );
             const grabacionPendiente =
               !grupo.archivos.some((a) => a.tipo === "GRABACION") &&
@@ -369,7 +392,9 @@ export function RecordingsLibrary({
 
                 <div className="recording-file-copy">
                   <div className="recording-file-label">
-                    <strong>{archivo.etiquetaZoom ?? etiquetaTipoArtefactoMeet(archivo.tipo)}</strong>
+                    <strong>
+                      {archivo.etiquetaZoom ?? etiquetaTipoArtefactoMeet(archivo.tipo)}
+                    </strong>
                     <span>{artifactDetail(archivo.mimeType, archivo.tamanoBytes)}</span>
                   </div>
                   {archivo.descripcionZoom ? (
@@ -558,9 +583,13 @@ export function RecordingsLibrary({
                 {secundarios.length > 0 ? (
                   <details className="recording-extra-files">
                     <summary className="recording-extra-summary">
-                      <span>Pistas de audio individuales y archivos auxiliares ({secundarios.length})</span>
+                      <span>
+                        Pistas de audio individuales y archivos auxiliares ({secundarios.length})
+                      </span>
                     </summary>
-                    <div className="recording-file-grid is-nested">{secundarios.map(renderArchivo)}</div>
+                    <div className="recording-file-grid is-nested">
+                      {secundarios.map(renderArchivo)}
+                    </div>
                   </details>
                 ) : null}
               </article>
@@ -643,7 +672,11 @@ function artifactToneClass(tipo: TipoArtefactoMeet, etiquetaZoom?: string): stri
   return "";
 }
 
-function artifactSortOrder(tipo: TipoArtefactoMeet, etiquetaZoom?: string, secundarioZoom?: boolean): number {
+function artifactSortOrder(
+  tipo: TipoArtefactoMeet,
+  etiquetaZoom?: string,
+  secundarioZoom?: boolean,
+): number {
   if (tipo === "GRABACION") {
     return 0;
   }
@@ -668,7 +701,11 @@ function artifactSortOrder(tipo: TipoArtefactoMeet, etiquetaZoom?: string, secun
   return 6;
 }
 
-function actionButtonText(tipo: TipoArtefactoMeet, mimeType?: string | null, etiquetaZoom?: string): string {
+function actionButtonText(
+  tipo: TipoArtefactoMeet,
+  mimeType?: string | null,
+  etiquetaZoom?: string,
+): string {
   if (tipo === "GRABACION") {
     return "Reproducir grabación";
   }

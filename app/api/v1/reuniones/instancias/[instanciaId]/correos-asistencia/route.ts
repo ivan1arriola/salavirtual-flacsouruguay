@@ -24,8 +24,8 @@ export async function GET(_request: Request, { params }: Context) {
     where: { instanciaSalaId: instanciaId, proveedor: { tipo: "GOOGLE_MEET" } },
     select: {
       codigoReunion: true,
-      instancia: { select: { inicioProgramadoAt: true, finProgramadoAt: true, estado: true } }
-    }
+      instancia: { select: { inicioProgramadoAt: true, finProgramadoAt: true, estado: true } },
+    },
   });
   if (!evento?.codigoReunion) {
     return NextResponse.json({ error: "Sin Meet asociado" }, { status: 404 });
@@ -44,19 +44,22 @@ export async function GET(_request: Request, { params }: Context) {
       adminEmail: adminCred.adminEmail,
       meetingCode: evento.codigoReunion,
       startTime: new Date(evento.instancia.inicioProgramadoAt.getTime() - 30 * 60000).toISOString(),
-      endTime: new Date(evento.instancia.finProgramadoAt.getTime() + 30 * 60000).toISOString()
+      endTime: new Date(evento.instancia.finProgramadoAt.getTime() + 30 * 60000).toISOString(),
     });
     return NextResponse.json(
       { correos, total: correos.length, codigo: evento.codigoReunion },
       {
-        headers: { "Cache-Control": "no-store" }
-      }
+        headers: { "Cache-Control": "no-store" },
+      },
     );
   } catch (error) {
-    console.error("Meet audit query failed", error instanceof Error ? error.message : String(error));
+    console.error(
+      "Meet audit query failed",
+      error instanceof Error ? error.message : String(error),
+    );
     return NextResponse.json(
       { error: "Error al consultar la auditoría de Google Workspace" },
-      { status: 502 }
+      { status: 502 },
     );
   }
 }

@@ -16,7 +16,7 @@ function leerCuerpo(valor: unknown): Cuerpo | null {
     return null;
   }
   const v = valor as Record<string, unknown>;
-  const ids = v.anfitrionIds ?? [];
+  const ids = v["anfitrionIds"] ?? [];
   if (
     !Array.isArray(ids) ||
     ids.length > 100 ||
@@ -24,14 +24,19 @@ function leerCuerpo(valor: unknown): Cuerpo | null {
   ) {
     return null;
   }
-  if (typeof v.desde !== "string" || typeof v.hasta !== "string") {
+  if (typeof v["desde"] !== "string" || typeof v["hasta"] !== "string") {
     return null;
   }
   // Por defecto es una simulación: aplicar exige pedirlo de forma explícita.
-  if (v.dryRun !== undefined && typeof v.dryRun !== "boolean") {
+  if (v["dryRun"] !== undefined && typeof v["dryRun"] !== "boolean") {
     return null;
   }
-  return { anfitrionIds: ids as string[], desde: v.desde, hasta: v.hasta, dryRun: v.dryRun !== false };
+  return {
+    anfitrionIds: ids as string[],
+    desde: v["desde"],
+    hasta: v["hasta"],
+    dryRun: v["dryRun"] !== false,
+  };
 }
 
 /** Simula (por defecto) o encola una recuperación histórica de archivos de Zoom. Solo administración; nunca transfiere por HTTP. */
@@ -59,7 +64,10 @@ export async function POST(request: Request) {
       case "PROHIBIDO":
         return NextResponse.json({ error: "Forbidden" }, { status: 403 });
       case "PETICION_INVALIDA":
-        return NextResponse.json({ error: "Petición inválida.", motivo: r.motivo }, { status: 400 });
+        return NextResponse.json(
+          { error: "Petición inválida.", motivo: r.motivo },
+          { status: 400 },
+        );
       case "ZOOM_NO_CONFIGURADO":
         return NextResponse.json({ error: "Zoom no está configurado." }, { status: 409 });
       case "DRY_RUN":

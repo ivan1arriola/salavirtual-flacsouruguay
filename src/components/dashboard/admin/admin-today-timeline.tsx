@@ -1,4 +1,12 @@
-import { Activity, AlertTriangle, ArrowRight, CalendarDays, CheckCircle2, Clock, Video } from "lucide-react";
+import {
+  Activity,
+  AlertTriangle,
+  ArrowRight,
+  CalendarDays,
+  CheckCircle2,
+  Clock,
+  Video,
+} from "lucide-react";
 import Link from "next/link";
 import { CopyMeetLinkButton } from "@/src/components/copy-meet-link-button";
 import { MeetingScheduleTimes } from "@/src/components/meeting-schedule-times";
@@ -8,12 +16,15 @@ import type { AdminTodayMeetingDTO } from "@/src/modules/dashboard/admin-dashboa
 import { getMeetingProviderPresentation } from "@/src/modules/dashboard/meeting-provider.presentation";
 
 export function AdminTodayTimeline({
-  meetings
+  meetings,
 }: Readonly<{
   meetings: readonly AdminTodayMeetingDTO[];
 }>) {
   return (
-    <section className="dashboard-content-section admin-today-section" aria-labelledby="admin-today-title">
+    <section
+      className="dashboard-content-section admin-today-section"
+      aria-labelledby="admin-today-title"
+    >
       <div className="section-heading admin-dashboard-section-heading">
         <div className="admin-section-heading-copy">
           <span className="admin-section-icon">
@@ -43,12 +54,17 @@ export function AdminTodayTimeline({
             const provider = getMeetingProviderPresentation(meeting.proveedorTipo);
 
             return (
-              <article className={`admin-timeline-item ${isLive ? "is-live-now" : ""}`} key={meeting.id}>
+              <article
+                className={`admin-timeline-item ${isLive ? "is-live-now" : ""}`}
+                key={meeting.id}
+              >
                 <div className="admin-timeline-when">
                   {isLive ? (
                     <span className="live-pill-sm">
                       <span className="live-indicator-dot" />
-                      <strong>{inicio > new Date() ? "Por comenzar" : "En horario previsto"}</strong>
+                      <strong>
+                        {inicio > new Date() ? "Por comenzar" : "En horario previsto"}
+                      </strong>
                     </span>
                   ) : (
                     <span className="timeline-hour-badge">
@@ -56,7 +72,9 @@ export function AdminTodayTimeline({
                       <strong>{formatTime(inicio)}</strong>
                     </span>
                   )}
-                  <span className="timeline-sub-hour">{formatDate(inicio)} · Horario del encuentro</span>
+                  <span className="timeline-sub-hour">
+                    {formatDate(inicio)} · Horario del encuentro
+                  </span>
                   {isLive && provider.supportsCohosts ? (
                     <LiveParticipantsIndicator instanciaId={meeting.id} />
                   ) : null}
@@ -144,7 +162,10 @@ export function AdminTodayTimeline({
                         <Video size={16} />
                         <span>{provider.joinLabel}</span>
                       </a>
-                      <CopyMeetLinkButton title={`Copiar enlace de ${provider.name}`} url={meeting.joinUrl} />
+                      <CopyMeetLinkButton
+                        title={`Copiar enlace de ${provider.name}`}
+                        url={meeting.joinUrl}
+                      />
                     </>
                   ) : (
                     <span className="status-muted">{provider.pendingLinkLabel}</span>

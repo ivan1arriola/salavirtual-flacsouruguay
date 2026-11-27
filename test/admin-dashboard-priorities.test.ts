@@ -6,7 +6,7 @@ describe("prioridades del dashboard de administración", () => {
   it("presenta indicadores y alertas antes de la agenda", () => {
     const source = readFileSync(
       new URL("../src/components/dashboard/admin/admin-dashboard.tsx", import.meta.url),
-      "utf8"
+      "utf8",
     );
     const todayIndex = source.indexOf("<AdminTodayTimeline");
     const upcomingIndex = source.indexOf("<AdminUpcomingList");
@@ -29,7 +29,7 @@ describe("prioridades del dashboard de administración", () => {
       integrationErrors: 1,
       pendingRecordings: 3,
       openIncidents: 1,
-      duplicateRisks: 0
+      duplicateRisks: 0,
     });
 
     expect(summary.map(({ label }) => label)).toEqual([
@@ -37,7 +37,7 @@ describe("prioridades del dashboard de administración", () => {
       "Sin monitoreo",
       "Incidencias abiertas",
       "Solicitudes activas",
-      "Próximos 7 días"
+      "Próximos 7 días",
     ]);
     expect(summary.map(({ value }) => value)).toEqual([4, 2, 1, 8, 12]);
   });
@@ -45,14 +45,14 @@ describe("prioridades del dashboard de administración", () => {
   it("ordena las incidencias antes de cobertura, Meet, grabaciones y duplicados", () => {
     const source = readFileSync(
       new URL("../src/components/dashboard/admin/admin-triage-section.tsx", import.meta.url),
-      "utf8"
+      "utf8",
     );
     const priority = [
       "openIncidents.count > 0",
       "pendingCoverage.count > 0",
       "integrationErrors.count > 0",
       "pendingRecordings.count > 0",
-      "duplicateRisks.count > 0"
+      "duplicateRisks.count > 0",
     ].map((marker) => source.indexOf(marker));
 
     expect(priority.every((position) => position >= 0)).toBe(true);

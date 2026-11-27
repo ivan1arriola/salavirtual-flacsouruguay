@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   claveMesAnteriorUtc3,
   contarPostulacionesAbiertas,
-  formatTiempoRestante
+  formatTiempoRestante,
 } from "../src/modules/asistencia/dashboard-asistente.domain";
 
 describe("dashboard funcional del asistente", () => {
@@ -23,8 +23,8 @@ describe("dashboard funcional del asistente", () => {
       contarPostulacionesAbiertas(abiertas, [
         { instanciaSalaId: "abierta-interesada", estado: "ME_INTERESA" },
         { instanciaSalaId: "abierta-retirada", estado: "RETIRADO" },
-        { instanciaSalaId: "ya-asignada", estado: "ME_INTERESA" }
-      ])
+        { instanciaSalaId: "ya-asignada", estado: "ME_INTERESA" },
+      ]),
     ).toBe(1);
   });
 });

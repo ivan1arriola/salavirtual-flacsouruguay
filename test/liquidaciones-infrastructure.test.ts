@@ -3,7 +3,7 @@ import ExcelJS from "exceljs";
 import {
   crearExceljsPlanillaPagosAdapter,
   crearPrismaLiquidacionesRepositoryAdapter,
-  crearPrismaTarifasRepositoryAdapter
+  crearPrismaTarifasRepositoryAdapter,
 } from "@/src/modules/liquidaciones/infrastructure";
 import type { FilaPlanillaPago } from "@/src/modules/liquidaciones/domain";
 
@@ -15,9 +15,9 @@ describe("liquidaciones infrastructure", () => {
           findFirst: vi.fn().mockResolvedValue({
             id: "tar-1",
             valorHora: { toNumber: () => 650 },
-            moneda: "UYU"
-          })
-        }
+            moneda: "UYU",
+          }),
+        },
       };
 
       const adapter = crearPrismaTarifasRepositoryAdapter(mockDb as any);
@@ -27,20 +27,20 @@ describe("liquidaciones infrastructure", () => {
       expect(mockDb.tarifaAsistenciaTecnica.findFirst).toHaveBeenCalledWith({
         where: { modalidad: "HIBRIDA" },
         orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-        select: { id: true, valorHora: true, moneda: true }
+        select: { id: true, valorHora: true, moneda: true },
       });
     });
 
     it("lanza un error claro cuando no existe tarifa configurada", async () => {
       const mockDb = {
         tarifaAsistenciaTecnica: {
-          findFirst: vi.fn().mockResolvedValue(null)
-        }
+          findFirst: vi.fn().mockResolvedValue(null),
+        },
       };
 
       const adapter = crearPrismaTarifasRepositoryAdapter(mockDb as any);
       await expect(adapter.obtenerTarifaVigente("VIRTUAL")).rejects.toThrow(
-        "No hay una tarifa configurada para monitoreo virtual."
+        "No hay una tarifa configurada para monitoreo virtual.",
       );
     });
   });
@@ -58,10 +58,10 @@ describe("liquidaciones infrastructure", () => {
                 nombres: "Iván",
                 apellidos: "Arriola",
                 emailPrincipal: "ivan@example.com",
-                activo: true
-              }
-            }
-          ])
+                activo: true,
+              },
+            },
+          ]),
         },
         asignacionAsistenciaTecnica: {
           findMany: vi.fn().mockResolvedValue([
@@ -81,11 +81,11 @@ describe("liquidaciones infrastructure", () => {
                 finRealAt: null,
                 requiereAsistenciaTecnica: true,
                 estado: "PROGRAMADA",
-                solicitud: { estado: "PROVISIONADA", modalidad: "HIBRIDA" }
-              }
-            }
-          ])
-        }
+                solicitud: { estado: "PROVISIONADA", modalidad: "HIBRIDA" },
+              },
+            },
+          ]),
+        },
       };
 
       const adapter = crearPrismaLiquidacionesRepositoryAdapter(mockDb as any);
@@ -94,21 +94,21 @@ describe("liquidaciones infrastructure", () => {
         desdeMs: Date.parse("2026-10-01T03:00:00Z"),
         hastaMs: Date.parse("2026-11-01T03:00:00Z"),
         anterior: "2026-09",
-        siguiente: "2026-11"
+        siguiente: "2026-11",
       });
 
       expect(result[0]).toMatchObject({
         minutos: 300,
         hibridas: 1,
-        montos: [{ moneda: "UYU", monto: 2500 }]
+        montos: [{ moneda: "UYU", monto: 2500 }],
       });
     });
 
     it("marca envio exitoso actualizando estado y fecha", async () => {
       const mockDb = {
         envioReporteMensualAsistencia: {
-          update: vi.fn().mockResolvedValue({})
-        }
+          update: vi.fn().mockResolvedValue({}),
+        },
       };
 
       const adapter = crearPrismaLiquidacionesRepositoryAdapter(mockDb as any);
@@ -117,15 +117,15 @@ describe("liquidaciones infrastructure", () => {
 
       expect(mockDb.envioReporteMensualAsistencia.update).toHaveBeenCalledWith({
         where: { id: "envio-1" },
-        data: { estado: "ENVIADO", enviadoAt: ahora, ultimoError: null }
+        data: { estado: "ENVIADO", enviadoAt: ahora, ultimoError: null },
       });
     });
 
     it("marca error truncando mensaje", async () => {
       const mockDb = {
         envioReporteMensualAsistencia: {
-          update: vi.fn().mockResolvedValue({})
-        }
+          update: vi.fn().mockResolvedValue({}),
+        },
       };
 
       const adapter = crearPrismaLiquidacionesRepositoryAdapter(mockDb as any);
@@ -133,7 +133,7 @@ describe("liquidaciones infrastructure", () => {
 
       expect(mockDb.envioReporteMensualAsistencia.update).toHaveBeenCalledWith({
         where: { id: "envio-2" },
-        data: { estado: "ERROR", ultimoError: "Error al enviar" }
+        data: { estado: "ERROR", ultimoError: "Error al enviar" },
       });
     });
   });
@@ -152,8 +152,8 @@ describe("liquidaciones infrastructure", () => {
           tarifaHora: 500,
           montoConfirmado: null,
           montoCalculado: 1000,
-          moneda: "UYU"
-        }
+          moneda: "UYU",
+        },
       ];
 
       const periodo = { clave: "2026-05", desdeMs: 1000, hastaMs: 2000 };
@@ -164,7 +164,10 @@ describe("liquidaciones infrastructure", () => {
 
       const workbook = new ExcelJS.Workbook();
       await workbook.xlsx.load(buffer as any);
-      expect(workbook.worksheets.map((s) => s.name)).toEqual(["Pagos por asistente", "Pagos por programa"]);
+      expect(workbook.worksheets.map((s) => s.name)).toEqual([
+        "Pagos por asistente",
+        "Pagos por programa",
+      ]);
     });
   });
 });

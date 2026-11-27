@@ -2,7 +2,7 @@ import {
   credencialesLoginSchema,
   evaluarAccesoLocal,
   type UsuarioAutenticado,
-  type UsuarioCredenciales
+  type UsuarioCredenciales,
 } from "./credentials.domain";
 
 export type DependenciasLogin = Readonly<{
@@ -13,7 +13,7 @@ export type DependenciasLogin = Readonly<{
 
 export async function autenticarConCredenciales(
   dependencias: DependenciasLogin,
-  input: unknown
+  input: unknown,
 ): Promise<UsuarioAutenticado | null> {
   const parsed = credencialesLoginSchema.safeParse(input);
   if (!parsed.success) {

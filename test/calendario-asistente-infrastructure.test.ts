@@ -3,7 +3,7 @@ import {
   crearGoogleAssistantCalendarProvider,
   crearPrismaAssistantCalendarRepository,
   eliminarEventoCalendarioAsistente,
-  publicarEventoCalendarioAsistente
+  publicarEventoCalendarioAsistente,
 } from "../src/modules/asistencia/infrastructure";
 
 vi.mock("@/src/integrations/google", () => ({
@@ -13,21 +13,21 @@ vi.mock("@/src/integrations/google", () => ({
   actualizarEventoCalendarHttp: vi.fn(),
   eliminarEventoCalendarHttp: vi.fn(),
   isAlreadyCalendarEventError: vi.fn((err: any) => err?.code === 409 || err?.status === 409),
-  isCalendarNotFoundError: vi.fn((err: any) => err?.code === 404 || err?.status === 404)
+  isCalendarNotFoundError: vi.fn((err: any) => err?.code === 404 || err?.status === 404),
 }));
 
 import {
   actualizarEventoCalendarHttp,
   crearEventoCalendarHttp,
   eliminarEventoCalendarHttp,
-  obtenerEventoCalendarSiExiste
+  obtenerEventoCalendarSiExiste,
 } from "@/src/integrations/google";
 
 describe("adaptador Google Assistant Calendar Provider", () => {
   const credentials = {
     serviceAccountEmail: "sa@flacso.edu.uy",
     privateKey: "pk-123",
-    subject: "asistente@flacso.edu.uy"
+    subject: "asistente@flacso.edu.uy",
   };
 
   const sampleEvent = {
@@ -44,11 +44,11 @@ describe("adaptador Google Assistant Calendar Provider", () => {
     instanciaSalaId: "inst-1",
     programa: "Maestría",
     docente: "Prof. García",
-    joinUrl: "https://meet.google.com/abc-defg-hij"
+    joinUrl: "https://meet.google.com/abc-defg-hij",
   };
 
   it("crea el evento en Calendar primario del asistente", async () => {
-    vi.mocked(crearEventoCalendarHttp).mockResolvedValueOnce({} as any);
+    vi.mocked(crearEventoCalendarHttp).mockResolvedValueOnce({});
 
     await publicarEventoCalendarioAsistente(credentials, sampleEvent);
 
@@ -62,17 +62,17 @@ describe("adaptador Google Assistant Calendar Provider", () => {
         extendedProperties: {
           private: {
             flacsoTipo: "ASISTENCIA_TECNICA",
-            flacsoInstanciaSalaId: "inst-1"
-          }
-        }
+            flacsoInstanciaSalaId: "inst-1",
+          },
+        },
       }),
-      { sendUpdates: "none" }
+      { sendUpdates: "none" },
     );
   });
 
   it("si ya existe (409), actualiza mediante PATCH", async () => {
     vi.mocked(crearEventoCalendarHttp).mockRejectedValueOnce({ code: 409 });
-    vi.mocked(actualizarEventoCalendarHttp).mockResolvedValueOnce({} as any);
+    vi.mocked(actualizarEventoCalendarHttp).mockResolvedValueOnce({});
 
     await publicarEventoCalendarioAsistente(credentials, sampleEvent);
 
@@ -81,7 +81,7 @@ describe("adaptador Google Assistant Calendar Provider", () => {
       "primary",
       "evt-1",
       expect.not.objectContaining({ id: "evt-1" }),
-      { sendUpdates: "none" }
+      { sendUpdates: "none" },
     );
   });
 
@@ -93,13 +93,17 @@ describe("adaptador Google Assistant Calendar Provider", () => {
 
     await publicarEventoCalendarioAsistente(credentials, sampleEvent);
 
-    expect(obtenerEventoCalendarSiExiste).toHaveBeenCalledWith(expect.anything(), "primary", "evt-1");
+    expect(obtenerEventoCalendarSiExiste).toHaveBeenCalledWith(
+      expect.anything(),
+      "primary",
+      "evt-1",
+    );
     expect(actualizarEventoCalendarHttp).toHaveBeenCalledWith(
       expect.anything(),
       "primary",
       "evt-1",
       expect.anything(),
-      { sendUpdates: "none" }
+      { sendUpdates: "none" },
     );
   });
 
@@ -119,25 +123,29 @@ describe("adaptador Google Assistant Calendar Provider", () => {
     await eliminarEventoCalendarioAsistente(credentials, "evt-1");
 
     expect(eliminarEventoCalendarHttp).toHaveBeenCalledWith(expect.anything(), "primary", "evt-1", {
-      sendUpdates: "none"
+      sendUpdates: "none",
     });
   });
 
   it("ignora errores 404 y 410 al eliminar", async () => {
     vi.mocked(eliminarEventoCalendarHttp).mockRejectedValueOnce({ code: 404 });
-    await expect(eliminarEventoCalendarioAsistente(credentials, "evt-404")).resolves.toBeUndefined();
+    await expect(
+      eliminarEventoCalendarioAsistente(credentials, "evt-404"),
+    ).resolves.toBeUndefined();
 
     vi.mocked(eliminarEventoCalendarHttp).mockRejectedValueOnce({ code: 410 });
-    await expect(eliminarEventoCalendarioAsistente(credentials, "evt-410")).resolves.toBeUndefined();
+    await expect(
+      eliminarEventoCalendarioAsistente(credentials, "evt-410"),
+    ).resolves.toBeUndefined();
   });
 
   it("lanza errores no 404/410 al eliminar", async () => {
     vi.mocked(eliminarEventoCalendarHttp).mockRejectedValueOnce({
       code: 500,
-      message: "Internal Server Error"
+      message: "Internal Server Error",
     });
     await expect(eliminarEventoCalendarioAsistente(credentials, "evt-500")).rejects.toMatchObject({
-      code: 500
+      code: 500,
     });
   });
 
@@ -170,21 +178,21 @@ describe("adaptador Prisma Assistant Calendar Repository", () => {
             docentePrograma: {
               programa: { nombre: "Políticas Públicas" },
               docente: {
-                usuario: { nombres: "Ana", apellidos: "García" }
-              }
-            }
+                usuario: { nombres: "Ana", apellidos: "García" },
+              },
+            },
           },
           eventosProveedor: [
-            { joinUrl: "https://meet.google.com/abc-defg-hij", proveedor: { tipo: "GOOGLE_MEET" } }
+            { joinUrl: "https://meet.google.com/abc-defg-hij", proveedor: { tipo: "GOOGLE_MEET" } },
           ],
-          asignaciones: []
-        })
-      }
+          asignaciones: [],
+        }),
+      },
     };
 
     const repo = crearPrismaAssistantCalendarRepository({
       db: mockDb as any,
-      descifrar: (v) => v
+      descifrar: (v) => v,
     });
 
     const instancia = await repo.obtenerInstanciaParaCalendario("inst-1");
@@ -204,33 +212,33 @@ describe("adaptador Prisma Assistant Calendar Repository", () => {
         findUnique: vi.fn().mockResolvedValue({
           activa: true,
           serviceAccountEmail: "sa@flacso.edu.uy",
-          privateKeyCifrada: "encrypted-key"
-        })
-      }
+          privateKeyCifrada: "encrypted-key",
+        }),
+      },
     };
 
     const repo = crearPrismaAssistantCalendarRepository({
       db: mockDb as any,
-      descifrar: (val) => `decrypted-${val}`
+      descifrar: (val) => `decrypted-${val}`,
     });
 
     const creds = await repo.obtenerCredencialesWorkspace();
     expect(creds).toEqual({
       serviceAccountEmail: "sa@flacso.edu.uy",
-      privateKey: "decrypted-encrypted-key"
+      privateKey: "decrypted-encrypted-key",
     });
   });
 
   it("retorna null si las credenciales no estan activas o no existen", async () => {
     const mockDb = {
       configuracionGoogleWorkspace: {
-        findUnique: vi.fn().mockResolvedValue(null)
-      }
+        findUnique: vi.fn().mockResolvedValue(null),
+      },
     };
 
     const repo = crearPrismaAssistantCalendarRepository({
       db: mockDb as any,
-      descifrar: (val) => val
+      descifrar: (val) => val,
     });
 
     const creds = await repo.obtenerCredencialesWorkspace();

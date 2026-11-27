@@ -3,7 +3,7 @@ import { sincronizarEventosPendientesUseCase } from "../src/modules/conferencias
 import type {
   ClaimInfo,
   ConferenceProviderFactory,
-  ConferenciasRepositoryPort
+  ConferenciasRepositoryPort,
 } from "../src/modules/conferencias/ports";
 import type { UsoReunionCompartida } from "../src/modules/reuniones/reunion-compartida.domain";
 import {
@@ -12,15 +12,18 @@ import {
   crearReunionZoomHttp,
   crearReunionZoomRecurrenteHttp,
   eliminarReunionZoomHttp,
-  obtenerReunionZoomHttp
+  obtenerReunionZoomHttp,
 } from "@/src/integrations/zoom/zoom-client";
 
 vi.mock("@/src/integrations/zoom/zoom-client", () => ({
   obtenerZoomAccessToken: vi.fn(async () => "tok"),
-  crearReunionZoomHttp: vi.fn(async () => ({ meetingId: "propia-1", joinUrl: "https://zoom.us/j/propia-1" })),
+  crearReunionZoomHttp: vi.fn(async () => ({
+    meetingId: "propia-1",
+    joinUrl: "https://zoom.us/j/propia-1",
+  })),
   crearReunionZoomRecurrenteHttp: vi.fn(async () => ({
     meetingId: "serie-1",
-    joinUrl: "https://zoom.us/j/serie-1"
+    joinUrl: "https://zoom.us/j/serie-1",
   })),
   buscarReunionZoomPorMarcaHttp: vi.fn(async () => null),
   actualizarReunionZoomHttp: vi.fn(async () => {}),
@@ -28,13 +31,13 @@ vi.mock("@/src/integrations/zoom/zoom-client", () => ({
   eliminarOcurrenciaZoomHttp: vi.fn(async () => {}),
   obtenerReunionZoomHttp: vi.fn(async (_t: string, id: string) => ({
     meetingId: id,
-    joinUrl: `https://zoom.us/j/${id}`
-  }))
+    joinUrl: `https://zoom.us/j/${id}`,
+  })),
 }));
 
 const ahora = new Date();
 const enHoras = (h: number) => new Date(ahora.getTime() + h * 3_600_000);
-const factory: ConferenceProviderFactory = vi.fn() as unknown as ConferenceProviderFactory;
+const factory: ConferenceProviderFactory = vi.fn();
 
 type EstadoReunion = {
   estadoCreacion: "PENDIENTE" | "CREANDO" | "CREADA" | "ELIMINADA";
@@ -58,7 +61,7 @@ function crearRepo(opciones: {
     externalId: null,
     joinUrl: null,
     usos: [],
-    ...opciones.reunion
+    ...opciones.reunion,
   };
   const finalizadas: string[] = [];
   const persistidas: Record<string, { externalEventId: string | null; joinUrl: string }> = {};
@@ -70,15 +73,18 @@ function crearRepo(opciones: {
         estadoIntegracion: "PENDIENTE",
         operacionPendiente: opciones.eventos[id].operacion,
         reclamoIntegracionAt: null,
-        errorIntegracion: null
-      }))
+        errorIntegracion: null,
+      })),
     ),
-    obtenerEstadoActual: vi.fn(async (id: string) => ({ eventoProveedorId: id, estado: "SINCRONIZADA" })),
+    obtenerEstadoActual: vi.fn(async (id: string) => ({
+      eventoProveedorId: id,
+      estado: "SINCRONIZADA",
+    })),
     obtenerCredencialesZoom: vi.fn(async () => ({
       disponible: true,
       accountId: "a",
       clientId: "c",
-      clientSecret: "s"
+      clientSecret: "s",
     })),
     reclamarEvento: vi.fn(async (id: string): Promise<ClaimInfo> => ({
       event: {
@@ -96,18 +102,21 @@ function crearRepo(opciones: {
           fin: enHoras(26),
           timezone: "America/Montevideo",
           calendarId: "x",
-          calendarEventId: "y"
-        }
+          calendarEventId: "y",
+        },
       },
       operacion: opciones.eventos[id].operacion,
       at: new Date(),
-      token: `claim-${id}`
+      token: `claim-${id}`,
     })),
     guardarExternalEventIdTemprano: vi.fn(async () => {}),
     persistirMeetDetectado: vi.fn(
       async (claim: ClaimInfo, result: { externalEventId: string | null; joinUrl: string }) => {
-        persistidas[claim.event.id] = { externalEventId: result.externalEventId, joinUrl: result.joinUrl };
-      }
+        persistidas[claim.event.id] = {
+          externalEventId: result.externalEventId,
+          joinUrl: result.joinUrl,
+        };
+      },
     ),
     finalizarOperacion: vi.fn(async (claim: ClaimInfo) => {
       finalizadas.push(claim.event.id);
@@ -116,7 +125,7 @@ function crearRepo(opciones: {
     registrarErrorReclamado: vi.fn(async (claim: ClaimInfo, error: string) => ({
       eventoProveedorId: claim.event.id,
       estado: "ERROR",
-      error
+      error,
     })),
     reclamarCreacionReunionCompartida: vi.fn(async (eventoId: string, token: string) => {
       if (reunion.estadoCreacion === "CREADA") {
@@ -124,7 +133,7 @@ function crearRepo(opciones: {
           reunionId: "reunion-1",
           resultado: "YA_CREADA" as const,
           externalId: reunion.externalId,
-          joinUrl: reunion.joinUrl
+          joinUrl: reunion.joinUrl,
         };
       }
       if (
@@ -136,7 +145,7 @@ function crearRepo(opciones: {
           reunionId: "reunion-1",
           resultado: "EN_CURSO_POR_OTRO" as const,
           externalId: null,
-          joinUrl: null
+          joinUrl: null,
         };
       }
       reunion.estadoCreacion = "CREANDO";
@@ -146,7 +155,7 @@ function crearRepo(opciones: {
         reunionId: "reunion-1",
         resultado: "RECLAMADA" as const,
         externalId: reunion.externalId,
-        joinUrl: null
+        joinUrl: null,
       };
     }),
     registrarExternalIdTemprano: vi.fn(async (_r: string, _t: string, externalId: string) => {
@@ -157,12 +166,12 @@ function crearRepo(opciones: {
         reunion.estadoCreacion = "CREADA";
         reunion.externalId = datos.externalId;
         reunion.joinUrl = datos.joinUrl;
-      }
+      },
     ),
     usosDeReunionCompartida: vi.fn(async () => ({
       usos: reunion.usos,
       externalId: reunion.externalId,
-      eliminada: reunion.estadoCreacion === "ELIMINADA"
+      eliminada: reunion.estadoCreacion === "ELIMINADA",
     })),
     marcarReunionCompartidaEliminada: vi.fn(async () => {
       if (reunion.estadoCreacion === "ELIMINADA") {
@@ -172,21 +181,21 @@ function crearRepo(opciones: {
       return true;
     }),
     vincularEventoReunionCompartida: vi.fn(async () => {}),
-    liberarReclamoEvento: vi.fn(async () => {})
+    liberarReclamoEvento: vi.fn(async () => {}),
   };
   return {
     repo: repo as unknown as ConferenciasRepositoryPort,
     mocks: repo,
     reunion,
     finalizadas,
-    persistidas
+    persistidas,
   };
 }
 
 const uso = (id: string, estado = "PROGRAMADA", fin = enHoras(30)): UsoReunionCompartida => ({
   eventoProveedorId: id,
   instanciaEstado: estado,
-  instanciaFin: fin
+  instanciaFin: fin,
 });
 
 beforeEach(() => {
@@ -198,16 +207,16 @@ describe("aprovisionamiento Zoom con reunión compartida", () => {
     const { repo, persistidas } = crearRepo({
       eventos: {
         e1: { reunion: true, operacion: "PROVISIONAR" },
-        e2: { reunion: true, operacion: "PROVISIONAR" }
-      }
+        e2: { reunion: true, operacion: "PROVISIONAR" },
+      },
     });
     await sincronizarEventosPendientesUseCase(repo, factory, ["e1", "e2"]);
     expect(crearReunionZoomRecurrenteHttp).toHaveBeenCalledTimes(1);
     expect(crearReunionZoomHttp).not.toHaveBeenCalled();
-    expect(persistidas.e1.joinUrl).toBe("https://zoom.us/j/serie-1");
-    expect(persistidas.e2.joinUrl).toBe("https://zoom.us/j/serie-1");
-    expect(persistidas.e1.externalEventId).toBe("serie-1");
-    expect(persistidas.e2.externalEventId).toBe("serie-1");
+    expect(persistidas["e1"].joinUrl).toBe("https://zoom.us/j/serie-1");
+    expect(persistidas["e2"].joinUrl).toBe("https://zoom.us/j/serie-1");
+    expect(persistidas["e1"].externalEventId).toBe("serie-1");
+    expect(persistidas["e2"].externalEventId).toBe("serie-1");
   });
 
   it("la reunión nueva lleva la marca de la serie en su agenda", async () => {
@@ -225,13 +234,13 @@ describe("aprovisionamiento Zoom con reunión compartida", () => {
       () =>
         new Promise((resolver) => {
           liberar = () => resolver({ meetingId: "serie-1", joinUrl: "https://zoom.us/j/serie-1" });
-        })
+        }),
     );
     const { repo, mocks } = crearRepo({
       eventos: {
         e1: { reunion: true, operacion: "PROVISIONAR" },
-        e2: { reunion: true, operacion: "PROVISIONAR" }
-      }
+        e2: { reunion: true, operacion: "PROVISIONAR" },
+      },
     });
     const primero = sincronizarEventosPendientesUseCase(repo, factory, ["e1"]);
     await vi.waitFor(() => expect(mocks.registrarExternalIdTemprano).not.toHaveBeenCalled());
@@ -249,34 +258,44 @@ describe("aprovisionamiento Zoom con reunión compartida", () => {
   it("un reclamo vencido tras un POST que sí llegó a Zoom reutiliza la reunión huérfana y no crea otra", async () => {
     vi.mocked(buscarReunionZoomPorMarcaHttp).mockResolvedValueOnce({
       meetingId: "huerfana-9",
-      joinUrl: "https://zoom.us/j/huerfana-9"
+      joinUrl: "https://zoom.us/j/huerfana-9",
     });
     const { repo, mocks, persistidas } = crearRepo({
       eventos: { e1: { reunion: true, operacion: "PROVISIONAR" } },
-      reunion: { estadoCreacion: "CREANDO", reclamoToken: "vencido" }
+      reunion: { estadoCreacion: "CREANDO", reclamoToken: "vencido" },
     });
     await sincronizarEventosPendientesUseCase(repo, factory, ["e1"]);
     expect(crearReunionZoomRecurrenteHttp).not.toHaveBeenCalled();
-    expect(mocks.registrarExternalIdTemprano).toHaveBeenCalledWith("reunion-1", "claim-e1", "huerfana-9");
-    expect(persistidas.e1.externalEventId).toBe("huerfana-9");
+    expect(mocks.registrarExternalIdTemprano).toHaveBeenCalledWith(
+      "reunion-1",
+      "claim-e1",
+      "huerfana-9",
+    );
+    expect(persistidas["e1"].externalEventId).toBe("huerfana-9");
   });
 
   it("vincula el evento reclamado a la reunión compartida, también cuando la reunión ya existía", async () => {
     const { repo, mocks } = crearRepo({
       eventos: { e2: { reunion: true, operacion: "PROVISIONAR" } },
-      reunion: { estadoCreacion: "CREADA", externalId: "serie-1", joinUrl: "https://zoom.us/j/serie-1" }
+      reunion: {
+        estadoCreacion: "CREADA",
+        externalId: "serie-1",
+        joinUrl: "https://zoom.us/j/serie-1",
+      },
     });
     await sincronizarEventosPendientesUseCase(repo, factory, ["e2"]);
     expect(crearReunionZoomRecurrenteHttp).not.toHaveBeenCalled();
     expect(mocks.vincularEventoReunionCompartida).toHaveBeenCalledWith(
       expect.objectContaining({ token: "claim-e2" }),
-      { externalId: "serie-1", joinUrl: "https://zoom.us/j/serie-1" }
+      { externalId: "serie-1", joinUrl: "https://zoom.us/j/serie-1" },
     );
   });
 
   it("guarda el ID de Zoom apenas lo recibe, antes de guardar el resultado final", async () => {
     const orden: string[] = [];
-    const { repo, mocks } = crearRepo({ eventos: { e1: { reunion: true, operacion: "PROVISIONAR" } } });
+    const { repo, mocks } = crearRepo({
+      eventos: { e1: { reunion: true, operacion: "PROVISIONAR" } },
+    });
     mocks.registrarExternalIdTemprano.mockImplementation(async () => {
       orden.push("temprano");
     });
@@ -288,7 +307,9 @@ describe("aprovisionamiento Zoom con reunión compartida", () => {
   });
 
   it("un evento sin reunión compartida sigue creando su propia reunión", async () => {
-    const { repo, mocks } = crearRepo({ eventos: { e1: { reunion: false, operacion: "PROVISIONAR" } } });
+    const { repo, mocks } = crearRepo({
+      eventos: { e1: { reunion: false, operacion: "PROVISIONAR" } },
+    });
     await sincronizarEventosPendientesUseCase(repo, factory, ["e1"]);
     expect(crearReunionZoomHttp).toHaveBeenCalledTimes(1);
     expect(crearReunionZoomRecurrenteHttp).not.toHaveBeenCalled();
@@ -297,17 +318,17 @@ describe("aprovisionamiento Zoom con reunión compartida", () => {
 
   it("REPROGRAMAR de un evento compartido no cambia horarios en Zoom, solo refresca el enlace", async () => {
     const { repo, persistidas } = crearRepo({
-      eventos: { e1: { reunion: true, operacion: "REPROGRAMAR", externalEventId: "serie-1" } }
+      eventos: { e1: { reunion: true, operacion: "REPROGRAMAR", externalEventId: "serie-1" } },
     });
     await sincronizarEventosPendientesUseCase(repo, factory, ["e1"]);
     expect(actualizarReunionZoomHttp).not.toHaveBeenCalled();
     expect(obtenerReunionZoomHttp).toHaveBeenCalledWith("tok", "serie-1");
-    expect(persistidas.e1.joinUrl).toBe("https://zoom.us/j/serie-1");
+    expect(persistidas["e1"].joinUrl).toBe("https://zoom.us/j/serie-1");
   });
 
   it("un evento sin reunión compartida sigue reprogramando en Zoom como hoy", async () => {
     const { repo } = crearRepo({
-      eventos: { e1: { reunion: false, operacion: "REPROGRAMAR", externalEventId: "propia-1" } }
+      eventos: { e1: { reunion: false, operacion: "REPROGRAMAR", externalEventId: "propia-1" } },
     });
     await sincronizarEventosPendientesUseCase(repo, factory, ["e1"]);
     expect(actualizarReunionZoomHttp).toHaveBeenCalledTimes(1);
@@ -321,8 +342,8 @@ describe("cancelación con reunión compartida", () => {
       reunion: {
         estadoCreacion: "CREADA",
         externalId: "serie-1",
-        usos: [uso("e1", "CANCELADA"), uso("e2"), uso("e3")]
-      }
+        usos: [uso("e1", "CANCELADA"), uso("e2"), uso("e3")],
+      },
     });
     await sincronizarEventosPendientesUseCase(repo, factory, ["e1"]);
     expect(eliminarReunionZoomHttp).not.toHaveBeenCalled();
@@ -335,8 +356,8 @@ describe("cancelación con reunión compartida", () => {
       reunion: {
         estadoCreacion: "CREADA",
         externalId: "serie-1",
-        usos: [uso("e1"), uso("e0", "REALIZADA", enHoras(-48)), uso("e9", "CANCELADA")]
-      }
+        usos: [uso("e1"), uso("e0", "REALIZADA", enHoras(-48)), uso("e9", "CANCELADA")],
+      },
     });
     await sincronizarEventosPendientesUseCase(repo, factory, ["e1"]);
     expect(eliminarReunionZoomHttp).toHaveBeenCalledTimes(1);
@@ -348,7 +369,11 @@ describe("cancelación con reunión compartida", () => {
   it("un reintento de la cancelación no vuelve a eliminar la reunión", async () => {
     const { repo } = crearRepo({
       eventos: { e1: { reunion: true, operacion: "CANCELAR", externalEventId: "serie-1" } },
-      reunion: { estadoCreacion: "ELIMINADA", externalId: "serie-1", usos: [uso("e1", "CANCELADA")] }
+      reunion: {
+        estadoCreacion: "ELIMINADA",
+        externalId: "serie-1",
+        usos: [uso("e1", "CANCELADA")],
+      },
     });
     await sincronizarEventosPendientesUseCase(repo, factory, ["e1"]);
     expect(eliminarReunionZoomHttp).not.toHaveBeenCalled();
@@ -356,11 +381,11 @@ describe("cancelación con reunión compartida", () => {
 
   it("si Zoom ya no tiene la reunión (404) la cancelación igual termina", async () => {
     vi.mocked(eliminarReunionZoomHttp).mockRejectedValueOnce(
-      Object.assign(new Error("not found"), { status: 404 })
+      Object.assign(new Error("not found"), { status: 404 }),
     );
     const { repo, finalizadas, reunion } = crearRepo({
       eventos: { e1: { reunion: true, operacion: "CANCELAR", externalEventId: "serie-1" } },
-      reunion: { estadoCreacion: "CREADA", externalId: "serie-1", usos: [uso("e1")] }
+      reunion: { estadoCreacion: "CREADA", externalId: "serie-1", usos: [uso("e1")] },
     });
     await sincronizarEventosPendientesUseCase(repo, factory, ["e1"]);
     expect(finalizadas).toEqual(["e1"]);
@@ -369,11 +394,11 @@ describe("cancelación con reunión compartida", () => {
 
   it("si la eliminación en Zoom falla con otro error no marca la reunión como eliminada", async () => {
     vi.mocked(eliminarReunionZoomHttp).mockRejectedValueOnce(
-      new Error("Zoom API error al eliminar (500): boom")
+      new Error("Zoom API error al eliminar (500): boom"),
     );
     const { repo, mocks, reunion } = crearRepo({
       eventos: { e1: { reunion: true, operacion: "CANCELAR", externalEventId: "serie-1" } },
-      reunion: { estadoCreacion: "CREADA", externalId: "serie-1", usos: [uso("e1")] }
+      reunion: { estadoCreacion: "CREADA", externalId: "serie-1", usos: [uso("e1")] },
     });
     await sincronizarEventosPendientesUseCase(repo, factory, ["e1"]);
     expect(mocks.registrarErrorReclamado).toHaveBeenCalledTimes(1);
@@ -382,7 +407,7 @@ describe("cancelación con reunión compartida", () => {
 
   it("un evento sin reunión compartida cancela su propia reunión como hoy", async () => {
     const { repo } = crearRepo({
-      eventos: { e1: { reunion: false, operacion: "CANCELAR", externalEventId: "propia-1" } }
+      eventos: { e1: { reunion: false, operacion: "CANCELAR", externalEventId: "propia-1" } },
     });
     await sincronizarEventosPendientesUseCase(repo, factory, ["e1"]);
     expect(eliminarReunionZoomHttp).toHaveBeenCalledWith("tok", "propia-1");

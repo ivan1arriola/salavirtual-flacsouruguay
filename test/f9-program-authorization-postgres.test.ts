@@ -5,7 +5,7 @@ import { resolveSessionActor } from "../src/lib/auth/session-actor.adapter";
 import { puedeGestionarPrograma } from "../src/modules/reuniones/permisos-programa.service";
 import { cancelarSolicitudesAtomicas } from "../src/modules/reuniones/cancelar-solicitudes-atomicas.service";
 
-const enabled = process.env.MEET_HISTORY_DATABASE_TEST === "1";
+const enabled = process.env["MEET_HISTORY_DATABASE_TEST"] === "1";
 describe.skipIf(!enabled)("F9: aislamiento entre programas en PostgreSQL real", () => {
   const db = new PrismaClient();
   const tag = "f9-" + randomUUID();
@@ -16,21 +16,34 @@ describe.skipIf(!enabled)("F9: aislamiento entre programas en PostgreSQL real", 
   let requestA: string, requestB: string;
 
   beforeAll(async () => {
-    const url = new URL(process.env.DATABASE_URL!);
-    if (!["127.0.0.1", "localhost"].includes(url.hostname) || url.pathname !== "/flacso_meet_history_ci") {
+    const url = new URL(process.env["DATABASE_URL"]!);
+    if (
+      !["127.0.0.1", "localhost"].includes(url.hostname) ||
+      url.pathname !== "/flacso_meet_history_ci"
+    ) {
       throw new Error("F9 requiere PostgreSQL CI aislado; jamás ejecutarlo en producción.");
     }
     await db.usuario.createMany({
       data: [
-        { id: userA, nombres: "Docente A", rol: "DOCENTE", emailPrincipal: tag + "-a@example.test" },
-        { id: userB, nombres: "Docente B", rol: "DOCENTE", emailPrincipal: tag + "-b@example.test" },
+        {
+          id: userA,
+          nombres: "Docente A",
+          rol: "DOCENTE",
+          emailPrincipal: tag + "-a@example.test",
+        },
+        {
+          id: userB,
+          nombres: "Docente B",
+          rol: "DOCENTE",
+          emailPrincipal: tag + "-b@example.test",
+        },
         {
           id: admin,
           nombres: "Administrador",
           rol: "ADMINISTRACION",
-          emailPrincipal: tag + "-admin@example.test"
-        }
-      ]
+          emailPrincipal: tag + "-admin@example.test",
+        },
+      ],
     });
     const docenteA = await db.docente.create({ data: { usuarioId: userA } });
     const docenteB = await db.docente.create({ data: { usuarioId: userB } });
@@ -39,10 +52,10 @@ describe.skipIf(!enabled)("F9: aislamiento entre programas en PostgreSQL real", 
     programA = pA.id;
     programB = pB.id;
     const associationA = await db.docentePrograma.create({
-      data: { docenteId: docenteA.id, programaId: programA }
+      data: { docenteId: docenteA.id, programaId: programA },
     });
     const associationB = await db.docentePrograma.create({
-      data: { docenteId: docenteB.id, programaId: programB }
+      data: { docenteId: docenteB.id, programaId: programB },
     });
     const fecha = new Date("2027-10-12T12:00:00Z");
     const data = {
@@ -51,16 +64,16 @@ describe.skipIf(!enabled)("F9: aislamiento entre programas en PostgreSQL real", 
       tipoInstancias: "UNICA" as const,
       timezone: "America/Montevideo",
       fechaInicioSolicitada: fecha,
-      fechaFinSolicitada: new Date(fecha.getTime() + 60 * 60_000)
+      fechaFinSolicitada: new Date(fecha.getTime() + 60 * 60_000),
     };
     requestA = (
       await db.solicitudSala.create({
-        data: { ...data, docenteProgramaId: associationA.id, creadaPorUsuarioId: userA }
+        data: { ...data, docenteProgramaId: associationA.id, creadaPorUsuarioId: userA },
       })
     ).id;
     requestB = (
       await db.solicitudSala.create({
-        data: { ...data, docenteProgramaId: associationB.id, creadaPorUsuarioId: userB }
+        data: { ...data, docenteProgramaId: associationB.id, creadaPorUsuarioId: userB },
       })
     ).id;
   }, 20000);
@@ -80,24 +93,26 @@ describe.skipIf(!enabled)("F9: aislamiento entre programas en PostgreSQL real", 
     const actorA = (await resolveSessionActor(db, { id: userA }))!;
     const previous = await db.solicitudSala.findUniqueOrThrow({
       where: { id: requestB },
-      select: { estado: true }
+      select: { estado: true },
     });
-    await expect(cancelarSolicitudesAtomicas(db, actorA, [requestB])).rejects.toMatchObject({ status: 403 });
+    await expect(cancelarSolicitudesAtomicas(db, actorA, [requestB])).rejects.toMatchObject({
+      status: 403,
+    });
     expect(
       (
         await db.solicitudSala.findUniqueOrThrow({
           where: { id: requestB },
-          select: { estado: true }
+          select: { estado: true },
         })
-      ).estado
+      ).estado,
     ).toBe(previous.estado);
     expect(
       await db.auditoria.count({
         where: {
           accion: "REUNION_ELIMINADA",
-          entidadId: requestB
-        }
-      })
+          entidadId: requestB,
+        },
+      }),
     ).toBe(0);
   });
 
@@ -105,15 +120,17 @@ describe.skipIf(!enabled)("F9: aislamiento entre programas en PostgreSQL real", 
     const actorA = (await resolveSessionActor(db, { id: userA }))!;
     const result = await cancelarSolicitudesAtomicas(db, actorA, [requestA]);
     expect(result.solicitudesCanceladas).toBe(1);
-    expect((await db.solicitudSala.findUniqueOrThrow({ where: { id: requestA } })).estado).toBe("CANCELADA");
+    expect((await db.solicitudSala.findUniqueOrThrow({ where: { id: requestA } })).estado).toBe(
+      "CANCELADA",
+    );
   });
 
   it("una sesión con ID antiguo no puede tomar la cuenta de un admin por email", async () => {
     expect(
       await resolveSessionActor(db, {
         id: tag + "-deleted",
-        email: tag + "-admin@example.test"
-      })
+        email: tag + "-admin@example.test",
+      }),
     ).toBeNull();
   });
 
@@ -122,7 +139,9 @@ describe.skipIf(!enabled)("F9: aislamiento entre programas en PostgreSQL real", 
     const actorB = (await resolveSessionActor(db, { id: userB }))!;
     expect(actorB.activo).toBe(false);
     expect(await puedeGestionarPrograma(db, actorB, programB)).toBe(false);
-    await expect(cancelarSolicitudesAtomicas(db, actorB, [requestB])).rejects.toMatchObject({ status: 403 });
+    await expect(cancelarSolicitudesAtomicas(db, actorB, [requestB])).rejects.toMatchObject({
+      status: 403,
+    });
   });
 
   it("el administrador vigente tiene acceso y una revocación del rol lo quita", async () => {

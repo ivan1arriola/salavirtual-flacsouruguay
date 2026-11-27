@@ -5,7 +5,9 @@ const leer = (ruta: string) => readFileSync(new URL(`../${ruta}`, import.meta.ur
 
 describe("ruta de nueva reunión", () => {
   it("apunta a la página Zoom", () => {
-    expect(leer("app/(gestion)/reuniones/nueva/page.tsx")).toContain("nueva-reunion-zoom-page.server");
+    expect(leer("app/(gestion)/reuniones/nueva/page.tsx")).toContain(
+      "nueva-reunion-zoom-page.server",
+    );
   });
 
   it("la página Zoom no usa cuentas Google ni el formulario de Meet", () => {
@@ -18,7 +20,9 @@ describe("ruta de nueva reunión", () => {
 
   it("conserva la página de Meet sin ruta", () => {
     expect(
-      existsSync(new URL("../src/bootstrap/ui/reuniones/nueva-reunion-page.server.tsx", import.meta.url))
+      existsSync(
+        new URL("../src/bootstrap/ui/reuniones/nueva-reunion-page.server.tsx", import.meta.url),
+      ),
     ).toBe(true);
   });
 });

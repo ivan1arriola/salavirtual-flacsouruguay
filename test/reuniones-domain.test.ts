@@ -6,20 +6,20 @@ import {
   puedeAbrirCreacionReuniones,
   puedeCrearReuniones,
   puedeVerAgendaCompleta,
-  resolverAsignacionInicial
+  resolverAsignacionInicial,
 } from "../src/modules/reuniones/reuniones.domain";
 import {
   claveRevisionDuplicado,
   detectarPosiblesReunionesDuplicadas,
   esDecisionRevisionDuplicado,
-  huellaRevisionDuplicado
+  huellaRevisionDuplicado,
 } from "../src/modules/reuniones/duplicados.domain";
 
 describe("dias derivados de reuniones", () => {
   it("acepta solamente UUID como clave idempotente de creación", () => {
-    expect(claveIdempotenciaCreacionSchema.safeParse("c7ad82c1-3b81-4a20-b718-1336e82c267c").success).toBe(
-      true
-    );
+    expect(
+      claveIdempotenciaCreacionSchema.safeParse("c7ad82c1-3b81-4a20-b718-1336e82c267c").success,
+    ).toBe(true);
     expect(claveIdempotenciaCreacionSchema.safeParse("repetir-reunion").success).toBe(false);
   });
 
@@ -32,7 +32,7 @@ describe("dias derivados de reuniones", () => {
       docenteId: "teacher-1",
       docenteNombre: "Ana Pérez",
       inicio: new Date("2026-08-03T13:00:00Z"),
-      fin: new Date("2026-08-03T14:00:00Z")
+      fin: new Date("2026-08-03T14:00:00Z"),
     };
     const risks = detectarPosiblesReunionesDuplicadas([
       { ...base, id: "meeting-1" },
@@ -43,14 +43,14 @@ describe("dias derivados de reuniones", () => {
         solicitudId: "request-3",
         titulo: "Tutoría",
         inicio: new Date("2026-08-03T13:30:00Z"),
-        fin: new Date("2026-08-03T14:30:00Z")
-      }
+        fin: new Date("2026-08-03T14:30:00Z"),
+      },
     ]);
 
     expect(risks.map(({ motivo }) => motivo)).toEqual([
       "COINCIDENCIA_EXACTA",
       "HORARIO_SUPERPUESTO",
-      "HORARIO_SUPERPUESTO"
+      "HORARIO_SUPERPUESTO",
     ]);
   });
 
@@ -62,7 +62,7 @@ describe("dias derivados de reuniones", () => {
       programaNombre: "Diploma",
       docenteNombre: "Docente",
       inicio: new Date("2026-08-03T13:00:00Z"),
-      fin: new Date("2026-08-03T14:00:00Z")
+      fin: new Date("2026-08-03T14:00:00Z"),
     };
     expect(
       detectarPosiblesReunionesDuplicadas([
@@ -73,9 +73,9 @@ describe("dias derivados de reuniones", () => {
           id: "three",
           docenteId: "teacher-1",
           inicio: new Date("2026-08-03T14:00:00Z"),
-          fin: new Date("2026-08-03T15:00:00Z")
-        }
-      ])
+          fin: new Date("2026-08-03T15:00:00Z"),
+        },
+      ]),
     ).toEqual([]);
   });
 
@@ -97,19 +97,19 @@ describe("dias derivados de reuniones", () => {
       docenteId: "teacher-a",
       docenteNombre: "Docente",
       inicio: new Date("2026-08-03T13:00:00Z"),
-      fin: new Date("2026-08-03T14:00:00Z")
+      fin: new Date("2026-08-03T14:00:00Z"),
     };
     const risk = {
       izquierda: meeting,
       derecha: { ...meeting, id: "meeting-b", solicitudId: "request-b" },
-      motivo: "COINCIDENCIA_EXACTA" as const
+      motivo: "COINCIDENCIA_EXACTA" as const,
     };
 
     expect(huellaRevisionDuplicado(risk)).not.toBe(
       huellaRevisionDuplicado({
         ...risk,
-        derecha: { ...risk.derecha, inicio: new Date("2026-08-03T13:30:00Z") }
-      })
+        derecha: { ...risk.derecha, inicio: new Date("2026-08-03T13:30:00Z") },
+      }),
     );
   });
 
@@ -119,10 +119,10 @@ describe("dias derivados de reuniones", () => {
         [
           { inicioProgramadoAt: new Date("2026-08-03T13:00:00Z") },
           { inicioProgramadoAt: new Date("2026-08-05T13:00:00Z") },
-          { inicioProgramadoAt: new Date("2026-08-10T13:00:00Z") }
+          { inicioProgramadoAt: new Date("2026-08-10T13:00:00Z") },
         ],
-        "America/Montevideo"
-      )
+        "America/Montevideo",
+      ),
     ).toEqual(["lunes", "miercoles"]);
   });
 
@@ -137,10 +137,10 @@ describe("dias derivados de reuniones", () => {
         instancias: [
           {
             inicio: "2026-08-03T13:00:00Z",
-            fin: "2026-08-03T14:00:00Z"
-          }
-        ]
-      }).asistenteTecnicoId
+            fin: "2026-08-03T14:00:00Z",
+          },
+        ],
+      }).asistenteTecnicoId,
     ).toBeUndefined();
   });
 
@@ -154,9 +154,9 @@ describe("dias derivados de reuniones", () => {
       instancias: [
         {
           inicio: "2026-10-10T11:00:00-03:00",
-          fin: "2026-10-10T13:30:00-03:00"
-        }
-      ]
+          fin: "2026-10-10T13:30:00-03:00",
+        },
+      ],
     };
 
     expect(crearReunionesSchema.safeParse(base).success).toBe(false);
@@ -167,10 +167,10 @@ describe("dias derivados de reuniones", () => {
           {
             ...base.instancias[0],
             asistenciaInicio: "2026-10-10T09:00:00-03:00",
-            asistenciaFin: "2026-10-10T14:00:00-03:00"
-          }
-        ]
-      }).success
+            asistenciaFin: "2026-10-10T14:00:00-03:00",
+          },
+        ],
+      }).success,
     ).toBe(true);
   });
 
@@ -186,9 +186,9 @@ describe("dias derivados de reuniones", () => {
           inicio: "2026-10-10T11:00:00-03:00",
           fin: "2026-10-10T13:30:00-03:00",
           asistenciaInicio: "2026-10-10T11:00:00-03:00",
-          asistenciaFin: "2026-10-10T13:30:00-03:00"
-        }
-      ]
+          asistenciaFin: "2026-10-10T13:30:00-03:00",
+        },
+      ],
     });
     expect(result.success).toBe(false);
   });
@@ -205,23 +205,23 @@ describe("dias derivados de reuniones", () => {
           inicio: "2026-10-10T10:00:00-03:00",
           fin: "2026-10-10T17:00:00-03:00",
           asistenciaInicio: "2026-10-10T09:30:00-03:00",
-          asistenciaFin: "2026-10-10T17:30:00-03:00"
-        }
-      ]
+          asistenciaFin: "2026-10-10T17:30:00-03:00",
+        },
+      ],
     };
 
     expect(crearReunionesSchema.safeParse(base).success).toBe(true);
     expect(
       crearReunionesSchema.safeParse({
         ...base,
-        instancias: [{ ...base.instancias[0], asistenciaInicio: "2026-10-10T09:31:00-03:00" }]
-      }).success
+        instancias: [{ ...base.instancias[0], asistenciaInicio: "2026-10-10T09:31:00-03:00" }],
+      }).success,
     ).toBe(false);
     expect(
       crearReunionesSchema.safeParse({
         ...base,
-        instancias: [{ ...base.instancias[0], asistenciaFin: "2026-10-10T17:29:00-03:00" }]
-      }).success
+        instancias: [{ ...base.instancias[0], asistenciaFin: "2026-10-10T17:29:00-03:00" }],
+      }).success,
     ).toBe(false);
     expect(
       crearReunionesSchema.safeParse({
@@ -230,10 +230,10 @@ describe("dias derivados de reuniones", () => {
           {
             ...base.instancias[0],
             asistenciaInicio: "2026-10-10T08:30:00-03:00",
-            asistenciaFin: "2026-10-10T18:00:00-03:00"
-          }
-        ]
-      }).success
+            asistenciaFin: "2026-10-10T18:00:00-03:00",
+          },
+        ],
+      }).success,
     ).toBe(true);
   });
 
@@ -249,9 +249,9 @@ describe("dias derivados de reuniones", () => {
           inicio: "2026-10-10T00:15:00-03:00",
           fin: "2026-10-10T01:30:00-03:00",
           asistenciaInicio: "2026-10-09T23:45:00-03:00",
-          asistenciaFin: "2026-10-10T02:00:00-03:00"
-        }
-      ]
+          asistenciaFin: "2026-10-10T02:00:00-03:00",
+        },
+      ],
     };
     expect(crearReunionesSchema.safeParse(base).success).toBe(true);
   });
@@ -266,9 +266,9 @@ describe("dias derivados de reuniones", () => {
       instancias: [
         {
           inicio: "2026-10-15T10:00:00-03:00",
-          fin: "2026-10-15T17:00:00-03:00"
-        }
-      ]
+          fin: "2026-10-15T17:00:00-03:00",
+        },
+      ],
     };
 
     // Compatibilidad con clientes API antiguos: el servicio guarda la cobertura fija.
@@ -279,22 +279,22 @@ describe("dias derivados de reuniones", () => {
         {
           ...base.instancias[0],
           asistenciaInicio: "2026-10-15T09:45:00-03:00",
-          asistenciaFin: "2026-10-15T17:00:00-03:00"
-        }
-      ]
+          asistenciaFin: "2026-10-15T17:00:00-03:00",
+        },
+      ],
     };
     expect(crearReunionesSchema.safeParse(fixed).success).toBe(true);
     expect(
       crearReunionesSchema.safeParse({
         ...fixed,
-        instancias: [{ ...fixed.instancias[0], asistenciaInicio: "2026-10-15T09:30:00-03:00" }]
-      }).success
+        instancias: [{ ...fixed.instancias[0], asistenciaInicio: "2026-10-15T09:30:00-03:00" }],
+      }).success,
     ).toBe(false);
     expect(
       crearReunionesSchema.safeParse({
         ...fixed,
-        instancias: [{ ...fixed.instancias[0], asistenciaFin: "2026-10-15T17:30:00-03:00" }]
-      }).success
+        instancias: [{ ...fixed.instancias[0], asistenciaFin: "2026-10-15T17:30:00-03:00" }],
+      }).success,
     ).toBe(false);
   });
 
@@ -310,9 +310,9 @@ describe("dias derivados de reuniones", () => {
           inicio: "2026-10-15T10:00:00-03:00",
           fin: "2026-10-15T17:00:00-03:00",
           asistenciaInicio: "2026-10-15T08:00:00-03:00",
-          asistenciaFin: "2026-10-15T20:00:00-03:00"
-        }
-      ]
+          asistenciaFin: "2026-10-15T20:00:00-03:00",
+        },
+      ],
     });
     expect(result.success).toBe(true);
   });
@@ -325,11 +325,14 @@ describe("dias derivados de reuniones", () => {
       timezone: "America/Montevideo",
       instancias: [
         { inicio: "2026-08-03T13:00:00Z", fin: "2026-08-03T14:00:00Z", descripcion: "Módulo uno" },
-        { inicio: "2026-08-10T13:00:00Z", fin: "2026-08-10T14:00:00Z", descripcion: "Módulo dos" }
-      ]
+        { inicio: "2026-08-10T13:00:00Z", fin: "2026-08-10T14:00:00Z", descripcion: "Módulo dos" },
+      ],
     });
 
-    expect(result.instancias.map(({ descripcion }) => descripcion)).toEqual(["Módulo uno", "Módulo dos"]);
+    expect(result.instancias.map(({ descripcion }) => descripcion)).toEqual([
+      "Módulo uno",
+      "Módulo dos",
+    ]);
   });
 
   it("rechaza encuentros que terminan otro dia en Montevideo", () => {
@@ -338,7 +341,7 @@ describe("dias derivados de reuniones", () => {
       docenteProgramaId: "dp",
       modalidad: "VIRTUAL",
       timezone: "America/Montevideo",
-      instancias: [{ inicio: "2026-08-03T23:00:00-03:00", fin: "2026-08-04T00:30:00-03:00" }]
+      instancias: [{ inicio: "2026-08-03T23:00:00-03:00", fin: "2026-08-04T00:30:00-03:00" }],
     });
     expect(result.success).toBe(false);
   });
@@ -351,8 +354,8 @@ describe("dias derivados de reuniones", () => {
       timezone: "America/Montevideo",
       instancias: [
         { inicio: "2026-08-03T13:00:00Z", fin: "2026-08-03T15:00:00Z" },
-        { inicio: "2026-08-03T14:00:00Z", fin: "2026-08-03T16:00:00Z" }
-      ]
+        { inicio: "2026-08-03T14:00:00Z", fin: "2026-08-03T16:00:00Z" },
+      ],
     });
     expect(result.success).toBe(false);
   });
@@ -363,15 +366,15 @@ describe("dias derivados de reuniones", () => {
       docenteProgramaId: "dp",
       modalidad: "VIRTUAL",
       timezone: "No/Es-Una-Zona",
-      instancias: [{ inicio: "2026-08-03T13:00:00Z", fin: "2026-08-03T14:00:00Z" }]
+      instancias: [{ inicio: "2026-08-03T13:00:00Z", fin: "2026-08-03T14:00:00Z" }],
     };
     expect(crearReunionesSchema.safeParse(base).success).toBe(false);
     expect(
       crearReunionesSchema.safeParse({
         ...base,
         timezone: "America/Montevideo",
-        instancias: Array.from({ length: 101 }, () => base.instancias[0])
-      }).success
+        instancias: Array.from({ length: 101 }, () => base.instancias[0]),
+      }).success,
     ).toBe(false);
   });
 
@@ -385,9 +388,9 @@ describe("dias derivados de reuniones", () => {
       instancias: [
         {
           inicio: "2026-08-03T13:00:00Z",
-          fin: "2026-08-03T14:00:00Z"
-        }
-      ]
+          fin: "2026-08-03T14:00:00Z",
+        },
+      ],
     });
 
     expect(result.cohostEmailsManual).toEqual(["docente@flacso.edu.uy", "apoyo@flacso.edu.uy"]);
@@ -399,19 +402,23 @@ describe("dias derivados de reuniones", () => {
       docenteProgramaId: "dp",
       modalidad: "VIRTUAL",
       timezone: "America/Montevideo",
-      instancias: [{ inicio: "2027-08-03T13:00:00Z", fin: "2027-08-03T14:00:00Z" }]
+      instancias: [{ inicio: "2027-08-03T13:00:00Z", fin: "2027-08-03T14:00:00Z" }],
     };
     expect(crearReunionesSchema.parse(input).plataforma).toBe("ZOOM");
-    expect(crearReunionesSchema.safeParse({ ...input, plataforma: "GOOGLE_MEET" }).success).toBe(false);
+    expect(crearReunionesSchema.safeParse({ ...input, plataforma: "GOOGLE_MEET" }).success).toBe(
+      false,
+    );
   });
 
   it("reserva la asignacion inicial a Administracion", () => {
     expect(resolverAsignacionInicial("ADMINISTRACION", true, "assistant")).toBe("assistant");
     expect(resolverAsignacionInicial("ADMINISTRACION", true)).toBeNull();
     expect(resolverAsignacionInicial("DOCENTE", true)).toBeNull();
-    expect(() => resolverAsignacionInicial("DOCENTE", true, "assistant")).toThrow("Solo Administración");
+    expect(() => resolverAsignacionInicial("DOCENTE", true, "assistant")).toThrow(
+      "Solo Administración",
+    );
     expect(() => resolverAsignacionInicial("ADMINISTRACION", false, "assistant")).toThrow(
-      "no requiere monitoreo"
+      "no requiere monitoreo",
     );
   });
 
@@ -440,7 +447,7 @@ describe("dias derivados de reuniones", () => {
       requiereAsistenciaTecnica: false,
       modalidad: "VIRTUAL" as const,
       timezone: "America/Montevideo",
-      instancias: [{ inicio: "2026-08-03T13:00:00Z", fin: "2026-08-03T14:00:00Z" }]
+      instancias: [{ inicio: "2026-08-03T13:00:00Z", fin: "2026-08-03T14:00:00Z" }],
     };
 
     // Por defecto hostTipo es DOCENTE y es válido
@@ -453,7 +460,7 @@ describe("dias derivados de reuniones", () => {
     // Si elige OTRA_CUENTA sin hostCuentaId, falla
     const resultCuentaInvalida = crearReunionesSchema.safeParse({
       ...base,
-      hostTipo: "OTRA_CUENTA"
+      hostTipo: "OTRA_CUENTA",
     });
     expect(resultCuentaInvalida.success).toBe(false);
 
@@ -461,14 +468,14 @@ describe("dias derivados de reuniones", () => {
     const resultCuentaValida = crearReunionesSchema.safeParse({
       ...base,
       hostTipo: "OTRA_CUENTA",
-      hostCuentaId: "cuenta-google-1"
+      hostCuentaId: "cuenta-google-1",
     });
     expect(resultCuentaValida.success).toBe(true);
 
     // Si elige OTRO_CORREO sin hostEmail, falla
     const resultCorreoInvalido = crearReunionesSchema.safeParse({
       ...base,
-      hostTipo: "OTRO_CORREO"
+      hostTipo: "OTRO_CORREO",
     });
     expect(resultCorreoInvalido.success).toBe(false);
 
@@ -476,7 +483,7 @@ describe("dias derivados de reuniones", () => {
     const resultCorreoValido = crearReunionesSchema.safeParse({
       ...base,
       hostTipo: "OTRO_CORREO",
-      hostEmail: "anfitrion@flacso.edu.uy"
+      hostEmail: "anfitrion@flacso.edu.uy",
     });
     expect(resultCorreoValido.success).toBe(true);
   });

@@ -10,11 +10,11 @@ import {
   seleccionarRegistrosBrutos,
   serializarExportacionCsv,
   serializarExportacionJson,
-  type FuenteExportacionAsistencia
+  type FuenteExportacionAsistencia,
 } from "@/src/modules/archivos/domain/attendance-raw-export.domain";
 import {
   exportacionAsistenciaZoom,
-  type ConjuntoExportacionZoom
+  type ConjuntoExportacionZoom,
 } from "@/src/modules/archivos/domain/planilla-asistencia-zoom.domain";
 import { crearPrismaLecturaPlanillaZoomAdapter } from "@/src/modules/archivos/infrastructure/prisma/prisma-lectura-planilla-zoom.adapter";
 import { leerPlanillaAsistenciaGoogle } from "@/src/modules/archivos/infrastructure/google/google-attendance-sheet-reader.client";
@@ -23,7 +23,10 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 type Context = Readonly<{ params: Promise<{ instanciaId: string; fuente: string }> }>;
-const NO_CACHE = { "Cache-Control": "private, no-store, max-age=0", "X-Content-Type-Options": "nosniff" };
+const NO_CACHE = {
+  "Cache-Control": "private, no-store, max-age=0",
+  "X-Content-Type-Options": "nosniff",
+};
 
 function errorJson(mensaje: string, status: number) {
   return NextResponse.json({ error: mensaje }, { status, headers: NO_CACHE });
@@ -68,11 +71,11 @@ export async function GET(request: Request, { params }: Context) {
           archivos: {
             where: { tipo: "LISTA_ASISTENCIA" },
             take: 1,
-            select: { driveFileId: true, mimeType: true }
-          }
-        }
-      }
-    }
+            select: { driveFileId: true, mimeType: true },
+          },
+        },
+      },
+    },
   });
 
   if (
@@ -86,18 +89,18 @@ export async function GET(request: Request, { params }: Context) {
     // La asistencia Zoom la sirve Sala Virtual desde la base, tras validar sesión y alcance: no requiere
     // cuenta de Google ni lee la planilla de Drive. Nunca mezcla datos de Meet.
     try {
-      const asistencia = await crearPrismaLecturaPlanillaZoomAdapter({ db }).cargarAsistenciaInstancia(
-        instanciaId
-      );
+      const asistencia = await crearPrismaLecturaPlanillaZoomAdapter({
+        db,
+      }).cargarAsistenciaInstancia(instanciaId);
       const exportacion = exportacionAsistenciaZoom(
-        conjuntoPedido as ConjuntoExportacionZoom,
+        conjuntoPedido,
         asistencia?.registros ?? [],
-        asistencia?.sesiones ?? []
+        asistencia?.sesiones ?? [],
       );
       if (exportacion.registros.length === 0) {
         return errorJson(
           "Todavía no hay registros de asistencia de Zoom. Esto no demuestra ausencia de asistentes.",
-          409
+          409,
         );
       }
       const fechaZoom = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Montevideo" })
@@ -106,7 +109,9 @@ export async function GET(request: Request, { params }: Context) {
       const nombreZoom = `asistencia_${fechaZoom}_${instanciaId.replace(/[^a-zA-Z0-9_-]/g, "")}_zoom_${conjuntoPedido}.${formato}`;
       const cuerpoZoom =
         formato === "csv"
-          ? serializarExportacionCsv(exportacion as unknown as Parameters<typeof serializarExportacionCsv>[0])
+          ? serializarExportacionCsv(
+              exportacion as unknown as Parameters<typeof serializarExportacionCsv>[0],
+            )
           : JSON.stringify(
               {
                 instanciaId,
@@ -117,21 +122,25 @@ export async function GET(request: Request, { params }: Context) {
                 exportadoAt: new Date().toISOString(),
                 origenDatos: "base_de_datos",
                 columnas: exportacion.columnas,
-                registros: exportacion.registros
+                registros: exportacion.registros,
               },
               null,
-              2
+              2,
             );
       return new Response(cuerpoZoom, {
         status: 200,
         headers: {
           ...NO_CACHE,
-          "Content-Type": formato === "csv" ? "text/csv; charset=utf-8" : "application/json; charset=utf-8",
-          "Content-Disposition": `attachment; filename="${nombreZoom}"`
-        }
+          "Content-Type":
+            formato === "csv" ? "text/csv; charset=utf-8" : "application/json; charset=utf-8",
+          "Content-Disposition": `attachment; filename="${nombreZoom}"`,
+        },
       });
     } catch {
-      return errorJson("No se pudieron recuperar los datos de asistencia. Intentá nuevamente.", 502);
+      return errorJson(
+        "No se pudieron recuperar los datos de asistencia. Intentá nuevamente.",
+        502,
+      );
     }
   }
   const fuente: FuenteExportacionAsistencia = rawFuente;
@@ -155,9 +164,9 @@ export async function GET(request: Request, { params }: Context) {
       {
         serviceAccountEmail: configuracion.serviceAccountEmail,
         privateKey: descifrarConfiguracion(configuracion.privateKeyCifrada),
-        subject
+        subject,
       },
-      ["https://www.googleapis.com/auth/spreadsheets"]
+      ["https://www.googleapis.com/auth/spreadsheets"],
     );
 
     // Se obtiene la planilla registrada para esta instancia, sin confiar en un
@@ -167,7 +176,7 @@ export async function GET(request: Request, { params }: Context) {
     if (registros.registros.length === 0) {
       return errorJson(
         `La planilla aún no contiene registros brutos de ${fuente === "meet" ? "Meet" : "Reports"}. Esto no demuestra ausencia de asistentes.`,
-        409
+        409,
       );
     }
 
@@ -175,9 +184,10 @@ export async function GET(request: Request, { params }: Context) {
       timeZone: "America/Montevideo",
       day: "2-digit",
       month: "2-digit",
-      year: "numeric"
+      year: "numeric",
     }).formatToParts(instancia.inicioProgramadoAt);
-    const value = (type: "day" | "month" | "year") => dateParts.find((p) => p.type === type)?.value ?? "00";
+    const value = (type: "day" | "month" | "year") =>
+      dateParts.find((p) => p.type === type)?.value ?? "00";
     const fecha = `${value("year")}${value("month")}${value("day")}`;
     const safeId = instanciaId.replace(/[^a-zA-Z0-9_-]/g, "");
     const filename = `asistencia_${fecha}_${safeId}_${fuente}.${formato}`;
@@ -190,15 +200,16 @@ export async function GET(request: Request, { params }: Context) {
             codigoMeet: evento?.codigoReunion ?? null,
             inicioProgramadoAt: instancia.inicioProgramadoAt.toISOString(),
             finProgramadoAt: instancia.finProgramadoAt.toISOString(),
-            exportadoAt: new Date().toISOString()
+            exportadoAt: new Date().toISOString(),
           });
     return new Response(body, {
       status: 200,
       headers: {
         ...NO_CACHE,
-        "Content-Type": formato === "csv" ? "text/csv; charset=utf-8" : "application/json; charset=utf-8",
-        "Content-Disposition": `attachment; filename="${filename}"`
-      }
+        "Content-Type":
+          formato === "csv" ? "text/csv; charset=utf-8" : "application/json; charset=utf-8",
+        "Content-Disposition": `attachment; filename="${filename}"`,
+      },
     });
   } catch {
     // No exponer errores de Google ni parámetros que puedan contener datos personales.

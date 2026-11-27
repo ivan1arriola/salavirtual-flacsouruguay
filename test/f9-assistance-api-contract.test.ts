@@ -2,39 +2,39 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ForbiddenApiError } from "../src/lib/http/api-error";
 
 const mock = vi.hoisted(() => ({
-  session: { user: { id: "admin-1", email: "admin@example.test" } } as {
-    user: { id: string; email: string };
-  } | null,
+  session: { user: { id: "admin-1", email: "admin@example.test" } },
   actor: { id: "admin-1", rol: "ADMINISTRACION", activo: true },
   assign: vi.fn(),
   unassign: vi.fn(),
   sync: vi.fn(),
-  notify: vi.fn()
+  notify: vi.fn(),
 }));
 vi.mock("next/server", () => ({
   NextResponse: {
     json: (body: unknown, init?: { status?: number }) => ({
       body,
-      status: init?.status ?? 200
-    })
-  }
+      status: init?.status ?? 200,
+    }),
+  },
 }));
 vi.mock("@/auth", () => ({ auth: async () => mock.session }));
 vi.mock("@/src/lib/db", () => ({
   db: {
-    instanciaSala: { findUnique: vi.fn().mockResolvedValue({ solicitud: { titulo: "Reunión de prueba" } }) }
-  }
+    instanciaSala: {
+      findUnique: vi.fn().mockResolvedValue({ solicitud: { titulo: "Reunión de prueba" } }),
+    },
+  },
 }));
 vi.mock("@/src/modules/notificaciones/notificaciones.service", () => ({
-  notificarUsuario: (...args: unknown[]) => mock.notify(...args)
+  notificarUsuario: (...args: unknown[]) => mock.notify(...args),
 }));
 vi.mock("@/src/lib/auth/session-actor.adapter", () => ({
-  resolveSessionActor: async () => mock.actor
+  resolveSessionActor: async () => mock.actor,
 }));
 vi.mock("@/src/bootstrap/asistencia.server", () => ({
   asignarAsistente: (...args: unknown[]) => mock.assign(...args),
   desvincularAsistente: (...args: unknown[]) => mock.unassign(...args),
-  sincronizarAsignacionAsistente: (...args: unknown[]) => mock.sync(...args)
+  sincronizarAsignacionAsistente: (...args: unknown[]) => mock.sync(...args),
 }));
 import { POST as assign } from "../app/api/v1/asistencia/asignaciones/route";
 import { POST as unassign } from "../app/api/v1/asistencia/asignaciones/desvincular/route";
@@ -44,7 +44,7 @@ function request() {
   return new Request("https://example.test/api/v1/asistencia/asignaciones", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: "{}"
+    body: "{}",
   });
 }
 
@@ -55,7 +55,7 @@ beforeEach(() => {
     id: "assignment-1",
     instanciaSalaId: "meeting-1",
     asistenteUsuarioId: "assistant-user-1",
-    asistenteEmail: "assistant@example.test"
+    asistenteEmail: "assistant@example.test",
   });
   mock.sync.mockReset().mockResolvedValue({ calendarioAsistente: [], warning: null });
   mock.notify.mockReset().mockResolvedValue(undefined);
@@ -66,7 +66,10 @@ describe("F9: API de asignación usa códigos HTTP coherentes con Google", () =>
     expect(((await assign(request())) as Response).status).toBe(201);
   });
   it("devuelve 202 si Calendar o Meet aún están pendientes", async () => {
-    mock.sync.mockResolvedValueOnce({ calendarioAsistente: [], warning: "Sincronización pendiente." });
+    mock.sync.mockResolvedValueOnce({
+      calendarioAsistente: [],
+      warning: "Sincronización pendiente.",
+    });
     expect(((await assign(request())) as Response).status).toBe(202);
   });
   it("desvincula en 200 si Google quedó sincronizado", async () => {
@@ -78,12 +81,12 @@ describe("F9: API de asignación usa códigos HTTP coherentes con Google", () =>
       expect.anything(),
       {
         usuarioId: "assistant-user-1",
-        email: "assistant@example.test"
+        email: "assistant@example.test",
       },
       expect.objectContaining({
         titulo: "Monitoreo desasignado",
-        tipo: "ASISTENCIA_ASIGNACION"
-      })
+        tipo: "ASISTENCIA_ASIGNACION",
+      }),
     );
   });
   it("devuelve 202 si se guarda la baja pero la notificación queda pendiente", async () => {
@@ -93,7 +96,10 @@ describe("F9: API de asignación usa códigos HTTP coherentes con Google", () =>
     expect(response.body.warning).toContain("notificación");
   });
   it("devuelve 202 ante desvinculación con integración pendiente", async () => {
-    mock.sync.mockResolvedValueOnce({ calendarioAsistente: [], warning: "Sincronización pendiente." });
+    mock.sync.mockResolvedValueOnce({
+      calendarioAsistente: [],
+      warning: "Sincronización pendiente.",
+    });
     expect(((await unassign(request())) as Response).status).toBe(202);
   });
   it("distingue actor prohibido de petición mal formada", async () => {

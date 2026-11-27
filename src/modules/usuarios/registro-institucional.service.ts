@@ -5,7 +5,7 @@ import { completarRegistroInstitucionalSchema } from "./registro-institucional.d
 export async function completarRegistroInstitucional(
   db: PrismaClient,
   actor: SessionActor,
-  rawInput: unknown
+  rawInput: unknown,
 ): Promise<string> {
   if (!actor.activo || actor.rol !== "DOCENTE") {
     throw new Error("Solo un docente activo puede completar este registro.");
@@ -14,7 +14,7 @@ export async function completarRegistroInstitucional(
   return db.$transaction(async (tx) => {
     const user = await tx.usuario.findUnique({
       where: { id: actor.id },
-      include: { docente: { select: { id: true } } }
+      include: { docente: { select: { id: true } } },
     });
     if (!user?.activo || user.rol !== "DOCENTE") {
       throw new Error("La sesión ya no corresponde a un docente activo.");
@@ -23,12 +23,12 @@ export async function completarRegistroInstitucional(
       user.docente ??
       (await tx.docente.create({
         data: { usuarioId: user.id },
-        select: { id: true }
+        select: { id: true },
       }));
     const programa = input.programaId
       ? await tx.programa.findFirst({
           where: { id: input.programaId, activo: true },
-          select: { id: true, nombre: true }
+          select: { id: true, nombre: true },
         })
       : await encontrarOCrearPrograma(tx, input.programaNuevo!);
     if (!programa) {
@@ -38,7 +38,7 @@ export async function completarRegistroInstitucional(
     await tx.docentePrograma.upsert({
       where: { docenteId_programaId: { docenteId: docente.id, programaId: programa.id } },
       create: { docenteId: docente.id, programaId: programa.id, activo: true },
-      update: { activo: true }
+      update: { activo: true },
     });
     await tx.auditoria.create({
       data: {
@@ -46,8 +46,8 @@ export async function completarRegistroInstitucional(
         accion: "REGISTRO_INSTITUCIONAL_COMPLETADO",
         entidadTipo: "Docente",
         entidadId: docente.id,
-        valorNuevo: { programaId: programa.id, programaNombre: programa.nombre }
-      }
+        valorNuevo: { programaId: programa.id, programaNombre: programa.nombre },
+      },
     });
     return programa.id;
   });
@@ -58,7 +58,7 @@ type TransactionClient = Parameters<Parameters<PrismaClient["$transaction"]>[0]>
 async function encontrarOCrearPrograma(tx: TransactionClient, nombre: string) {
   const existing = await tx.programa.findFirst({
     where: { nombre: { equals: nombre, mode: "insensitive" } },
-    select: { id: true, nombre: true, activo: true }
+    select: { id: true, nombre: true, activo: true },
   });
   if (existing && !existing.activo) {
     throw new Error("Ya existe un programa inactivo con ese nombre.");
@@ -68,6 +68,6 @@ async function encontrarOCrearPrograma(tx: TransactionClient, nombre: string) {
   }
   return tx.programa.create({
     data: { nombre, activo: true },
-    select: { id: true, nombre: true }
+    select: { id: true, nombre: true },
   });
 }

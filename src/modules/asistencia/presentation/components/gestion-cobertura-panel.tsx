@@ -9,7 +9,7 @@ import {
   Megaphone,
   UserRoundCheck,
   UserRoundMinus,
-  UserRoundX
+  UserRoundX,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -29,7 +29,7 @@ function canAssign(assistant: Assistant): boolean {
 function AvailabilityOptions({
   assistants,
   applicants,
-  assignedId
+  assignedId,
 }: Readonly<{
   assistants: readonly Assistant[];
   applicants: readonly Readonly<{ assistantId: string }>[];
@@ -44,7 +44,9 @@ function AvailabilityOptions({
         {available.map((assistant) => (
           <option key={assistant.id} value={assistant.id}>
             {assistant.name}
-            {applicants.some((application) => application.assistantId === assistant.id) ? " · Postulada" : ""}
+            {applicants.some((application) => application.assistantId === assistant.id)
+              ? " · Postulada"
+              : ""}
           </option>
         ))}
       </optgroup>
@@ -61,9 +63,11 @@ function AvailabilityOptions({
 
 function UnavailableAssistants({
   assistants,
-  assignedId
+  assignedId,
 }: Readonly<{ assistants: readonly Assistant[]; assignedId: string | null }>) {
-  const unavailable = assistants.filter((assistant) => assistant.id !== assignedId && !canAssign(assistant));
+  const unavailable = assistants.filter(
+    (assistant) => assistant.id !== assignedId && !canAssign(assistant),
+  );
   if (!unavailable.length) {
     return null;
   }
@@ -135,7 +139,7 @@ function localDateTime(iso: string): string {
       day: "2-digit",
       hour: "2-digit",
       minute: "2-digit",
-      hour12: false
+      hour12: false,
     })
     .replace(" ", "T");
 }
@@ -154,7 +158,7 @@ export function GestionCoberturaPanel({
   historical,
   applicants = [],
   assignedId = null,
-  assignmentId = null
+  assignmentId = null,
 }: Readonly<{
   meeting: Meeting;
   assistants: readonly Assistant[];
@@ -165,7 +169,9 @@ export function GestionCoberturaPanel({
 }>) {
   const router = useRouter();
   const [assistantId, setAssistantId] = useState("");
-  const [start, setStart] = useState(() => localDateTime(meeting.inicioMonitoreo ?? meeting.inicio));
+  const [start, setStart] = useState(() =>
+    localDateTime(meeting.inicioMonitoreo ?? meeting.inicio),
+  );
   const [end, setEnd] = useState(() => localDateTime(meeting.finMonitoreo ?? meeting.fin));
   const [reason, setReason] = useState("");
   const [rejection, setRejection] = useState("");
@@ -174,7 +180,8 @@ export function GestionCoberturaPanel({
   const [error, setError] = useState("");
   const [confirmacion, setConfirmacion] = useState<ConfirmacionCoberturaDetalle | null>(null);
   const canManage = !meeting.past && !meeting.cancelled && meeting.estado === "PROGRAMADA";
-  const missingHours = meeting.modalidad === "HIBRIDA" && (!meeting.inicioMonitoreo || !meeting.finMonitoreo);
+  const missingHours =
+    meeting.modalidad === "HIBRIDA" && (!meeting.inicioMonitoreo || !meeting.finMonitoreo);
   const currentPending = historical.find((record) => record.estado === "PENDIENTE");
   const alreadyApproved = historical.find((record) => record.estado === "APROBADO");
 
@@ -182,7 +189,7 @@ export function GestionCoberturaPanel({
     payload: Record<string, string | boolean>,
     successMessage: string,
     url = "/api/v1/asistencia/gestion-cobertura",
-    method = "POST"
+    method = "POST",
   ) {
     setPending(true);
     setError("");
@@ -191,7 +198,7 @@ export function GestionCoberturaPanel({
       const response = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
       });
       const result = await response.json().catch(() => ({}));
       if (!response.ok) {
@@ -221,7 +228,7 @@ export function GestionCoberturaPanel({
         tipo: "reasignacion",
         anterior: meeting.asignado,
         nombre: person.name,
-        asistenteId: id
+        asistenteId: id,
       });
       return;
     }
@@ -231,7 +238,7 @@ export function GestionCoberturaPanel({
   function sendAssignment(id: string) {
     void send(
       { accion: "ASIGNAR_DIRECTO", instanciaSalaId: meeting.id, asistenteTecnicoId: id },
-      "Cobertura guardada. No se envió una convocatoria general."
+      "Cobertura guardada. No se envió una convocatoria general.",
     );
   }
 
@@ -244,13 +251,16 @@ export function GestionCoberturaPanel({
     setConfirmacion(null);
     switch (detail.tipo) {
       case "convocatoria":
-        void send({ accion: "CONVOCAR", instanciaSalaId: meeting.id }, "La convocatoria quedó registrada.");
+        void send(
+          { accion: "CONVOCAR", instanciaSalaId: meeting.id },
+          "La convocatoria quedó registrada.",
+        );
         break;
       case "desasignacion":
         void send(
           { asignacionId: detail.asignacionId },
           "Asistente desasignado. El encuentro continúa pendiente de monitoreo.",
-          "/api/v1/asistencia/asignaciones/desvincular"
+          "/api/v1/asistencia/asignaciones/desvincular",
         );
         break;
       case "reasignacion":
@@ -261,13 +271,13 @@ export function GestionCoberturaPanel({
           { accion: "CAMBIAR_ASISTENCIA", requiereAsistenciaTecnica: false },
           "El encuentro ya no requiere monitoreo.",
           `/api/v1/reuniones/${meeting.requestId}/encuentros/${meeting.id}`,
-          "PATCH"
+          "PATCH",
         );
         break;
       case "aprobacion":
         void send(
           { accion: "APROBAR_RETROACTIVO", registroId: detail.registroId },
-          "Registro aprobado y habilitado para liquidaciones."
+          "Registro aprobado y habilitado para liquidaciones.",
         );
         break;
     }
@@ -294,9 +304,9 @@ export function GestionCoberturaPanel({
         asistenteTecnicoId: assistantId,
         inicioRealAt,
         finRealAt,
-        motivo: reason
+        motivo: reason,
       },
-      "Registro histórico guardado. No afecta liquidaciones hasta aprobarse."
+      "Registro histórico guardado. No afecta liquidaciones hasta aprobarse.",
     );
   }
 
@@ -345,7 +355,7 @@ export function GestionCoberturaPanel({
                 setConfirmacion({
                   tipo: "desasignacion",
                   nombre: meeting.asignado!,
-                  asignacionId: assignmentId
+                  asignacionId: assignmentId,
                 })
               }
             >
@@ -354,8 +364,8 @@ export function GestionCoberturaPanel({
           ) : null}
           {canManage && assignmentId ? (
             <p className="monitoring-workflow-help">
-              La desasignación mantiene el monitoreo pendiente, sin cancelar el encuentro ni convocar al
-              equipo.
+              La desasignación mantiene el monitoreo pendiente, sin cancelar el encuentro ni
+              convocar al equipo.
             </p>
           ) : null}
         </div>
@@ -390,10 +400,14 @@ export function GestionCoberturaPanel({
                   <li key={application.assistantId}>
                     <div>
                       <strong>{assistant?.name ?? "Persona no disponible"}</strong>
-                      <small>Postulación: {localDateTime(application.date).replace("T", " ")}</small>
+                      <small>
+                        Postulación: {localDateTime(application.date).replace("T", " ")}
+                      </small>
                       {application.comment ? <p>{application.comment}</p> : null}
                       {assigned ? <small>Ya asignada</small> : null}
-                      {canManage && !assigned ? <ApplicantAvailability assistant={assistant} /> : null}
+                      {canManage && !assigned ? (
+                        <ApplicantAvailability assistant={assistant} />
+                      ) : null}
                     </div>
                     {canManage && !assigned ? (
                       <button
@@ -425,8 +439,8 @@ export function GestionCoberturaPanel({
           </div>
           <div className="monitoring-workflow-body">
             <p className="monitoring-workflow-help">
-              Las horas y el importe quedan pendientes de aprobación. No se envían convocatorias ni se
-              modifican cohosts o calendarios históricos.
+              Las horas y el importe quedan pendientes de aprobación. No se envían convocatorias ni
+              se modifican cohosts o calendarios históricos.
             </p>
             {currentPending ? (
               <div className="monitoring-historical-review">
@@ -441,7 +455,7 @@ export function GestionCoberturaPanel({
                   {currentPending.minutos} minutos · {currentPending.moneda}{" "}
                   {currentPending.monto.toLocaleString("es-UY", {
                     minimumFractionDigits: 2,
-                    maximumFractionDigits: 2
+                    maximumFractionDigits: 2,
                   })}{" "}
                   estimados
                 </p>
@@ -462,8 +476,8 @@ export function GestionCoberturaPanel({
                         moneda: currentPending.moneda,
                         importe: currentPending.monto.toLocaleString("es-UY", {
                           minimumFractionDigits: 2,
-                          maximumFractionDigits: 2
-                        })
+                          maximumFractionDigits: 2,
+                        }),
                       })
                     }
                   >
@@ -488,9 +502,9 @@ export function GestionCoberturaPanel({
                           {
                             accion: "RECHAZAR_RETROACTIVO",
                             registroId: currentPending.id,
-                            motivo: rejection
+                            motivo: rejection,
                           },
-                          "Registro rechazado."
+                          "Registro rechazado.",
                         )
                       }
                     >
@@ -600,7 +614,10 @@ export function GestionCoberturaPanel({
           <div className="monitoring-workflow-body">
             {canManage ? (
               <>
-                <form className="monitoring-workflow-form monitoring-direct-form" onSubmit={submitFuture}>
+                <form
+                  className="monitoring-workflow-form monitoring-direct-form"
+                  onSubmit={submitFuture}
+                >
                   <label htmlFor="future-assistant">
                     {meeting.asignado ? "Reasignar a otra persona" : "Asignar asistente"}
                   </label>
@@ -626,7 +643,9 @@ export function GestionCoberturaPanel({
                       missingHours ||
                       !assistants.some(
                         (assistant) =>
-                          assistant.id === assistantId && assistant.id !== assignedId && canAssign(assistant)
+                          assistant.id === assistantId &&
+                          assistant.id !== assignedId &&
+                          canAssign(assistant),
                       )
                     }
                   >
@@ -634,16 +653,16 @@ export function GestionCoberturaPanel({
                     {meeting.asignado ? "Reasignar" : "Asignar directamente"}
                   </button>
                   <p className="monitoring-workflow-help">
-                    La disponibilidad se calcula según la agenda y se vuelve a verificar al guardar. No se
-                    envía una convocatoria general.
+                    La disponibilidad se calcula según la agenda y se vuelve a verificar al guardar.
+                    No se envía una convocatoria general.
                   </p>
                   <UnavailableAssistants assistants={assistants} assignedId={assignedId} />
                 </form>
                 {missingHours ? (
                   <div className="monitoring-workflow-banner is-warning" role="status">
                     <CalendarClock size={20} aria-hidden="true" />
-                    Definí llegada y salida desde la edición del encuentro híbrido antes de asignar o
-                    convocar.
+                    Definí llegada y salida desde la edición del encuentro híbrido antes de asignar
+                    o convocar.
                   </div>
                 ) : null}
                 {!meeting.asignado ? (

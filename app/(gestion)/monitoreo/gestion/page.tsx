@@ -13,7 +13,7 @@ const FILTERS = [
   { value: "todas", label: "Todas" },
   { value: "pendientes", label: "Pendientes" },
   { value: "asignadas", label: "Asignadas" },
-  { value: "postulaciones", label: "Con postulaciones" }
+  { value: "postulaciones", label: "Con postulaciones" },
 ] as const;
 
 function matchesFilter(estado: string, assigned: boolean, applicants: number): boolean {
@@ -56,7 +56,7 @@ function relativeDay(value: string | null): string | null {
 }
 
 export default async function GestionMonitoreoListado({
-  searchParams
+  searchParams,
 }: Readonly<{ searchParams: Promise<{ estado?: string; q?: string }> }>) {
   const session = await auth();
   if (!session?.user) {
@@ -76,28 +76,28 @@ export default async function GestionMonitoreoListado({
       requiereAsistenciaTecnica: true,
       estado: "PROGRAMADA",
       inicioProgramadoAt: { gte: now },
-      solicitud: q ? { titulo: { contains: q, mode: "insensitive" } } : undefined
+      solicitud: q ? { titulo: { contains: q, mode: "insensitive" } } : undefined,
     },
     orderBy: [{ inicioProgramadoAt: "asc" }, { id: "asc" }],
     include: {
       solicitud: { select: { titulo: true, modalidad: true } },
       asignaciones: {
         where: { estado: { in: ["ASIGNADO", "ACEPTADO"] } },
-        include: { asistenteTecnico: { include: { usuario: true } } }
+        include: { asistenteTecnico: { include: { usuario: true } } },
       },
       postulaciones: { where: { estado: "ME_INTERESA" }, select: { asistenteTecnicoId: true } },
-      eventosProveedor: { include: { proveedor: true } }
-    }
+      eventosProveedor: { include: { proveedor: true } },
+    },
   });
   const rows = meetings.filter((meeting) =>
-    matchesFilter(estado, meeting.asignaciones.length > 0, meeting.postulaciones.length)
+    matchesFilter(estado, meeting.asignaciones.length > 0, meeting.postulaciones.length),
   );
   const pending = meetings.filter((meeting) => !meeting.asignaciones.length).length;
   const counts = {
     todas: meetings.length,
     pendientes: pending,
     asignadas: meetings.length - pending,
-    postulaciones: meetings.filter((meeting) => meeting.postulaciones.length > 0).length
+    postulaciones: meetings.filter((meeting) => meeting.postulaciones.length > 0).length,
   };
   const days = agruparPorDia(rows, (meeting) => meeting.inicioProgramadoAt, now);
 
@@ -114,7 +114,10 @@ export default async function GestionMonitoreoListado({
         </span>
       </header>
 
-      <nav className="monitoring-view-tabs monitoring-dashboard-tabs" aria-label="Secciones de monitoreo">
+      <nav
+        className="monitoring-view-tabs monitoring-dashboard-tabs"
+        aria-label="Secciones de monitoreo"
+      >
         <Link href="/monitoreo">
           <CalendarDays size={17} aria-hidden="true" />
           Reuniones
@@ -232,11 +235,13 @@ export default async function GestionMonitoreoListado({
                         modality: meeting.modalidadOverride ?? meeting.solicitud.modalidad,
                         schedule: formatTime(inicio) + "–" + formatTime(fin),
                         classSchedule:
-                          formatTime(meeting.inicioProgramadoAt) + "–" + formatTime(meeting.finProgramadoAt),
+                          formatTime(meeting.inicioProgramadoAt) +
+                          "–" +
+                          formatTime(meeting.finProgramadoAt),
                         assistantName: assigned
                           ? [assigned.nombres, assigned.apellidos].filter(Boolean).join(" ")
                           : null,
-                        applicantsCount: meeting.postulaciones.length
+                        applicantsCount: meeting.postulaciones.length,
                       }}
                     />
                   );

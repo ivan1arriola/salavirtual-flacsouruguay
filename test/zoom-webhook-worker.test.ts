@@ -8,10 +8,10 @@ const mocks = vi.hoisted(() => ({
   findUnique: vi.fn(),
   updateInstance: vi.fn(),
   vincular: vi.fn(),
-  ejecucion: vi.fn()
+  ejecucion: vi.fn(),
 }));
 vi.mock("../src/modules/archivos/infrastructure/prisma/zoom-ejecucion-instancia", () => ({
-  aplicarEjecucionZoomAInstancia: mocks.ejecucion
+  aplicarEjecucionZoomAInstancia: mocks.ejecucion,
 }));
 vi.mock("../src/lib/db", () => ({
   db: {
@@ -21,12 +21,12 @@ vi.mock("../src/lib/db", () => ({
         cuentaProveedor: { findFirst: mocks.findFirst },
         ocurrenciaArchivoZoom: { upsert: mocks.upsert },
         eventoProveedor: { findUnique: mocks.findUnique },
-        instanciaSala: { updateMany: mocks.updateInstance }
-      })
-  }
+        instanciaSala: { updateMany: mocks.updateInstance },
+      }),
+  },
 }));
 vi.mock("../src/modules/archivos/infrastructure/prisma/zoom-vinculo-automatico", () => ({
-  vincularAutomaticamenteSiInequivoco: mocks.vincular
+  vincularAutomaticamenteSiInequivoco: mocks.vincular,
 }));
 
 import { procesarWebhooksZoom } from "../src/bootstrap/zoom-webhook-worker";
@@ -41,7 +41,7 @@ const aviso = {
   inicioRealAt: new Date("2026-11-13T10:00:00Z"),
   finRealAt: new Date("2026-11-13T11:00:00Z"),
   titulo: "Clase",
-  intentos: 0
+  intentos: 0,
 };
 
 beforeEach(() => {
@@ -59,17 +59,21 @@ beforeEach(() => {
 
 describe("procesar bandeja Zoom", () => {
   it("crea la ocurrencia por UUID y finaliza solo la instancia vinculada", async () => {
-    expect(await procesarWebhooksZoom("cuenta-1", 2)).toEqual({ procesados: 1, ignorados: 0, errores: 0 });
+    expect(await procesarWebhooksZoom("cuenta-1", 2)).toEqual({
+      procesados: 1,
+      ignorados: 0,
+      errores: 0,
+    });
     expect(mocks.upsert).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { cuentaZoomId_uuid: { cuentaZoomId: "cuenta-1", uuid: "uuid-1" } }
-      })
+        where: { cuentaZoomId_uuid: { cuentaZoomId: "cuenta-1", uuid: "uuid-1" } },
+      }),
     );
     expect(mocks.upsert.mock.calls[0]?.[0].create).not.toHaveProperty("estadoAsistencia");
     expect(mocks.ejecucion).toHaveBeenCalledWith(expect.anything(), {
       instanciaSalaId: "instancia-1",
       cuentaZoomId: "cuenta-1",
-      uuid: "uuid-1"
+      uuid: "uuid-1",
     });
   });
 
@@ -82,7 +86,7 @@ describe("procesar bandeja Zoom", () => {
     expect(await procesarWebhooksZoom("cuenta-1", 2)).toMatchObject({ procesados: 1 });
     expect(mocks.upsert.mock.calls[0]?.[0]).toMatchObject({
       create: { proximoInventarioAt: expect.any(Date) },
-      update: { proximoInventarioAt: expect.any(Date) }
+      update: { proximoInventarioAt: expect.any(Date) },
     });
     expect(mocks.updateInstance).not.toHaveBeenCalled();
   });
@@ -98,7 +102,7 @@ describe("asistencia al finalizar la reunión", () => {
     tipo: "OK",
     estadoReporte: "DISPONIBLE",
     participantes: 3,
-    sesionesNuevas: 3
+    sesionesNuevas: 3,
   } as const;
   // Ignora el barrido de reclamos agotados: la actualización del aviso filtra por su claimHasta.
   const datosDelAviso = () =>
@@ -109,7 +113,7 @@ describe("asistencia al finalizar la reunión", () => {
     expect(await procesarWebhooksZoom("cuenta-1", 2, sync)).toEqual({
       procesados: 1,
       ignorados: 0,
-      errores: 0
+      errores: 0,
     });
     expect(sync).toHaveBeenCalledTimes(1);
     expect(sync).toHaveBeenCalledWith("ocurrencia-1");
@@ -133,11 +137,14 @@ describe("asistencia al finalizar la reunión", () => {
 
   it("un 404 de Zoom deja el aviso en ERROR reintentable", async () => {
     const sync = vi.fn().mockResolvedValue({ tipo: "PENDIENTE", estadoReporte: "NO_DISPONIBLE" });
-    expect(await procesarWebhooksZoom("cuenta-1", 2, sync)).toMatchObject({ procesados: 0, errores: 1 });
+    expect(await procesarWebhooksZoom("cuenta-1", 2, sync)).toMatchObject({
+      procesados: 0,
+      errores: 1,
+    });
     expect(datosDelAviso()).toMatchObject({
       estado: "ERROR",
       errorCodigo: "ReporteZoomPendiente",
-      proximoIntentoAt: expect.any(Date)
+      proximoIntentoAt: expect.any(Date),
     });
   });
 
@@ -153,7 +160,10 @@ describe("asistencia al finalizar la reunión", () => {
 
   it("un conflicto por reprogramación se reintenta, no se da por procesado", async () => {
     const sync = vi.fn().mockResolvedValue({ tipo: "CONFLICTO", motivo: "REPROGRAMADO" });
-    expect(await procesarWebhooksZoom("cuenta-1", 2, sync)).toMatchObject({ procesados: 0, errores: 1 });
+    expect(await procesarWebhooksZoom("cuenta-1", 2, sync)).toMatchObject({
+      procesados: 0,
+      errores: 1,
+    });
     expect(datosDelAviso()).toMatchObject({ estado: "ERROR", errorCodigo: "ReporteZoomConflicto" });
   });
 
@@ -163,8 +173,8 @@ describe("asistencia al finalizar la reunión", () => {
     expect(mocks.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({ intentos: { gte: 10 } }),
-        data: expect.objectContaining({ estado: "FALLIDO", errorCodigo: "INTENTOS_AGOTADOS" })
-      })
+        data: expect.objectContaining({ estado: "FALLIDO", errorCodigo: "INTENTOS_AGOTADOS" }),
+      }),
     );
   });
 
@@ -181,6 +191,10 @@ describe("asistencia al finalizar la reunión", () => {
   });
 
   it("sin función de sincronización se comporta como antes", async () => {
-    expect(await procesarWebhooksZoom("cuenta-1", 2)).toEqual({ procesados: 1, ignorados: 0, errores: 0 });
+    expect(await procesarWebhooksZoom("cuenta-1", 2)).toEqual({
+      procesados: 1,
+      ignorados: 0,
+      errores: 0,
+    });
   });
 });

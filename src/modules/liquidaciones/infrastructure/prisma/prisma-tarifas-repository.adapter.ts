@@ -10,7 +10,7 @@ export function crearPrismaTarifasRepositoryAdapter(db: TarifaDbClient): Tarifas
       const tarifa = await db.tarifaAsistenciaTecnica.findFirst({
         where: { modalidad },
         orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-        select: { id: true, valorHora: true, moneda: true }
+        select: { id: true, valorHora: true, moneda: true },
       });
 
       if (!tarifa) {
@@ -28,8 +28,8 @@ export function crearPrismaTarifasRepositoryAdapter(db: TarifaDbClient): Tarifas
       return {
         id: tarifa.id,
         valorHora,
-        moneda: tarifa.moneda
+        moneda: tarifa.moneda,
       };
-    }
+    },
   };
 }

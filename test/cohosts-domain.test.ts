@@ -3,7 +3,7 @@ import {
   cohostAccountGuidance,
   extraerCohostEmailsDeInstancia,
   extraerCohostsUnificadosDeInstancia,
-  normalizeCohostEmails
+  normalizeCohostEmails,
 } from "@/src/modules/conferencias/api";
 
 describe("normalizeCohostEmails", () => {
@@ -13,7 +13,11 @@ describe("normalizeCohostEmails", () => {
 
   it("normaliza y elimina correos repetidos", () => {
     expect(
-      normalizeCohostEmails(["DOCENTE@FLACSO.EDU.UY", "docente@flacso.edu.uy", "apoyo@flacso.edu.uy"])
+      normalizeCohostEmails([
+        "DOCENTE@FLACSO.EDU.UY",
+        "docente@flacso.edu.uy",
+        "apoyo@flacso.edu.uy",
+      ]),
     ).toEqual(["docente@flacso.edu.uy", "apoyo@flacso.edu.uy"]);
   });
 });
@@ -25,13 +29,13 @@ describe("cohostAccountGuidance", () => {
 
   it("devuelve 'ingresar con cuenta FLACSO' si todos los correos son institucionales", () => {
     expect(cohostAccountGuidance(["docente@flacso.edu.uy", "asistente@flacso.edu.uy"])).toBe(
-      "ingresar con cuenta FLACSO"
+      "ingresar con cuenta FLACSO",
     );
   });
 
   it("devuelve 'ingresar con cuenta Google' si al menos un cohost es Gmail o externo", () => {
     expect(cohostAccountGuidance(["docente@flacso.edu.uy", "avrilarias160504@gmail.com"])).toBe(
-      "ingresar con cuenta Google"
+      "ingresar con cuenta Google",
     );
   });
 
@@ -56,11 +60,11 @@ describe("extraerCohostsUnificadosDeInstancia y extraerCohostEmailsDeInstancia",
           cuentaGoogle: {
             id: "cg-1",
             email: "DOCENTE@FLACSO.EDU.UY",
-            user: { nombres: "Juan", apellidos: "Pérez" }
-          }
-        }
+            user: { nombres: "Juan", apellidos: "Pérez" },
+          },
+        },
       ],
-      cohostEmails: [{ email: "docente@flacso.edu.uy" }, { email: "externo@gmail.com" }]
+      cohostEmails: [{ email: "docente@flacso.edu.uy" }, { email: "externo@gmail.com" }],
     };
 
     const unificados = extraerCohostsUnificadosDeInstancia(meeting);
@@ -68,13 +72,13 @@ describe("extraerCohostsUnificadosDeInstancia y extraerCohostEmailsDeInstancia",
       {
         email: "docente@flacso.edu.uy",
         name: "Juan Pérez",
-        cuentaGoogleId: "cg-1"
+        cuentaGoogleId: "cg-1",
       },
       {
         email: "externo@gmail.com",
         name: undefined,
-        cuentaGoogleId: null
-      }
+        cuentaGoogleId: null,
+      },
     ]);
 
     const emails = extraerCohostEmailsDeInstancia(meeting);
@@ -86,14 +90,14 @@ describe("extraerCohostsUnificadosDeInstancia y extraerCohostEmailsDeInstancia",
       cohosts: [
         { cuentaGoogle: null },
         { cuentaGoogle: { email: "   " } },
-        { cuentaGoogle: { email: "valido@flacso.edu.uy" } }
+        { cuentaGoogle: { email: "valido@flacso.edu.uy" } },
       ],
-      cohostEmails: [{ email: "" }, { email: "  " }, { email: "valido2@flacso.edu.uy" }]
+      cohostEmails: [{ email: "" }, { email: "  " }, { email: "valido2@flacso.edu.uy" }],
     };
 
     expect(extraerCohostEmailsDeInstancia(meeting)).toEqual([
       "valido@flacso.edu.uy",
-      "valido2@flacso.edu.uy"
+      "valido2@flacso.edu.uy",
     ]);
   });
 });

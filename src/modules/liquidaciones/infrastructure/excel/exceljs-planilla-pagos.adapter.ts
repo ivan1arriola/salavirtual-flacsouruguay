@@ -13,7 +13,7 @@ const COLORS = {
   white: "FFFFFFFF",
   alternate: "FFF7FAFC",
   warning: "FFFFF1D6",
-  danger: "FFFDE7E7"
+  danger: "FFFDE7E7",
 } as const;
 
 const visibleColumns = [
@@ -23,14 +23,14 @@ const visibleColumns = [
   { header: "Fecha", width: 14 },
   { header: "Cantidad de horas", width: 18 },
   { header: "Modalidad", width: 15 },
-  { header: "Valor calculado en pesos", width: 24 }
+  { header: "Valor calculado en pesos", width: 24 },
 ] as const;
 
 export function crearExceljsPlanillaPagosAdapter(): PlanillaPagosExporterPort {
   return {
     async generarPlanillaPagosExcel(
       periodo: PeriodoReporteMensual,
-      filas: readonly FilaPlanillaPago[]
+      filas: readonly FilaPlanillaPago[],
     ): Promise<Buffer> {
       const workbook = new ExcelJS.Workbook();
       workbook.creator = "Sala Virtual FLACSO Uruguay";
@@ -50,7 +50,7 @@ export function crearExceljsPlanillaPagosAdapter(): PlanillaPagosExporterPort {
 
       const data = await workbook.xlsx.writeBuffer();
       return Buffer.from(data);
-    }
+    },
   };
 }
 
@@ -59,10 +59,10 @@ function buildSheet(
   name: string,
   filas: readonly FilaPlanillaPago[],
   groupKey: "asistente" | "programa",
-  totalLabel: string
+  totalLabel: string,
 ): void {
   const sheet = workbook.addWorksheet(name, {
-    properties: { defaultRowHeight: 20 }
+    properties: { defaultRowHeight: 20 },
   });
 
   visibleColumns.forEach((column, index) => {
@@ -95,7 +95,7 @@ function buildSheet(
     styleGroupTitle(
       sheet,
       rowIndex,
-      groupKey === "asistente" ? `Asistente: ${groupName}` : `Programa: ${groupName}`
+      groupKey === "asistente" ? `Asistente: ${groupName}` : `Programa: ${groupName}`,
     );
     rowIndex += 1;
     styleColumnHeader(sheet, rowIndex);
@@ -116,7 +116,7 @@ function buildSheet(
         null,
         item.tarifaHora,
         item.montoConfirmado,
-        item.moneda
+        item.moneda,
       ];
 
       row.getCell(4).numFmt = "dd/mm/yyyy";
@@ -150,7 +150,7 @@ function buildSheet(
     const totalCell = sheet.getCell(rowIndex, 7);
     totalCell.value = {
       formula: `SUM(G${firstDataRow}:G${lastDataRow})`,
-      result: roundMoney(total)
+      result: roundMoney(total),
     };
     totalCell.numFmt = '"$" #,##0.00';
     totalCell.font = { bold: true, color: { argb: COLORS.navy } };
@@ -161,7 +161,7 @@ function buildSheet(
       cell.fill = solid(COLORS.tealLight);
       cell.border = {
         top: { style: "medium", color: { argb: COLORS.teal } },
-        bottom: { style: "thin", color: { argb: COLORS.line } }
+        bottom: { style: "thin", color: { argb: COLORS.line } },
       };
     }
     sheet.getRow(rowIndex).height = 26;
@@ -225,7 +225,7 @@ function styleDataRow(row: ExcelJS.Row, indexInGroup: number): void {
     cell.alignment = {
       vertical: "middle",
       wrapText: column <= 3,
-      horizontal: column === 5 || column === 7 ? "right" : "left"
+      horizontal: column === 5 || column === 7 ? "right" : "left",
     };
   }
 }
@@ -240,13 +240,13 @@ function formulaAmount(rowIndex: number, item: FilaPlanillaPago): ExcelJS.CellFo
 
   return {
     formula: `IF(J${rowIndex}<>"UYU","REVISAR "&J${rowIndex},IF(I${rowIndex}<>"",ROUND(I${rowIndex},2),IF(H${rowIndex}="","SIN TARIFA",ROUND(E${rowIndex}*H${rowIndex},2))))`,
-    result
+    result,
   };
 }
 
 function groupRows(
   filas: readonly FilaPlanillaPago[],
-  key: "asistente" | "programa"
+  key: "asistente" | "programa",
 ): ReadonlyArray<readonly [string, readonly FilaPlanillaPago[]]> {
   const groups = new Map<string, FilaPlanillaPago[]>();
   for (const fila of filas) {
@@ -260,7 +260,7 @@ function groupRows(
 
 function compareBy(
   primary: "asistente" | "programa",
-  secondary: "asistente" | "programa"
+  secondary: "asistente" | "programa",
 ): (a: FilaPlanillaPago, b: FilaPlanillaPago) => number {
   return (a, b) =>
     a[primary].localeCompare(b[primary], "es") ||
@@ -274,9 +274,10 @@ function fechaLocalExcel(fecha: Date): Date {
     timeZone: "America/Montevideo",
     year: "numeric",
     month: "2-digit",
-    day: "2-digit"
+    day: "2-digit",
   }).formatToParts(fecha);
-  const value = (type: "year" | "month" | "day") => Number(parts.find((part) => part.type === type)?.value);
+  const value = (type: "year" | "month" | "day") =>
+    Number(parts.find((part) => part.type === type)?.value);
   return new Date(Date.UTC(value("year"), value("month") - 1, value("day"), 12));
 }
 
@@ -297,6 +298,6 @@ function thinBorder(): Partial<ExcelJS.Borders> {
     top: { style: "thin", color: { argb: COLORS.line } },
     left: { style: "thin", color: { argb: COLORS.line } },
     bottom: { style: "thin", color: { argb: COLORS.line } },
-    right: { style: "thin", color: { argb: COLORS.line } }
+    right: { style: "thin", color: { argb: COLORS.line } },
   };
 }

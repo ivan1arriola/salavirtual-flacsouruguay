@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   calcularCambioConciliacionZoom,
   proponerSugerenciasConciliacionZoom,
-  puedeConciliarAsistenciaZoom
+  puedeConciliarAsistenciaZoom,
 } from "../src/modules/archivos/domain/conciliacion-asistencia-zoom.domain";
 import { conciliarAsistenciaZoomUseCase } from "../src/modules/archivos/application/conciliar-asistencia-zoom.use-case";
 import type { ContextoConciliacionZoom } from "../src/modules/archivos/ports";
@@ -17,7 +17,7 @@ const ctx = (extra: Partial<ContextoConciliacionZoom> = {}): ContextoConciliacio
   estadoConciliacion: "SIN_CONCILIAR",
   invitadoReunionId: null,
   esExterno: null,
-  ...extra
+  ...extra,
 });
 const admin = { id: "a", rol: "ADMINISTRACION" as const };
 const titular = { id: "titular", rol: "DOCENTE" as const };
@@ -30,9 +30,9 @@ describe("permisos de conciliación", () => {
     expect(puedeConciliarAsistenciaZoom(titular, ctx())).toBe(true);
     expect(puedeConciliarAsistenciaZoom(otroDocente, ctx())).toBe(false);
     expect(puedeConciliarAsistenciaZoom(asistente, ctx())).toBe(false);
-    expect(puedeConciliarAsistenciaZoom({ id: "x", rol: "DOCENTE" }, ctx({ titularUsuarioId: null }))).toBe(
-      false
-    );
+    expect(
+      puedeConciliarAsistenciaZoom({ id: "x", rol: "DOCENTE" }, ctx({ titularUsuarioId: null })),
+    ).toBe(false);
   });
 });
 
@@ -41,17 +41,17 @@ describe("cambio de conciliación", () => {
     expect(calcularCambioConciliacionZoom({ invitadoReunionId: "inv", externo: false })).toEqual({
       estadoConciliacion: "CONCILIADO",
       invitadoReunionId: "inv",
-      esExterno: false
+      esExterno: false,
     });
     expect(calcularCambioConciliacionZoom({ invitadoReunionId: null, externo: true })).toEqual({
       estadoConciliacion: "EXTERNO",
       invitadoReunionId: null,
-      esExterno: true
+      esExterno: true,
     });
     expect(calcularCambioConciliacionZoom({ invitadoReunionId: null, externo: false })).toEqual({
       estadoConciliacion: "SIN_CONCILIAR",
       invitadoReunionId: null,
-      esExterno: null
+      esExterno: null,
     });
     expect(calcularCambioConciliacionZoom({ invitadoReunionId: "inv", externo: true })).toBeNull();
   });
@@ -60,7 +60,7 @@ describe("cambio de conciliación", () => {
 describe("conciliarAsistenciaZoomUseCase", () => {
   function crear(
     contexto: ContextoConciliacionZoom | null,
-    aplicar: any = vi.fn(async () => ({ tipo: "APLICADO", version: 3 }))
+    aplicar: any = vi.fn(async () => ({ tipo: "APLICADO", version: 3 })),
   ) {
     const repo = { obtenerContexto: vi.fn(async () => contexto), aplicar };
     return {
@@ -71,8 +71,8 @@ describe("conciliarAsistenciaZoomUseCase", () => {
           invitadoReunionId: "inv",
           externo: false,
           version: 2,
-          ...extra
-        })
+          ...extra,
+        }),
     };
   }
 
@@ -91,7 +91,7 @@ describe("conciliarAsistenciaZoomUseCase", () => {
       "r1",
       2,
       { estadoConciliacion: "CONCILIADO", invitadoReunionId: "inv", esExterno: false },
-      "titular"
+      "titular",
     );
   });
 
@@ -104,7 +104,7 @@ describe("conciliarAsistenciaZoomUseCase", () => {
   it("conflicto detectado por el repositorio al escribir (edición simultánea)", async () => {
     const { ejecutar } = crear(
       ctx(),
-      vi.fn(async () => ({ tipo: "CONFLICTO" }))
+      vi.fn(async () => ({ tipo: "CONFLICTO" })),
     );
     expect(await ejecutar(admin)).toEqual({ tipo: "CONFLICTO" });
   });
@@ -112,7 +112,7 @@ describe("conciliarAsistenciaZoomUseCase", () => {
   it("invitado de otro encuentro: se rechaza", async () => {
     const { ejecutar } = crear(
       ctx(),
-      vi.fn(async () => ({ tipo: "INVITADO_AJENO" }))
+      vi.fn(async () => ({ tipo: "INVITADO_AJENO" })),
     );
     expect(await ejecutar(admin)).toEqual({ tipo: "ERROR", codigo: "INVITADO_AJENO" });
   });
@@ -121,7 +121,7 @@ describe("conciliarAsistenciaZoomUseCase", () => {
     const { repo, ejecutar } = crear(ctx({ instanciaId: "i1" }));
     expect(await ejecutar(admin, { instanciaId: "otra" })).toEqual({
       tipo: "ERROR",
-      codigo: "NO_ENCONTRADO"
+      codigo: "NO_ENCONTRADO",
     });
     expect(repo.aplicar).not.toHaveBeenCalled();
     expect(await ejecutar(admin, { instanciaId: "i1" })).toMatchObject({ tipo: "OK" });
@@ -131,7 +131,7 @@ describe("conciliarAsistenciaZoomUseCase", () => {
     expect(await crear(null).ejecutar(admin)).toEqual({ tipo: "ERROR", codigo: "NO_ENCONTRADO" });
     expect(await crear(ctx()).ejecutar(admin, { externo: true })).toEqual({
       tipo: "ERROR",
-      codigo: "PETICION_INVALIDA"
+      codigo: "PETICION_INVALIDA",
     });
   });
 });
@@ -140,14 +140,14 @@ describe("sugerencias dentro de la serie", () => {
   const previo = (clave: string, email: string) => ({ claveParticipante: clave, email });
   const invitados = [
     { id: "i-ana", email: "ana@flacso.edu.uy" },
-    { id: "i-luis", email: "luis@flacso.edu.uy" }
+    { id: "i-luis", email: "luis@flacso.edu.uy" },
   ];
 
   it("sugiere solo con identificador fiable y un invitado de este encuentro con el mismo correo del vínculo previo", () => {
     const r = proponerSugerenciasConciliacionZoom(
       [{ registroId: "r1", claveParticipante: "id:p1" }],
       [previo("id:p1", "Ana@Flacso.edu.uy")],
-      invitados
+      invitados,
     );
     expect(r).toEqual([{ registroId: "r1", invitadoReunionId: "i-ana" }]);
   });
@@ -157,22 +157,22 @@ describe("sugerencias dentro de la serie", () => {
       proponerSugerenciasConciliacionZoom(
         [{ registroId: "r1", claveParticipante: "sesion:abc" }],
         [previo("sesion:abc", "ana@flacso.edu.uy")],
-        invitados
-      )
+        invitados,
+      ),
     ).toEqual([]);
     expect(
       proponerSugerenciasConciliacionZoom(
         [{ registroId: "r1", claveParticipante: "id:p1" }],
         [previo("id:p1", "ana@flacso.edu.uy"), previo("id:p1", "luis@flacso.edu.uy")],
-        invitados
-      )
+        invitados,
+      ),
     ).toEqual([]);
     expect(
       proponerSugerenciasConciliacionZoom(
         [{ registroId: "r1", claveParticipante: "id:p1" }],
         [previo("id:p1", "nadie@x.com")],
-        invitados
-      )
+        invitados,
+      ),
     ).toEqual([]);
   });
 
@@ -180,10 +180,10 @@ describe("sugerencias dentro de la serie", () => {
     const r = proponerSugerenciasConciliacionZoom(
       [
         { registroId: "r1", claveParticipante: "id:p1" },
-        { registroId: "r2", claveParticipante: "id:p2" }
+        { registroId: "r2", claveParticipante: "id:p2" },
       ],
       [previo("id:p1", "ana@flacso.edu.uy"), previo("id:p2", "ana@flacso.edu.uy")],
-      invitados
+      invitados,
     );
     expect(r).toEqual([]);
   });

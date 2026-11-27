@@ -1,6 +1,16 @@
 "use client";
 
-import { ChevronDown, MailPlus, Pencil, Plus, Save, Search, Trash2, UserMinus, UserPlus } from "lucide-react";
+import {
+  ChevronDown,
+  MailPlus,
+  Pencil,
+  Plus,
+  Save,
+  Search,
+  Trash2,
+  UserMinus,
+  UserPlus,
+} from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { filterPrograms, type ProgramFilterState } from "./program-members-config.domain";
@@ -35,7 +45,7 @@ export function ProgramMembersConfig({
   deleteProgramAction,
   addAction,
   inviteAction,
-  removeAction
+  removeAction,
 }: Readonly<{
   programs: readonly Program[];
   teachers: readonly Teacher[];
@@ -66,12 +76,17 @@ export function ProgramMembersConfig({
             <Plus size={17} />
             Nuevo programa
           </summary>
-          <form className="program-definition-form program-create-form" action={createProgramAction}>
+          <form
+            className="program-definition-form program-create-form"
+            action={createProgramAction}
+          >
             <input name="contexto" type="hidden" value={returnContext} />
             <div className="program-definition-heading">
               <div>
                 <strong>Crear programa</strong>
-                <small>Quedará disponible inmediatamente para asociaciones y reuniones si está activo.</small>
+                <small>
+                  Quedará disponible inmediatamente para asociaciones y reuniones si está activo.
+                </small>
               </div>
             </div>
             <label className="field field-wide">
@@ -129,7 +144,7 @@ export function ProgramMembersConfig({
               [
                 ["todos", `Todos ${programs.length}`],
                 ["activos", `Activos ${activeCount}`],
-                ["inactivos", `Inactivos ${programs.length - activeCount}`]
+                ["inactivos", `Inactivos ${programs.length - activeCount}`],
               ] as const
             ).map(([value, label]) => (
               <button
@@ -161,8 +176,8 @@ export function ProgramMembersConfig({
           const sortedMembers = [...program.members].sort((left, right) =>
             `${left.apellidos ?? ""} ${left.nombres}`.localeCompare(
               `${right.apellidos ?? ""} ${right.nombres}`,
-              "es"
-            )
+              "es",
+            ),
           );
 
           return (
@@ -249,8 +264,8 @@ export function ProgramMembersConfig({
                       <div>
                         <strong>Eliminación permanente</strong>
                         <p>
-                          Solo se eliminará si no tiene reuniones históricas. Si las tiene, debés marcarlo
-                          como inactivo para conservar el historial.
+                          Solo se eliminará si no tiene reuniones históricas. Si las tiene, debés
+                          marcarlo como inactivo para conservar el historial.
                         </p>
                       </div>
                       <form action={deleteProgramAction}>
@@ -258,7 +273,12 @@ export function ProgramMembersConfig({
                         <input name="programaId" type="hidden" value={program.id} />
                         <label className="field">
                           <span>Escribí ELIMINAR para confirmar</span>
-                          <input name="confirmacion" pattern="ELIMINAR" required autoComplete="off" />
+                          <input
+                            name="confirmacion"
+                            pattern="ELIMINAR"
+                            required
+                            autoComplete="off"
+                          />
                         </label>
                         <button className="secondary-action danger-action" type="submit">
                           <Trash2 size={16} />
@@ -372,7 +392,10 @@ export function ProgramMembersConfig({
                         </button>
                       </form>
 
-                      <form className="program-member-editor program-member-invite" action={inviteAction}>
+                      <form
+                        className="program-member-editor program-member-invite"
+                        action={inviteAction}
+                      >
                         <div className="program-member-editor-heading">
                           <h3>
                             <MailPlus size={18} />
@@ -402,7 +425,8 @@ export function ProgramMembersConfig({
                     </div>
                   ) : (
                     <p className="program-inactive-help">
-                      El programa está inactivo. Podés consultar o quitar integrantes, pero no agregar nuevos.
+                      El programa está inactivo. Podés consultar o quitar integrantes, pero no
+                      agregar nuevos.
                     </p>
                   )}
                 </section>

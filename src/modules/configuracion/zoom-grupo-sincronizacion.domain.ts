@@ -1,6 +1,11 @@
 import { esCuentaAsignable } from "../reuniones/cuenta-asignable.domain";
 
-export type MiembroGrupoZoom = Readonly<{ id: string; email: string; nombre: string; licenciado: boolean }>;
+export type MiembroGrupoZoom = Readonly<{
+  id: string;
+  email: string;
+  nombre: string;
+  licenciado: boolean;
+}>;
 
 export type CuentaZoomActual = Readonly<{
   id: string;
@@ -14,7 +19,11 @@ export type CuentaZoomActual = Readonly<{
 
 export type PlanSincronizacionZoom = Readonly<{
   crear: readonly Readonly<{ miembro: MiembroGrupoZoom; prioridad: number }>[];
-  actualizar: readonly Readonly<{ cuentaId: string; miembro: MiembroGrupoZoom; reactivar: boolean }>[];
+  actualizar: readonly Readonly<{
+    cuentaId: string;
+    miembro: MiembroGrupoZoom;
+    reactivar: boolean;
+  }>[];
   desactivar: readonly string[];
   marcarFuera: readonly Readonly<{ cuentaId: string; reunionesFuturas: number }>[];
   /** Miembros que Zoom no informa como licenciados: sus cuentas no reciben reuniones nuevas. */
@@ -25,7 +34,11 @@ export type PlanSincronizacionZoom = Readonly<{
 }>;
 
 /** Cuántas de las cuentas que hoy reciben reuniones nuevas dejarían de recibirlas. */
-export type RiesgoSincronizacionZoom = Readonly<{ masivo: boolean; afectadas: number; asignables: number }>;
+export type RiesgoSincronizacionZoom = Readonly<{
+  masivo: boolean;
+  afectadas: number;
+  asignables: number;
+}>;
 
 const PRIORIDAD_INICIAL = 100;
 
@@ -46,17 +59,17 @@ function plural(n: number, singular: string, pluralForma: string): string {
 export function planificarSincronizacionGrupoZoom(
   miembros: readonly MiembroGrupoZoom[],
   cuentas: readonly CuentaZoomActual[],
-  reunionesFuturasPorCuenta: Readonly<Record<string, number>>
+  reunionesFuturasPorCuenta: Readonly<Record<string, number>>,
 ): PlanSincronizacionZoom {
   // Un correo repetido en el grupo cuenta una sola vez: gana el primero.
   const unicos = miembros.filter(
     (miembro, indice) =>
-      miembros.findIndex((otro) => normalizar(otro.email) === normalizar(miembro.email)) === indice
+      miembros.findIndex((otro) => normalizar(otro.email) === normalizar(miembro.email)) === indice,
   );
 
   const porId = unicos.map((miembro) => ({
     miembro,
-    cuenta: cuentas.find((cuenta) => cuenta.externalAccountId === miembro.id) ?? null
+    cuenta: cuentas.find((cuenta) => cuenta.externalAccountId === miembro.id) ?? null,
   }));
   const tomadasPorId = new Set(porId.flatMap(({ cuenta }) => (cuenta ? [cuenta.id] : [])));
   const libres = cuentas.filter((cuenta) => !tomadasPorId.has(cuenta.id));
@@ -66,28 +79,33 @@ export function planificarSincronizacionGrupoZoom(
       cuenta ??
       libres.find(
         (libre) =>
-          libre.emailOrganizador !== null && normalizar(libre.emailOrganizador) === normalizar(miembro.email)
+          libre.emailOrganizador !== null &&
+          normalizar(libre.emailOrganizador) === normalizar(miembro.email),
       ) ??
-      null
+      null,
   }));
 
-  const primeraPrioridad = cuentas.reduce((max, c) => Math.max(max, c.prioridad), PRIORIDAD_INICIAL - 1) + 1;
+  const primeraPrioridad =
+    cuentas.reduce((max, c) => Math.max(max, c.prioridad), PRIORIDAD_INICIAL - 1) + 1;
   const crear = emparejados
     .filter(({ cuenta }) => cuenta === null)
     .map(({ miembro }, indice) => ({ miembro, prioridad: primeraPrioridad + indice }));
   const actualizar = emparejados.flatMap(({ miembro, cuenta }) =>
-    cuenta ? [{ cuentaId: cuenta.id, miembro, reactivar: cuenta.fueraDelGrupoAt !== null }] : []
+    cuenta ? [{ cuentaId: cuenta.id, miembro, reactivar: cuenta.fueraDelGrupoAt !== null }] : [],
   );
   const sinLicencia = unicos.filter(({ licenciado }) => !licenciado);
   const pierdenLicencia = emparejados.flatMap(({ miembro, cuenta }) =>
-    cuenta?.tieneLicencia && !miembro.licenciado ? [{ cuentaId: cuenta.id, miembro }] : []
+    cuenta?.tieneLicencia && !miembro.licenciado ? [{ cuentaId: cuenta.id, miembro }] : [],
   );
 
   const enElGrupo = new Set(actualizar.map(({ cuentaId }) => cuentaId));
   const salieron = cuentas
     .filter((cuenta) => !enElGrupo.has(cuenta.id))
     .filter((cuenta) => cuenta.activa || cuenta.fueraDelGrupoAt === null)
-    .map((cuenta) => ({ cuentaId: cuenta.id, reunionesFuturas: reunionesFuturasPorCuenta[cuenta.id] ?? 0 }));
+    .map((cuenta) => ({
+      cuentaId: cuenta.id,
+      reunionesFuturas: reunionesFuturasPorCuenta[cuenta.id] ?? 0,
+    }));
   const desactivar = salieron
     .filter(({ reunionesFuturas }) => reunionesFuturas === 0)
     .map(({ cuentaId }) => cuentaId);
@@ -97,7 +115,7 @@ export function planificarSincronizacionGrupoZoom(
     plural(crear.length, "nueva", "nuevas"),
     plural(desactivar.length, "desactivada", "desactivadas"),
     `${marcarFuera.length} fuera del grupo con reuniones`,
-    ...(sinLicencia.length > 0 ? [avisoLicencias(sinLicencia.length, pierdenLicencia.length)] : [])
+    ...(sinLicencia.length > 0 ? [avisoLicencias(sinLicencia.length, pierdenLicencia.length)] : []),
   ].join(", ");
 
   return { crear, actualizar, desactivar, marcarFuera, sinLicencia, pierdenLicencia, resumen };
@@ -116,7 +134,7 @@ function avisoLicencias(sinLicencia: number, pierden: number): string {
  */
 export function evaluarRiesgoSincronizacion(
   plan: Pick<PlanSincronizacionZoom, "desactivar" | "marcarFuera">,
-  cuentas: readonly CuentaZoomActual[]
+  cuentas: readonly CuentaZoomActual[],
 ): RiesgoSincronizacionZoom {
   const asignables = cuentas.filter(esCuentaAsignable).map(({ id }) => id);
   const salen = new Set([...plan.desactivar, ...plan.marcarFuera.map(({ cuentaId }) => cuentaId)]);

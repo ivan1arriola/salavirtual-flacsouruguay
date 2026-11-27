@@ -9,17 +9,21 @@ import {
   type FilaResumenAsistente,
   type PeriodoMes,
   type PeriodoReporteMensual,
-  type RegistroAsistenciaLiquidacion
+  type RegistroAsistenciaLiquidacion,
 } from "../../domain";
 import type {
   CandidatoReporteMensual,
   LiquidacionesRepositoryPort,
-  ReservaEnvioReporteInput
+  ReservaEnvioReporteInput,
 } from "../../ports";
 
-export function crearPrismaLiquidacionesRepositoryAdapter(db: PrismaClient): LiquidacionesRepositoryPort {
+export function crearPrismaLiquidacionesRepositoryAdapter(
+  db: PrismaClient,
+): LiquidacionesRepositoryPort {
   return {
-    async obtenerFilasPlanillaPagos(periodo: PeriodoReporteMensual): Promise<readonly FilaPlanillaPago[]> {
+    async obtenerFilasPlanillaPagos(
+      periodo: PeriodoReporteMensual,
+    ): Promise<readonly FilaPlanillaPago[]> {
       const assignments = await db.asignacionAsistenciaTecnica.findMany({
         where: {
           estado: { in: ["ASIGNADO", "ACEPTADO"] },
@@ -29,9 +33,9 @@ export function crearPrismaLiquidacionesRepositoryAdapter(db: PrismaClient): Liq
             solicitud: { estado: { not: "CANCELADA" } },
             inicioProgramadoAt: {
               gte: new Date(periodo.desdeMs),
-              lt: new Date(periodo.hastaMs)
-            }
-          }
+              lt: new Date(periodo.hastaMs),
+            },
+          },
         },
         include: {
           asistenteTecnico: { include: { usuario: true } },
@@ -39,12 +43,12 @@ export function crearPrismaLiquidacionesRepositoryAdapter(db: PrismaClient): Liq
             include: {
               solicitud: {
                 include: {
-                  docentePrograma: { include: { programa: true } }
-                }
-              }
-            }
-          }
-        }
+                  docentePrograma: { include: { programa: true } },
+                },
+              },
+            },
+          },
+        },
       });
 
       return assignments.map((assignment) => {
@@ -52,11 +56,11 @@ export function crearPrismaLiquidacionesRepositoryAdapter(db: PrismaClient): Liq
         const minutes = calcularMinutos(
           {
             inicio: meeting.inicioAsistenciaTecnicaAt ?? meeting.inicioProgramadoAt,
-            fin: meeting.finAsistenciaTecnicaAt ?? meeting.finProgramadoAt
+            fin: meeting.finAsistenciaTecnicaAt ?? meeting.finProgramadoAt,
           },
           assignment.minutosConfirmados,
           meeting.minutosReportados,
-          { inicio: meeting.inicioRealAt, fin: meeting.finRealAt }
+          { inicio: meeting.inicioRealAt, fin: meeting.finRealAt },
         );
         const tarifaHora = assignment.tarifaHoraAplicada?.toNumber() ?? null;
         const montoConfirmado = assignment.montoConfirmado?.toNumber() ?? null;
@@ -72,7 +76,7 @@ export function crearPrismaLiquidacionesRepositoryAdapter(db: PrismaClient): Liq
           tarifaHora,
           montoConfirmado,
           montoCalculado: calcularMonto(montoConfirmado, tarifaHora, minutes),
-          moneda: assignment.moneda ?? "UYU"
+          moneda: assignment.moneda ?? "UYU",
         };
       });
     },
@@ -81,7 +85,7 @@ export function crearPrismaLiquidacionesRepositoryAdapter(db: PrismaClient): Liq
       const [assistants, assignments] = await Promise.all([
         db.asistenteTecnico.findMany({
           orderBy: { usuario: { nombres: "asc" } },
-          include: { usuario: true }
+          include: { usuario: true },
         }),
         db.asignacionAsistenciaTecnica.findMany({
           where: {
@@ -92,12 +96,12 @@ export function crearPrismaLiquidacionesRepositoryAdapter(db: PrismaClient): Liq
               solicitud: { estado: { not: "CANCELADA" } },
               inicioProgramadoAt: {
                 gte: new Date(periodo.desdeMs),
-                lt: new Date(periodo.hastaMs)
-              }
-            }
+                lt: new Date(periodo.hastaMs),
+              },
+            },
           },
-          include: { instancia: { include: { solicitud: true } } }
-        })
+          include: { instancia: { include: { solicitud: true } } },
+        }),
       ]);
 
       return resumirAsignacionesPorAsistente(
@@ -107,18 +111,18 @@ export function crearPrismaLiquidacionesRepositoryAdapter(db: PrismaClient): Liq
           slug,
           nombre: `${usuario.nombres} ${usuario.apellidos ?? ""}`.trim(),
           email: usuario.emailPrincipal,
-          activo: usuario.activo
+          activo: usuario.activo,
         })),
         assignments.map((assignment) => {
           const meeting = assignment.instancia;
           const minutes = calcularMinutos(
             {
               inicio: meeting.inicioAsistenciaTecnicaAt ?? meeting.inicioProgramadoAt,
-              fin: meeting.finAsistenciaTecnicaAt ?? meeting.finProgramadoAt
+              fin: meeting.finAsistenciaTecnicaAt ?? meeting.finProgramadoAt,
             },
             assignment.minutosConfirmados,
             meeting.minutosReportados,
-            { inicio: meeting.inicioRealAt, fin: meeting.finRealAt }
+            { inicio: meeting.inicioRealAt, fin: meeting.finRealAt },
           );
           const rate = assignment.tarifaHoraAplicada?.toNumber() ?? null;
           return {
@@ -126,15 +130,15 @@ export function crearPrismaLiquidacionesRepositoryAdapter(db: PrismaClient): Liq
             modalidad: meeting.modalidadOverride ?? meeting.solicitud.modalidad,
             minutos: minutes,
             monto: calcularMonto(assignment.montoConfirmado?.toNumber() ?? null, rate, minutes),
-            moneda: assignment.moneda ?? "UYU"
+            moneda: assignment.moneda ?? "UYU",
           };
-        })
+        }),
       );
     },
 
     async obtenerCandidatosReporteMensual(
       periodo: PeriodoReporteMensual,
-      _ahora: Date
+      _ahora: Date,
     ): Promise<readonly CandidatoReporteMensual[]> {
       const rango = { desde: new Date(periodo.desdeMs), hasta: new Date(periodo.hastaMs) };
       const candidatos = await db.asistenteTecnico.findMany({
@@ -142,8 +146,10 @@ export function crearPrismaLiquidacionesRepositoryAdapter(db: PrismaClient): Liq
         select: {
           id: true,
           usuarioId: true,
-          usuario: { select: { nombres: true, apellidos: true, emailPrincipal: true, activo: true } }
-        }
+          usuario: {
+            select: { nombres: true, apellidos: true, emailPrincipal: true, activo: true },
+          },
+        },
       });
 
       const resultado: CandidatoReporteMensual[] = [];
@@ -157,10 +163,10 @@ export function crearPrismaLiquidacionesRepositoryAdapter(db: PrismaClient): Liq
               requiereAsistenciaTecnica: true,
               estado: { notIn: ["CANCELADA", "NO_REALIZADA"] },
               inicioProgramadoAt: { gte: rango.desde, lt: rango.hasta },
-              solicitud: { estado: { not: "CANCELADA" } }
-            }
+              solicitud: { estado: { not: "CANCELADA" } },
+            },
           },
-          include: { instancia: { include: { solicitud: true } } }
+          include: { instancia: { include: { solicitud: true } } },
         });
 
         const registros: RegistroAsistenciaLiquidacion[] = asignaciones.map((asignacion) => {
@@ -168,17 +174,17 @@ export function crearPrismaLiquidacionesRepositoryAdapter(db: PrismaClient): Liq
           const minutes = calcularMinutos(
             {
               inicio: meeting.inicioAsistenciaTecnicaAt ?? meeting.inicioProgramadoAt,
-              fin: meeting.finAsistenciaTecnicaAt ?? meeting.finProgramadoAt
+              fin: meeting.finAsistenciaTecnicaAt ?? meeting.finProgramadoAt,
             },
             asignacion.minutosConfirmados,
             meeting.minutosReportados,
-            { inicio: meeting.inicioRealAt, fin: meeting.finRealAt }
+            { inicio: meeting.inicioRealAt, fin: meeting.finRealAt },
           );
           const rate = asignacion.tarifaHoraAplicada?.toNumber() ?? null;
           return {
             modalidad: meeting.modalidadOverride ?? meeting.solicitud.modalidad,
             minutos: minutes,
-            monto: calcularMonto(asignacion.montoConfirmado?.toNumber() ?? null, rate, minutes)
+            monto: calcularMonto(asignacion.montoConfirmado?.toNumber() ?? null, rate, minutes),
           };
         });
 
@@ -195,7 +201,7 @@ export function crearPrismaLiquidacionesRepositoryAdapter(db: PrismaClient): Liq
           nombre,
           destinatario: asistente.usuario.emailPrincipal,
           activo: asistente.usuario.activo,
-          resumen
+          resumen,
         });
       }
 
@@ -206,33 +212,37 @@ export function crearPrismaLiquidacionesRepositoryAdapter(db: PrismaClient): Liq
       const [administradores, configuracion] = await Promise.all([
         db.usuario.findMany({
           where: { rol: "ADMINISTRACION", activo: true, emailPrincipal: { not: null } },
-          select: { emailPrincipal: true }
+          select: { emailPrincipal: true },
         }),
         db.configuracionAsistenciaTecnica.findUnique({
           where: { id: "principal" },
-          select: { correosCopiaReporteMensual: true }
-        })
+          select: { correosCopiaReporteMensual: true },
+        }),
       ]);
 
       const correos = [
-        ...administradores.flatMap(({ emailPrincipal }) => (emailPrincipal ? [emailPrincipal] : [])),
-        ...(configuracion?.correosCopiaReporteMensual ?? [])
+        ...administradores.flatMap(({ emailPrincipal }) =>
+          emailPrincipal ? [emailPrincipal] : [],
+        ),
+        ...(configuracion?.correosCopiaReporteMensual ?? []),
       ];
 
       return [...new Set(correos.map((e) => e.trim().toLowerCase()).filter(Boolean))];
     },
 
-    async reservarEnvioReporte(input: ReservaEnvioReporteInput): Promise<Readonly<{ id: string }> | null> {
+    async reservarEnvioReporte(
+      input: ReservaEnvioReporteInput,
+    ): Promise<Readonly<{ id: string }> | null> {
       const where = {
         asistenteTecnicoId_periodo: {
           asistenteTecnicoId: input.asistenteTecnicoId,
-          periodo: input.periodo
-        }
+          periodo: input.periodo,
+        },
       } as const;
 
       const existing = await db.envioReporteMensualAsistencia.findUnique({
         where,
-        select: { id: true, estado: true }
+        select: { id: true, estado: true },
       });
 
       const snapshot = {
@@ -241,7 +251,7 @@ export function crearPrismaLiquidacionesRepositoryAdapter(db: PrismaClient): Liq
         minutosHibridos: input.resumen.minutosHibridos,
         reuniones: input.resumen.reuniones,
         destinatario: input.destinatario,
-        copias: [...input.copias]
+        copias: [...input.copias],
       };
 
       if (existing) {
@@ -254,8 +264,8 @@ export function crearPrismaLiquidacionesRepositoryAdapter(db: PrismaClient): Liq
             estado: "PENDIENTE",
             intentos: { increment: 1 },
             ultimoError: null,
-            ...snapshot
-          }
+            ...snapshot,
+          },
         });
         return claimed.count === 1 ? { id: existing.id } : null;
       }
@@ -265,12 +275,17 @@ export function crearPrismaLiquidacionesRepositoryAdapter(db: PrismaClient): Liq
           data: {
             asistenteTecnicoId: input.asistenteTecnicoId,
             periodo: input.periodo,
-            ...snapshot
+            ...snapshot,
           },
-          select: { id: true }
+          select: { id: true },
         });
       } catch (error) {
-        if (typeof error === "object" && error !== null && "code" in error && error.code === "P2002") {
+        if (
+          typeof error === "object" &&
+          error !== null &&
+          "code" in error &&
+          error.code === "P2002"
+        ) {
           return null;
         }
         throw error;
@@ -280,15 +295,15 @@ export function crearPrismaLiquidacionesRepositoryAdapter(db: PrismaClient): Liq
     async marcarEnvioReporteExitoso(id: string, enviadoAt: Date): Promise<void> {
       await db.envioReporteMensualAsistencia.update({
         where: { id },
-        data: { estado: "ENVIADO", enviadoAt, ultimoError: null }
+        data: { estado: "ENVIADO", enviadoAt, ultimoError: null },
       });
     },
 
     async marcarEnvioReporteError(id: string, error: string): Promise<void> {
       await db.envioReporteMensualAsistencia.update({
         where: { id },
-        data: { estado: "ERROR", ultimoError: error.slice(0, 1000) }
+        data: { estado: "ERROR", ultimoError: error.slice(0, 1000) },
       });
-    }
+    },
   };
 }

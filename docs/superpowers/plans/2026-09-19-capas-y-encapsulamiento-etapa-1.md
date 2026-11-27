@@ -98,7 +98,7 @@ function scanModules(dir: string): FileInfo[] {
       const moduleName = parts[0];
       const layerCandidate = parts[1];
       const layer = ["domain", "ports", "application", "infrastructure", "presentation"].includes(
-        layerCandidate
+        layerCandidate,
       )
         ? (layerCandidate as FileInfo["layer"])
         : undefined;
@@ -110,7 +110,7 @@ function scanModules(dir: string): FileInfo[] {
         moduleName,
         layer,
         content,
-        imports: extractImports(content)
+        imports: extractImports(content),
       });
     }
   }
@@ -139,7 +139,7 @@ describe("fronteras arquitectonicas de capas y modulos", () => {
               imp.startsWith("next") ||
               imp.startsWith("react") ||
               imp.includes("googleapis") ||
-              imp.includes("nodemailer")
+              imp.includes("nodemailer"),
           );
           expect(forbidden, `Imports prohibidos en domain: ${forbidden.join(", ")}`).toEqual([]);
         });
@@ -154,7 +154,7 @@ describe("fronteras arquitectonicas de capas y modulos", () => {
               imp.includes("/application") ||
               imp.includes("@prisma/client") ||
               imp.startsWith("next") ||
-              imp.startsWith("react")
+              imp.startsWith("react"),
           );
           expect(forbidden, `Imports prohibidos en ports: ${forbidden.join(", ")}`).toEqual([]);
         });
@@ -168,18 +168,22 @@ describe("fronteras arquitectonicas de capas y modulos", () => {
               imp.includes("/presentation") ||
               imp.includes("@prisma/client") ||
               imp.startsWith("next") ||
-              imp.startsWith("react")
+              imp.startsWith("react"),
           );
-          expect(forbidden, `Imports prohibidos en application: ${forbidden.join(", ")}`).toEqual([]);
+          expect(forbidden, `Imports prohibidos en application: ${forbidden.join(", ")}`).toEqual(
+            [],
+          );
         });
       }
 
       if (file.layer === "presentation") {
         it(`[presentation] ${file.relPath} no importa infraestructura ni Prisma directamente`, () => {
           const forbidden = file.imports.filter(
-            (imp) => imp.includes("/infrastructure") || imp.includes("@prisma/client")
+            (imp) => imp.includes("/infrastructure") || imp.includes("@prisma/client"),
           );
-          expect(forbidden, `Imports prohibidos en presentation: ${forbidden.join(", ")}`).toEqual([]);
+          expect(forbidden, `Imports prohibidos en presentation: ${forbidden.join(", ")}`).toEqual(
+            [],
+          );
         });
       }
     }
@@ -189,7 +193,9 @@ describe("fronteras arquitectonicas de capas y modulos", () => {
     for (const file of files) {
       it(`${file.relPath} no importa rutas internas de otros modulos`, () => {
         const forbiddenCrossImports = file.imports.filter((imp) => {
-          const match = imp.match(/@\/src\/modules\/([^/]+)\/(domain|application|ports|infrastructure)\//);
+          const match = imp.match(
+            /@\/src\/modules\/([^/]+)\/(domain|application|ports|infrastructure)\//,
+          );
           if (match) {
             const importedModule = match[1];
             return importedModule !== file.moduleName;
@@ -199,7 +205,7 @@ describe("fronteras arquitectonicas de capas y modulos", () => {
 
         expect(
           forbiddenCrossImports,
-          `Acceso a ruta interna privada de otro modulo: ${forbiddenCrossImports.join(", ")}`
+          `Acceso a ruta interna privada de otro modulo: ${forbiddenCrossImports.join(", ")}`,
         ).toEqual([]);
       });
     }
@@ -254,7 +260,7 @@ import { describe, expect, it } from "vitest";
 const MODULES_ROOT = new URL("../src/modules/", import.meta.url);
 const ALL_TS_FILES = readdirSync(MODULES_ROOT, {
   recursive: true,
-  encoding: "utf8"
+  encoding: "utf8",
 })
   .filter((relativePath) => relativePath.endsWith(".ts") && !relativePath.endsWith(".d.ts"))
   .slice()
@@ -295,15 +301,17 @@ const FORBIDDEN_EFFECTS = [
   { name: "variables reasignables", pattern: /\b(?:let|var)\s+/ },
   {
     name: "mutacion de colecciones",
-    pattern: /\.(?:push|pop|shift|unshift|splice|reverse|sort|set|delete|clear|add)\s*\(/
-  }
+    pattern: /\.(?:push|pop|shift|unshift|splice|reverse|sort|set|delete|clear|add)\s*\(/,
+  },
 ] as const;
 
 describe("arquitectura funcional", () => {
   for (const relativePath of PURE_MODULES) {
     it(`${relativePath} permanece libre de efectos externos`, () => {
       const source = readFileSync(new URL(relativePath, MODULES_ROOT), "utf8");
-      const effects = FORBIDDEN_EFFECTS.filter(({ pattern }) => pattern.test(source)).map(({ name }) => name);
+      const effects = FORBIDDEN_EFFECTS.filter(({ pattern }) => pattern.test(source)).map(
+        ({ name }) => name,
+      );
 
       expect(effects).toEqual([]);
     });
@@ -358,7 +366,7 @@ import {
   crearRegistrarAuditoriaUseCase,
   crearPrismaAuditoriaAdapter,
   type EventoAuditoria,
-  type AuditoriaRepository
+  type AuditoriaRepository,
 } from "@/src/modules/auditoria/api";
 
 describe("modulo auditoria", () => {
@@ -371,7 +379,7 @@ describe("modulo auditoria", () => {
         entidadId: "sol-123",
         usuarioId: "usr-456",
         timestamp: fecha,
-        metadata: { modo: "AUTOMATICO" }
+        metadata: { modo: "AUTOMATICO" },
       });
 
       expect(resultado.ok).toBe(true);
@@ -386,7 +394,7 @@ describe("modulo auditoria", () => {
       const resultado = validarEventoAuditoria({
         accion: "",
         entidad: "",
-        timestamp: new Date()
+        timestamp: new Date(),
       });
 
       expect(resultado.ok).toBe(false);
@@ -396,7 +404,7 @@ describe("modulo auditoria", () => {
   describe("aplicacion", () => {
     it("registra el evento a traves del repositorio cuando los datos son validos", async () => {
       const mockRepo: AuditoriaRepository = {
-        registrar: vi.fn().mockResolvedValue(undefined)
+        registrar: vi.fn().mockResolvedValue(undefined),
       };
 
       const useCase = crearRegistrarAuditoriaUseCase(mockRepo);
@@ -404,7 +412,7 @@ describe("modulo auditoria", () => {
         accion: "ASIGNAR_HOST",
         entidad: "InstanciaSala",
         entidadId: "inst-789",
-        timestamp: new Date("2026-09-19T14:00:00Z")
+        timestamp: new Date("2026-09-19T14:00:00Z"),
       });
 
       expect(resultado.ok).toBe(true);
@@ -413,14 +421,14 @@ describe("modulo auditoria", () => {
 
     it("no invoca el repositorio si el evento no supera la validacion de dominio", async () => {
       const mockRepo: AuditoriaRepository = {
-        registrar: vi.fn().mockResolvedValue(undefined)
+        registrar: vi.fn().mockResolvedValue(undefined),
       };
 
       const useCase = crearRegistrarAuditoriaUseCase(mockRepo);
       const resultado = await useCase({
         accion: "",
         entidad: "InstanciaSala",
-        timestamp: new Date()
+        timestamp: new Date(),
       });
 
       expect(resultado.ok).toBe(false);
@@ -433,8 +441,8 @@ describe("modulo auditoria", () => {
       const mockCreate = vi.fn().mockResolvedValue({ id: "aud-1" });
       const mockPrisma = {
         auditoria: {
-          create: mockCreate
-        }
+          create: mockCreate,
+        },
       } as any;
 
       const adapter = crearPrismaAuditoriaAdapter(mockPrisma);
@@ -446,7 +454,7 @@ describe("modulo auditoria", () => {
         entidadId: "usr-1",
         usuarioId: "usr-1",
         timestamp: fecha,
-        metadata: { ip: "127.0.0.1" }
+        metadata: { ip: "127.0.0.1" },
       });
 
       expect(mockCreate).toHaveBeenCalledWith({
@@ -456,8 +464,8 @@ describe("modulo auditoria", () => {
           entidadId: "usr-1",
           usuarioId: "usr-1",
           creadoEn: fecha,
-          metadata: { ip: "127.0.0.1" }
-        }
+          metadata: { ip: "127.0.0.1" },
+        },
       });
     });
   });
@@ -500,7 +508,7 @@ export function validarEventoAuditoria(
     usuarioId?: string | null;
     timestamp?: Date;
     metadata?: Readonly<Record<string, unknown>> | null;
-  }>
+  }>,
 ): ResultadoValidacion<EventoAuditoria> {
   const accion = input.accion.trim();
   const entidad = input.entidad.trim();
@@ -525,8 +533,8 @@ export function validarEventoAuditoria(
       entidadId: input.entidadId ?? null,
       usuarioId: input.usuarioId ?? null,
       timestamp: input.timestamp,
-      metadata: input.metadata ?? null
-    }
+      metadata: input.metadata ?? null,
+    },
   };
 }
 ```
@@ -565,7 +573,9 @@ export type ResultadoAuditoria =
   Readonly<{ ok: true; evento: EventoAuditoria }> | Readonly<{ ok: false; error: string }>;
 
 export function crearRegistrarAuditoriaUseCase(repository: AuditoriaRepository) {
-  return async function registrarAuditoria(input: RegistrarAuditoriaInput): Promise<ResultadoAuditoria> {
+  return async function registrarAuditoria(
+    input: RegistrarAuditoriaInput,
+  ): Promise<ResultadoAuditoria> {
     const validacion = validarEventoAuditoria(input);
     if (!validacion.ok) {
       return { ok: false, error: validacion.error };
@@ -588,7 +598,9 @@ import type { AuditoriaRepository } from "../ports/auditoria.port";
 
 type PrismaAuditoriaClient = Pick<PrismaClient, "auditoria">;
 
-export function crearPrismaAuditoriaAdapter(prismaOrTx: PrismaAuditoriaClient): AuditoriaRepository {
+export function crearPrismaAuditoriaAdapter(
+  prismaOrTx: PrismaAuditoriaClient,
+): AuditoriaRepository {
   return {
     async registrar(evento: EventoAuditoria): Promise<void> {
       await prismaOrTx.auditoria.create({
@@ -598,10 +610,10 @@ export function crearPrismaAuditoriaAdapter(prismaOrTx: PrismaAuditoriaClient): 
           entidadId: evento.entidadId ?? null,
           usuarioId: evento.usuarioId ?? null,
           creadoEn: evento.timestamp,
-          metadata: (evento.metadata as any) ?? undefined
-        }
+          metadata: (evento.metadata as any) ?? undefined,
+        },
       });
-    }
+    },
   };
 }
 ```
@@ -617,7 +629,7 @@ export type { AuditoriaRepository } from "./ports/auditoria.port";
 export {
   crearRegistrarAuditoriaUseCase,
   type RegistrarAuditoriaInput,
-  type ResultadoAuditoria
+  type ResultadoAuditoria,
 } from "./application/registrar-auditoria.use-case";
 export { crearPrismaAuditoriaAdapter } from "./infrastructure/prisma-auditoria.adapter";
 ```
@@ -659,9 +671,9 @@ vi.mock("server-only", () => ({}));
 vi.mock("@/src/lib/db", () => ({
   db: {
     auditoria: {
-      create: vi.fn().mockResolvedValue({ id: "aud-mock-1" })
-    }
-  }
+      create: vi.fn().mockResolvedValue({ id: "aud-mock-1" }),
+    },
+  },
 }));
 
 import { obtenerServicioAuditoria } from "@/src/bootstrap/auditoria.server";
@@ -672,7 +684,7 @@ describe("bootstrap auditoria.server", () => {
     const resultado = await servicio.registrar({
       accion: "BOOTSTRAP_TEST",
       entidad: "Sistema",
-      timestamp: new Date("2026-09-19T15:00:00Z")
+      timestamp: new Date("2026-09-19T15:00:00Z"),
     });
 
     expect(resultado.ok).toBe(true);
@@ -696,7 +708,7 @@ import {
   crearPrismaAuditoriaAdapter,
   crearRegistrarAuditoriaUseCase,
   type RegistrarAuditoriaInput,
-  type ResultadoAuditoria
+  type ResultadoAuditoria,
 } from "@/src/modules/auditoria/api";
 import type { PrismaClient } from "@prisma/client";
 
@@ -709,15 +721,17 @@ const defaultUseCase = crearRegistrarAuditoriaUseCase(defaultAdapter);
 
 export function obtenerServicioAuditoria(): ServicioAuditoria {
   return {
-    registrar: defaultUseCase
+    registrar: defaultUseCase,
   };
 }
 
-export function crearServicioAuditoriaTransaccional(tx: Pick<PrismaClient, "auditoria">): ServicioAuditoria {
+export function crearServicioAuditoriaTransaccional(
+  tx: Pick<PrismaClient, "auditoria">,
+): ServicioAuditoria {
   const adapter = crearPrismaAuditoriaAdapter(tx);
   const useCase = crearRegistrarAuditoriaUseCase(adapter);
   return {
-    registrar: useCase
+    registrar: useCase,
   };
 }
 ```

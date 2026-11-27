@@ -39,7 +39,7 @@ export const COLUMNAS_RESUMEN_ZOOM = [
   "Asistencia (%)",
   "Conexiones",
   "Conciliación",
-  "Rol comprobado"
+  "Rol comprobado",
 ] as const;
 
 export const COLUMNAS_SESIONES_ZOOM = [
@@ -49,14 +49,14 @@ export const COLUMNAS_SESIONES_ZOOM = [
   "Salida (UTC)",
   "Duración (seg)",
   "Estado",
-  "Identificador de participante"
+  "Identificador de participante",
 ] as const;
 
 const ETIQUETA_CONCILIACION = {
   SIN_CONCILIAR: "Sin conciliar",
   SUGERIDO: "Sugerido (sin confirmar)",
   CONCILIADO: "Conciliado",
-  EXTERNO: "Externo"
+  EXTERNO: "Externo",
 } as const;
 
 /**
@@ -80,13 +80,15 @@ function horaUruguay(fecha: Date | null): string {
     day: "2-digit",
     hour: "2-digit",
     minute: "2-digit",
-    hour12: false
+    hour12: false,
   }).format(fecha);
 }
 
 const iso = (fecha: Date): string => (Number.isFinite(fecha.getTime()) ? fecha.toISOString() : "");
 
-export function filasResumenPlanillaZoom(registros: readonly RegistroPlanillaZoom[]): FilasPlanillaZoom {
+export function filasResumenPlanillaZoom(
+  registros: readonly RegistroPlanillaZoom[],
+): FilasPlanillaZoom {
   return [
     COLUMNAS_RESUMEN_ZOOM,
     ...registros.map((r): readonly CeldaPlanillaZoom[] => [
@@ -99,12 +101,14 @@ export function filasResumenPlanillaZoom(registros: readonly RegistroPlanillaZoo
       r.porcentaje,
       r.sesiones,
       ETIQUETA_CONCILIACION[r.estadoConciliacion],
-      r.rolComprobado ?? ""
-    ])
+      r.rolComprobado ?? "",
+    ]),
   ];
 }
 
-export function filasSesionesPlanillaZoom(sesiones: readonly SesionPlanillaZoom[]): FilasPlanillaZoom {
+export function filasSesionesPlanillaZoom(
+  sesiones: readonly SesionPlanillaZoom[],
+): FilasPlanillaZoom {
   return [
     COLUMNAS_SESIONES_ZOOM,
     ...sesiones.map((s): readonly CeldaPlanillaZoom[] => [
@@ -114,8 +118,8 @@ export function filasSesionesPlanillaZoom(sesiones: readonly SesionPlanillaZoom[
       iso(s.salidaAt),
       Math.max(0, Math.round((s.salidaAt.getTime() - s.entradaAt.getTime()) / 1000)),
       s.status ?? "",
-      texto(s.participanteId)
-    ])
+      texto(s.participanteId),
+    ]),
   ];
 }
 
@@ -125,9 +129,11 @@ export type ConjuntoExportacionZoom = "resumen" | "sesiones";
 export function exportacionAsistenciaZoom(
   conjunto: ConjuntoExportacionZoom,
   registros: readonly RegistroPlanillaZoom[],
-  sesiones: readonly SesionPlanillaZoom[]
+  sesiones: readonly SesionPlanillaZoom[],
 ): Readonly<{ fuente: "zoom"; columnas: readonly string[]; registros: FilasPlanillaZoom }> {
   const filas =
-    conjunto === "resumen" ? filasResumenPlanillaZoom(registros) : filasSesionesPlanillaZoom(sesiones);
+    conjunto === "resumen"
+      ? filasResumenPlanillaZoom(registros)
+      : filasSesionesPlanillaZoom(sesiones);
   return { fuente: "zoom", columnas: filas[0] as readonly string[], registros: filas.slice(1) };
 }

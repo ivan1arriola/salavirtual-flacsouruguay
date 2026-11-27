@@ -1,13 +1,17 @@
 import type { PrismaClient } from "@prisma/client";
-import { consultarCohostsEspacioMeet, extraerCohostEmailsDeInstancia } from "@/src/modules/conferencias/api";
+import {
+  consultarCohostsEspacioMeet,
+  extraerCohostEmailsDeInstancia,
+} from "@/src/modules/conferencias/api";
 import {
   cargarCredencialesLegacyGoogleWorkspace,
-  obtenerCredencialPrincipalGoogleWorkspace
+  obtenerCredencialPrincipalGoogleWorkspace,
 } from "./google-workspace.service";
 
 export const COHOST_VERIFICATION_PAGE_SIZE = 6;
 
-export type VerificacionGlobalEstado = "CONFIRMADA" | "INCOMPLETA" | "NO_VERIFICABLE" | "SIN_COHOSTS";
+export type VerificacionGlobalEstado =
+  "CONFIRMADA" | "INCOMPLETA" | "NO_VERIFICABLE" | "SIN_COHOSTS";
 
 export type CredencialCohost = Readonly<{
   serviceAccountEmail: string;
@@ -51,7 +55,7 @@ export type VerificarCohostsGlobalDependencies = Readonly<{
   leerMiembros?: (
     credencial: CredencialCohost,
     organizador: string,
-    codigoReunion: string
+    codigoReunion: string,
   ) => Promise<readonly GoogleMember[]>;
 }>;
 
@@ -86,12 +90,12 @@ function errorLegible(status: number | null): string {
 
 export async function verificarCohostsGlobalPagina(
   deps: VerificarCohostsGlobalDependencies,
-  cursor?: string
+  cursor?: string,
 ): Promise<VerificacionGlobalPagina> {
   const rows = await deps.db.instanciaSala.findMany({
     where: {
       estado: { in: ["PROGRAMADA", "EN_CURSO"] },
-      finProgramadoAt: { gt: new Date() }
+      finProgramadoAt: { gt: new Date() },
     },
     orderBy: [{ inicioProgramadoAt: "asc" }, { id: "asc" }],
     take: COHOST_VERIFICATION_PAGE_SIZE,
@@ -105,9 +109,9 @@ export async function verificarCohostsGlobalPagina(
       eventosProveedor: {
         where: { proveedor: { tipo: "GOOGLE_MEET" } },
         select: { codigoReunion: true, cuentaProveedor: { select: { emailOrganizador: true } } },
-        take: 1
-      }
-    }
+        take: 1,
+      },
+    },
   });
 
   if (!rows.length) {
@@ -115,14 +119,14 @@ export async function verificarCohostsGlobalPagina(
   }
 
   const cred = await obtenerCredencialPrincipalGoogleWorkspace(deps.db, deps.descifrar, {
-    requireActiva: true
+    requireActiva: true,
   });
   if (!cred) {
     throw new Error("Google Workspace no tiene una credencial Principal activa.");
   }
   const principal: CredencialCohost = {
     serviceAccountEmail: cred.serviceAccountEmail,
-    privateKey: cred.privateKey
+    privateKey: cred.privateKey,
   };
   const legacy = deps.listarLegacy
     ? await deps.listarLegacy()
@@ -134,7 +138,7 @@ export async function verificarCohostsGlobalPagina(
     if (deps.leerMiembros) {
       const credenciales = [
         { origen: "PRINCIPAL" as const, credencial: principal },
-        ...legacy.map((credencial) => ({ origen: "LEGACY" as const, credencial }))
+        ...legacy.map((credencial) => ({ origen: "LEGACY" as const, credencial })),
       ];
       let intentosLegacy = 0;
       let lastStatus: number | null = null;
@@ -148,11 +152,11 @@ export async function verificarCohostsGlobalPagina(
             roles: new Set(
               members
                 .filter(({ role }) => role === "COHOST")
-                .flatMap(({ email }) => (email ? [email.trim().toLowerCase()] : []))
+                .flatMap(({ email }) => (email ? [email.trim().toLowerCase()] : [])),
             ),
             origen,
             intentosLegacy,
-            error: null
+            error: null,
           };
         } catch (error) {
           lastStatus = estadoHttp(error);
@@ -169,21 +173,21 @@ export async function verificarCohostsGlobalPagina(
         serviceAccountEmail: principal.serviceAccountEmail,
         privateKey: principal.privateKey,
         subject: organizador,
-        origen: "PRINCIPAL" as const
+        origen: "PRINCIPAL" as const,
       },
       ...legacy.map((credencial) => ({
         serviceAccountEmail: credencial.serviceAccountEmail,
         privateKey: credencial.privateKey,
         subject: organizador,
-        origen: "LEGACY" as const
-      }))
+        origen: "LEGACY" as const,
+      })),
     ];
     const res = await consultarCohostsEspacioMeet(candidates, codigo);
     return {
       roles: res.cohosts ? new Set(res.cohosts) : null,
       origen: res.origen,
       intentosLegacy: res.intentosLegacy,
-      error: res.error
+      error: res.error,
     };
   }
 
@@ -192,14 +196,16 @@ export async function verificarCohostsGlobalPagina(
       const event = meeting.eventosProveedor[0];
       const organizador = event?.cuentaProveedor?.emailOrganizador?.trim().toLowerCase() ?? null;
       const codigoReunion = event?.codigoReunion ?? null;
-      const emails = extraerCohostEmailsDeInstancia(meeting).filter((email) => email !== organizador);
+      const emails = extraerCohostEmailsDeInstancia(meeting).filter(
+        (email) => email !== organizador,
+      );
       const base = {
         instanciaSalaId: meeting.id,
         titulo: meeting.solicitud.titulo,
         inicio: meeting.inicioProgramadoAt.toISOString(),
         codigoReunion,
         organizador,
-        total: emails.length
+        total: emails.length,
       };
       if (!emails.length) {
         return {
@@ -209,7 +215,7 @@ export async function verificarCohostsGlobalPagina(
           faltantes: [],
           origen: null,
           intentosLegacy: 0,
-          error: null
+          error: null,
         };
       }
       if (!organizador || !codigoReunion) {
@@ -220,7 +226,7 @@ export async function verificarCohostsGlobalPagina(
           faltantes: [],
           origen: null,
           intentosLegacy: 0,
-          error: "Falta el organizador o código Meet del encuentro."
+          error: "Falta el organizador o código Meet del encuentro.",
         };
       }
       const cacheKey = `${organizador}|${codigoReunion}`;
@@ -239,7 +245,7 @@ export async function verificarCohostsGlobalPagina(
           faltantes: [],
           origen: null,
           intentosLegacy: result.intentosLegacy,
-          error: result.error
+          error: result.error,
         };
       }
       const faltantes = emails.filter((email) => !result.roles!.has(email));
@@ -250,13 +256,14 @@ export async function verificarCohostsGlobalPagina(
         faltantes,
         origen: result.origen,
         intentosLegacy: result.intentosLegacy,
-        error: null
+        error: null,
       };
-    })
+    }),
   );
 
   return {
     resultados,
-    siguienteCursor: rows.length === COHOST_VERIFICATION_PAGE_SIZE ? rows[rows.length - 1].id : null
+    siguienteCursor:
+      rows.length === COHOST_VERIFICATION_PAGE_SIZE ? rows[rows.length - 1].id : null,
   };
 }

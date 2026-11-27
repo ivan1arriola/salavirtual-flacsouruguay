@@ -12,7 +12,7 @@ export function ProfileMenu({
   user,
   account,
   unreadNotifications,
-  compact = false
+  compact = false,
 }: Readonly<{
   user: Session["user"];
   account: CuentaRecordada;
@@ -20,7 +20,9 @@ export function ProfileMenu({
   compact?: boolean;
 }>) {
   const displayName = user.name ?? user.email ?? user.id;
-  const className = ["profile-menu", compact ? "profile-menu-compact" : null].filter(Boolean).join(" ");
+  const className = ["profile-menu", compact ? "profile-menu-compact" : null]
+    .filter(Boolean)
+    .join(" ");
 
   return (
     <DismissibleDetails className={className} dataTour={profileTourForRole(user.role)}>
@@ -125,7 +127,10 @@ function roleLabel(role: Session["user"]["role"]): string {
   return "Docente";
 }
 
-function UserAvatarContent({ imageUrl, name }: Readonly<{ imageUrl?: string | null; name: string }>) {
+function UserAvatarContent({
+  imageUrl,
+  name,
+}: Readonly<{ imageUrl?: string | null; name: string }>) {
   return (
     <>
       <span className="avatar-fallback" aria-hidden="true">

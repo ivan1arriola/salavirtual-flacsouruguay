@@ -10,7 +10,7 @@ import { puedeVerEnlaceAnfitrion } from "@/src/modules/reuniones/enlace-anfitrio
 import { resumenCuentasAnfitrionas } from "@/src/modules/reuniones/lista-zoom-agrupacion.domain";
 import {
   proveedorActivoDeInstancia,
-  type ProveedorReunion
+  type ProveedorReunion,
 } from "@/src/modules/reuniones/proveedor-reunion.domain";
 import { puedeGestionarEncuentros } from "@/src/modules/reuniones/encuentros.domain";
 import { resumenEnlaceZoom } from "@/src/modules/reuniones/estado-enlace-zoom.domain";
@@ -18,19 +18,19 @@ import { seleccionarEventoProveedorActivo } from "@/src/modules/reuniones/evento
 import { puedeGestionarPrograma } from "@/src/modules/reuniones/permisos-programa.service";
 import {
   claveSerieReunion,
-  construirFiltroSerieSolicitud
+  construirFiltroSerieSolicitud,
 } from "@/src/modules/reuniones/serie-reunion.domain";
 import { ReunionZoomEncuentros } from "@/src/modules/reuniones/presentation/components/reunion-zoom-encuentros";
 import {
   agruparActividadPorEncuentro,
-  agruparAvisosPorReunionYHorario
+  agruparAvisosPorReunionYHorario,
 } from "@/src/modules/reuniones/uuids-ocurrencias-zoom.domain";
 
 const TOPE_AVISOS_SERIE = 2000;
 
 export default async function ReunionZoomDetailPage({
   params,
-  otroProveedor = null
+  otroProveedor = null,
 }: Readonly<{
   params: Promise<{ solicitudId: string }>;
   /** Encuentros de la misma serie que siguen en el otro proveedor: viven en su propio panel. */
@@ -49,10 +49,13 @@ export default async function ReunionZoomDetailPage({
   const solicitud = await db.solicitudSala.findUnique({
     where: { id: solicitudId },
     include: {
-      docentePrograma: { include: { programa: true, docente: { include: { usuario: true } } } }
-    }
+      docentePrograma: { include: { programa: true, docente: { include: { usuario: true } } } },
+    },
   });
-  if (!solicitud || !(await puedeGestionarPrograma(db, actor, solicitud.docentePrograma.programaId))) {
+  if (
+    !solicitud ||
+    !(await puedeGestionarPrograma(db, actor, solicitud.docentePrograma.programaId))
+  ) {
     notFound();
   }
 
@@ -67,12 +70,12 @@ export default async function ReunionZoomDetailPage({
           eventosProveedor: {
             include: {
               proveedor: true,
-              cuentaProveedor: { select: { nombre: true, emailOrganizador: true } }
-            }
-          }
-        }
-      }
-    }
+              cuentaProveedor: { select: { nombre: true, emailOrganizador: true } },
+            },
+          },
+        },
+      },
+    },
   });
 
   const ahora = new Date();
@@ -90,7 +93,8 @@ export default async function ReunionZoomDetailPage({
         .map((instancia) => {
           const enlace = resumenEnlaceZoom(instancia);
           const activo = seleccionarEventoProveedorActivo(instancia);
-          const puedeUnirse = instancia.estado === "PROGRAMADA" && instancia.finProgramadoAt > ahora;
+          const puedeUnirse =
+            instancia.estado === "PROGRAMADA" && instancia.finProgramadoAt > ahora;
           return {
             id: instancia.id,
             solicitudId: id,
@@ -100,7 +104,9 @@ export default async function ReunionZoomDetailPage({
             estado: instancia.estado,
             editable: instancia.estado === "PROGRAMADA" && instancia.inicioProgramadoAt > ahora,
             puedeCancelar:
-              instancia.estado === "PROGRAMADA" && instancia.inicioProgramadoAt > ahora && activos > 1,
+              instancia.estado === "PROGRAMADA" &&
+              instancia.inicioProgramadoAt > ahora &&
+              activos > 1,
             puedeUnirse,
             joinUrl: enlace.joinUrl,
             cuentaAnfitrion: enlace.cuentaAnfitrion,
@@ -111,28 +117,29 @@ export default async function ReunionZoomDetailPage({
             puedeIniciar: puedeUnirse && verAnfitrion && activo?.proveedor.tipo === "ZOOM",
             estadoEnlace: enlace.estado,
             eventoProveedorId: enlace.eventoProveedorId,
-            operacion: enlace.operacion
+            operacion: enlace.operacion,
           };
         });
     })
     .sort((a, b) => a.inicioIso.localeCompare(b.inicioIso));
 
   const encuentrosPasados = encuentros.filter(
-    (encuentro) => new Date(encuentro.finIso) < ahora && encuentro.estado !== "CANCELADA"
+    (encuentro) => new Date(encuentro.finIso) < ahora && encuentro.estado !== "CANCELADA",
   );
   const encuentrosPendientes = encuentros.filter(
-    (encuentro) => new Date(encuentro.finIso) >= ahora && encuentro.estado !== "CANCELADA"
+    (encuentro) => new Date(encuentro.finIso) >= ahora && encuentro.estado !== "CANCELADA",
   );
   const proximoEncuentro = encuentrosPendientes[0] ?? null;
 
   const zoomActivos = serie.flatMap(({ instancias }) =>
     instancias.filter(
-      (instancia) => instancia.estado !== "CANCELADA" && proveedorActivoDeInstancia(instancia) === "ZOOM"
-    )
+      (instancia) =>
+        instancia.estado !== "CANCELADA" && proveedorActivoDeInstancia(instancia) === "ZOOM",
+    ),
   );
   const eventosZoom = zoomActivos.map((instancia) => seleccionarEventoProveedorActivo(instancia));
   const idsCompartidos = [
-    ...new Set(eventosZoom.map((evento) => evento?.reunionProveedorId).filter(Boolean))
+    ...new Set(eventosZoom.map((evento) => evento?.reunionProveedorId).filter(Boolean)),
   ];
   const permiteAgregarCompartida =
     !otroProveedor &&
@@ -143,23 +150,27 @@ export default async function ReunionZoomDetailPage({
   // Se omiten encuentros cancelados: no deben disparar correcciones operativas.
   const distintos = (valores: readonly (string | null | undefined)[]) =>
     new Set(valores.filter((valor): valor is string => Boolean(valor)));
-  const idsZoom = distintos(eventosZoom.map((evento) => evento?.codigoReunion ?? evento?.externalEventId));
+  const idsZoom = distintos(
+    eventosZoom.map((evento) => evento?.codigoReunion ?? evento?.externalEventId),
+  );
   const enlacesZoom = distintos(eventosZoom.map((evento) => evento?.joinUrl));
   const cuentasZoom = distintos(eventosZoom.map((evento) => evento?.cuentaProveedorId));
   const necesitaCorreccion =
     zoomActivos.length > 1 && (idsZoom.size > 1 || enlacesZoom.size > 1 || cuentasZoom.size > 1);
   const esSerieMixta = Boolean(otroProveedor);
   const resumenCuentas = resumenCuentasAnfitrionas(
-    encuentros.filter(({ estado }) => estado !== "CANCELADA").map(({ cuentaAnfitrion }) => cuentaAnfitrion)
+    encuentros
+      .filter(({ estado }) => estado !== "CANCELADA")
+      .map(({ cuentaAnfitrion }) => cuentaAnfitrion),
   );
 
   const idsEventos = encuentros.flatMap(({ eventoProveedorId }) =>
-    eventoProveedorId ? [eventoProveedorId] : []
+    eventoProveedorId ? [eventoProveedorId] : [],
   );
   const ocurrencias = idsEventos.length
     ? await db.ocurrenciaArchivoZoom.findMany({
         where: { eventoProveedorId: { in: idsEventos } },
-        select: { eventoProveedorId: true, cuentaZoomId: true, uuid: true }
+        select: { eventoProveedorId: true, cuentaZoomId: true, uuid: true },
       })
     : [];
   // Una sola consulta para toda la serie; el reparto y el límite por encuentro se hacen en memoria.
@@ -168,12 +179,12 @@ export default async function ReunionZoomDetailPage({
         where: {
           OR: ocurrencias.flatMap(({ cuentaZoomId, uuid }) => [
             { cuentaZoomId, uuid },
-            { cuentaZoomId, uuids: { has: uuid } }
-          ])
+            { cuentaZoomId, uuids: { has: uuid } },
+          ]),
         },
         orderBy: { ocurridoAt: "desc" },
         take: TOPE_AVISOS_SERIE,
-        select: { cuentaZoomId: true, uuid: true, uuids: true, tipo: true, ocurridoAt: true }
+        select: { cuentaZoomId: true, uuid: true, uuids: true, tipo: true, ocurridoAt: true },
       })
     : [];
   const actividadPorEvento = agruparActividadPorEncuentro(ocurrencias, avisos, 10);
@@ -189,23 +200,27 @@ export default async function ReunionZoomDetailPage({
             eventoProveedorId: encuentro.eventoProveedorId,
             meetingId: encuentro.zoomMeetingId,
             inicio: new Date(encuentro.inicioIso),
-            fin: new Date(encuentro.finIso)
-          }
+            fin: new Date(encuentro.finIso),
+          },
         ]
-      : []
+      : [],
   );
   const avisosPorHorario = sinEjecucion.length
     ? await db.eventoWebhookZoomAdicional.findMany({
         where: {
           recursoId: { in: [...new Set(sinEjecucion.map(({ meetingId }) => meetingId))] },
           ocurridoAt: {
-            gte: new Date(Math.min(...sinEjecucion.map(({ inicio }) => inicio.getTime())) - 3_600_000),
-            lte: new Date(Math.max(...sinEjecucion.map(({ fin }) => fin.getTime())) + 7 * 3_600_000)
-          }
+            gte: new Date(
+              Math.min(...sinEjecucion.map(({ inicio }) => inicio.getTime())) - 3_600_000,
+            ),
+            lte: new Date(
+              Math.max(...sinEjecucion.map(({ fin }) => fin.getTime())) + 7 * 3_600_000,
+            ),
+          },
         },
         orderBy: { ocurridoAt: "desc" },
         take: TOPE_AVISOS_SERIE,
-        select: { recursoId: true, tipo: true, ocurridoAt: true }
+        select: { recursoId: true, tipo: true, ocurridoAt: true },
       })
     : [];
   const actividadPorHorario = agruparAvisosPorReunionYHorario(sinEjecucion, avisosPorHorario, 10);
@@ -213,7 +228,7 @@ export default async function ReunionZoomDetailPage({
   const actividadEncuentros = encuentros.map((encuentro) => {
     const clave = encuentro.eventoProveedorId ?? "";
     const propias = ocurrencias.some(
-      ({ eventoProveedorId }) => eventoProveedorId === encuentro.eventoProveedorId
+      ({ eventoProveedorId }) => eventoProveedorId === encuentro.eventoProveedorId,
     );
     const porHorario = actividadPorHorario.get(clave) ?? [];
     const lista = propias ? (actividadPorEvento.get(clave) ?? []) : porHorario;
@@ -221,9 +236,13 @@ export default async function ReunionZoomDetailPage({
       id: encuentro.id,
       fecha: encuentro.inicioIso,
       // Sin ejecución vinculada ni número de reunión no hay forma de asociar avisos: no se afirma que no haya actividad.
-      sinAsociar: !propias && !sinEjecucion.some(({ eventoProveedorId }) => eventoProveedorId === clave),
+      sinAsociar:
+        !propias && !sinEjecucion.some(({ eventoProveedorId }) => eventoProveedorId === clave),
       porHorario: !propias && porHorario.length > 0,
-      eventos: lista.map(({ tipo, ocurridoAt }) => ({ tipo, ocurridoAt: ocurridoAt.toISOString() }))
+      eventos: lista.map(({ tipo, ocurridoAt }) => ({
+        tipo,
+        ocurridoAt: ocurridoAt.toISOString(),
+      })),
     };
   });
 
@@ -309,7 +328,7 @@ export default async function ReunionZoomDetailPage({
               {proximoEncuentro
                 ? new Intl.DateTimeFormat("es-UY", {
                     dateStyle: "medium",
-                    timeZone: "America/Montevideo"
+                    timeZone: "America/Montevideo",
                   }).format(new Date(proximoEncuentro.inicioIso))
                 : "Sin próximos"}
             </strong>
@@ -330,13 +349,13 @@ export default async function ReunionZoomDetailPage({
           <div>
             <strong>Los encuentros de esta serie tienen reuniones Zoom diferentes.</strong>
             <p>
-              Se detectaron {idsZoom.size} IDs y {enlacesZoom.size} enlaces de Zoom distintos. Los encuentros
-              de una misma serie deberían compartir una sola reunión y un solo enlace.
+              Se detectaron {idsZoom.size} IDs y {enlacesZoom.size} enlaces de Zoom distintos. Los
+              encuentros de una misma serie deberían compartir una sola reunión y un solo enlace.
             </p>
             {esSerieMixta ? (
               <p>
-                Esta serie también contiene encuentros en otro proveedor. Por seguridad, primero hay que
-                resolver la migración para no alterar esos encuentros.
+                Esta serie también contiene encuentros en otro proveedor. Por seguridad, primero hay
+                que resolver la migración para no alterar esos encuentros.
               </p>
             ) : null}
           </div>
@@ -346,14 +365,19 @@ export default async function ReunionZoomDetailPage({
                 Revisar migración y corregir
               </Link>
             ) : (
-              <CorregirSerieZoomBoton serieClave={claveSerieReunion(solicitud)} titulo={solicitud.titulo} />
+              <CorregirSerieZoomBoton
+                serieClave={claveSerieReunion(solicitud)}
+                titulo={solicitud.titulo}
+              />
             )
           ) : null}
         </section>
       ) : null}
       <ReunionZoomEncuentros
         encuentros={encuentros}
-        actividad={Object.fromEntries(actividadEncuentros.map(({ id, ...actividad }) => [id, actividad]))}
+        actividad={Object.fromEntries(
+          actividadEncuentros.map(({ id, ...actividad }) => [id, actividad]),
+        )}
         esAdmin={esAdmin}
         puedeModificar={puedeModificar}
         permiteCancelarSerie={!otroProveedor}

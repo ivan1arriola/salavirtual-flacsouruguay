@@ -16,7 +16,9 @@ type FileInfo = Readonly<{
 }>;
 
 function extractImports(source: string): string[] {
-  const staticMatches = source.matchAll(/(?:import|export)\s+(?:type\s+)?[\s\S]*?from\s+["']([^"']+)["']/g);
+  const staticMatches = source.matchAll(
+    /(?:import|export)\s+(?:type\s+)?[\s\S]*?from\s+["']([^"']+)["']/g,
+  );
   const dynamicMatches = source.matchAll(/import\s*\(\s*["']([^"']+)["']\s*\)/g);
   const sideEffectMatches = source.matchAll(/import\s+["']([^"']+)["']/g);
 
@@ -54,7 +56,7 @@ function scanModules(dir: string): FileInfo[] {
       const moduleName = parts[0];
       const layerCandidate = parts[1];
       const layer = ["domain", "ports", "application", "infrastructure", "presentation"].includes(
-        layerCandidate
+        layerCandidate,
       )
         ? (layerCandidate as LayerName)
         : undefined;
@@ -66,7 +68,7 @@ function scanModules(dir: string): FileInfo[] {
         moduleName,
         layer,
         content,
-        imports: extractImports(content)
+        imports: extractImports(content),
       });
     }
   }
@@ -101,7 +103,7 @@ describe("fronteras arquitectonicas de capas y modulos", () => {
                 imp.startsWith("react") ||
                 imp.includes("googleapis") ||
                 imp.includes("nodemailer") ||
-                imp === "server-only"
+                imp === "server-only",
             );
             expect(forbidden, `Imports prohibidos en domain: ${forbidden.join(", ")}`).toEqual([]);
           });
@@ -118,7 +120,7 @@ describe("fronteras arquitectonicas de capas y modulos", () => {
                 imp.startsWith("next") ||
                 imp.startsWith("react") ||
                 imp.includes("googleapis") ||
-                imp.includes("nodemailer")
+                imp.includes("nodemailer"),
             );
             expect(forbidden, `Imports prohibidos en ports: ${forbidden.join(", ")}`).toEqual([]);
           });
@@ -134,18 +136,23 @@ describe("fronteras arquitectonicas de capas y modulos", () => {
                 imp.startsWith("next") ||
                 imp.startsWith("react") ||
                 imp.includes("googleapis") ||
-                imp.includes("nodemailer")
+                imp.includes("nodemailer"),
             );
-            expect(forbidden, `Imports prohibidos en application: ${forbidden.join(", ")}`).toEqual([]);
+            expect(forbidden, `Imports prohibidos en application: ${forbidden.join(", ")}`).toEqual(
+              [],
+            );
           });
         }
 
         if (file.layer === "presentation") {
           it(`[presentation] ${file.relPath} no importa infraestructura ni Prisma directamente`, () => {
             const forbidden = file.imports.filter(
-              (imp) => imp.includes("/infrastructure") || imp.includes("@prisma/client")
+              (imp) => imp.includes("/infrastructure") || imp.includes("@prisma/client"),
             );
-            expect(forbidden, `Imports prohibidos en presentation: ${forbidden.join(", ")}`).toEqual([]);
+            expect(
+              forbidden,
+              `Imports prohibidos en presentation: ${forbidden.join(", ")}`,
+            ).toEqual([]);
           });
         }
       }
@@ -159,7 +166,7 @@ describe("fronteras arquitectonicas de capas y modulos", () => {
           // Detectar importaciones hacia subcarpetas internas de otro módulo:
           // Ej: @/src/modules/<otro>/(domain|application|ports|infrastructure)/...
           const match = imp.match(
-            /@\/src\/modules\/([^/]+)\/(domain|application|ports|infrastructure|presentation)\//
+            /@\/src\/modules\/([^/]+)\/(domain|application|ports|infrastructure|presentation)\//,
           );
           if (match) {
             const importedModule = match[1];
@@ -170,7 +177,7 @@ describe("fronteras arquitectonicas de capas y modulos", () => {
 
         expect(
           forbiddenCrossImports,
-          `Acceso a ruta interna privada de otro modulo: ${forbiddenCrossImports.join(", ")}`
+          `Acceso a ruta interna privada de otro modulo: ${forbiddenCrossImports.join(", ")}`,
         ).toEqual([]);
       });
     }
@@ -179,7 +186,7 @@ describe("fronteras arquitectonicas de capas y modulos", () => {
   describe("integraciones tecnicas externas (src/integrations/google)", () => {
     const googleFiles = scanDir(
       join(process.cwd(), "src/integrations/google"),
-      join(process.cwd(), "src/integrations")
+      join(process.cwd(), "src/integrations"),
     );
 
     it("encuentra archivos en src/integrations/google", () => {
@@ -195,11 +202,12 @@ describe("fronteras arquitectonicas de capas y modulos", () => {
             imp.includes("@prisma/client") ||
             imp.includes("@/src/lib/db") ||
             imp.startsWith("next") ||
-            imp.startsWith("react")
+            imp.startsWith("react"),
         );
-        expect(forbidden, `Imports prohibidos en cliente tecnico de Google: ${forbidden.join(", ")}`).toEqual(
-          []
-        );
+        expect(
+          forbidden,
+          `Imports prohibidos en cliente tecnico de Google: ${forbidden.join(", ")}`,
+        ).toEqual([]);
       });
     }
   });
@@ -207,14 +215,18 @@ describe("fronteras arquitectonicas de capas y modulos", () => {
 
 function scanDir(
   dir: string,
-  baseRoot: string
+  baseRoot: string,
 ): Readonly<{ absPath: string; relPath: string; content: string; imports: readonly string[] }>[] {
   if (!existsSync(dir)) {
     return [];
   }
   const entries = readdirSync(dir);
-  const results: Array<{ absPath: string; relPath: string; content: string; imports: readonly string[] }> =
-    [];
+  const results: Array<{
+    absPath: string;
+    relPath: string;
+    content: string;
+    imports: readonly string[];
+  }> = [];
   for (const entry of entries) {
     const fullPath = join(dir, entry);
     const stat = statSync(fullPath);
@@ -227,7 +239,7 @@ function scanDir(
         absPath: fullPath,
         relPath: rel,
         content,
-        imports: extractImports(content)
+        imports: extractImports(content),
       });
     }
   }

@@ -7,7 +7,7 @@ import { solicitarRecuperacionPassword } from "@/src/modules/usuarios/recuperaci
 export async function solicitarRecuperacion(formData: FormData): Promise<void> {
   try {
     await solicitarRecuperacionPassword(db, {
-      email: String(formData.get("email") ?? "")
+      email: String(formData.get("email") ?? ""),
     });
   } catch (error) {
     // La respuesta debe ser indistinguible para correos registrados y no registrados.

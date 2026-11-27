@@ -40,15 +40,17 @@ export function resumenEnlaceZoom(
         operacionPendiente: string | null;
         cuentaProveedor?: Readonly<{ nombre: string; emailOrganizador: string | null }> | null;
       }>)[];
-  }>
+  }>,
 ): ResumenEnlaceZoom {
   const evento = seleccionarEventoProveedorActivo(instancia);
-  const operacion = OPERACIONES.find((valor) => valor === evento?.operacionPendiente) ?? "PROVISIONAR";
+  const operacion =
+    OPERACIONES.find((valor) => valor === evento?.operacionPendiente) ?? "PROVISIONAR";
   return {
     eventoProveedorId: evento?.id ?? null,
     joinUrl: evento?.joinUrl ?? null,
-    cuentaAnfitrion: evento?.cuentaProveedor?.emailOrganizador ?? evento?.cuentaProveedor?.nombre ?? null,
+    cuentaAnfitrion:
+      evento?.cuentaProveedor?.emailOrganizador ?? evento?.cuentaProveedor?.nombre ?? null,
     estado: estadoEnlaceZoom(evento),
-    operacion
+    operacion,
   };
 }

@@ -17,13 +17,13 @@ describe("vista de asistencia por encuentro", () => {
             "Minutos conectados",
             "Asistencia (%)",
             "Umbral de 5/6",
-            "Conexiones"
+            "Conexiones",
           ],
-          ["Ana Pérez", "ana@example.org", "11:00:00", "11:50:00", 50, 50 / 60, "CUMPLE", 1]
+          ["Ana Pérez", "ana@example.org", "11:00:00", "11:50:00", 50, 50 / 60, "CUMPLE", 1],
         ],
         responsables: [
           ["Participante", "Correo", "Rol"],
-          ["Organizador", "host@flacso.edu.uy", "HOST", "", "", 0, 0]
+          ["Organizador", "host@flacso.edu.uy", "HOST", "", "", 0, 0],
         ],
         datosBrutos: [
           ["Fuente", "Participante", "Correo", "Identificador", "Tipo", "Inicio", "Fin"],
@@ -40,7 +40,7 @@ describe("vista de asistencia por encuentro", () => {
             "endpoint-a",
             "meet-code",
             "email_address",
-            "2026-10-21T14:50:00Z"
+            "2026-10-21T14:50:00Z",
           ],
           [
             "MEET",
@@ -52,7 +52,7 @@ describe("vista de asistencia por encuentro", () => {
             "2026-10-21T14:25:00Z",
             1500,
             "meet-conf",
-            "s1"
+            "s1",
           ],
           [
             "MEET",
@@ -64,17 +64,19 @@ describe("vista de asistencia por encuentro", () => {
             "2026-10-21T14:50:00Z",
             1800,
             "meet-conf",
-            "s2"
-          ]
-        ]
+            "s2",
+          ],
+        ],
       },
       inicio,
-      fin
+      fin,
     );
     expect(datos.participantes).toMatchObject([
-      { correo: null, fuente: "MEET", minutos: 50, conexiones: 2, porcentaje: 83.33 }
+      { correo: null, fuente: "MEET", minutos: 50, conexiones: 2, porcentaje: 83.33 },
     ]);
-    expect(datos.reportes).toMatchObject([{ correo: "ana@example.org", fuente: "REPORTS", conexiones: 1 }]);
+    expect(datos.reportes).toMatchObject([
+      { correo: "ana@example.org", fuente: "REPORTS", conexiones: 1 },
+    ]);
     expect(datos.responsables).toMatchObject([{ rol: "HOST", correo: "host@flacso.edu.uy" }]);
     expect(datos.indicador).toMatchObject({
       personasMeet: 1,
@@ -82,7 +84,7 @@ describe("vista de asistencia por encuentro", () => {
       correosReports: 1,
       sesionesReports: 1,
       personasVinculadas: 0,
-      diferenciaSesiones: 1
+      diferenciaSesiones: 1,
     });
     expect(datos.registrosHeredados).toHaveLength(0);
   });
@@ -92,19 +94,19 @@ describe("vista de asistencia por encuentro", () => {
       {
         asistencia: [
           ["Participante"],
-          ["Alguien", "alguien@example.com", "", "", 20, 0.3333, "MENOS DE 5/6", 1]
+          ["Alguien", "alguien@example.com", "", "", 20, 0.3333, "MENOS DE 5/6", 1],
         ],
         responsables: [],
-        datosBrutos: []
+        datosBrutos: [],
       },
       inicio,
-      fin
+      fin,
     );
     expect(data.participantes).toHaveLength(0);
     expect(data.registrosHeredados[0]).toMatchObject({
       correo: "alguien@example.com",
       fuente: "LEGADO",
-      porcentaje: 33.33
+      porcentaje: 33.33,
     });
     expect(data.indicador.estado).toBe("SIN_MEET");
   });
@@ -126,7 +128,7 @@ describe("vista de asistencia por encuentro", () => {
             "2026-10-21T14:20:00Z",
             2100,
             "conf-1",
-            "s1"
+            "s1",
           ],
           [
             "MEET",
@@ -138,7 +140,7 @@ describe("vista de asistencia por encuentro", () => {
             "2026-10-21T14:45:00Z",
             1500,
             "conf-1",
-            "s2"
+            "s2",
           ],
           [
             "REPORTS",
@@ -153,12 +155,12 @@ describe("vista de asistencia por encuentro", () => {
             "e1",
             "meetcode",
             "device",
-            "2026-10-21T14:45:00Z"
-          ]
-        ]
+            "2026-10-21T14:45:00Z",
+          ],
+        ],
       },
       inicio,
-      fin
+      fin,
     );
     expect(data.participantes).toHaveLength(1);
     expect(data.participantes[0]).toMatchObject({ minutos: 45, porcentaje: 75, conexiones: 2 });

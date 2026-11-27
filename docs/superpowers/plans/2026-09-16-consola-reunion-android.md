@@ -50,8 +50,8 @@ describe("derivarEstadoReunion", () => {
         inicio,
         fin,
         conferenciaInicio: null,
-        conferenciaFin: null
-      })
+        conferenciaFin: null,
+      }),
     ).toBe("PROGRAMADA");
   });
 
@@ -62,8 +62,8 @@ describe("derivarEstadoReunion", () => {
         inicio,
         fin,
         conferenciaInicio: null,
-        conferenciaFin: null
-      })
+        conferenciaFin: null,
+      }),
     ).toBe("ESPERANDO_INICIO");
   });
 
@@ -74,8 +74,8 @@ describe("derivarEstadoReunion", () => {
         inicio,
         fin,
         conferenciaInicio: new Date("2026-09-16T18:42:00-03:00"),
-        conferenciaFin: null
-      })
+        conferenciaFin: null,
+      }),
     ).toBe("EN_CURSO");
   });
 
@@ -86,8 +86,8 @@ describe("derivarEstadoReunion", () => {
         inicio,
         fin,
         conferenciaInicio: new Date("2026-09-16T18:42:00-03:00"),
-        conferenciaFin: new Date("2026-09-16T20:03:00-03:00")
-      })
+        conferenciaFin: new Date("2026-09-16T20:03:00-03:00"),
+      }),
     ).toBe("FINALIZADA");
   });
 
@@ -98,8 +98,8 @@ describe("derivarEstadoReunion", () => {
         inicio,
         fin,
         conferenciaInicio: null,
-        conferenciaFin: null
-      })
+        conferenciaFin: null,
+      }),
     ).toBe("NO_INICIADA");
   });
 });
@@ -185,7 +185,8 @@ export type MeetParticipantSession = {
   active: boolean;
 };
 
-export type RecordingStatus = "NO_INICIADA" | "GRABANDO" | "PROCESANDO" | "DISPONIBLE" | "NO_DISPONIBLE";
+export type RecordingStatus =
+  "NO_INICIADA" | "GRABANDO" | "PROCESANDO" | "DISPONIBLE" | "NO_DISPONIBLE";
 
 export type MeetConferenceSnapshot = {
   startedAt: Date;
@@ -201,7 +202,10 @@ Resolve meeting space/conference record by meeting code using the existing Googl
 
 ```ts
 it("marca una grabación pendiente como PROCESANDO", async () => {
-  const snapshot = await getMeetConferenceSnapshot("abc-defg-hij", fakeMeetClientEndedWithoutArtifact);
+  const snapshot = await getMeetConferenceSnapshot(
+    "abc-defg-hij",
+    fakeMeetClientEndedWithoutArtifact,
+  );
   expect(snapshot?.endedAt).not.toBeNull();
   expect(snapshot?.recording.status).toBe("PROCESANDO");
 });

@@ -16,7 +16,7 @@ export class TransferenciaZoomError extends Error {
   constructor(
     readonly codigo: CodigoTransferenciaZoom,
     message: string,
-    readonly bytesConfirmados: bigint | null = null
+    readonly bytesConfirmados: bigint | null = null,
   ) {
     super(message);
     this.name = "TransferenciaZoomError";
@@ -31,7 +31,7 @@ export type ResultadoBloqueZoom =
 export type SubidaBloqueZoom = (
   offset: bigint,
   bytes: Uint8Array,
-  opciones: Readonly<{ ultimo: boolean }>
+  opciones: Readonly<{ ultimo: boolean }>,
 ) => Promise<ResultadoBloqueZoom>;
 
 export type TransferirStreamZoomParams = Readonly<{
@@ -69,7 +69,7 @@ function verificarAbortada(signal: AbortSignal | undefined): void {
  * coincide con el offset confirmado.
  */
 export async function transferirStreamZoom(
-  params: TransferirStreamZoomParams
+  params: TransferirStreamZoomParams,
 ): Promise<ResultadoTransferenciaZoom> {
   const bloque = params.bloqueBytes ?? BLOQUE_TRANSFERENCIA_ZOOM_BYTES;
   if (!Number.isInteger(bloque) || bloque <= 0 || bloque % MULTIPLO_BYTES !== 0) {
@@ -79,14 +79,14 @@ export async function transferirStreamZoom(
   if (offsetOrigen > offsetConfirmado) {
     throw new TransferenciaZoomError(
       "ORIGEN_DESALINEADO",
-      "El origen empieza después del offset confirmado."
+      "El origen empieza después del offset confirmado.",
     );
   }
   const descarte = offsetConfirmado - offsetOrigen;
   if (descarte > (params.maxDescarteBytes ?? 0n)) {
     throw new TransferenciaZoomError(
       "DESCARTE_EXCEDIDO",
-      "El prefijo a descartar supera el máximo permitido."
+      "El prefijo a descartar supera el máximo permitido.",
     );
   }
 
@@ -130,7 +130,7 @@ export async function transferirStreamZoom(
       throw new TransferenciaZoomError(
         "CONFIRMACION_PARCIAL",
         "Drive confirmó menos bytes de los enviados.",
-        r.bytesConfirmados
+        r.bytesConfirmados,
       );
     }
     offsetSiguiente = esperado;
@@ -143,7 +143,8 @@ export async function transferirStreamZoom(
     hash?.update(chunk);
     let parte = chunk;
     if (porDescartar > 0n) {
-      const quitar = porDescartar < BigInt(parte.byteLength) ? Number(porDescartar) : parte.byteLength;
+      const quitar =
+        porDescartar < BigInt(parte.byteLength) ? Number(porDescartar) : parte.byteLength;
       porDescartar -= BigInt(quitar);
       parte = parte.subarray(quitar);
     }
@@ -161,15 +162,18 @@ export async function transferirStreamZoom(
   if (porDescartar > 0n) {
     throw new TransferenciaZoomError(
       "ORIGEN_TERMINO_ANTES",
-      "El origen terminó antes del offset confirmado."
+      "El origen terminó antes del offset confirmado.",
     );
   }
   // Un 206 puede cubrir solo parte del archivo: finalizar aquí dejaría en Drive un archivo truncado.
   // No se envía el último bloque; el siguiente intento reanuda desde lo confirmado y pide el resto.
-  if (params.totalConocido !== null && offsetSiguiente + BigInt(pendienteBytes) !== params.totalConocido) {
+  if (
+    params.totalConocido !== null &&
+    offsetSiguiente + BigInt(pendienteBytes) !== params.totalConocido
+  ) {
     throw new TransferenciaZoomError(
       "ORIGEN_INCOMPLETO",
-      "El origen terminó antes del tamaño total anunciado."
+      "El origen terminó antes del tamaño total anunciado.",
     );
   }
   await enviar(juntar(pendienteBytes), true);
@@ -178,6 +182,6 @@ export async function transferirStreamZoom(
     bytesTotales: offsetSiguiente,
     bytesTransferidos: transferidos,
     bytesDescartados: descarte,
-    sha256: hash ? hash.digest("hex") : null
+    sha256: hash ? hash.digest("hex") : null,
   };
 }

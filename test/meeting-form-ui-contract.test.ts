@@ -3,15 +3,18 @@ import { describe, expect, it } from "vitest";
 
 const parent = readFileSync(
   new URL("../src/modules/reuniones/presentation/components/meeting-form-v2.tsx", import.meta.url),
-  "utf8"
+  "utf8",
 );
 const editor = readFileSync(
-  new URL("../src/modules/reuniones/presentation/components/email-list-editor.tsx", import.meta.url),
-  "utf8"
+  new URL(
+    "../src/modules/reuniones/presentation/components/email-list-editor.tsx",
+    import.meta.url,
+  ),
+  "utf8",
 );
 const styles = readFileSync(
   new URL("../app/(gestion)/reuniones/nueva/nueva-reunion.module.css", import.meta.url),
-  "utf8"
+  "utf8",
 );
 
 describe("contrato de accesibilidad del formulario", () => {
@@ -33,7 +36,7 @@ describe("contrato de accesibilidad del formulario", () => {
     expect(styles).toMatch(/:global\(\.date-row \.remove-date\)\s*\{[^}]*min-width:\s*44px/s);
     expect(styles).toMatch(/:global\(\.date-row \.remove-date\)\s*\{[^}]*min-height:\s*44px/s);
     expect(styles).toMatch(
-      /:global\(\.recurrence-actions \.secondary-action\),\s*\.page :global\(\.add-date\),\s*\.page :global\(\.meeting-date-notes > summary\)\s*\{\s*min-height:\s*44px;/s
+      /:global\(\.recurrence-actions \.secondary-action\),\s*\.page :global\(\.add-date\),\s*\.page :global\(\.meeting-date-notes > summary\)\s*\{\s*min-height:\s*44px;/s,
     );
   });
 });

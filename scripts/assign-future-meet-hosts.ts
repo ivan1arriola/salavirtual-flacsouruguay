@@ -12,9 +12,9 @@ async function main(): Promise<void> {
         where: {
           proveedor: { tipo: "GOOGLE_MEET" },
           activa: true,
-          tieneLicencia: true
+          tieneLicencia: true,
         },
-        orderBy: { prioridad: "asc" }
+        orderBy: { prioridad: "asc" },
       }),
       db.instanciaSala.findMany({
         where: {
@@ -22,11 +22,11 @@ async function main(): Promise<void> {
           estado: "PROGRAMADA",
           eventosProveedor: {
             some: { proveedor: { tipo: "ZOOM_HISTORICO" } },
-            none: { proveedor: { tipo: "GOOGLE_MEET" } }
-          }
+            none: { proveedor: { tipo: "GOOGLE_MEET" } },
+          },
         },
-        orderBy: { inicioProgramadoAt: "asc" }
-      })
+        orderBy: { inicioProgramadoAt: "asc" },
+      }),
     ]);
     if (!provider) {
       throw new Error("No existe el proveedor Google Meet.");
@@ -37,12 +37,14 @@ async function main(): Promise<void> {
         id: meeting.id,
         serieId: meeting.solicitudSalaId,
         inicio: meeting.inicioProgramadoAt,
-        fin: meeting.finProgramadoAt
+        fin: meeting.finProgramadoAt,
       })),
-      rooms
+      rooms,
     );
     if (!result.ok) {
-      throw new Error(`No hay salas suficientes para ${result.reunionIdsSinSala.length} reuniones.`);
+      throw new Error(
+        `No hay salas suficientes para ${result.reunionIdsSinSala.length} reuniones.`,
+      );
     }
     console.log(
       JSON.stringify(
@@ -50,11 +52,11 @@ async function main(): Promise<void> {
           mode: applyChanges ? "apply" : "dry-run",
           futureMeetings: meetings.length,
           availableRooms: rooms.length,
-          assignments: result.asignaciones.length
+          assignments: result.asignaciones.length,
         },
         null,
-        2
-      )
+        2,
+      ),
     );
     if (!applyChanges) {
       return;
@@ -67,10 +69,10 @@ async function main(): Promise<void> {
             instanciaSalaId: assignment.reunionId,
             proveedorId: provider.id,
             cuentaProveedorId: assignment.salaId,
-            estadoIntegracion: "PENDIENTE"
-          }
-        })
-      )
+            estadoIntegracion: "PENDIENTE",
+          },
+        }),
+      ),
     );
   } finally {
     await db.$disconnect();

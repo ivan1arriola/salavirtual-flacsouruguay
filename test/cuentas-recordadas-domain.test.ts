@@ -3,7 +3,7 @@ import {
   normalizarCuentasRecordadas,
   olvidarCuenta,
   recordarCuenta,
-  type CuentaRecordada
+  type CuentaRecordada,
 } from "../src/modules/usuarios/cuentas-recordadas.domain";
 
 const ana: CuentaRecordada = { id: "ana", nombre: "Ana", identificador: "ana@flacso.edu.uy" };
@@ -20,7 +20,7 @@ describe("cuentas recordadas en el navegador", () => {
     const many = Array.from({ length: 7 }, (_, index) => ({
       id: `u${index}`,
       nombre: `Usuario ${index}`,
-      identificador: `u${index}@flacso.edu.uy`
+      identificador: `u${index}@flacso.edu.uy`,
     }));
     expect(normalizarCuentasRecordadas([...many, null])).toHaveLength(5);
     expect(olvidarCuenta([ana, leo], "ana")).toEqual([leo]);

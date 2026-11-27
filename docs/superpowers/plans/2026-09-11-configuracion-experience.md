@@ -39,7 +39,7 @@
 import { describe, expect, it } from "vitest";
 import {
   resolveSettingsSection,
-  settingsHref
+  settingsHref,
 } from "../src/modules/configuracion/settings-navigation.domain";
 
 describe("navegacion de configuracion", () => {
@@ -72,13 +72,15 @@ export const SETTINGS_SECTION_IDS = [
   "programas",
   "asistencia",
   "correo",
-  "historico"
+  "historico",
 ] as const;
 
 export type SettingsSection = (typeof SETTINGS_SECTION_IDS)[number];
 
 export function resolveSettingsSection(value?: string): SettingsSection {
-  return SETTINGS_SECTION_IDS.includes(value as SettingsSection) ? (value as SettingsSection) : "resumen";
+  return SETTINGS_SECTION_IDS.includes(value as SettingsSection)
+    ? (value as SettingsSection)
+    : "resumen";
 }
 
 export function settingsHref(section: SettingsSection) {
@@ -120,7 +122,7 @@ it("expone todas las secciones en el orden de trabajo", () => {
     "programas",
     "asistencia",
     "correo",
-    "historico"
+    "historico",
   ]);
 });
 ```
@@ -185,8 +187,8 @@ expect(
     privateKeyConfigurada: true,
     serviceAccountSubject: "sala@example.com",
     driveDestinationId: "folder",
-    activa: true
-  }).readyCount
+    activa: true,
+  }).readyCount,
 ).toBe(4);
 ```
 

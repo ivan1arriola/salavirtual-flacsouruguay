@@ -44,13 +44,14 @@ type Dependencias = Readonly<{
 async function miembrosDelEncuentro(
   repo: RepoOrdenarCarpetasZoom,
   pendiente: OcurrenciaCarpetaZoom,
-  nombre: string
+  nombre: string,
 ): Promise<OcurrenciaCarpetaZoom[]> {
   const miembros = (await repo.listarVinculadasCercanas(pendiente.inicioRealAt))
     .filter((o) => nombreEncuentro(o) === nombre)
     .sort(
       (a, b) =>
-        a.inicioRealAt.getTime() - b.inicioRealAt.getTime() || a.ocurrenciaId.localeCompare(b.ocurrenciaId)
+        a.inicioRealAt.getTime() - b.inicioRealAt.getTime() ||
+        a.ocurrenciaId.localeCompare(b.ocurrenciaId),
     );
   return miembros.some((m) => m.ocurrenciaId === pendiente.ocurrenciaId)
     ? miembros
@@ -63,7 +64,7 @@ async function ordenarEncuentro(
   raiz: string,
   miembros: readonly OcurrenciaCarpetaZoom[],
   nombre: string,
-  signal: AbortSignal | undefined
+  signal: AbortSignal | undefined,
 ): Promise<Readonly<{ ordenadas: number; noEncontradas: number }>> {
   // Primero se renombra todo: así ninguna carpeta de ocurrencia comparte nombre con la del encuentro
   // y `asegurarCarpeta` (que busca por nombre) no puede devolver una de ellas por error.
@@ -78,7 +79,7 @@ async function ordenarEncuentro(
       : await deps.storage.asegurarCarpeta(
           deps.hash(`zoom-carpeta|encuentro|${raiz}|${nombre}`),
           nombre,
-          raiz
+          raiz,
         );
 
   let ordenadas = 0;
@@ -106,7 +107,7 @@ async function ordenarEncuentro(
  */
 export async function ordenarCarpetasVinculadasZoomUseCase(
   deps: Dependencias,
-  opciones: Readonly<{ limite: number; signal?: AbortSignal }>
+  opciones: Readonly<{ limite: number; signal?: AbortSignal }>,
 ): Promise<ResumenOrdenarCarpetasZoom> {
   if (!deps.raizVinculados) {
     return { ordenadas: 0, noEncontradas: 0, fallidas: 0, sinRaiz: true };
@@ -124,7 +125,13 @@ export async function ordenarCarpetasVinculadasZoomUseCase(
       const nombre = nombreEncuentro(pendiente);
       const miembros = await miembrosDelEncuentro(deps.repo, pendiente, nombre);
       miembros.forEach((m) => resueltas.add(m.ocurrenciaId));
-      const r = await ordenarEncuentro(deps, deps.raizVinculados, miembros, nombre, opciones.signal);
+      const r = await ordenarEncuentro(
+        deps,
+        deps.raizVinculados,
+        miembros,
+        nombre,
+        opciones.signal,
+      );
       ordenadas += r.ordenadas;
       noEncontradas += r.noEncontradas;
     } catch {

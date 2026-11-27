@@ -2,24 +2,28 @@ import { describe, expect, it } from "vitest";
 import {
   getNavigationForRole,
   getSecondaryNavigation,
-  isNavigationItemActive
+  isNavigationItemActive,
 } from "@/src/components/app-navigation";
 
 describe("navegación por rol", () => {
   it("prioriza las operaciones y permite crear reuniones desde móvil", () => {
     const navigation = getNavigationForRole("ADMINISTRACION");
-    expect(navigation.groups.map(({ label }) => label)).toEqual(["Operaciones", "Administración", "Sistema"]);
+    expect(navigation.groups.map(({ label }) => label)).toEqual([
+      "Operaciones",
+      "Administración",
+      "Sistema",
+    ]);
     expect(navigation.mobilePrimary.map(({ label }) => label)).toEqual([
       "Inicio",
       "Agenda",
       "Nueva reunión",
-      "Monitoreo"
+      "Monitoreo",
     ]);
     expect(navigation.groups.flatMap(({ items }) => items.map(({ href }) => href))).toContain(
-      "/notificaciones"
+      "/notificaciones",
     );
     expect(
-      getSecondaryNavigation(navigation).flatMap(({ items }) => items.map(({ label }) => label))
+      getSecondaryNavigation(navigation).flatMap(({ items }) => items.map(({ label }) => label)),
     ).toContain("Series y reuniones");
   });
 
@@ -29,7 +33,7 @@ describe("navegación por rol", () => {
       "/",
       "/mis-clases",
       "/reuniones/nueva",
-      "/grabaciones"
+      "/grabaciones",
     ]);
   });
 
@@ -39,10 +43,10 @@ describe("navegación por rol", () => {
       "/",
       "/mi-agenda?tab=proximas",
       "/agenda-abierta",
-      "/agenda-abierta?vista=postulaciones"
+      "/agenda-abierta?vista=postulaciones",
     ]);
     expect(navigation.groups.flatMap(({ items }) => items.map(({ href }) => href))).toContain(
-      "/mi-agenda?tab=historico"
+      "/mi-agenda?tab=historico",
     );
   });
 

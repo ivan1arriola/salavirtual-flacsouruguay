@@ -29,7 +29,7 @@ const TINTES: Record<VarianteCorreo, string> = {
   accion: "#087f9e",
   alerta: "#aa5718",
   seguridad: "#6c5695",
-  reporte: "#216d69"
+  reporte: "#216d69",
 };
 
 export function escaparHtmlEmail(value: string): string {

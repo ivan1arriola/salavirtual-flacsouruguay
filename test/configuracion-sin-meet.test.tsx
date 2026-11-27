@@ -21,10 +21,10 @@ describe("configuración sin Google Meet", () => {
             activa: true,
             passwordConfigurada: false,
             enUso: false,
-            proveedorTipo: "ZOOM"
-          }
+            proveedorTipo: "ZOOM",
+          },
         ]}
-      />
+      />,
     );
     expect(html).toContain("Zoom 1");
     expect(/meet/i.test(html)).toBe(false);
@@ -42,7 +42,7 @@ describe("configuración sin Google Meet", () => {
       "Verificación global de cohosts",
       "Actualizar cohosts",
       "Compatibilidad histórica",
-      "Acceso a salas"
+      "Acceso a salas",
     ].filter((texto) => html.includes(texto));
     expect(presentes).toEqual([]);
     expect(/meet|meetings\.space/i.test(html)).toBe(false);

@@ -14,7 +14,7 @@ export function MeetingOptions({
   onRequiresAssistanceChange,
   onRequiresRecordingChange,
   onModeChange,
-  onAssistanceModeChange
+  onAssistanceModeChange,
 }: Readonly<{
   requiresAssistance: boolean;
   requiresRecording: boolean;
@@ -69,8 +69,8 @@ export function MeetingOptions({
             <div>
               <strong>Horarios de asistencia presencial</strong>
               <span>
-                La llegada se programa 30 minutos antes y la salida 30 minutos después del encuentro, como
-                mínimo. Ambos horarios se pueden ampliar.
+                La llegada se programa 30 minutos antes y la salida 30 minutos después del
+                encuentro, como mínimo. Ambos horarios se pueden ampliar.
               </span>
               <a href="#fechas">Revisar llegada y salida en Fechas</a>
             </div>
@@ -80,7 +80,9 @@ export function MeetingOptions({
             <Clock3 size={18} aria-hidden="true" />
             <div>
               <strong>Asistencia virtual con horario fijo</strong>
-              <span>La cobertura comienza 15 minutos antes y termina exactamente con el encuentro.</span>
+              <span>
+                La cobertura comienza 15 minutos antes y termina exactamente con el encuentro.
+              </span>
               <a href="#fechas">Ver los horarios en Fechas</a>
             </div>
           </div>

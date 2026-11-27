@@ -3,7 +3,10 @@ import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { RecordingsLibrary } from "@/src/components/recordings-library";
-import { FILTROS_CATEGORIA_ZOOM, ZoomArchivoProgreso } from "@/src/components/zoom-archivo-progreso";
+import {
+  FILTROS_CATEGORIA_ZOOM,
+  ZoomArchivoProgreso,
+} from "@/src/components/zoom-archivo-progreso";
 import { listarInventarioZoomAdmin } from "@/src/bootstrap/zoom-historico.server";
 import type { FiltroCategoriaZoom } from "@/src/modules/archivos/domain";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
@@ -13,12 +16,12 @@ import { obtenerCredencialPrincipalGoogleWorkspace } from "@/src/modules/configu
 import { normalizarParametrosGrabaciones } from "@/src/modules/archivos/domain/grabaciones-query.domain";
 import {
   resolverEstadoVisualGrabacion,
-  type GrupoEncuentroConArchivos
+  type GrupoEncuentroConArchivos,
 } from "@/src/modules/archivos/presentation";
 import "./grabaciones.css";
 
 export default async function GrabacionesPage({
-  searchParams
+  searchParams,
 }: {
   searchParams: Promise<{
     pagina?: string;
@@ -43,7 +46,7 @@ export default async function GrabacionesPage({
   const query = normalizarParametrosGrabaciones(parametros);
   const esAdmin = actor.rol === "ADMINISTRACION";
   const zoomCategoria: FiltroCategoriaZoom = (FILTROS_CATEGORIA_ZOOM as readonly string[]).includes(
-    parametros.zoomCategoria ?? ""
+    parametros.zoomCategoria ?? "",
   )
     ? (parametros.zoomCategoria as FiltroCategoriaZoom)
     : "TODOS";
@@ -51,7 +54,7 @@ export default async function GrabacionesPage({
   const zoomPagina = Number.parseInt(parametros.zoomPagina ?? "1", 10);
   const [page, workspaceConfiguration] = await Promise.all([
     listarGrabacionesDb(actor, query),
-    obtenerCredencialPrincipalGoogleWorkspace(db, (k) => k, { requireActiva: false })
+    obtenerCredencialPrincipalGoogleWorkspace(db, (k) => k, { requireActiva: false }),
   ]);
   // La carpeta general apunta a una raíz que puede contener el histórico de Zoom: solo administración.
   const generalFolderId =
@@ -65,7 +68,7 @@ export default async function GrabacionesPage({
     grabaciones: page.conteos.grabaciones,
     transcripciones: page.conteos.transcripciones,
     asistencias: page.conteos.asistencias,
-    notas: page.conteos.notas
+    notas: page.conteos.notas,
   };
 
   const grupos: readonly GrupoEncuentroConArchivos[] = page.encuentros
@@ -95,11 +98,16 @@ export default async function GrabacionesPage({
               : null
             : g.estadoGrabacionMeet,
         observadoAt: g.proveedor === "ZOOM" ? now : g.grabacionObservadaAt,
-        ahora: now
+        ahora: now,
       }),
-      archivos: g.archivos.map((a) => ({ ...a, tamanoBytes: a.tamanoBytes ? Number(a.tamanoBytes) : null }))
+      archivos: g.archivos.map((a) => ({
+        ...a,
+        tamanoBytes: a.tamanoBytes ? Number(a.tamanoBytes) : null,
+      })),
     }))
-    .sort((left, right) => new Date(right.fechaInicio).getTime() - new Date(left.fechaInicio).getTime());
+    .sort(
+      (left, right) => new Date(right.fechaInicio).getTime() - new Date(left.fechaInicio).getTime(),
+    );
 
   return (
     <div className="recordings-page">
@@ -133,8 +141,16 @@ export default async function GrabacionesPage({
       <section className="recordings-toolbar" aria-label="Resumen de archivos y acciones">
         <div className="recordings-summary-compact">
           <SummaryPill icon={<Video size={15} />} count={counts.grabaciones} label="Grabaciones" />
-          <SummaryPill icon={<FileText size={15} />} count={counts.transcripciones} label="Transcripciones" />
-          <SummaryPill icon={<UsersRound size={15} />} count={counts.asistencias} label="Asistencias" />
+          <SummaryPill
+            icon={<FileText size={15} />}
+            count={counts.transcripciones}
+            label="Transcripciones"
+          />
+          <SummaryPill
+            icon={<UsersRound size={15} />}
+            count={counts.asistencias}
+            label="Asistencias"
+          />
           <SummaryPill icon={<NotebookText size={15} />} count={counts.notas} label="Notas" />
           {inventarioZoom?.tipo === "OK" ? (
             <a className="summary-pill zoom-jump-pill" href="#archivos-zoom">
@@ -161,7 +177,11 @@ export default async function GrabacionesPage({
       />
 
       {inventarioZoom?.tipo === "OK" ? (
-        <ZoomArchivoProgreso datos={inventarioZoom.pagina} categoria={zoomCategoria} vinculo={zoomVinculo} />
+        <ZoomArchivoProgreso
+          datos={inventarioZoom.pagina}
+          categoria={zoomCategoria}
+          vinculo={zoomVinculo}
+        />
       ) : null}
     </div>
   );

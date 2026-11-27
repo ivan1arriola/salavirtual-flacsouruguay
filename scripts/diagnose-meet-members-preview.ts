@@ -14,12 +14,12 @@ function normalizePrivateKey(value: string): string {
 
 async function main() {
   const config = await obtenerCredencialPrincipalGoogleWorkspace(db, descifrarConfiguracion, {
-    requireActiva: false
+    requireActiva: false,
   });
 
-  const temporaryEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL?.trim();
-  const temporaryKey = process.env.GOOGLE_PRIVATE_KEY?.trim();
-  const temporarySubject = process.env.GOOGLE_SERVICE_ACCOUNT_SUBJECT?.trim();
+  const temporaryEmail = process.env["GOOGLE_SERVICE_ACCOUNT_EMAIL"]?.trim();
+  const temporaryKey = process.env["GOOGLE_PRIVATE_KEY"]?.trim();
+  const temporarySubject = process.env["GOOGLE_SERVICE_ACCOUNT_SUBJECT"]?.trim();
 
   const serviceAccountEmail = temporaryEmail || config?.serviceAccountEmail;
   const privateKey = temporaryKey ? normalizePrivateKey(temporaryKey) : config?.privateKey;
@@ -27,7 +27,7 @@ async function main() {
 
   if (!serviceAccountEmail || !privateKey || !delegatedSubject) {
     throw new Error(
-      "Faltan credenciales. Define GOOGLE_SERVICE_ACCOUNT_EMAIL y GOOGLE_PRIVATE_KEY temporalmente o completa la configuración principal de Google Workspace."
+      "Faltan credenciales. Define GOOGLE_SERVICE_ACCOUNT_EMAIL y GOOGLE_PRIVATE_KEY temporalmente o completa la configuración principal de Google Workspace.",
     );
   }
 
@@ -37,9 +37,9 @@ async function main() {
     scopes: [
       "https://www.googleapis.com/auth/meetings.space.created",
       "https://www.googleapis.com/auth/meetings.space.settings",
-      "https://www.googleapis.com/auth/meetings.space.readonly"
+      "https://www.googleapis.com/auth/meetings.space.readonly",
     ],
-    subject: delegatedSubject
+    subject: delegatedSubject,
   });
 
   const created = await auth.request<{
@@ -52,10 +52,10 @@ async function main() {
     data: {
       config: {
         moderation: "ON",
-        accessType: "TRUSTED"
-      }
+        accessType: "TRUSTED",
+      },
     },
-    timeout: 30_000
+    timeout: 30_000,
   });
 
   const spaceName = created.data.name;
@@ -76,7 +76,7 @@ async function main() {
     url: `https://meet.googleapis.com/v2/${spaceName}/members`,
     method: "POST",
     data: { email: internalCohost, role: "COHOST" },
-    timeout: 30_000
+    timeout: 30_000,
   });
 
   const listed = await auth.request<{
@@ -84,7 +84,7 @@ async function main() {
   }>({
     url: `https://meet.googleapis.com/v2/${spaceName}/members?pageSize=20`,
     method: "GET",
-    timeout: 30_000
+    timeout: 30_000,
   });
 
   console.log(
@@ -98,14 +98,15 @@ async function main() {
         meetingUri: created.data.meetingUri ?? null,
         testCohost: internalCohost,
         cohostCreated:
-          member.data.email?.toLowerCase() === internalCohost.toLowerCase() && member.data.role === "COHOST",
+          member.data.email?.toLowerCase() === internalCohost.toLowerCase() &&
+          member.data.role === "COHOST",
         memberEmail: member.data.email ?? null,
         memberRole: member.data.role ?? null,
-        listedMembers: listed.data.members?.map(({ email, role }) => ({ email, role })) ?? []
+        listedMembers: listed.data.members?.map(({ email, role }) => ({ email, role })) ?? [],
       },
       null,
-      2
-    )
+      2,
+    ),
   );
 }
 

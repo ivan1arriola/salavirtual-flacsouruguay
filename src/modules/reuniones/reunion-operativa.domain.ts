@@ -16,7 +16,7 @@ export function derivarEstadoReunionOperativa(
     fin: Date;
     conferenciaInicio: Date | null;
     conferenciaFin: Date | null;
-  }>
+  }>,
 ): EstadoReunionOperativa {
   if (input.conferenciaInicio && input.conferenciaFin) {
     return "FINALIZADA";
@@ -39,7 +39,7 @@ export function derivarEstadoGrabacionOperativa(
     estadoReunion: EstadoReunionOperativa;
     estadoProveedor: "AUSENTE" | "PROCESANDO" | "GENERADA" | null;
     grabandoEnVivo?: boolean;
-  }>
+  }>,
 ): EstadoGrabacionOperativa {
   if (input.grabandoEnVivo) {
     return "GRABANDO";
@@ -63,7 +63,7 @@ export function derivarEstadoTranscripcionOperativa(
   input: Readonly<{
     transcribiendoEnVivo?: boolean;
     estadoProveedor?: "AUSENTE" | "TRANSCRIBIENDO" | "PROCESANDO" | "GENERADA" | null;
-  }>
+  }>,
 ): EstadoTranscripcionOperativa {
   if (input.transcribiendoEnVivo || input.estadoProveedor === "TRANSCRIBIENDO") {
     return "TRANSCRIBIENDO";
@@ -81,15 +81,24 @@ export function puedeConsultarReunionOperativa(
   input: Readonly<{
     rol: "ADMINISTRACION" | "DOCENTE" | "ASISTENTE_TECNICO";
     asistenteAsignado: boolean;
-  }>
+  }>,
 ): boolean {
-  return input.rol === "ADMINISTRACION" || (input.rol === "ASISTENTE_TECNICO" && input.asistenteAsignado);
+  return (
+    input.rol === "ADMINISTRACION" || (input.rol === "ASISTENTE_TECNICO" && input.asistenteAsignado)
+  );
 }
 
 export const incidenciaOperativaSchema = z.object({
-  tipo: z.enum(["DOCENTE_NO_INGRESA", "AUDIO_VIDEO", "GRABACION", "SALA_INCORRECTA", "CONECTIVIDAD", "OTRA"]),
+  tipo: z.enum([
+    "DOCENTE_NO_INGRESA",
+    "AUDIO_VIDEO",
+    "GRABACION",
+    "SALA_INCORRECTA",
+    "CONECTIVIDAD",
+    "OTRA",
+  ]),
   severidad: z.enum(["BAJA", "MEDIA", "ALTA", "CRITICA"]),
-  descripcion: z.string().trim().min(3, "Describí brevemente la incidencia.").max(1000)
+  descripcion: z.string().trim().min(3, "Describí brevemente la incidencia.").max(1000),
 });
 
 export const controlOperativoReunionSchema = z.object({
@@ -99,17 +108,25 @@ export const controlOperativoReunionSchema = z.object({
   inicioAsistenciaTecnicaAt: z.string().trim().min(1).optional(),
   finAsistenciaTecnicaAt: z.string().trim().min(1).optional(),
   agregarCohostEmail: z.string().trim().email("Ingresá un correo de cohost válido.").optional(),
-  quitarCohostEmail: z.string().trim().email("Ingresá un correo de cohost válido.").optional()
+  quitarCohostEmail: z.string().trim().email("Ingresá un correo de cohost válido.").optional(),
 });
 
 export const registroAsistenciaOperativoSchema = z.object({
   claveParticipante: z.string().trim().min(1).max(200),
   nombre: z.string().trim().min(1, "El nombre del asistente es obligatorio.").max(200),
-  email: z.string().trim().email("Ingresá un correo válido.").nullable().optional().or(z.literal("")),
-  rolEnReunion: z.enum(["HOST", "COHOST", "DOCENTE", "ASISTENTE_TECNICO", "PARTICIPANTE"]).optional(),
+  email: z
+    .string()
+    .trim()
+    .email("Ingresá un correo válido.")
+    .nullable()
+    .optional()
+    .or(z.literal("")),
+  rolEnReunion: z
+    .enum(["HOST", "COHOST", "DOCENTE", "ASISTENTE_TECNICO", "PARTICIPANTE"])
+    .optional(),
   tipoAcceso: z.enum(["CUENTA_GOOGLE", "ANONIMO", "TELEFONO"]).optional(),
   conectado: z.boolean().optional(),
   enGrupoPequeno: z.boolean().optional(),
   salaGrupoPequeno: z.string().trim().max(160).nullable().optional(),
-  notasOperador: z.string().trim().max(500).nullable().optional()
+  notasOperador: z.string().trim().max(500).nullable().optional(),
 });

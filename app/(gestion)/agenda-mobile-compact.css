@@ -357,7 +357,9 @@
   .agenda-v2 .agenda-meeting-card-body > .agenda-assistant {
     display: none;
   }
-  .agenda-v2 .agenda-meeting-card-body:has(.agenda-mobile-details-input:checked) > .agenda-access-panel {
+  .agenda-v2
+    .agenda-meeting-card-body:has(.agenda-mobile-details-input:checked)
+    > .agenda-access-panel {
     display: grid;
     gap: 8px;
     margin-top: 1px;
@@ -366,7 +368,9 @@
     padding: 10px;
     background: #f8fafc;
   }
-  .agenda-v2 .agenda-meeting-card-body:has(.agenda-mobile-details-input:checked) > .agenda-assistant {
+  .agenda-v2
+    .agenda-meeting-card-body:has(.agenda-mobile-details-input:checked)
+    > .agenda-assistant {
     display: flex;
     min-height: 0;
     grid-column: 1;

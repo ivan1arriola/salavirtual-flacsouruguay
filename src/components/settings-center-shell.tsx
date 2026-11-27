@@ -1,11 +1,19 @@
-import { BookOpen, Clock3, History, KeyRound, LayoutDashboard, MailCheck, Video } from "lucide-react";
+import {
+  BookOpen,
+  Clock3,
+  History,
+  KeyRound,
+  LayoutDashboard,
+  MailCheck,
+  Video,
+} from "lucide-react";
 import Link from "next/link";
 import { Fragment } from "react";
 import {
   SETTINGS_SECTIONS,
   settingsHref,
   type SettingsSection,
-  type SettingsSectionMetadata
+  type SettingsSectionMetadata,
 } from "@/src/modules/configuracion/settings-navigation.domain";
 
 const MENU = SETTINGS_SECTIONS.filter(({ hidden }) => !hidden);
@@ -18,19 +26,20 @@ const SETTINGS_ICONS = {
   programs: BookOpen,
   assistance: Clock3,
   email: MailCheck,
-  history: History
+  history: History,
 } as const;
 
 export function SettingsCenterShell({
   activeSection,
   children,
-  navigationDetails
+  navigationDetails,
 }: Readonly<{
   activeSection: SettingsSection;
   children: React.ReactNode;
   navigationDetails?: Partial<Record<SettingsSection, string>>;
 }>) {
-  const activeMetadata = SETTINGS_SECTIONS.find(({ id }) => id === activeSection) ?? SETTINGS_SECTIONS[0];
+  const activeMetadata =
+    SETTINGS_SECTIONS.find(({ id }) => id === activeSection) ?? SETTINGS_SECTIONS[0];
   // En el Resumen las tarjetas ya son la navegación: mostrar además el menú de áreas la duplicaba.
   const overview = activeSection === "resumen";
 
@@ -75,7 +84,7 @@ export function SettingsSectionHeader({
   description,
   eyebrow,
   status,
-  title
+  title,
 }: Readonly<{
   description: string;
   eyebrow?: string;
@@ -96,7 +105,7 @@ export function SettingsSectionHeader({
 
 function SettingsNavList({
   activeSection,
-  navigationDetails
+  navigationDetails,
 }: Readonly<{
   activeSection: SettingsSection;
   navigationDetails?: Partial<Record<SettingsSection, string>>;
@@ -122,7 +131,7 @@ function SettingsNavList({
 function SettingsNavLink({
   active,
   detail,
-  item
+  item,
 }: Readonly<{
   active: boolean;
   detail?: string;

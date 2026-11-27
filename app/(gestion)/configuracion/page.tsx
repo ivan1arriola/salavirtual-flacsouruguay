@@ -9,22 +9,27 @@ import { obtenerCredencialesZoom } from "@/src/modules/configuracion/zoom-config
 import { requireAdminPage } from "./require-admin-page";
 
 export default async function ConfiguracionInicioPage({
-  searchParams
+  searchParams,
 }: Readonly<{
   searchParams: Promise<{ seccion?: string; busqueda?: string; pagina?: string }>;
 }>) {
   await requireAdminPage();
   const query = await searchParams;
-  const legacy = legacySettingsRedirect(query.seccion, { busqueda: query.busqueda, pagina: query.pagina });
+  const legacy = legacySettingsRedirect(query.seccion, {
+    busqueda: query.busqueda,
+    pagina: query.pagina,
+  });
   if (legacy) {
     redirect(legacy);
   }
 
-  const [{ configuration, hosts, programCount, activeProgramCount, zoomAvailableHosts }, credenciales] =
-    await Promise.all([
-      obtenerDatosPaginaConfiguracion(db, "resumen"),
-      obtenerCredencialesZoom(db, descifrarConfiguracion)
-    ]);
+  const [
+    { configuration, hosts, programCount, activeProgramCount, zoomAvailableHosts },
+    credenciales,
+  ] = await Promise.all([
+    obtenerDatosPaginaConfiguracion(db, "resumen"),
+    obtenerCredencialesZoom(db, descifrarConfiguracion),
+  ]);
 
   return (
     <SettingsCenterShell activeSection="resumen">
@@ -39,7 +44,7 @@ export default async function ConfiguracionInicioPage({
             configuration?.serviceAccountEmail &&
             (configuration.privateKey || configuration.privateKeyCifrada) &&
             configuration.serviceAccountSubject &&
-            configuration.driveDestinationId
+            configuration.driveDestinationId,
           ),
           integrationActive: configuration?.activa ?? false,
           zoomAvailableHosts,
@@ -47,7 +52,7 @@ export default async function ConfiguracionInicioPage({
           zoomCredentialsDiagnostic: credenciales.disponible ? undefined : credenciales.diagnostico,
           totalHosts: hosts.length,
           activePrograms: activeProgramCount,
-          totalPrograms: programCount
+          totalPrograms: programCount,
         }}
       />
     </SettingsCenterShell>

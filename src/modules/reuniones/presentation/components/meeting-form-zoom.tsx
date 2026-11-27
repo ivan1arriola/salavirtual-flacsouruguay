@@ -10,16 +10,19 @@ import { MeetingCreationDialog } from "./meeting-creation-dialog";
 import { generarFechasRecurrentes } from "@/src/modules/reuniones/recurrencia.domain";
 import {
   horarioAsistenciaCumpleMargen,
-  sincronizarHorarioAsistencia
+  sincronizarHorarioAsistencia,
 } from "@/src/modules/reuniones/horarios-asistencia.domain";
 import type {
   Option,
   ProgramOption,
   MeetingDate,
   MeetingDateMode,
-  RecurrenceState
+  RecurrenceState,
 } from "./nueva-reunion/tipos";
-import { construirSolicitudReunion, resolverAsistenteTecnicoId } from "./nueva-reunion/solicitud-reunion";
+import {
+  construirSolicitudReunion,
+  resolverAsistenteTecnicoId,
+} from "./nueva-reunion/solicitud-reunion";
 import { MeetingTypeSelector } from "./nueva-reunion/meeting-type-selector";
 import {
   duplicarEncuentro,
@@ -27,7 +30,7 @@ import {
   fechasAlCambiarModo,
   invalidarRecurrencia,
   ordenarEncuentros,
-  requiereConfirmacionCambio
+  requiereConfirmacionCambio,
 } from "./nueva-reunion/fechas-formulario";
 import styles from "./nueva-reunion/nueva-reunion.module.css";
 
@@ -38,20 +41,20 @@ const EMPTY_DATE: MeetingDate = {
   horaFin: "",
   horaAsistenciaInicio: "",
   horaAsistenciaFin: "",
-  descripcion: ""
+  descripcion: "",
 };
 
 export function MeetingFormZoom({
   programs,
   assistants,
-  canAssignAssistant
+  canAssignAssistant,
 }: Readonly<{
   programs: readonly ProgramOption[];
   assistants: readonly Option[];
   canAssignAssistant: boolean;
 }>) {
   const [selectedProgramId, setSelectedProgramId] = useState<string>(
-    programs.length === 1 ? programs[0].id : ""
+    programs.length === 1 ? programs[0].id : "",
   );
   const [title, setTitle] = useState("");
   const [dates, setDates] = useState<readonly MeetingDate[]>([EMPTY_DATE]);
@@ -64,7 +67,7 @@ export function MeetingFormZoom({
     horaInicio: "",
     horaFin: "",
     horaAsistenciaInicio: "",
-    horaAsistenciaFin: ""
+    horaAsistenciaFin: "",
   });
   const [recurrenceMessage, setRecurrenceMessage] = useState("");
   const [recurrenceGenerated, setRecurrenceGenerated] = useState(false);
@@ -99,9 +102,12 @@ export function MeetingFormZoom({
     dates.every(
       (date) =>
         Boolean(
-          fechaIsoValida(date.fecha) && date.horaInicio && date.horaFin && date.horaFin > date.horaInicio
+          fechaIsoValida(date.fecha) &&
+          date.horaInicio &&
+          date.horaFin &&
+          date.horaFin > date.horaInicio,
         ) &&
-        (!requiresAssistance || horarioAsistenciaCumpleMargen(date, meetingMode))
+        (!requiresAssistance || horarioAsistenciaCumpleMargen(date, meetingMode)),
     );
   const isReady = academicReady && datesReady && !pendingMode;
 
@@ -123,7 +129,7 @@ export function MeetingFormZoom({
       setMessage(
         meetingMode === "HIBRIDA" && requiresAssistance
           ? "Revisá las fechas y horarios: la cobertura híbrida necesita al menos 30 minutos antes y 30 minutos después."
-          : "Revisá las fechas y horarios: la cobertura virtual empieza exactamente 15 minutos antes y termina con el encuentro."
+          : "Revisá las fechas y horarios: la cobertura virtual empieza exactamente 15 minutos antes y termina con el encuentro.",
       );
       document.getElementById("fechas")?.scrollIntoView({ behavior: "smooth", block: "start" });
       return;
@@ -141,7 +147,7 @@ export function MeetingFormZoom({
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Idempotency-Key": idempotencyKeyRef.current
+          "Idempotency-Key": idempotencyKeyRef.current,
         },
         body: JSON.stringify(
           construirSolicitudReunion({
@@ -152,14 +158,14 @@ export function MeetingFormZoom({
               puedeAsignar: canAssignAssistant,
               requiereAsistencia: requiresAssistance,
               modoAsistencia: assistanceMode,
-              valorSeleccionado: formData.get("asistenteTecnicoId") as string | null
+              valorSeleccionado: formData.get("asistenteTecnicoId") as string | null,
             }),
             requiereAsistencia: requiresAssistance,
             requiereGrabacion: requiresRecording,
             modalidad: meetingMode,
-            fechas: ordenarEncuentros(dates)
-          })
-        )
+            fechas: ordenarEncuentros(dates),
+          }),
+        ),
       });
       const result = await response.json();
       if (!response.ok) {
@@ -167,7 +173,7 @@ export function MeetingFormZoom({
       }
       await minimumLoadingTime;
       const failures = result.provisionamiento?.filter(
-        ({ estado }: { estado: string }) => estado !== "SINCRONIZADA"
+        ({ estado }: { estado: string }) => estado !== "SINCRONIZADA",
       ).length;
       setCreatedMeetingId(result.solicitudId);
       setStatus("done");
@@ -176,7 +182,7 @@ export function MeetingFormZoom({
           ? "Esta reunión ya se estaba creando. Se conservó una única solicitud."
           : failures
             ? "La reunión quedó guardada. El enlace de Zoom continúa pendiente."
-            : "La reunión y sus enlaces de Zoom quedaron creados correctamente."
+            : "La reunión y sus enlaces de Zoom quedaron creados correctamente.",
       );
     } catch (error) {
       submittingRef.current = false;
@@ -186,7 +192,12 @@ export function MeetingFormZoom({
   }
 
   function horarioInicialSegunModalidad<
-    T extends { horaInicio: string; horaFin: string; horaAsistenciaInicio: string; horaAsistenciaFin: string }
+    T extends {
+      horaInicio: string;
+      horaFin: string;
+      horaAsistenciaInicio: string;
+      horaAsistenciaFin: string;
+    },
   >(date: T, modalidad: "VIRTUAL" | "HIBRIDA"): T {
     const limpio = { ...date, horaAsistenciaInicio: "", horaAsistenciaFin: "" };
     return sincronizarHorarioAsistencia(limpio, limpio, modalidad);
@@ -215,8 +226,10 @@ export function MeetingFormZoom({
           return date;
         }
         const updated = { ...date, [campo]: value };
-        return requiresAssistance ? sincronizarHorarioAsistencia(date, updated, meetingMode) : updated;
-      })
+        return requiresAssistance
+          ? sincronizarHorarioAsistencia(date, updated, meetingMode)
+          : updated;
+      }),
     );
   }
 
@@ -230,7 +243,9 @@ export function MeetingFormZoom({
   function cambiarRecurrencia(campo: "horaInicio" | "horaFin", value: string) {
     setRecurrence((current) => {
       const updated = { ...current, [campo]: value };
-      return requiresAssistance ? sincronizarHorarioAsistencia(current, updated, meetingMode) : updated;
+      return requiresAssistance
+        ? sincronizarHorarioAsistencia(current, updated, meetingMode)
+        : updated;
     });
     // Una regla modificada invalida las fechas ya generadas.
     invalidarVistaPreviaRecurrencia();
@@ -243,7 +258,7 @@ export function MeetingFormZoom({
         throw new Error(
           meetingMode === "HIBRIDA"
             ? "La cobertura híbrida debe empezar al menos 30 minutos antes y terminar al menos 30 minutos después."
-            : "La cobertura virtual comienza exactamente 15 minutos antes y termina al mismo tiempo que el encuentro."
+            : "La cobertura virtual comienza exactamente 15 minutos antes y termina al mismo tiempo que el encuentro.",
         );
       }
       if (generated.length === 0) {
@@ -255,20 +270,22 @@ export function MeetingFormZoom({
           id: siguienteIdFechaRef.current++,
           horaAsistenciaInicio: requiresAssistance ? recurrence.horaAsistenciaInicio : "",
           horaAsistenciaFin: requiresAssistance ? recurrence.horaAsistenciaFin : "",
-          descripcion: ""
-        }))
+          descripcion: "",
+        })),
       );
       setRecurrenceGenerated(true);
       setRecurrenceMessage(
-        `${generated.length} ${generated.length === 1 ? "encuentro generado" : "encuentros generados"}. Revisá la vista previa.`
+        `${generated.length} ${generated.length === 1 ? "encuentro generado" : "encuentros generados"}. Revisá la vista previa.`,
       );
       window.requestAnimationFrame(() => {
         window.requestAnimationFrame(() =>
-          recurrenceReviewRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" })
+          recurrenceReviewRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" }),
         );
       });
     } catch (error) {
-      setRecurrenceMessage(error instanceof Error ? error.message : "No se pudieron generar las fechas.");
+      setRecurrenceMessage(
+        error instanceof Error ? error.message : "No se pudieron generar las fechas.",
+      );
     }
   }
 
@@ -292,8 +309,8 @@ export function MeetingFormZoom({
   }
 
   return (
-    <form className={styles.form} onSubmit={submit} aria-busy={status === "saving"}>
-      <div className={styles.fields}>
+    <form className={styles["form"]} onSubmit={submit} aria-busy={status === "saving"}>
+      <div className={styles["fields"]}>
         <MeetingTypeSelector
           dateMode={dateMode}
           onModeChange={setMeetingDateMode}
@@ -376,7 +393,7 @@ export function MeetingFormZoom({
         selectedAssistant={assistants.find((assistant) => assistant.id === selectedAssistantId)}
       />
 
-      <footer className={styles.actions}>
+      <footer className={styles["actions"]}>
         {status === "saving" ? (
           <p className="form-message saving" role="status">
             Creando la reunión y configurando Zoom…
@@ -421,7 +438,7 @@ function updateDate(
   dates: readonly MeetingDate[],
   index: number,
   key: Exclude<keyof MeetingDate, "id">,
-  value: string
+  value: string,
 ): readonly MeetingDate[] {
   return dates.map((date, current) => (current === index ? { ...date, [key]: value } : date));
 }
@@ -432,6 +449,6 @@ function wait(milliseconds: number): Promise<void> {
 
 function waitForNextPaint(): Promise<void> {
   return new Promise((resolve) =>
-    window.requestAnimationFrame(() => window.requestAnimationFrame(() => resolve()))
+    window.requestAnimationFrame(() => window.requestAnimationFrame(() => resolve())),
   );
 }

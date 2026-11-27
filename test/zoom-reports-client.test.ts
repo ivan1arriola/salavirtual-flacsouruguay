@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   descargarAsistenciaOriginalZoom,
-  listarParticipantesReunionPasadaZoomHttp
+  listarParticipantesReunionPasadaZoomHttp,
 } from "@/src/integrations/zoom/zoom-reports.client";
 
 afterEach(() => vi.unstubAllGlobals());
@@ -19,13 +19,13 @@ describe("reportes de asistencia Zoom", () => {
                 name: "Ana",
                 user_email: "ana@example.com",
                 join_time: "2026-11-01T14:00:00Z",
-                leave_time: "2026-11-01T15:00:00Z"
-              }
+                leave_time: "2026-11-01T15:00:00Z",
+              },
             ],
-            next_page_token: "segunda"
+            next_page_token: "segunda",
           }),
-          { status: 200 }
-        )
+          { status: 200 },
+        ),
       )
       .mockResolvedValueOnce(
         new Response(
@@ -36,12 +36,12 @@ describe("reportes de asistencia Zoom", () => {
                 name: "Invitado",
                 user_email: "",
                 join_time: "2026-11-01T14:10:00Z",
-                leave_time: "2026-11-01T14:30:00Z"
-              }
-            ]
+                leave_time: "2026-11-01T14:30:00Z",
+              },
+            ],
           }),
-          { status: 200 }
-        )
+          { status: 200 },
+        ),
       );
     vi.stubGlobal("fetch", fetchMock);
     const rows = await listarParticipantesReunionPasadaZoomHttp("token", "uuid/instancia");
@@ -63,9 +63,14 @@ describe("reportes de asistencia Zoom", () => {
     const segunda = '{ "participants": [], "page_count": 2 }';
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValueOnce(new Response(primera)).mockResolvedValueOnce(new Response(segunda))
+      vi
+        .fn()
+        .mockResolvedValueOnce(new Response(primera))
+        .mockResolvedValueOnce(new Response(segunda)),
     );
-    expect(await descargarAsistenciaOriginalZoom("token", "uuid")).toBe(`[\n${primera},\n${segunda}\n]`);
+    expect(await descargarAsistenciaOriginalZoom("token", "uuid")).toBe(
+      `[\n${primera},\n${segunda}\n]`,
+    );
   });
 
   it("distingue reporte no publicado de reporte vacío", async () => {
@@ -74,7 +79,7 @@ describe("reportes de asistencia Zoom", () => {
       vi
         .fn()
         .mockResolvedValueOnce(new Response(null, { status: 404 }))
-        .mockResolvedValueOnce(new Response(JSON.stringify({ participants: [] }), { status: 200 }))
+        .mockResolvedValueOnce(new Response(JSON.stringify({ participants: [] }), { status: 200 })),
     );
     expect(await listarParticipantesReunionPasadaZoomHttp("token", "uuid")).toBeNull();
     expect(await listarParticipantesReunionPasadaZoomHttp("token", "uuid")).toEqual([]);
@@ -96,33 +101,33 @@ describe("reportes de asistencia Zoom", () => {
                 name: "Ana",
                 status: "in_meeting",
                 join_time: "2026-11-01T14:00:00Z",
-                leave_time: "2026-11-01T15:00:00Z"
+                leave_time: "2026-11-01T15:00:00Z",
               },
               {
                 id: "p2",
                 name: "Beto",
                 status: "in_waiting_room",
                 join_time: "2026-11-01T14:00:00Z",
-                leave_time: "2026-11-01T14:05:00Z"
+                leave_time: "2026-11-01T14:05:00Z",
               },
               {
                 id: "p3",
                 name: "Caro",
                 status: "desconocido",
                 join_time: "2026-11-01T14:00:00Z",
-                leave_time: "2026-11-01T14:05:00Z"
+                leave_time: "2026-11-01T14:05:00Z",
               },
               {
                 id: "p4",
                 name: "Dani",
                 join_time: "2026-11-01T14:00:00Z",
-                leave_time: "2026-11-01T14:05:00Z"
-              }
-            ]
+                leave_time: "2026-11-01T14:05:00Z",
+              },
+            ],
           }),
-          { status: 200 }
-        )
-      )
+          { status: 200 },
+        ),
+      ),
     );
     const rows = await listarParticipantesReunionPasadaZoomHttp("token", "uuid");
     expect(rows?.map((r) => r.status)).toEqual(["in_meeting", "in_waiting_room", null, null]);

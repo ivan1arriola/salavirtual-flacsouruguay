@@ -11,7 +11,7 @@ export async function reportarDuracionUseCase(
   deps: ReportarDuracionDeps,
   actor: SessionActor,
   rawInput: unknown,
-  ahora = new Date()
+  ahora = new Date(),
 ) {
   if (!actor.activo || actor.rol !== "ASISTENTE_TECNICO") {
     throw new ForbiddenApiError("Solo un asistente de monitoreo puede informar la duración.");
@@ -25,9 +25,9 @@ export async function reportarDuracionUseCase(
       inicioReal: input.inicioReal,
       finReal: input.finReal,
       comentario: input.comentario,
-      incidencia: input.incidencia
+      incidencia: input.incidencia,
     },
-    ahora
+    ahora,
   );
 
   return { ok: true, asignacionId: input.asignacionId };

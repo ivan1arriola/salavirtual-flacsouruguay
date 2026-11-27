@@ -11,9 +11,13 @@ import {
   crearProgramaAdmin,
   eliminarProgramaAdmin,
   invitarIntegrantePrograma,
-  quitarIntegrantePrograma
+  quitarIntegrantePrograma,
 } from "../configuracion/actions";
-import { aprobarSolicitudAccesoGoogle, enviarInvitacion, rechazarSolicitudAccesoGoogle } from "./actions";
+import {
+  aprobarSolicitudAccesoGoogle,
+  enviarInvitacion,
+  rechazarSolicitudAccesoGoogle,
+} from "./actions";
 
 const USER_TYPES = [
   { value: "ADMINISTRACION", label: "Administración", title: "Administración", icon: ShieldCheck },
@@ -22,14 +26,14 @@ const USER_TYPES = [
     value: "ASISTENTE_TECNICO",
     label: "Asistentes de monitoreo",
     title: "Asistentes de monitoreo",
-    icon: UserRoundCheck
-  }
+    icon: UserRoundCheck,
+  },
 ] as const;
 
 type UserType = (typeof USER_TYPES)[number]["value"];
 
 export default async function UsuariosPage({
-  searchParams
+  searchParams,
 }: Readonly<{
   searchParams: Promise<{
     tipo?: string;
@@ -54,8 +58,8 @@ export default async function UsuariosPage({
             orderBy: [{ apellidos: "asc" }, { nombres: "asc" }],
             include: {
               cuentasGoogle: { select: { email: true } },
-              asistenteTecnico: { select: { cesadoHastaProximoInicioSesion: true } }
-            }
+              asistenteTecnico: { select: { cesadoHastaProximoInicioSesion: true } },
+            },
           })
         : Promise.resolve([]),
       db.usuario.groupBy({ by: ["rol"], _count: { _all: true } }),
@@ -63,13 +67,13 @@ export default async function UsuariosPage({
         ? db.programa.findMany({
             where: { activo: true },
             orderBy: { nombre: "asc" },
-            select: { id: true, nombre: true }
+            select: { id: true, nombre: true },
           })
         : Promise.resolve([]),
       view === "personas"
         ? db.solicitudAccesoGoogle.findMany({
             where: { estado: "PENDIENTE" },
-            orderBy: { createdAt: "asc" }
+            orderBy: { createdAt: "asc" },
           })
         : Promise.resolve([]),
       view === "programas"
@@ -91,23 +95,29 @@ export default async function UsuariosPage({
                           nombres: true,
                           apellidos: true,
                           emailPrincipal: true,
-                          activo: true
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
+                          activo: true,
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
           })
         : Promise.resolve([]),
       view === "programas"
         ? db.usuario.findMany({
             where: { rol: "DOCENTE", activo: true },
             orderBy: [{ apellidos: "asc" }, { nombres: "asc" }],
-            select: { id: true, nombres: true, apellidos: true, emailPrincipal: true, activo: true }
+            select: {
+              id: true,
+              nombres: true,
+              apellidos: true,
+              emailPrincipal: true,
+              activo: true,
+            },
           })
-        : Promise.resolve([])
+        : Promise.resolve([]),
     ]);
   const selected = USER_TYPES.find(({ value }) => value === selectedType) ?? USER_TYPES[1];
   const total = groupedCounts.reduce((sum, group) => sum + group._count._all, 0);
@@ -127,7 +137,10 @@ export default async function UsuariosPage({
         <Users size={28} color="var(--brand)" />
       </header>
 
-      <nav className="user-type-tabs user-domain-tabs" aria-label="Administración de personas y programas">
+      <nav
+        className="user-type-tabs user-domain-tabs"
+        aria-label="Administración de personas y programas"
+      >
         <Link
           aria-current={view === "personas" ? "page" : undefined}
           className={view === "personas" ? "is-active" : undefined}
@@ -149,7 +162,8 @@ export default async function UsuariosPage({
       ) : null}
       {view === "personas" && query.estado === "invitacion-creada" ? (
         <p className="form-notice">
-          El usuario fue creado. El correo no está configurado, por lo que deberás compartirle el acceso.
+          El usuario fue creado. El correo no está configurado, por lo que deberás compartirle el
+          acceso.
         </p>
       ) : null}
       {view === "personas" && query.estado === "solicitud-aprobada" ? (
@@ -264,8 +278,8 @@ export default async function UsuariosPage({
               </label>
             </div>
             <p className="invitation-help">
-              Podés invitar cualquier dirección de correo. Para docentes elegí un programa o escribí uno
-              nuevo; para otros roles dejá ambos campos vacíos.
+              Podés invitar cualquier dirección de correo. Para docentes elegí un programa o escribí
+              uno nuevo; para otros roles dejá ambos campos vacíos.
             </p>
             <div className="form-actions">
               <span />
@@ -389,7 +403,7 @@ export default async function UsuariosPage({
               nombre: program.nombre,
               codigo: program.codigo,
               activo: program.activo,
-              members: program.docentes.map(({ docente }) => docente.usuario)
+              members: program.docentes.map(({ docente }) => docente.usuario),
             }))}
             teachers={teachers}
             returnContext="usuarios"
@@ -413,9 +427,11 @@ function programStateMessage(state: string): string {
     "programa-actualizado": "Los datos del programa fueron actualizados.",
     "programa-eliminado": "El programa fue eliminado.",
     "integrante-agregado": "La persona fue agregada al programa.",
-    "integrante-quitado": "La persona fue quitada del programa. Su usuario y su historial se conservaron.",
+    "integrante-quitado":
+      "La persona fue quitada del programa. Su usuario y su historial se conservaron.",
     "invitacion-enviada": "La persona fue creada, asociada al programa e invitada por correo.",
-    "invitacion-creada": "La persona fue creada y asociada. El correo de invitación no pudo enviarse."
+    "invitacion-creada":
+      "La persona fue creada y asociada. El correo de invitación no pudo enviarse.",
   };
   return messages[state] ?? "La operación fue completada.";
 }

@@ -1,10 +1,13 @@
 import type { PrismaClient } from "@prisma/client";
-import type { ConciliacionAsistenciaZoomRepositoryPort, SincronizacionAsistenciaZoomPort } from "../../ports";
+import type {
+  ConciliacionAsistenciaZoomRepositoryPort,
+  SincronizacionAsistenciaZoomPort,
+} from "../../ports";
 
 export type PrismaAsistenciaZoomLecturaDeps = Readonly<{ db: PrismaClient }>;
 
 export function crearPrismaConciliacionAsistenciaZoomRepositoryAdapter(
-  deps: PrismaAsistenciaZoomLecturaDeps
+  deps: PrismaAsistenciaZoomLecturaDeps,
 ): ConciliacionAsistenciaZoomRepositoryPort {
   const { db } = deps;
   return {
@@ -24,13 +27,15 @@ export function crearPrismaConciliacionAsistenciaZoomRepositoryAdapter(
               instancia: {
                 select: {
                   solicitud: {
-                    select: { docentePrograma: { select: { docente: { select: { usuarioId: true } } } } }
-                  }
-                }
-              }
-            }
-          }
-        }
+                    select: {
+                      docentePrograma: { select: { docente: { select: { usuarioId: true } } } },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
       });
       if (!r) {
         return null;
@@ -40,10 +45,11 @@ export function crearPrismaConciliacionAsistenciaZoomRepositoryAdapter(
         version: r.version,
         claveParticipante: r.claveParticipante,
         instanciaId: r.eventoProveedor?.instanciaSalaId ?? null,
-        titularUsuarioId: r.eventoProveedor?.instancia.solicitud.docentePrograma.docente.usuarioId ?? null,
+        titularUsuarioId:
+          r.eventoProveedor?.instancia.solicitud.docentePrograma.docente.usuarioId ?? null,
         estadoConciliacion: r.estadoConciliacion,
         invitadoReunionId: r.invitadoReunionId,
-        esExterno: r.esExterno
+        esExterno: r.esExterno,
       };
     },
 
@@ -56,8 +62,8 @@ export function crearPrismaConciliacionAsistenciaZoomRepositoryAdapter(
             estadoConciliacion: true,
             invitadoReunionId: true,
             esExterno: true,
-            eventoProveedor: { select: { instanciaSalaId: true } }
-          }
+            eventoProveedor: { select: { instanciaSalaId: true } },
+          },
         });
         if (!actual) {
           return { tipo: "NO_ENCONTRADO" as const };
@@ -65,7 +71,7 @@ export function crearPrismaConciliacionAsistenciaZoomRepositoryAdapter(
         if (cambio.invitadoReunionId) {
           const invitado = await tx.invitadoReunion.findUnique({
             where: { id: cambio.invitadoReunionId },
-            select: { instanciaSalaId: true }
+            select: { instanciaSalaId: true },
           });
           // Un invitado de otro encuentro nunca se vincula, ni siquiera por una edición legítima.
           if (!invitado || invitado.instanciaSalaId !== actual.eventoProveedor?.instanciaSalaId) {
@@ -79,8 +85,8 @@ export function crearPrismaConciliacionAsistenciaZoomRepositoryAdapter(
             estadoConciliacion: cambio.estadoConciliacion,
             invitadoReunionId: cambio.invitadoReunionId,
             esExterno: cambio.esExterno,
-            version: { increment: 1 }
-          }
+            version: { increment: 1 },
+          },
         });
         if (count === 0) {
           return { tipo: "CONFLICTO" as const };
@@ -94,23 +100,23 @@ export function crearPrismaConciliacionAsistenciaZoomRepositoryAdapter(
             valorAnterior: {
               estadoConciliacion: actual.estadoConciliacion,
               invitadoReunionId: actual.invitadoReunionId,
-              esExterno: actual.esExterno
+              esExterno: actual.esExterno,
             },
             valorNuevo: {
               estadoConciliacion: cambio.estadoConciliacion,
               invitadoReunionId: cambio.invitadoReunionId,
-              esExterno: cambio.esExterno
-            }
-          }
+              esExterno: cambio.esExterno,
+            },
+          },
         });
         return { tipo: "APLICADO" as const, version: versionEsperada + 1 };
       });
-    }
+    },
   };
 }
 
 export function crearPrismaSincronizacionAsistenciaZoomAdapter(
-  deps: PrismaAsistenciaZoomLecturaDeps
+  deps: PrismaAsistenciaZoomLecturaDeps,
 ): SincronizacionAsistenciaZoomPort {
   const { db } = deps;
   return {
@@ -123,9 +129,9 @@ export function crearPrismaSincronizacionAsistenciaZoomAdapter(
           anfitrionZoomId: true,
           eventoProveedorId: true,
           eventoProveedor: {
-            select: { instancia: { select: { inicioProgramadoAt: true, finProgramadoAt: true } } }
-          }
-        }
+            select: { instancia: { select: { inicioProgramadoAt: true, finProgramadoAt: true } } },
+          },
+        },
       });
       if (!o) {
         return null;
@@ -136,14 +142,14 @@ export function crearPrismaSincronizacionAsistenciaZoomAdapter(
         anfitrionZoomId: o.anfitrionZoomId,
         eventoProveedorId: o.eventoProveedorId,
         inicioProgramadoAt: o.eventoProveedor?.instancia.inicioProgramadoAt ?? null,
-        finProgramadoAt: o.eventoProveedor?.instancia.finProgramadoAt ?? null
+        finProgramadoAt: o.eventoProveedor?.instancia.finProgramadoAt ?? null,
       };
     },
 
     async listarSesionesDelAmbito(ocurrenciaId) {
       const propia = await db.ocurrenciaArchivoZoom.findUnique({
         where: { id: ocurrenciaId },
-        select: { eventoProveedorId: true }
+        select: { eventoProveedorId: true },
       });
       if (!propia) {
         return [];
@@ -152,7 +158,7 @@ export function crearPrismaSincronizacionAsistenciaZoomAdapter(
         where: propia.eventoProveedorId
           ? { eventoProveedorId: propia.eventoProveedorId }
           : { id: ocurrenciaId },
-        select: { id: true, sesionesAsistencia: true }
+        select: { id: true, sesionesAsistencia: true },
       });
       return ocurrencias.map((o) => ({
         ocurrenciaId: o.id,
@@ -165,16 +171,16 @@ export function crearPrismaSincronizacionAsistenciaZoomAdapter(
           entradaAt: s.entradaAt,
           salidaAt: s.salidaAt,
           status: s.status as "in_meeting" | "in_waiting_room" | null,
-          rol: s.rol as "HOST" | "COHOST" | null
-        }))
+          rol: s.rol as "HOST" | "COHOST" | null,
+        })),
       }));
     },
 
     async marcarEstadoReporte(ocurrenciaId, estado, codigoError) {
       await db.ocurrenciaArchivoZoom.update({
         where: { id: ocurrenciaId },
-        data: { estadoAsistencia: estado, errorAsistencia: codigoError }
+        data: { estadoAsistencia: estado, errorAsistencia: codigoError },
       });
-    }
+    },
   };
 }

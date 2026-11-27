@@ -10,7 +10,7 @@ import { mensajeErrorGoogleWorkspace } from "@/src/modules/configuracion/google-
 export const runtime = "nodejs";
 
 const testEmailSchema = z.object({
-  destinatario: z.email("Ingresá un correo electrónico válido.")
+  destinatario: z.email("Ingresá un correo electrónico válido."),
 });
 
 export async function POST(request: Request) {
@@ -22,7 +22,7 @@ export async function POST(request: Request) {
   try {
     const actor = await resolveSessionActor(db, {
       id: session.user.id,
-      email: session.user.email
+      email: session.user.email,
     });
     if (!actor?.activo || actor.rol !== "ADMINISTRACION") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -32,7 +32,7 @@ export async function POST(request: Request) {
     const sentAt = new Intl.DateTimeFormat("es-UY", {
       timeZone: "America/Montevideo",
       dateStyle: "full",
-      timeStyle: "long"
+      timeStyle: "long",
     }).format(new Date());
     const result = await enviarCorreoConfigurado(db, {
       to: [destinatario],
@@ -43,12 +43,13 @@ export async function POST(request: Request) {
         `Solicitado por: ${session.user.email ?? actor.id}`,
         `Fecha: ${sentAt}`,
         "",
-        "Si recibiste este mensaje, el envío de invitaciones y notificaciones por correo está funcionando."
+        "Si recibiste este mensaje, el envío de invitaciones y notificaciones por correo está funcionando.",
       ].join("\n"),
       html: envolverCorreo({
         categoria: "Verificación del sistema",
         titulo: "Prueba de correo exitosa",
-        resumen: "Este correo fue generado para comprobar el funcionamiento del canal de notificaciones.",
+        resumen:
+          "Este correo fue generado para comprobar el funcionamiento del canal de notificaciones.",
         variante: "informativo",
         contenidoHtml: panelCorreo(
           '<p style="margin:0 0 8px;color:#526277;font-size:13px;line-height:20px"><strong>Solicitado por:</strong> ' +
@@ -57,10 +58,10 @@ export async function POST(request: Request) {
             '<p style="margin:0;color:#526277;font-size:13px;line-height:20px"><strong>Fecha:</strong> ' +
             escaparHtmlEmail(sentAt) +
             "</p>",
-          "Detalles de envío"
+          "Detalles de envío",
         ),
-        nota: "Si recibiste este mensaje, el canal de correo aceptó la prueba de envío. Verificá también las notificaciones del sistema."
-      })
+        nota: "Si recibiste este mensaje, el canal de correo aceptó la prueba de envío. Verificá también las notificaciones del sistema.",
+      }),
     });
     if (!result.sent) {
       const message =
@@ -77,7 +78,7 @@ export async function POST(request: Request) {
           ? "Gmail API"
           : "SMTP";
     return NextResponse.json({
-      message: `Correo enviado a ${destinatario} mediante ${transport}. Revisá también la carpeta de spam.`
+      message: `Correo enviado a ${destinatario} mediante ${transport}. Revisá también la carpeta de spam.`,
     });
   } catch (error) {
     const message =

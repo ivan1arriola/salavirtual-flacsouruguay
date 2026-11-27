@@ -3,11 +3,11 @@ import { describe, expect, it } from "vitest";
 
 const control = readFileSync(
   new URL("../src/components/migracion-zoom-serie-control.tsx", import.meta.url),
-  "utf8"
+  "utf8",
 );
 const pagina = readFileSync(
   new URL("../app/(gestion)/reuniones/migracion-zoom/page.tsx", import.meta.url),
-  "utf8"
+  "utf8",
 );
 
 describe("panel de series Zoom", () => {
@@ -24,16 +24,20 @@ describe("panel de series Zoom", () => {
   });
 
   it("unificar usa la ruta de corrección y migrar/retomar la de series, siempre por una sola serie", () => {
-    expect(control).toContain('const RUTA_UNIFICAR = "/api/v1/reuniones/migracion-zoom/series-enlaces";');
+    expect(control).toContain(
+      'const RUTA_UNIFICAR = "/api/v1/reuniones/migracion-zoom/series-enlaces";',
+    );
     expect(control).toContain("unificar ? RUTA_UNIFICAR :");
-    expect(control).toContain('body: JSON.stringify({ modo: "PILOTO", serieClaves: [accion.serieClave] })');
+    expect(control).toContain(
+      'body: JSON.stringify({ modo: "PILOTO", serieClaves: [accion.serieClave] })',
+    );
   });
 
   it("antes de actuar abre un diálogo propio, accesible y que se cierra con Escape, sin window.confirm", () => {
     expect(control).toContain("textoConfirmacionAccion(accionPendiente.tipo, accionPendiente)");
     expect(control).toContain('aria-labelledby="confirmar-accion-serie"');
     expect(control).toMatch(
-      /if \(event\.key === "Escape"\)\s*\{\s*setConfirmar\(null\);\s*setAccionPendiente\(null\);\s*return;\s*\}/
+      /if \(event\.key === "Escape"\)\s*\{\s*setConfirmar\(null\);\s*setAccionPendiente\(null\);\s*return;\s*\}/,
     );
     expect(control).not.toContain("window.confirm");
   });

@@ -6,17 +6,17 @@ describe("tarifa vigente de asistencia", () => {
     const findFirst = vi.fn().mockResolvedValue({ id: "rate-2", valorHora: 450, moneda: "UYU" });
     const rate = await obtenerTarifaVigente(
       {
-        tarifaAsistenciaTecnica: { findFirst }
+        tarifaAsistenciaTecnica: { findFirst },
       } as never,
-      "VIRTUAL"
+      "VIRTUAL",
     );
 
     expect(rate.id).toBe("rate-2");
     expect(findFirst).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { modalidad: "VIRTUAL" },
-        orderBy: [{ createdAt: "desc" }, { id: "desc" }]
-      })
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      }),
     );
   });
 
@@ -24,10 +24,10 @@ describe("tarifa vigente de asistencia", () => {
     await expect(
       obtenerTarifaVigente(
         {
-          tarifaAsistenciaTecnica: { findFirst: vi.fn().mockResolvedValue(null) }
+          tarifaAsistenciaTecnica: { findFirst: vi.fn().mockResolvedValue(null) },
         } as never,
-        "HIBRIDA"
-      )
+        "HIBRIDA",
+      ),
     ).rejects.toThrow("No hay una tarifa configurada");
   });
 });

@@ -4,13 +4,13 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   resolve: {
     alias: {
-      "@": path.resolve(import.meta.dirname, ".")
-    }
+      "@": path.resolve(import.meta.dirname, "."),
+    },
   },
   test: {
     environment: "node",
     env: {
-      CONFIG_ENCRYPTION_KEY: "0123456789abcdef".repeat(4)
+      CONFIG_ENCRYPTION_KEY: "0123456789abcdef".repeat(4),
     },
     include: ["test/**/*.test.{ts,tsx}"],
     coverage: {
@@ -22,8 +22,8 @@ export default defineConfig({
         lines: 95,
         statements: 95,
         functions: 95,
-        branches: 90
-      }
-    }
-  }
+        branches: 90,
+      },
+    },
+  },
 });

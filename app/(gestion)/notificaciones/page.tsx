@@ -5,7 +5,7 @@ import { auth } from "@/auth";
 import {
   NotificationMarkReadOnOpen,
   NotificationReadButton,
-  NotificationDeleteButton
+  NotificationDeleteButton,
 } from "@/src/components/notification-actions";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
@@ -13,7 +13,7 @@ import { formatDateTime } from "@/src/lib/ui/format";
 import styles from "./notificaciones.module.css";
 
 export default async function NotificacionesPage({
-  searchParams
+  searchParams,
 }: Readonly<{ searchParams: Promise<{ estado?: string }> }>) {
   const session = await auth();
   if (!session?.user) {
@@ -21,7 +21,7 @@ export default async function NotificacionesPage({
   }
   const actor = await resolveSessionActor(db, {
     id: session.user.id,
-    email: session.user.email
+    email: session.user.email,
   });
   if (!actor?.activo) {
     redirect("/acceso");
@@ -30,22 +30,22 @@ export default async function NotificacionesPage({
   const { estado = "todas" } = await searchParams;
   const where = {
     usuarioId: actor.id,
-    ...(estado === "no-leidas" ? { leidaAt: null } : {})
+    ...(estado === "no-leidas" ? { leidaAt: null } : {}),
   };
   const [notifications, unreadCount] = await Promise.all([
     db.notificacion.findMany({
       where,
       orderBy: { createdAt: "desc" },
-      take: 80
+      take: 80,
     }),
-    db.notificacion.count({ where: { usuarioId: actor.id, leidaAt: null } })
+    db.notificacion.count({ where: { usuarioId: actor.id, leidaAt: null } }),
   ]);
 
   return (
     <>
       <NotificationMarkReadOnOpen unreadCount={unreadCount} />
 
-      <div className={styles.page}>
+      <div className={styles["page"]}>
         <header className="page-header">
           <div>
             <p className="page-eyebrow">Actividad</p>
@@ -55,7 +55,7 @@ export default async function NotificacionesPage({
           <Bell size={28} color="var(--brand)" aria-hidden="true" />
         </header>
 
-        <form className={`filter-bar ${styles.filter}`} method="get">
+        <form className={`filter-bar ${styles["filter"]}`} method="get">
           <Bell size={18} aria-hidden="true" />
           <select aria-label="Filtrar notificaciones" name="estado" defaultValue={estado}>
             <option value="todas">Todas</option>
@@ -73,12 +73,12 @@ export default async function NotificacionesPage({
               <p>No hay notificaciones para ese filtro.</p>
             </div>
           ) : (
-            <div className={styles.list}>
+            <div className={styles["list"]}>
               {notifications.map((notification) => {
                 const content = (
                   <>
                     <span
-                      className={`${styles.dot}${notification.leidaAt ? ` ${styles.read}` : ""}`}
+                      className={`${styles["dot"]}${notification.leidaAt ? ` ${styles["read"]}` : ""}`}
                       aria-hidden="true"
                     />
                     <span>
@@ -92,27 +92,27 @@ export default async function NotificacionesPage({
                 );
                 return (
                   <article
-                    className={`${styles.item}${notification.leidaAt ? "" : ` ${styles.unread}`}`}
+                    className={`${styles["item"]}${notification.leidaAt ? "" : ` ${styles["unread"]}`}`}
                     key={notification.id}
                   >
                     {notification.href ? (
-                      <Link className={styles.copy} href={notification.href}>
+                      <Link className={styles["copy"]} href={notification.href}>
                         {content}
                       </Link>
                     ) : (
-                      <span className={styles.copy}>{content}</span>
+                      <span className={styles["copy"]}>{content}</span>
                     )}
-                    <span className={styles.actions}>
+                    <span className={styles["actions"]}>
                       {notification.leidaAt ? (
                         <span className="status status-neutral">Leída</span>
                       ) : (
                         <NotificationReadButton
-                          className={styles.actionWrap}
+                          className={styles["actionWrap"]}
                           notificationId={notification.id}
                         />
                       )}
                       <NotificationDeleteButton
-                        className={styles.actionWrap}
+                        className={styles["actionWrap"]}
                         notificationId={notification.id}
                       />
                     </span>

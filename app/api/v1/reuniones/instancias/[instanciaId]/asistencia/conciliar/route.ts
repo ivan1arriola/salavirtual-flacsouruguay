@@ -21,24 +21,31 @@ function leerCuerpo(valor: unknown): Cuerpo | null {
     return null;
   }
   const v = valor as Record<string, unknown>;
-  const invitado = v.invitadoReunionId ?? null;
-  if (typeof v.registroId !== "string" || v.registroId.length === 0 || v.registroId.length > 64) {
+  const invitado = v["invitadoReunionId"] ?? null;
+  if (
+    typeof v["registroId"] !== "string" ||
+    v["registroId"].length === 0 ||
+    v["registroId"].length > 64
+  ) {
     return null;
   }
-  if (invitado !== null && (typeof invitado !== "string" || invitado.length === 0 || invitado.length > 64)) {
+  if (
+    invitado !== null &&
+    (typeof invitado !== "string" || invitado.length === 0 || invitado.length > 64)
+  ) {
     return null;
   }
-  if (typeof v.externo !== "boolean" && v.externo !== undefined) {
+  if (typeof v["externo"] !== "boolean" && v["externo"] !== undefined) {
     return null;
   }
-  if (!Number.isInteger(v.version) || (v.version as number) < 1) {
+  if (!Number.isInteger(v["version"]) || (v["version"] as number) < 1) {
     return null;
   }
   return {
-    registroId: v.registroId,
+    registroId: v["registroId"],
     invitadoReunionId: invitado,
-    externo: v.externo === true,
-    version: v.version as number
+    externo: v["externo"] === true,
+    version: v["version"] as number,
   };
 }
 
@@ -62,25 +69,28 @@ export async function POST(request: Request, context: RouteContext) {
     const { instanciaId } = await context.params;
     const resultado = await conciliarAsistenciaZoom(
       { id: actor.id, rol: actor.rol },
-      { ...cuerpo, instanciaId }
+      { ...cuerpo, instanciaId },
     );
     switch (resultado.tipo) {
       case "OK":
-        return NextResponse.json({ version: resultado.version }, { status: 200, headers: SIN_CACHE });
+        return NextResponse.json(
+          { version: resultado.version },
+          { status: 200, headers: SIN_CACHE },
+        );
       case "PROHIBIDO":
         return NextResponse.json(
           { error: "No tenés permisos para conciliar esta asistencia." },
-          { status: 403 }
+          { status: 403 },
         );
       case "CONFLICTO":
         return NextResponse.json(
           { error: "Otra persona modificó este registro. Recargá e intentá de nuevo." },
-          { status: 409 }
+          { status: 409 },
         );
       case "ERROR":
         return NextResponse.json(
           { error: "No se pudo conciliar la asistencia.", codigo: resultado.codigo },
-          { status: resultado.codigo === "NO_ENCONTRADO" ? 404 : 422 }
+          { status: resultado.codigo === "NO_ENCONTRADO" ? 404 : 422 },
         );
     }
   } catch {

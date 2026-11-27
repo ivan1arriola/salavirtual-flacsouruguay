@@ -3,13 +3,16 @@
 import { RefreshCw } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import type { EstadoEnlaceZoom, ResumenEnlaceZoom } from "@/src/modules/reuniones/estado-enlace-zoom.domain";
+import type {
+  EstadoEnlaceZoom,
+  ResumenEnlaceZoom,
+} from "@/src/modules/reuniones/estado-enlace-zoom.domain";
 
 const ETIQUETAS: Record<EstadoEnlaceZoom, string> = {
   LISTO: "Enlace listo",
   ATENCION: "Enlace listo, cambios sin sincronizar",
   PENDIENTE: "Enlace pendiente",
-  ERROR: "Error al crear el enlace"
+  ERROR: "Error al crear el enlace",
 };
 
 export function ZoomLinkStatus({
@@ -17,7 +20,7 @@ export function ZoomLinkStatus({
   esAdmin,
   eventoProveedorId,
   operacion,
-  contexto
+  contexto,
 }: Readonly<{
   estado: EstadoEnlaceZoom;
   esAdmin: boolean;
@@ -36,7 +39,7 @@ export function ZoomLinkStatus({
       const response = await fetch("/api/v1/reuniones/provisionar-pendientes", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ eventoProveedorId, operacion })
+        body: JSON.stringify({ eventoProveedorId, operacion }),
       });
       if (!response.ok) {
         const result = await response.json().catch(() => ({}));
@@ -48,7 +51,10 @@ export function ZoomLinkStatus({
   }
 
   return (
-    <span aria-busy={pending || undefined} className={`status zoom-link-status is-${estado.toLowerCase()}`}>
+    <span
+      aria-busy={pending || undefined}
+      className={`status zoom-link-status is-${estado.toLowerCase()}`}
+    >
       <span className="zoom-link-status-texto">{ETIQUETAS[estado]}</span>
       {esAdmin && estado !== "LISTO" && eventoProveedorId ? (
         <button

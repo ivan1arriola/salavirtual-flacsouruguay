@@ -4,12 +4,16 @@ export * from "./application";
 export * from "./infrastructure";
 
 import type { ModalidadAsistencia, PeriodoMes, PeriodoReporteMensual } from "./domain";
-import type { LiquidacionesRepositoryPort, PlanillaPagosExporterPort, TarifasRepositoryPort } from "./ports";
+import type {
+  LiquidacionesRepositoryPort,
+  PlanillaPagosExporterPort,
+  TarifasRepositoryPort,
+} from "./ports";
 import {
   consultarResumenAsistentesUseCase,
   consultarTarifaVigenteUseCase,
   enviarReportesMensualesUseCase,
-  generarPlanillaPagosUseCase
+  generarPlanillaPagosUseCase,
 } from "./application";
 
 export type ServicioLiquidacionesDeps = Readonly<{
@@ -23,7 +27,7 @@ export type ServicioLiquidacionesDeps = Readonly<{
       subject: string;
       text: string;
       html: string;
-    }>
+    }>,
   ) => Promise<Readonly<{ sent: boolean; skipped?: string }>>;
 }>;
 
@@ -35,18 +39,21 @@ export function crearServicioLiquidaciones(deps: ServicioLiquidacionesDeps) {
     generarPlanillaPagos(periodo: PeriodoReporteMensual) {
       return generarPlanillaPagosUseCase(
         { liquidacionesRepo: deps.liquidacionesRepo, exporter: deps.exporter },
-        periodo
+        periodo,
       );
     },
     consultarResumenAsistentes(periodo: PeriodoMes) {
-      return consultarResumenAsistentesUseCase({ liquidacionesRepo: deps.liquidacionesRepo }, periodo);
+      return consultarResumenAsistentesUseCase(
+        { liquidacionesRepo: deps.liquidacionesRepo },
+        periodo,
+      );
     },
     enviarReportesMensuales(ahora?: Date) {
       return enviarReportesMensualesUseCase(
         { liquidacionesRepo: deps.liquidacionesRepo, enviarCorreo: deps.enviarCorreo },
-        ahora
+        ahora,
       );
-    }
+    },
   };
 }
 

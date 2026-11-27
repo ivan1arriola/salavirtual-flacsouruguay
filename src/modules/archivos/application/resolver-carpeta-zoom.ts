@@ -9,7 +9,7 @@ function partesFechaLocal(fecha: Date): Readonly<{ anio: string; mes: string; di
     timeZone: ZONA_NEGOCIO,
     year: "numeric",
     month: "2-digit",
-    day: "2-digit"
+    day: "2-digit",
   }).formatToParts(fecha);
   const valor = (tipo: string) => partes.find((p) => p.type === tipo)?.value ?? "00";
   return { anio: valor("year"), mes: valor("month"), dia: valor("day") };
@@ -17,7 +17,7 @@ function partesFechaLocal(fecha: Date): Readonly<{ anio: string; mes: string; di
 
 /** Nombre legible y seguro para Drive: sin separadores ni controles, con fecha local y sufijo estable del UUID. */
 export function nombreCarpetaOcurrenciaZoom(
-  ocurrencia: Pick<ReferenciaOcurrenciaZoom, "titulo" | "uuid" | "inicioRealAt">
+  ocurrencia: Pick<ReferenciaOcurrenciaZoom, "titulo" | "uuid" | "inicioRealAt">,
 ): string {
   const { anio, mes, dia } = partesFechaLocal(ocurrencia.inicioRealAt);
   const titulo = ocurrencia.titulo
@@ -39,7 +39,7 @@ export async function resolverCarpetaMesZoom(
   storage: Pick<ArchivoStoragePort, "asegurarCarpeta">,
   hash: HashZoom,
   inicioRealAt: Date,
-  raiz: string
+  raiz: string,
 ): Promise<string> {
   const { anio, mes } = partesFechaLocal(inicioRealAt);
   const porAnio = await storage.asegurarCarpeta(hash(`zoom-carpeta|${raiz}|${anio}`), anio, raiz);
@@ -57,7 +57,7 @@ export async function resolverCarpetaDestinoZoom(
   storage: Pick<ArchivoStoragePort, "asegurarCarpeta">,
   hash: HashZoom,
   archivo: Pick<ArchivoReclamadoZoom, "eventoProveedorId" | "ocurrencia">,
-  raices: Readonly<{ raizVinculados: string | null; raizHistorico: string | null }>
+  raices: Readonly<{ raizVinculados: string | null; raizHistorico: string | null }>,
 ): Promise<string | null> {
   const vinculado = archivo.eventoProveedorId !== null;
   const raiz = vinculado ? raices.raizVinculados : raices.raizHistorico;
@@ -68,8 +68,10 @@ export async function resolverCarpetaDestinoZoom(
     ? raiz
     : await resolverCarpetaMesZoom(storage, hash, archivo.ocurrencia.inicioRealAt, raiz);
   return storage.asegurarCarpeta(
-    hash(`zoom-carpeta|ocurrencia|${archivo.ocurrencia.cuentaZoomId}|${archivo.ocurrencia.uuid}|${raiz}`),
+    hash(
+      `zoom-carpeta|ocurrencia|${archivo.ocurrencia.cuentaZoomId}|${archivo.ocurrencia.uuid}|${raiz}`,
+    ),
     nombreCarpetaOcurrenciaZoom(archivo.ocurrencia),
-    padre
+    padre,
   );
 }

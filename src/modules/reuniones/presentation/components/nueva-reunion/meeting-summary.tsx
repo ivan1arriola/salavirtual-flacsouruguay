@@ -14,7 +14,7 @@ export function MeetingSummary({
   meetingMode,
   canAssignAssistant,
   assistanceMode,
-  selectedAssistant
+  selectedAssistant,
 }: Readonly<{
   dates: readonly MeetingDate[];
   dateMode: MeetingDateMode;
@@ -39,10 +39,10 @@ export function MeetingSummary({
         : "Revisá fechas y horarios";
   const hibrida = requiresAssistance && meetingMode === "HIBRIDA";
   return (
-    <aside className={styles.summary} aria-label="Resumen de la reunión">
-      <h2 className={styles.summaryHeading}>Resumen de la reunión</h2>
+    <aside className={styles["summary"]} aria-label="Resumen de la reunión">
+      <h2 className={styles["summaryHeading"]}>Resumen de la reunión</h2>
       <button
-        className={styles.summaryToggle}
+        className={styles["summaryToggle"]}
         type="button"
         aria-expanded={expanded}
         aria-controls="resumen-reunion-contenido"
@@ -51,16 +51,24 @@ export function MeetingSummary({
         Resumen de la reunión <span aria-hidden="true">{expanded ? "−" : "+"}</span>
       </button>
       {/* Solo cambian la cantidad y el estado de preparación: no se anuncia cada tecla. */}
-      <p className={styles.summaryStatus} role="status" aria-live="polite">
+      <p className={styles["summaryStatus"]} role="status" aria-live="polite">
         {dates.length} {dates.length === 1 ? "encuentro" : "encuentros"} · {estado}
       </p>
-      <div id="resumen-reunion-contenido" className={styles.summaryContent} data-expanded={expanded}>
+      <div
+        id="resumen-reunion-contenido"
+        className={styles["summaryContent"]}
+        data-expanded={expanded}
+      >
         <dl>
           <div>
             <dt>Tipo</dt>
             <dd>
               {dateMode === "SINGLE" ? "Reunión única" : "Serie de encuentros"}
-              {dateMode === "RECURRENT" ? " · Semanal" : dateMode === "MANUAL" ? " · Fechas específicas" : ""}
+              {dateMode === "RECURRENT"
+                ? " · Semanal"
+                : dateMode === "MANUAL"
+                  ? " · Fechas específicas"
+                  : ""}
             </dd>
           </div>
           <div>
@@ -116,7 +124,7 @@ export function MeetingSummary({
           ) : null}
         </dl>
         {hibrida ? (
-          <details className={styles.coverageDetails}>
+          <details className={styles["coverageDetails"]}>
             <summary>Ver llegadas y salidas ({dates.length})</summary>
             <ul>
               {ordenarEncuentros(dates).map((date) => (
@@ -131,8 +139,9 @@ export function MeetingSummary({
             </ul>
           </details>
         ) : null}
-        <p className={styles.linkNotice}>
-          Un solo enlace de Zoom para todos los encuentros. Estará disponible cuando termine la creación.
+        <p className={styles["linkNotice"]}>
+          Un solo enlace de Zoom para todos los encuentros. Estará disponible cuando termine la
+          creación.
         </p>
       </div>
     </aside>

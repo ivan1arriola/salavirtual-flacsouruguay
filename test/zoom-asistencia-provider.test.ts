@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const listar = vi.fn();
 vi.mock("../src/integrations/zoom/zoom-reports.client", () => ({
-  listarParticipantesReunionPasadaZoomHttp: (...a: unknown[]) => listar(...a)
+  listarParticipantesReunionPasadaZoomHttp: (...a: unknown[]) => listar(...a),
 }));
 
 import { crearZoomAsistenciaProviderAdapter } from "../src/modules/archivos/infrastructure/zoom/zoom-asistencia-provider.adapter";
@@ -27,8 +27,8 @@ describe("zoom-asistencia-provider", () => {
         email: "a@x.com",
         joinTime: t("10:00"),
         leaveTime: t("10:30"),
-        status: "in_meeting"
-      }
+        status: "in_meeting",
+      },
     ]);
     const r = await p.obtenerSesiones("uuid-1");
     expect(r.estado).toBe("DISPONIBLE");
@@ -43,7 +43,7 @@ describe("zoom-asistencia-provider", () => {
       email: null,
       joinTime: t("10:00"),
       leaveTime: t("10:30"),
-      status: "in_waiting_room" as const
+      status: "in_waiting_room" as const,
     };
     listar.mockResolvedValue([fila]);
     const a = (await p.obtenerSesiones("uuid-1")) as unknown as { sesiones: any[] };
@@ -55,7 +55,7 @@ describe("zoom-asistencia-provider", () => {
       entradaAt: t("10:00"),
       salidaAt: t("10:30"),
       status: "in_waiting_room",
-      rol: null
+      rol: null,
     });
     expect(a.sesiones[0].claveSesion).toBe(b.sesiones[0].claveSesion);
     expect(a.sesiones[0].claveSesion).not.toBe(c.sesiones[0].claveSesion);

@@ -6,8 +6,10 @@ const privateKeySchema = z
   .trim()
   .transform((value) => value.replaceAll("\\n", "\n"))
   .refine(
-    (value) => value.startsWith("-----BEGIN PRIVATE KEY-----") && value.endsWith("-----END PRIVATE KEY-----"),
-    "El private key no tiene formato PEM valido."
+    (value) =>
+      value.startsWith("-----BEGIN PRIVATE KEY-----") &&
+      value.endsWith("-----END PRIVATE KEY-----"),
+    "El private key no tiene formato PEM valido.",
   );
 
 const credentialIdSchema = z
@@ -17,13 +19,13 @@ const credentialIdSchema = z
   .max(160)
   .refine(
     (value) => value === "principal" || value.startsWith("legacy:"),
-    "Identificador de credencial inválido."
+    "Identificador de credencial inválido.",
   );
 
 export const googleServiceAccountKeySchema = z
   .object({
     type: z.literal("service_account", {
-      message: 'El JSON debe tener type: "service_account".'
+      message: 'El JSON debe tener type: "service_account".',
     }),
     project_id: z.string().trim().min(1, "El JSON debe incluir project_id.").optional(),
     private_key_id: z.string().trim().optional(),
@@ -34,7 +36,7 @@ export const googleServiceAccountKeySchema = z
     token_uri: z.string().optional(),
     auth_provider_x509_cert_url: z.string().optional(),
     client_x509_cert_url: z.string().optional(),
-    universe_domain: z.string().optional()
+    universe_domain: z.string().optional(),
   })
   .passthrough();
 
@@ -72,7 +74,7 @@ export const configuracionGoogleWorkspaceSchema = z.object({
   privateKey: privateKeySchema,
   serviceAccountSubject: z.email(),
   driveDestinationId: z.string().trim().min(1),
-  activa: z.boolean().default(true)
+  activa: z.boolean().default(true),
 });
 
 export const seccionConfiguracionGoogleWorkspaceSchema = z.discriminatedUnion("seccion", [
@@ -86,29 +88,31 @@ export const seccionConfiguracionGoogleWorkspaceSchema = z.discriminatedUnion("s
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message:
-            error instanceof Error ? error.message : "El archivo JSON de cuenta de servicio no es válido."
+            error instanceof Error
+              ? error.message
+              : "El archivo JSON de cuenta de servicio no es válido.",
         });
         return z.NEVER;
       }
-    })
+    }),
   }),
   z.object({
     seccion: z.literal("DELEGACION"),
-    serviceAccountSubject: z.email()
+    serviceAccountSubject: z.email(),
   }),
   z.object({
     seccion: z.literal("DRIVE"),
-    driveDestinationId: z.string().trim().min(1)
+    driveDestinationId: z.string().trim().min(1),
   }),
   z.object({
     seccion: z.literal("ESTADO"),
-    activa: z.boolean()
-  })
+    activa: z.boolean(),
+  }),
 ]);
 
 export const pruebaConfiguracionGoogleWorkspaceSchema = z.object({
   objetivo: z.enum(["CREDENCIAL", "DELEGACION", "SCOPES", "DRIVE"]),
-  credentialId: credentialIdSchema.optional()
+  credentialId: credentialIdSchema.optional(),
 });
 
 export type SeccionConfiguracionGoogleWorkspaceInput = Readonly<

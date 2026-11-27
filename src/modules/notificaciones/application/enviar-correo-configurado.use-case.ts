@@ -3,7 +3,7 @@ import type { EmailTransportPort } from "../ports";
 
 export async function enviarCorreoConfiguradoUseCase(
   emailTransport: EmailTransportPort,
-  input: MailInput
+  input: MailInput,
 ): Promise<MailSendResult> {
   return emailTransport.enviarCorreo(input);
 }

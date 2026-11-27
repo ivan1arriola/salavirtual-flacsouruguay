@@ -15,10 +15,18 @@ const NO_CACHE = { "Cache-Control": "private, no-store" };
 
 const accionSchema = z.discriminatedUnion("accion", [
   z.object({
-    accion: z.enum(["CORREGIR_EN_ZOOM", "ADOPTAR_DE_ZOOM", "RECREAR_EN_ZOOM", "CANCELAR_ENCUENTRO"]),
-    instanciaId: z.string().min(1).max(100)
+    accion: z.enum([
+      "CORREGIR_EN_ZOOM",
+      "ADOPTAR_DE_ZOOM",
+      "RECREAR_EN_ZOOM",
+      "CANCELAR_ENCUENTRO",
+    ]),
+    instanciaId: z.string().min(1).max(100),
   }),
-  z.object({ accion: z.enum(["IGNORAR", "DEJAR_DE_IGNORAR"]), observadaId: z.string().min(1).max(100) })
+  z.object({
+    accion: z.enum(["IGNORAR", "DEJAR_DE_IGNORAR"]),
+    observadaId: z.string().min(1).max(100),
+  }),
 ]);
 
 /** Acciones manuales sobre las diferencias de la agenda de Zoom (solo administración). */
@@ -49,12 +57,15 @@ export async function POST(request: Request) {
         message: pendiente
           ? "El cambio quedó guardado en Sala Virtual, pero la sincronización con Zoom tiene pendientes."
           : "Listo.",
-        pendiente
+        pendiente,
       },
-      { status: pendiente ? 202 : 200, headers: NO_CACHE }
+      { status: pendiente ? 202 : 200, headers: NO_CACHE },
     );
   } catch (error) {
     const mapped = toHttpError(error);
-    return NextResponse.json({ error: mapped.message }, { status: mapped.status, headers: NO_CACHE });
+    return NextResponse.json(
+      { error: mapped.message },
+      { status: mapped.status, headers: NO_CACHE },
+    );
   }
 }

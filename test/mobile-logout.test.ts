@@ -1,23 +1,23 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const state = vi.hoisted(() => ({
-  token: { sub: "usuario-1", v: 2, sid: "sesion-123" } as { sub: string; v: number; sid?: string } | null,
-  removed: [] as unknown[]
+  token: { sub: "usuario-1", v: 2, sid: "sesion-123" },
+  removed: [] as unknown[],
 }));
 
 vi.mock("next/server", () => ({
   NextResponse: {
     json: (body: unknown, options?: { status?: number }) => ({
       status: options?.status ?? 200,
-      body
-    })
-  }
+      body,
+    }),
+  },
 }));
 vi.mock("@/src/lib/auth/config", () => ({ authConfig: { secret: "test-secret" } }));
 vi.mock("@/src/lib/auth/mobile-token", () => ({
   mobileActorFromRequest: () => state.token,
   mobileSessionIdentifier: (id: string) => "mobile-session:" + id,
-  mobileSessionHash: (sid: string) => "sha:" + sid
+  mobileSessionHash: (sid: string) => "sha:" + sid,
 }));
 vi.mock("@/src/lib/db", () => ({
   db: {
@@ -25,9 +25,9 @@ vi.mock("@/src/lib/db", () => ({
       deleteMany: async ({ where }: { where: unknown }) => {
         state.removed.push(where);
         return { count: 1 };
-      }
-    }
-  }
+      },
+    },
+  },
 }));
 
 import { POST } from "../app/api/v1/mobile/auth/logout/route";
@@ -44,8 +44,8 @@ describe("logout móvil", () => {
     expect(state.removed).toEqual([
       {
         identifier: "mobile-session:usuario-1",
-        token: "sha:sesion-123"
-      }
+        token: "sha:sesion-123",
+      },
     ]);
   });
 

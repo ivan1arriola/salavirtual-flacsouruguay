@@ -5,7 +5,7 @@ import { useEffect, useRef } from "react";
 export function DismissibleDetails({
   className,
   dataTour,
-  children
+  children,
 }: Readonly<{
   className: string;
   dataTour?: string;
@@ -44,7 +44,8 @@ export function DismissibleDetails({
       const target = event.target;
       const link = target instanceof Element ? target.closest("a[href]") : null;
 
-      const closeButton = target instanceof Element ? target.closest("[data-disclosure-close]") : null;
+      const closeButton =
+        target instanceof Element ? target.closest("[data-disclosure-close]") : null;
 
       if (details?.open && closeButton && details.contains(closeButton)) {
         closeMenu({ restoreFocus: true });

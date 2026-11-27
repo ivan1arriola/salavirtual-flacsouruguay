@@ -5,17 +5,20 @@ import {
   HostEditForm,
   HostFields,
   MeetHostsConfig,
-  type MeetHostVisible
+  type MeetHostVisible,
 } from "../src/components/meet-hosts-config";
 import { readFileSync } from "node:fs";
 import { ZoomConfigForm } from "../src/components/zoom-config-form";
-import { VistaPreviaSincronizacionPanel, ZoomGrupoConfig } from "../src/components/zoom-grupo-config";
+import {
+  VistaPreviaSincronizacionPanel,
+  ZoomGrupoConfig,
+} from "../src/components/zoom-grupo-config";
 import {
   leerVistaPrevia,
   pedidoDeSincronizacion,
   puedeRevisarSincronizacion,
   resultadoSincronizacion,
-  type VistaPreviaSincronizacion
+  type VistaPreviaSincronizacion,
 } from "../src/components/zoom-grupo-config.domain";
 import { formatDateTime } from "../src/lib/ui/format";
 
@@ -35,7 +38,7 @@ const MEET: MeetHostVisible = {
   activa: true,
   passwordConfigurada: true,
   enUso: false,
-  proveedorTipo: "GOOGLE_MEET"
+  proveedorTipo: "GOOGLE_MEET",
 };
 
 const ZOOM: MeetHostVisible = {
@@ -50,14 +53,14 @@ const ZOOM: MeetHostVisible = {
   enUso: true,
   proveedorTipo: "ZOOM",
   fueraDelGrupoAt: null,
-  reunionesFuturas: 0
+  reunionesFuturas: 0,
 };
 
 const SIN_GRUPO = {
   grupoId: null,
   grupoNombre: null,
   ultimaSincronizacionFecha: null,
-  ultimaSincronizacionResultado: null
+  ultimaSincronizacionResultado: null,
 };
 
 function formularioDeEdicion(host: MeetHostVisible) {
@@ -69,13 +72,16 @@ function formularioDeEdicion(host: MeetHostVisible) {
       message: "",
       success: false,
       onSubmit: () => {},
-      onDelete: () => {}
-    })
+      onDelete: () => {},
+    }),
   );
 }
 
 function botonSincronizar(html: string) {
-  return html.match(/<button(?:(?!<\/button>)[\s\S])*Sincronizar con el grupo[\s\S]*?<\/button>/)?.[0] ?? "";
+  return (
+    html.match(/<button(?:(?!<\/button>)[\s\S])*Sincronizar con el grupo[\s\S]*?<\/button>/)?.[0] ??
+    ""
+  );
 }
 
 describe("Configuración › Salas: formularios de cuentas", () => {
@@ -119,7 +125,7 @@ describe("Configuración › Salas: formularios de cuentas", () => {
       "limiteConcurrente",
       "tieneLicencia",
       "activa",
-      "notificarCambioPassword"
+      "notificarCambioPassword",
     ]) {
       expect(html).toContain(`name="${campo}"`);
     }
@@ -132,8 +138,11 @@ describe("Configuración › Salas: lista de cuentas", () => {
   it("una cuenta fuera del grupo muestra el aviso con la cantidad de reuniones futuras", () => {
     const html = renderToStaticMarkup(
       createElement(MeetHostsConfig, {
-        hosts: [MEET, { ...ZOOM, fueraDelGrupoAt: "2026-11-01T12:00:00.000Z", reunionesFuturas: 3 }]
-      })
+        hosts: [
+          MEET,
+          { ...ZOOM, fueraDelGrupoAt: "2026-11-01T12:00:00.000Z", reunionesFuturas: 3 },
+        ],
+      }),
     );
     expect(html).toContain("Fuera del grupo (3 reuniones futuras)");
   });
@@ -141,8 +150,8 @@ describe("Configuración › Salas: lista de cuentas", () => {
   it("una cuenta fuera del grupo figura como no disponible", () => {
     const html = renderToStaticMarkup(
       createElement(MeetHostsConfig, {
-        hosts: [{ ...ZOOM, fueraDelGrupoAt: "2026-11-01T12:00:00.000Z", reunionesFuturas: 1 }]
-      })
+        hosts: [{ ...ZOOM, fueraDelGrupoAt: "2026-11-01T12:00:00.000Z", reunionesFuturas: 1 }],
+      }),
     );
     expect(html).toContain("Fuera del grupo (1 reunión futura)");
     expect(html).toContain("No disponible");
@@ -174,8 +183,8 @@ describe("Configuración › Salas: grupo de Zoom", () => {
         grupoId: "g-1",
         grupoNombre: "Salas FLACSO",
         ultimaSincronizacionFecha: fecha,
-        ultimaSincronizacionResultado: "2 nuevas, 1 desactivada"
-      })
+        ultimaSincronizacionResultado: "2 nuevas, 1 desactivada",
+      }),
     );
     expect(html).toContain("Salas FLACSO");
     expect(html).toContain(fecha);
@@ -192,7 +201,7 @@ describe("Configuración › Salas: grupo de Zoom", () => {
 
   it("con grupo pero sin sincronizar todavía lo dice", () => {
     const html = renderToStaticMarkup(
-      createElement(ZoomGrupoConfig, { ...SIN_GRUPO, grupoId: "g-1", grupoNombre: "Salas FLACSO" })
+      createElement(ZoomGrupoConfig, { ...SIN_GRUPO, grupoId: "g-1", grupoNombre: "Salas FLACSO" }),
     );
     expect(html).toContain("Todavía no se sincronizó");
   });
@@ -208,7 +217,7 @@ describe("ayuda de permisos de la app de Zoom", () => {
       "meeting:delete:meeting:admin",
       "meeting:read:list_meetings:admin",
       "group:read:list_groups:admin",
-      "group_member:read:list_members:admin"
+      "group_member:read:list_members:admin",
     ]) {
       expect(html).toContain(permiso);
     }
@@ -217,7 +226,8 @@ describe("ayuda de permisos de la app de Zoom", () => {
 });
 
 const VISTA_PREVIA: VistaPreviaSincronizacion = {
-  resumen: "1 nueva, 1 desactivada, 1 fuera del grupo con reuniones, 2 sin licencia (1 pasa a sin licencia)",
+  resumen:
+    "1 nueva, 1 desactivada, 1 fuera del grupo con reuniones, 2 sin licencia (1 pasa a sin licencia)",
   masivo: false,
   avisoMasivo: null,
   revision: "a".repeat(64),
@@ -226,7 +236,7 @@ const VISTA_PREVIA: VistaPreviaSincronizacion = {
   desactivar: ["sala02@flacso.edu.uy"],
   marcarFuera: [{ email: "sala03@flacso.edu.uy", reunionesFuturas: 2 }],
   sinLicencia: ["sala04@flacso.edu.uy", "nueva@flacso.edu.uy"],
-  pierdenLicencia: ["sala04@flacso.edu.uy"]
+  pierdenLicencia: ["sala04@flacso.edu.uy"],
 };
 
 const SIN_CAMBIOS: VistaPreviaSincronizacion = {
@@ -239,7 +249,7 @@ const SIN_CAMBIOS: VistaPreviaSincronizacion = {
   desactivar: [],
   marcarFuera: [],
   sinLicencia: [],
-  pierdenLicencia: []
+  pierdenLicencia: [],
 };
 
 function panel(vistaPrevia: VistaPreviaSincronizacion) {
@@ -248,8 +258,8 @@ function panel(vistaPrevia: VistaPreviaSincronizacion) {
       vistaPrevia,
       ocupado: false,
       onConfirmar: () => {},
-      onCancelar: () => {}
-    })
+      onCancelar: () => {},
+    }),
   );
 }
 
@@ -267,7 +277,7 @@ describe("vista previa de la sincronización", () => {
       "sala03@flacso.edu.uy (2 reuniones futuras)",
       "Pasan a sin licencia (1)",
       "sala04@flacso.edu.uy",
-      "2 sin licencia"
+      "2 sin licencia",
     ]) {
       expect(html).toContain(texto);
     }
@@ -281,7 +291,7 @@ describe("vista previa de la sincronización", () => {
     const html = panel({
       ...VISTA_PREVIA,
       masivo: true,
-      avisoMasivo: "Esta sincronización cambiaría muchas cuentas (3 de 4)."
+      avisoMasivo: "Esta sincronización cambiaría muchas cuentas (3 de 4).",
     });
     expect(html).toContain("is-error");
     expect(html).toContain('role="alert"');
@@ -307,7 +317,7 @@ describe("vista previa de la sincronización", () => {
   it("una reunión futura se nombra en singular", () => {
     const html = panel({
       ...SIN_CAMBIOS,
-      marcarFuera: [{ email: "sala03@flacso.edu.uy", reunionesFuturas: 1 }]
+      marcarFuera: [{ email: "sala03@flacso.edu.uy", reunionesFuturas: 1 }],
     });
     expect(html).toContain("sala03@flacso.edu.uy (1 reunión futura)");
     expect(html).not.toContain("No cambia ninguna cuenta");
@@ -316,29 +326,38 @@ describe("vista previa de la sincronización", () => {
   it("solo confirma la sincronización masiva que se vio en la vista previa", () => {
     expect(pedidoDeSincronizacion({ ...VISTA_PREVIA, masivo: true })).toEqual({
       confirmar: true,
-      revision: "a".repeat(64)
+      revision: "a".repeat(64),
     });
-    expect(pedidoDeSincronizacion(VISTA_PREVIA)).toEqual({ confirmar: false, revision: "a".repeat(64) });
+    expect(pedidoDeSincronizacion(VISTA_PREVIA)).toEqual({
+      confirmar: false,
+      revision: "a".repeat(64),
+    });
   });
 
   it("lee la vista previa de la respuesta y, si no se pudo armar, el mensaje", () => {
-    expect(leerVistaPrevia({ ok: true, ...VISTA_PREVIA })).toEqual({ ok: true, vistaPrevia: VISTA_PREVIA });
-    expect(leerVistaPrevia({ ok: false, resumen: "El grupo de Zoom no tiene miembros.", crear: [] })).toEqual(
-      { ok: false, mensaje: "El grupo de Zoom no tiene miembros." }
-    );
+    expect(leerVistaPrevia({ ok: true, ...VISTA_PREVIA })).toEqual({
+      ok: true,
+      vistaPrevia: VISTA_PREVIA,
+    });
+    expect(
+      leerVistaPrevia({ ok: false, resumen: "El grupo de Zoom no tiene miembros.", crear: [] }),
+    ).toEqual({ ok: false, mensaje: "El grupo de Zoom no tiene miembros." });
     expect(leerVistaPrevia({ error: "Forbidden" })).toEqual({ ok: false, mensaje: "Forbidden" });
     expect(leerVistaPrevia({ ok: true, resumen: "x", crear: "a@x.uy" })).toEqual({
       ok: false,
-      mensaje: "No se pudo revisar la sincronización con el grupo de Zoom. Probá de nuevo."
+      mensaje: "No se pudo revisar la sincronización con el grupo de Zoom. Probá de nuevo.",
     });
     expect(leerVistaPrevia(null)).toEqual({
       ok: false,
-      mensaje: "No se pudo revisar la sincronización con el grupo de Zoom. Probá de nuevo."
+      mensaje: "No se pudo revisar la sincronización con el grupo de Zoom. Probá de nuevo.",
     });
   });
 
   it("no usa el cuadro de confirmación del navegador", () => {
-    const fuente = readFileSync(new URL("../src/components/zoom-grupo-config.tsx", import.meta.url), "utf8");
+    const fuente = readFileSync(
+      new URL("../src/components/zoom-grupo-config.tsx", import.meta.url),
+      "utf8",
+    );
     expect(fuente).not.toMatch(/\bconfirm\s*\(/);
   });
 });
@@ -347,25 +366,27 @@ describe("resultado de la sincronización", () => {
   it("lee ok y resumen de la respuesta, también cuando no se pudo sincronizar", () => {
     expect(resultadoSincronizacion({ ok: true, resumen: "2 nuevas" })).toEqual({
       ok: true,
-      mensaje: "2 nuevas"
+      mensaje: "2 nuevas",
     });
-    expect(resultadoSincronizacion({ ok: false, resumen: "Ya hay una sincronización en curso." })).toEqual({
+    expect(
+      resultadoSincronizacion({ ok: false, resumen: "Ya hay una sincronización en curso." }),
+    ).toEqual({
       ok: false,
-      mensaje: "Ya hay una sincronización en curso."
+      mensaje: "Ya hay una sincronización en curso.",
     });
   });
 
   it("si no hay resumen usa el error y, si tampoco, un mensaje propio", () => {
     expect(
-      resultadoSincronizacion({ error: "La sesión está desactualizada. Volvé a iniciar sesión." })
+      resultadoSincronizacion({ error: "La sesión está desactualizada. Volvé a iniciar sesión." }),
     ).toEqual({ ok: false, mensaje: "La sesión está desactualizada. Volvé a iniciar sesión." });
     expect(resultadoSincronizacion(null)).toEqual({
       ok: false,
-      mensaje: "No se pudo sincronizar con el grupo de Zoom. Probá de nuevo."
+      mensaje: "No se pudo sincronizar con el grupo de Zoom. Probá de nuevo.",
     });
     expect(resultadoSincronizacion({ ok: "si", resumen: 3 })).toEqual({
       ok: false,
-      mensaje: "No se pudo sincronizar con el grupo de Zoom. Probá de nuevo."
+      mensaje: "No se pudo sincronizar con el grupo de Zoom. Probá de nuevo.",
     });
   });
 });

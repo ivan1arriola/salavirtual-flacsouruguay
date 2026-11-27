@@ -5,7 +5,7 @@ import {
   reunionEmailText,
   type NotificationMessage,
   type NotificationRecipient,
-  type ReunionEmailInput
+  type ReunionEmailInput,
 } from "./domain";
 import { notificarUsuariosUseCase, notificarUsuarioUseCase } from "./application";
 import {
@@ -13,7 +13,7 @@ import {
   crearGmailEmailTransport,
   crearPrismaNotificacionesRepository,
   crearSmtpEmailTransport,
-  crearSesV2EmailTransport
+  crearSesV2EmailTransport,
 } from "./infrastructure";
 
 type Db = PrismaClient | Parameters<Parameters<PrismaClient["$transaction"]>[0]>[0];
@@ -24,12 +24,12 @@ export { reunionEmailText };
 function buildScope(db: Db) {
   const repository = crearPrismaNotificacionesRepository({
     db,
-    descifrar: descifrarConfiguracion
+    descifrar: descifrarConfiguracion,
   });
   const transport = crearCompositeEmailTransport(
     crearGmailEmailTransport(() => repository.obtenerCredencialesGmail()),
     crearSmtpEmailTransport(),
-    crearSesV2EmailTransport(() => obtenerConfiguracionCorreoSesActiva(db))
+    crearSesV2EmailTransport(() => obtenerConfiguracionCorreoSesActiva(db)),
   );
   return { repository, transport };
 }
@@ -37,7 +37,7 @@ function buildScope(db: Db) {
 export async function notificarUsuario(
   db: Db,
   recipient: NotificationRecipient,
-  message: NotificationMessage
+  message: NotificationMessage,
 ): Promise<void> {
   const { repository, transport } = buildScope(db);
   return notificarUsuarioUseCase(
@@ -45,14 +45,14 @@ export async function notificarUsuario(
     transport,
     recipient,
     message,
-    process.env.APP_BASE_URL ?? "https://salavirtual.flacso.edu.uy"
+    process.env["APP_BASE_URL"] ?? "https://salavirtual.flacso.edu.uy",
   );
 }
 
 export async function notificarUsuarios(
   db: Db,
   recipients: readonly NotificationRecipient[],
-  message: NotificationMessage
+  message: NotificationMessage,
 ): Promise<void> {
   const { repository, transport } = buildScope(db);
   return notificarUsuariosUseCase(
@@ -60,6 +60,6 @@ export async function notificarUsuarios(
     transport,
     recipients,
     message,
-    process.env.APP_BASE_URL ?? "https://salavirtual.flacso.edu.uy"
+    process.env["APP_BASE_URL"] ?? "https://salavirtual.flacso.edu.uy",
   );
 }

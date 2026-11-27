@@ -38,7 +38,10 @@ export type GoogleOperationSpec = Readonly<{
 
 const ACCOUNT_LEASE_MS = 120_000;
 
-export function claveOperacionGoogle(tipo: GoogleOperationKind, ...parts: readonly string[]): string {
+export function claveOperacionGoogle(
+  tipo: GoogleOperationKind,
+  ...parts: readonly string[]
+): string {
   const encoded = JSON.stringify([tipo, ...parts]);
   return `gop:${createHash("sha256").update(encoded).digest("hex")}`;
 }
@@ -48,7 +51,7 @@ export async function ejecutarGooglePostUnaVez<T>(
   spec: GoogleOperationSpec,
   send: () => Promise<T>,
   serialize: (result: T) => Record<string, string>,
-  restore: (data: Record<string, string>) => T
+  restore: (data: Record<string, string>) => T,
 ): Promise<T> {
   const registered = await db.googleOperacionExterna.upsert({
     where: { clave: spec.clave },
@@ -58,9 +61,9 @@ export async function ejecutarGooglePostUnaVez<T>(
       tipo: spec.tipo,
       cuenta: spec.cuenta,
       referencia: spec.referencia ?? null,
-      estado: "RESERVADA"
+      estado: "RESERVADA",
     },
-    update: {}
+    update: {},
   });
   // Fail closed if the same key is accidentally reused for another operation.
   if (
@@ -94,11 +97,11 @@ export async function ejecutarGooglePostUnaVez<T>(
   await db.googleCuentaLease.upsert({
     where: { clave: leaseKey },
     create: { clave: leaseKey, token: null, venceAt: new Date(0) },
-    update: {}
+    update: {},
   });
   const lease = await db.googleCuentaLease.updateMany({
     where: { clave: leaseKey, venceAt: { lte: now } },
-    data: { token, venceAt: new Date(now.getTime() + ACCOUNT_LEASE_MS) }
+    data: { token, venceAt: new Date(now.getTime() + ACCOUNT_LEASE_MS) },
   });
   if (lease.count !== 1) {
     throw new GoogleCuentaOcupadaError();
@@ -107,7 +110,7 @@ export async function ejecutarGooglePostUnaVez<T>(
   try {
     const claimed = await db.googleOperacionExterna.updateMany({
       where: { clave: spec.clave, estado: "RESERVADA" },
-      data: { estado: "ENVIANDO", intentos: { increment: 1 }, iniciadaAt: new Date() }
+      data: { estado: "ENVIANDO", intentos: { increment: 1 }, iniciadaAt: new Date() },
     });
     if (claimed.count !== 1) {
       throw new GoogleOperacionInciertaError(spec.clave);
@@ -121,7 +124,7 @@ export async function ejecutarGooglePostUnaVez<T>(
       }
       await db.googleOperacionExterna.update({
         where: { clave: spec.clave },
-        data: { estado: "CONFIRMADA", resultado: safe, terminadaAt: new Date(), errorCodigo: null }
+        data: { estado: "CONFIRMADA", resultado: safe, terminadaAt: new Date(), errorCodigo: null },
       });
       return result;
     } catch (error) {
@@ -129,7 +132,7 @@ export async function ejecutarGooglePostUnaVez<T>(
       await db.googleOperacionExterna
         .updateMany({
           where: { clave: spec.clave, estado: "ENVIANDO" },
-          data: { estado: "INCIERTA", errorCodigo: "RESULTADO_REMOTO_NO_CONFIRMADO" }
+          data: { estado: "INCIERTA", errorCodigo: "RESULTADO_REMOTO_NO_CONFIRMADO" },
         })
         .catch(() => {
           // If the DB itself failed, ENVIANDO still prevents a replay.
@@ -140,7 +143,7 @@ export async function ejecutarGooglePostUnaVez<T>(
     await db.googleCuentaLease
       .updateMany({
         where: { clave: leaseKey, token },
-        data: { token: null, venceAt: new Date(0) }
+        data: { token: null, venceAt: new Date(0) },
       })
       .catch(() => {
         // Lease will expire; an ENVIANDO operation remains permanently non-replayable.
@@ -156,9 +159,9 @@ export async function ejecutarGooglePostUnaVez<T>(
 export async function confirmarGoogleOperacionVerificada(
   db: PrismaClient,
   clave: string,
-  resultado: Record<string, string>
+  resultado: Record<string, string>,
 ): Promise<boolean> {
-  if (!resultado.id || Object.values(resultado).some((value) => typeof value !== "string")) {
+  if (!resultado["id"] || Object.values(resultado).some((value) => typeof value !== "string")) {
     throw new Error("La prueba remota no incluye un ID válido.");
   }
   const updated = await db.googleOperacionExterna.updateMany({
@@ -167,8 +170,8 @@ export async function confirmarGoogleOperacionVerificada(
       estado: "CONFIRMADA",
       resultado,
       errorCodigo: null,
-      terminadaAt: new Date()
-    }
+      terminadaAt: new Date(),
+    },
   });
   return updated.count === 1;
 }
@@ -183,11 +186,11 @@ export async function confirmarOperacionDriveMarcada(
   db: PrismaClient,
   clave: string,
   resultado: Record<string, string>,
-  now = new Date()
+  now = new Date(),
 ): Promise<boolean> {
   if (
     !/^(gop:)[a-f0-9]{64}$/.test(clave) ||
-    !resultado.id ||
+    !resultado["id"] ||
     Object.values(resultado).some((v) => typeof v !== "string")
   ) {
     throw new Error("La conciliación Drive requiere clave e ID remoto válidos.");
@@ -198,14 +201,14 @@ export async function confirmarOperacionDriveMarcada(
       clave,
       proveedor: "DRIVE",
       tipo: { in: ["DRIVE_CREAR_CARPETA", "DRIVE_SUBIR_DOCUMENTO"] },
-      OR: [{ estado: "INCIERTA" }, { estado: "ENVIANDO", iniciadaAt: { lt: stale } }]
+      OR: [{ estado: "INCIERTA" }, { estado: "ENVIANDO", iniciadaAt: { lt: stale } }],
     },
     data: {
       estado: "CONFIRMADA",
       resultado,
       errorCodigo: null,
-      terminadaAt: now
-    }
+      terminadaAt: now,
+    },
   });
   return changed.count === 1;
 }

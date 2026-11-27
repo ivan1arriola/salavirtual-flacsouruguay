@@ -6,13 +6,13 @@ import { db } from "@/src/lib/db";
 import {
   mensajeErrorGoogleWorkspace,
   obtenerCredencialWorkspacePorId,
-  pruebaConfiguracionGoogleWorkspaceSchema
+  pruebaConfiguracionGoogleWorkspaceSchema,
 } from "@/src/modules/configuracion/api";
 import {
   probarCredencialGoogle,
   probarDelegacionGoogle,
   probarDestinoDrive,
-  validarScopesGoogle
+  validarScopesGoogle,
 } from "@/src/modules/configuracion/google-workspace-test.adapter";
 
 export const runtime = "nodejs";
@@ -32,17 +32,19 @@ export async function POST(request: Request) {
   try {
     const actor = await resolveSessionActor(db, {
       id: session.user.id,
-      email: session.user.email
+      email: session.user.email,
     });
     if (!actor || actor.rol !== "ADMINISTRACION" || !actor.activo) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const { objetivo, credentialId } = pruebaConfiguracionGoogleWorkspaceSchema.parse(
-      await request.json().catch(() => null)
+      await request.json().catch(() => null),
     );
     const targetId =
-      objetivo === "CREDENCIAL" && credentialId && credentialId !== "principal" ? credentialId : "principal";
+      objetivo === "CREDENCIAL" && credentialId && credentialId !== "principal"
+        ? credentialId
+        : "principal";
     const selected = await obtenerCredencialWorkspacePorId(db, targetId, descifrarConfiguracion);
     if (!selected) {
       if (targetId === "principal") {
@@ -53,7 +55,7 @@ export async function POST(request: Request) {
 
     const credential = {
       serviceAccountEmail: selected.serviceAccountEmail,
-      privateKey: selected.privateKey
+      privateKey: selected.privateKey,
     };
 
     const principal =
@@ -70,7 +72,7 @@ export async function POST(request: Request) {
       }
       const principalCredential = {
         serviceAccountEmail: principal.serviceAccountEmail,
-        privateKey: descifrarConfiguracion(principal.privateKeyCifrada)
+        privateKey: descifrarConfiguracion(principal.privateKeyCifrada),
       };
       const scopeSubjects = obtenerSujetosScopes(principal.serviceAccountSubject);
       if (scopeSubjects.length === 0) {
@@ -85,13 +87,13 @@ export async function POST(request: Request) {
           tipo,
           activa,
           ok: scopes.every(({ autorizado }) => autorizado),
-          scopes
+          scopes,
         });
       }
       const failedAccounts = accounts.filter(({ ok }) => !ok);
       const missingCount = accounts.reduce(
         (total, account) => total + account.scopes.filter(({ autorizado }) => !autorizado).length,
-        0
+        0,
       );
 
       return NextResponse.json({
@@ -99,7 +101,7 @@ export async function POST(request: Request) {
           missingCount === 0
             ? "Todos los scopes requeridos están autorizados en la cuenta delegada."
             : `${missingCount} ${missingCount === 1 ? "autorización de scope falta" : "autorizaciones de scope faltan"} en ${failedAccounts.length} ${failedAccounts.length === 1 ? "cuenta" : "cuentas"}.`,
-        accounts
+        accounts,
       });
     }
 
@@ -121,7 +123,7 @@ async function ejecutarPrueba(
     serviceAccountSubject: string | null;
     driveDestinationId: string | null;
   }>,
-  credential: Readonly<{ serviceAccountEmail: string; privateKey: string }>
+  credential: Readonly<{ serviceAccountEmail: string; privateKey: string }>,
 ): Promise<string> {
   if (objetivo === "CREDENCIAL") {
     return probarCredencialGoogle(credential);
@@ -131,7 +133,7 @@ async function ejecutarPrueba(
   }
   const delegated = {
     ...credential,
-    subject: configuration.serviceAccountSubject
+    subject: configuration.serviceAccountSubject,
   };
   if (objetivo === "DELEGACION") {
     return probarDelegacionGoogle(delegated);

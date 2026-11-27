@@ -10,12 +10,12 @@ const meeting = {
   inicioProgramadoAt: date("10:00"),
   finProgramadoAt: date("12:00"),
   inicioAsistenciaTecnicaAt: null,
-  finAsistenciaTecnicaAt: null
+  finAsistenciaTecnicaAt: null,
 };
 const assistant = (id: string, activo = true, cesado = false) => ({
   id,
   cesadoHastaProximoInicioSesion: cesado,
-  usuario: { activo, rol: "ASISTENTE_TECNICO" }
+  usuario: { activo, rol: "ASISTENTE_TECNICO" },
 });
 const assignment = (id: string, end: string) => ({
   asistenteTecnicoId: id,
@@ -24,8 +24,8 @@ const assignment = (id: string, end: string) => ({
     finProgramadoAt: date(end),
     inicioAsistenciaTecnicaAt: null,
     finAsistenciaTecnicaAt: null,
-    solicitud: { titulo: "Clase anterior" }
-  }
+    solicitud: { titulo: "Clase anterior" },
+  },
 });
 
 describe("disponibilidad anticipada de cobertura", () => {
@@ -38,7 +38,7 @@ describe("disponibilidad anticipada de cobertura", () => {
       assistant("conflict"),
       assistant("available"),
       assistant("inactive", false),
-      assistant("suspended", true, true)
+      assistant("suspended", true, true),
     ]);
     expect(result.get("conflict")).toContain("Clase anterior");
     expect(result.get("conflict")).toContain("30 minutos");
@@ -51,18 +51,20 @@ describe("disponibilidad anticipada de cobertura", () => {
         where: expect.objectContaining({
           instanciaSalaId: { not: "meeting" },
           estado: { in: ["ASIGNADO", "ACEPTADO"] },
-          instancia: { estado: "PROGRAMADA" }
-        })
-      })
+          instancia: { estado: "PROGRAMADA" },
+        }),
+      }),
     );
   });
 
   it("no anuncia disponibilidad si faltan los horarios híbridos", async () => {
     const findMany = vi.fn();
     const db = { asignacionAsistenciaTecnica: { findMany } } as unknown as PrismaClient;
-    const result = await consultarDisponibilidadCobertura(db, { ...meeting, modalidadOverride: "HIBRIDA" }, [
-      assistant("a")
-    ]);
+    const result = await consultarDisponibilidadCobertura(
+      db,
+      { ...meeting, modalidadOverride: "HIBRIDA" },
+      [assistant("a")],
+    );
     expect(result.get("a")).toContain("híbrido");
     expect(findMany).not.toHaveBeenCalled();
   });

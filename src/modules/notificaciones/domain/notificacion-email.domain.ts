@@ -3,21 +3,27 @@ import {
   escaparHtmlEmail,
   panelCorreo,
   urlHttpSegura,
-  type VarianteCorreo
+  type VarianteCorreo,
 } from "@/src/lib/email/email-design-system";
 
-import type { NotificationEmail, NotificationMessage, ReunionEmailInput } from "./notificaciones.types";
+import type {
+  NotificationEmail,
+  NotificationMessage,
+  ReunionEmailInput,
+} from "./notificaciones.types";
 
 export function construirCorreoNotificacion(
   message: NotificationMessage,
-  baseUrl: string
+  baseUrl: string,
 ): NotificationEmail {
   const subject = message.emailSubject ?? message.titulo;
   const actionUrl = message.href ? absoluteUrl(baseUrl, message.href) : null;
   const actionLabel = message.emailActionLabel ?? "Abrir Sala Virtual FLACSO";
   const preferencesUrl = absoluteUrl(baseUrl, "/mi-perfil");
   const detail =
-    message.emailText && message.emailText.trim() !== message.cuerpo.trim() ? message.emailText.trim() : null;
+    message.emailText && message.emailText.trim() !== message.cuerpo.trim()
+      ? message.emailText.trim()
+      : null;
 
   const text = [
     message.titulo,
@@ -26,7 +32,7 @@ export function construirCorreoNotificacion(
     detail ? `\n${detail}` : null,
     actionUrl ? `\n${actionLabel}: ${actionUrl}` : null,
     "",
-    `Preferencias de notificación: ${preferencesUrl}`
+    `Preferencias de notificación: ${preferencesUrl}`,
   ]
     .filter((line): line is string => line !== null)
     .join("\n");
@@ -43,8 +49,8 @@ export function construirCorreoNotificacion(
         variante: varianteNotificacion(message.tipo),
         contenidoHtml: detail ? renderDetailHtml(detail, message.tipo) : "",
         ...(actionUrl ? { accion: { texto: actionLabel, url: actionUrl } } : {}),
-        preferenciasUrl: preferencesUrl
-      })
+        preferenciasUrl: preferencesUrl,
+      }),
   };
 }
 
@@ -63,7 +69,7 @@ export function reunionEmailText(input: ReunionEmailInput): string {
     input.anfitrionDesignado ? `Anfitrión designado: ${input.anfitrionDesignado}` : null,
     input.asistenteTecnico ? `Asistente de monitoreo: ${input.asistenteTecnico}` : null,
     "",
-    input.instancias.length === 1 ? "ENCUENTRO" : "ENCUENTROS"
+    input.instancias.length === 1 ? "ENCUENTRO" : "ENCUENTROS",
   ].filter((line): line is string => line !== null);
 
   const instanciaLines = input.instancias.flatMap((item, index) => {
@@ -71,9 +77,11 @@ export function reunionEmailText(input: ReunionEmailInput): string {
       `${index + 1}. ${item.inicio} – ${item.fin}`,
       item.sala ? `   Sala: ${item.sala}` : null,
       item.password ? `   Contraseña: ${item.password}` : null,
-      item.meet ? `   ${item.proveedor === "ZOOM" ? "ID de Zoom" : "Código de Meet"}: ${item.meet}` : null,
+      item.meet
+        ? `   ${item.proveedor === "ZOOM" ? "ID de Zoom" : "Código de Meet"}: ${item.meet}`
+        : null,
       item.joinUrl ? `   Acceso: ${item.joinUrl}` : null,
-      index < input.instancias.length - 1 ? "" : null
+      index < input.instancias.length - 1 ? "" : null,
     ].filter((line): line is string => line !== null);
   });
 
@@ -90,7 +98,7 @@ export function reunionEmailText(input: ReunionEmailInput): string {
         "• Ingresen al enlace de Zoom indicado para cada encuentro. No es necesario iniciar sesión con la cuenta de la sala.",
         "• Anfitriones y docentes: ingresen con el mismo enlace de Zoom; ante dudas sobre permisos de anfitrión, consulten a Administración.",
         "• Participantes y estudiantes: ingresan directamente a través del enlace de Zoom provisto.",
-        asistenciaText
+        asistenciaText,
       ]
     : [
         "",
@@ -98,7 +106,7 @@ export function reunionEmailText(input: ReunionEmailInput): string {
         "• No es necesario iniciar sesión con la cuenta de la sala ni usar su contraseña.",
         "• Anfitriones y docentes: ingresen al enlace de Google Meet directamente con su cuenta de Google asignada. Google Meet les otorgará automáticamente permisos de co-anfitrión (co-host) para iniciar la sesión, admitir participantes y gestionar la grabación.",
         "• Participantes y estudiantes: ingresan directamente a través del enlace de Google Meet provisto.",
-        asistenciaText
+        asistenciaText,
       ];
 
   return [...headerLines, ...instanciaLines, ...footerLines].join("\n");
@@ -149,7 +157,9 @@ function escapeHtml(value: string): string {
 }
 
 function renderDetailHtml(rawDetail: string, tipo: NotificationMessage["tipo"]): string {
-  const sections = rawDetail.split(/(?=\n\n(?:¿CÓMO ACCEDER|INSTRUCCIONES DE ACCESO|INSTRUCCIONES PARA))/i);
+  const sections = rawDetail.split(
+    /(?=\n\n(?:¿CÓMO ACCEDER|INSTRUCCIONES DE ACCESO|INSTRUCCIONES PARA))/i,
+  );
   const main = sections[0]?.trim();
   const access = sections.slice(1).join("\n\n").trim();
   const detailTitle =
@@ -185,7 +195,7 @@ function renderStructuredLines(raw: string): string {
     .map((line) => {
       const heading =
         /^(DATOS DE LA REUNIÓN|ENCUENTRO(?:S)?|¿CÓMO ACCEDER A LA REUNIÓN\?|INSTRUCCIONES DE ACCESO|INSTRUCCIONES PARA.*)$/.test(
-          line
+          line,
         );
       if (heading) {
         return (

@@ -4,13 +4,17 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   auth: vi.fn(),
   resolveSessionActor: vi.fn(),
-  conciliar: vi.fn()
+  conciliar: vi.fn(),
 }));
 
 vi.mock("@/auth", () => ({ auth: mocks.auth }));
-vi.mock("@/src/lib/auth/session-actor.adapter", () => ({ resolveSessionActor: mocks.resolveSessionActor }));
+vi.mock("@/src/lib/auth/session-actor.adapter", () => ({
+  resolveSessionActor: mocks.resolveSessionActor,
+}));
 vi.mock("@/src/lib/db", () => ({ db: {} }));
-vi.mock("@/src/bootstrap/zoom-asistencia.server", () => ({ conciliarAsistenciaZoom: mocks.conciliar }));
+vi.mock("@/src/bootstrap/zoom-asistencia.server", () => ({
+  conciliarAsistenciaZoom: mocks.conciliar,
+}));
 
 import { POST } from "../app/api/v1/reuniones/instancias/[instanciaId]/asistencia/conciliar/route";
 
@@ -39,7 +43,7 @@ describe("POST asistencia/conciliar", () => {
       {},
       { ...valido, version: 0 },
       { ...valido, registroId: 5 },
-      { ...valido, externo: "si" }
+      { ...valido, externo: "si" },
     ]) {
       expect((await pedir(cuerpo)).status).toBe(400);
     }
@@ -52,7 +56,7 @@ describe("POST asistencia/conciliar", () => {
     expect(await r.json()).toEqual({ version: 3 });
     expect(mocks.conciliar).toHaveBeenCalledWith(
       { id: "u", rol: "ADMINISTRACION" },
-      { ...valido, instanciaId: "i1" }
+      { ...valido, instanciaId: "i1" },
     );
   });
 
@@ -61,7 +65,7 @@ describe("POST asistencia/conciliar", () => {
       [{ tipo: "PROHIBIDO" }, 403],
       [{ tipo: "CONFLICTO" }, 409],
       [{ tipo: "ERROR", codigo: "NO_ENCONTRADO" }, 404],
-      [{ tipo: "ERROR", codigo: "INVITADO_AJENO" }, 422]
+      [{ tipo: "ERROR", codigo: "INVITADO_AJENO" }, 422],
     ];
     for (const [resultado, status] of casos) {
       mocks.conciliar.mockResolvedValueOnce(resultado);

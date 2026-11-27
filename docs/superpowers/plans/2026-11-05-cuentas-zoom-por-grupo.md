@@ -71,7 +71,12 @@
 
 - Produces:
   ```ts
-  export type MiembroGrupoZoom = Readonly<{ id: string; email: string; nombre: string; licenciado: boolean }>;
+  export type MiembroGrupoZoom = Readonly<{
+    id: string;
+    email: string;
+    nombre: string;
+    licenciado: boolean;
+  }>;
   export type CuentaZoomActual = Readonly<{
     id: string;
     emailOrganizador: string | null;
@@ -81,7 +86,11 @@
   }>;
   export type PlanSincronizacionZoom = Readonly<{
     crear: readonly Readonly<{ miembro: MiembroGrupoZoom; prioridad: number }>[];
-    actualizar: readonly Readonly<{ cuentaId: string; miembro: MiembroGrupoZoom; reactivar: boolean }>[]; // incluye adopción
+    actualizar: readonly Readonly<{
+      cuentaId: string;
+      miembro: MiembroGrupoZoom;
+      reactivar: boolean;
+    }>[]; // incluye adopción
     desactivar: readonly string[]; // salió, sin reuniones futuras
     marcarFuera: readonly Readonly<{ cuentaId: string; reunionesFuturas: number }>[]; // salió, con reuniones futuras
     resumen: string;
@@ -89,7 +98,7 @@
   export function planificarSincronizacionGrupoZoom(
     miembros: readonly MiembroGrupoZoom[],
     cuentas: readonly CuentaZoomActual[],
-    reunionesFuturasPorCuenta: Readonly<Record<string, number>>
+    reunionesFuturasPorCuenta: Readonly<Record<string, number>>,
   ): PlanSincronizacionZoom;
   export class GrupoZoomVacioError extends Error {}
   ```
@@ -118,7 +127,7 @@
   export async function listarGruposZoomHttp(token: string): Promise<readonly GrupoZoom[]>; // GET https://api.zoom.us/v2/groups
   export async function listarMiembrosGrupoZoomHttp(
     token: string,
-    grupoId: string
+    grupoId: string,
   ): Promise<readonly MiembroGrupoZoom[]>; // GET /v2/groups/{id}/members?page_size=300, sigue next_page_token
   ```
 - `MiembroGrupoZoom.licenciado = (type === 2)`; `nombre` = `first_name last_name` recortado o el correo. 401/403 → `ZoomPermisosError` con el mensaje «Falta permiso en la app de Zoom: group:read:list_groups:admin y group_member:read:list_members:admin.»; 404 → `Error("El grupo de Zoom ya no existe.")`.
@@ -144,16 +153,16 @@
   ```ts
   export async function listarGruposZoom(
     db: PrismaClient,
-    descifrar: (c: string) => string
+    descifrar: (c: string) => string,
   ): Promise<readonly GrupoZoom[]>;
   export async function elegirGrupoZoom(
     db: PrismaClient,
-    input: { grupoId: string; grupoNombre: string; actorId: string }
+    input: { grupoId: string; grupoNombre: string; actorId: string },
   ): Promise<void>; // guarda en ConfiguracionZoom id "principal"
   export async function sincronizarCuentasZoomConGrupo(
     db: PrismaClient,
     descifrar: (c: string) => string,
-    ahora: Date
+    ahora: Date,
   ): Promise<{ ok: boolean; resumen: string }>;
   ```
 - Behavior: sin grupo elegido → `{ ok:false, resumen:"Elegí un grupo de Zoom para obtener las cuentas anfitrionas." }`; candado con `sincronizandoDesdeAt` (se toma con `updateMany` condicionado a `null` o más viejo que 10 minutos; si no se toma → `{ ok:false, resumen:"Ya hay una sincronización en curso." }`); «reuniones futuras» = `instanciaReunion` con `estado: "PROGRAMADA"`, `finProgramadoAt > ahora`, cuyo evento Zoom activo tiene esa `cuentaProveedorId`; aplica el plan en `db.$transaction` (solo cuentas del proveedor `ZOOM`; crea con `origenGrupoZoom: true`, `limiteConcurrente: 1`, `externalAccountId` = id de usuario de Zoom, `tieneLicencia` = `licenciado`; actualiza/adopta marcando `origenGrupoZoom: true`, `fueraDelGrupoAt: null`; desactiva con `activa:false, fueraDelGrupoAt: ahora`; marca fuera con `fueraDelGrupoAt: ahora`); en cualquier error guarda `ultimaSincronizacionResultado` con el mensaje, libera el candado y no cambia cuentas; escribe un registro en `auditoria` con acción `CUENTAS_ZOOM_SINCRONIZADAS`.

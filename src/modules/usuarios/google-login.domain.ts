@@ -4,5 +4,5 @@ export {
   esPerfilGoogleInstitucional,
   resolverVinculacionSubjectGoogle,
   type PerfilGoogle,
-  type CuentaGoogleVinculada
+  type CuentaGoogleVinculada,
 } from "@/src/modules/identity/api";

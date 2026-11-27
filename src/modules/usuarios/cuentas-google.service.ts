@@ -4,7 +4,7 @@ import {
   reemplazarCuentasGoogleSchema,
   resolverEmailPrincipal,
   tieneMetodoDeAcceso,
-  type ActorGestionUsuarios
+  type ActorGestionUsuarios,
 } from "./cuentas-google.domain";
 
 export type DependenciasCuentasGoogle = Readonly<{
@@ -15,17 +15,18 @@ export async function reemplazarCuentasGooglePermitidas(
   dependencias: DependenciasCuentasGoogle,
   actor: ActorGestionUsuarios,
   usuarioId: string,
-  input: unknown
+  input: unknown,
 ): Promise<readonly string[]> {
   if (!puedeGestionarCuentasGoogle(actor)) {
     throw new Error("Solo Administracion puede gestionar cuentas Google.");
   }
-  const { emails, emailPrincipal: emailPrincipalSolicitado } = reemplazarCuentasGoogleSchema.parse(input);
+  const { emails, emailPrincipal: emailPrincipalSolicitado } =
+    reemplazarCuentasGoogleSchema.parse(input);
 
   return dependencias.db.$transaction(async (tx) => {
     const actorActual = await tx.usuario.findUnique({
       where: { id: actor.id },
-      select: { id: true, rol: true, activo: true }
+      select: { id: true, rol: true, activo: true },
     });
     if (!actorActual) {
       throw new Error("La sesión no corresponde a un usuario vigente. Volvé a iniciar sesión.");
@@ -42,9 +43,9 @@ export async function reemplazarCuentasGooglePermitidas(
         emailPrincipal: true,
         emailVerificadoAt: true,
         cuentasGoogle: {
-          select: { email: true }
-        }
-      }
+          select: { email: true },
+        },
+      },
     });
     if (!usuario) {
       throw new Error("Usuario no encontrado.");
@@ -53,15 +54,15 @@ export async function reemplazarCuentasGooglePermitidas(
     const emailPrincipal = resolverEmailPrincipal({
       emailsGoogle: emails,
       emailPrincipalActual: usuario.emailPrincipal,
-      emailPrincipalSolicitado
+      emailPrincipalSolicitado,
     });
 
     const cuentaDeOtroUsuario = await tx.cuentaGoogleFlacso.findFirst({
       where: {
         email: { in: emails },
-        userId: { not: usuario.id }
+        userId: { not: usuario.id },
       },
-      select: { email: true }
+      select: { email: true },
     });
     if (cuentaDeOtroUsuario) {
       throw new Error(`La cuenta ${cuentaDeOtroUsuario.email} ya pertenece a otro usuario.`);
@@ -72,24 +73,24 @@ export async function reemplazarCuentasGooglePermitidas(
         tx.usuario.findFirst({
           where: {
             id: { not: usuario.id },
-            emailPrincipal: { equals: emailPrincipal, mode: "insensitive" }
+            emailPrincipal: { equals: emailPrincipal, mode: "insensitive" },
           },
-          select: { id: true }
+          select: { id: true },
         }),
         tx.usuarioEmailAlias.findFirst({
           where: {
             usuarioId: { not: usuario.id },
-            email: { equals: emailPrincipal, mode: "insensitive" }
+            email: { equals: emailPrincipal, mode: "insensitive" },
           },
-          select: { id: true }
+          select: { id: true },
         }),
         tx.cuentaGoogleFlacso.findFirst({
           where: {
             userId: { not: usuario.id },
-            email: { equals: emailPrincipal, mode: "insensitive" }
+            email: { equals: emailPrincipal, mode: "insensitive" },
           },
-          select: { id: true }
-        })
+          select: { id: true },
+        }),
       ]);
       if (usuarioConMismoEmail || aliasDeOtroUsuario || googleDeOtroUsuario) {
         throw new Error(`El correo ${emailPrincipal} ya pertenece a otro usuario.`);
@@ -99,7 +100,7 @@ export async function reemplazarCuentasGooglePermitidas(
     if (
       !tieneMetodoDeAcceso({
         tienePassword: Boolean(usuario.passwordHash),
-        cantidadCuentasGoogle: emails.length
+        cantidadCuentasGoogle: emails.length,
       })
     ) {
       throw new Error("El usuario debe conservar una cuenta Google o una contrasena.");
@@ -108,8 +109,8 @@ export async function reemplazarCuentasGooglePermitidas(
     await tx.cuentaGoogleFlacso.deleteMany({
       where: {
         userId: usuario.id,
-        email: { notIn: emails }
-      }
+        email: { notIn: emails },
+      },
     });
     for (const email of emails) {
       await tx.cuentaGoogleFlacso.upsert({
@@ -117,11 +118,11 @@ export async function reemplazarCuentasGooglePermitidas(
         create: {
           userId: usuario.id,
           email,
-          dominio: dominioEmail(email)
+          dominio: dominioEmail(email),
         },
         update: {
-          userId: usuario.id
-        }
+          userId: usuario.id,
+        },
       });
     }
 
@@ -131,7 +132,7 @@ export async function reemplazarCuentasGooglePermitidas(
       emailPrincipal && emails.includes(emailPrincipal)
         ? await tx.cuentaGoogleFlacso.findUnique({
             where: { email: emailPrincipal },
-            select: { emailVerificadoAt: true }
+            select: { emailVerificadoAt: true },
           })
         : null;
 
@@ -142,8 +143,8 @@ export async function reemplazarCuentasGooglePermitidas(
         emailPrincipal,
         emailVerificadoAt: cambioEmailPrincipal
           ? (cuentaPrincipalGoogle?.emailVerificadoAt ?? null)
-          : usuario.emailVerificadoAt
-      }
+          : usuario.emailVerificadoAt,
+      },
     });
     await tx.auditoria.create({
       data: {
@@ -153,10 +154,10 @@ export async function reemplazarCuentasGooglePermitidas(
         entidadId: usuario.id,
         valorAnterior: {
           emails: usuario.cuentasGoogle.map(({ email }) => email),
-          emailPrincipal: usuario.emailPrincipal
+          emailPrincipal: usuario.emailPrincipal,
         },
-        valorNuevo: { emails, emailPrincipal }
-      }
+        valorNuevo: { emails, emailPrincipal },
+      },
     });
 
     return emails;

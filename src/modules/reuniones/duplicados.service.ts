@@ -8,7 +8,7 @@ import {
   huellaRevisionDuplicado,
   type CandidataReunionDuplicada,
   type DecisionRevisionDuplicado,
-  type PosibleReunionDuplicada
+  type PosibleReunionDuplicada,
 } from "./duplicados.domain";
 
 const AUDIT_ENTITY = "POSIBLE_DUPLICADO_REUNION";
@@ -17,10 +17,10 @@ const revisionSchema = z
   .object({
     izquierdaId: z.string().min(1),
     derechaId: z.string().min(1),
-    decision: z.enum(["REQUIERE_ACTUALIZACION", "FALSO_POSITIVO"])
+    decision: z.enum(["REQUIERE_ACTUALIZACION", "FALSO_POSITIVO"]),
   })
   .refine(({ izquierdaId, derechaId }) => izquierdaId !== derechaId, {
-    message: "La comparación requiere dos reuniones distintas."
+    message: "La comparación requiere dos reuniones distintas.",
   });
 
 const candidateSelect = {
@@ -34,11 +34,13 @@ const candidateSelect = {
       docentePrograma: {
         select: {
           programa: { select: { id: true, nombre: true } },
-          docente: { select: { usuario: { select: { id: true, nombres: true, apellidos: true } } } }
-        }
-      }
-    }
-  }
+          docente: {
+            select: { usuario: { select: { id: true, nombres: true, apellidos: true } } },
+          },
+        },
+      },
+    },
+  },
 } satisfies Prisma.InstanciaSalaSelect;
 
 type CandidateRow = Prisma.InstanciaSalaGetPayload<{ select: typeof candidateSelect }>;
@@ -52,7 +54,7 @@ export type CasoRevisionDuplicado = PosibleReunionDuplicada &
 
 export async function listarCasosRevisionDuplicados(
   _database: PrismaClient,
-  _ahora: Date
+  _ahora: Date,
 ): Promise<readonly CasoRevisionDuplicado[]> {
   // Funcionalidad de detección de duplicados deprecada: se conserva el contrato
   // para no romper rutas o integraciones existentes, pero no ejecuta consultas.
@@ -62,7 +64,7 @@ export async function listarCasosRevisionDuplicados(
 export async function revisarPosibleDuplicado(
   database: PrismaClient,
   actor: SessionActor,
-  rawInput: unknown
+  rawInput: unknown,
 ): Promise<void> {
   if (actor.rol !== "ADMINISTRACION") {
     throw new Error("Solo Administración puede revisar duplicados.");
@@ -70,7 +72,7 @@ export async function revisarPosibleDuplicado(
   const input = revisionSchema.parse(rawInput);
   const meetings = await database.instanciaSala.findMany({
     where: { id: { in: [input.izquierdaId, input.derechaId] } },
-    select: candidateSelect
+    select: candidateSelect,
   });
   if (meetings.length !== 2) {
     throw new Error("Una de las reuniones ya no existe.");
@@ -79,7 +81,7 @@ export async function revisarPosibleDuplicado(
   const risks = detectarPosiblesReunionesDuplicadas(meetings.map(toCandidate));
   const key = claveRevisionDuplicado(input.izquierdaId, input.derechaId);
   const risk = risks.find(
-    ({ izquierda, derecha }) => claveRevisionDuplicado(izquierda.id, derecha.id) === key
+    ({ izquierda, derecha }) => claveRevisionDuplicado(izquierda.id, derecha.id) === key,
   );
   if (!risk) {
     throw new Error("Las reuniones ya no cumplen las condiciones de posible duplicado.");
@@ -88,7 +90,7 @@ export async function revisarPosibleDuplicado(
   const previous = await database.auditoria.findFirst({
     where: { entidadTipo: AUDIT_ENTITY, entidadId: key },
     orderBy: { createdAt: "desc" },
-    select: { valorNuevo: true }
+    select: { valorNuevo: true },
   });
   const previousDecision = readDecision(previous?.valorNuevo ?? null);
   await database.auditoria.create({
@@ -102,9 +104,9 @@ export async function revisarPosibleDuplicado(
         decision: input.decision,
         fingerprint: huellaRevisionDuplicado(risk),
         izquierdaId: input.izquierdaId,
-        derechaId: input.derechaId
-      }
-    }
+        derechaId: input.derechaId,
+      },
+    },
   });
 }
 
@@ -120,7 +122,7 @@ function toCandidate(meeting: CandidateRow): CandidataReunionDuplicada {
     docenteId: teacher.id,
     docenteNombre: [teacher.nombres, teacher.apellidos].filter(Boolean).join(" "),
     inicio: meeting.inicioProgramadoAt,
-    fin: meeting.finProgramadoAt
+    fin: meeting.finProgramadoAt,
   };
 }
 
@@ -128,6 +130,6 @@ function readDecision(value: Prisma.JsonValue | null): DecisionRevisionDuplicado
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return null;
   }
-  const decision = (value as Prisma.JsonObject).decision;
+  const decision = value["decision"];
   return esDecisionRevisionDuplicado(decision) ? decision : null;
 }

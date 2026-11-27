@@ -4,11 +4,11 @@ import type { EjecucionZoomObservada } from "../modules/reuniones/presentation/e
 
 /** No se mezclan ocurrencias de otros encuentros aunque compartan Meeting ID. */
 export async function leerEjecucionesZoomActuales(
-  eventoProveedorId: string
+  eventoProveedorId: string,
 ): Promise<EjecucionZoomObservada[]> {
   const ocurrencias = await db.ocurrenciaArchivoZoom.findMany({
     where: { eventoProveedorId },
-    select: { cuentaZoomId: true, uuid: true, inicioRealAt: true }
+    select: { cuentaZoomId: true, uuid: true, inicioRealAt: true },
   });
   if (!ocurrencias.length) {
     return [];
@@ -16,9 +16,9 @@ export async function leerEjecucionesZoomActuales(
   const avisos = await db.eventoWebhookZoom.findMany({
     where: {
       OR: ocurrencias.map(({ cuentaZoomId, uuid }) => ({ cuentaZoomId, uuid })),
-      tipo: { in: ["meeting.started", "meeting.ended"] }
+      tipo: { in: ["meeting.started", "meeting.ended"] },
     },
-    select: { cuentaZoomId: true, uuid: true, tipo: true, inicioRealAt: true, finRealAt: true }
+    select: { cuentaZoomId: true, uuid: true, tipo: true, inicioRealAt: true, finRealAt: true },
   });
   return ocurrencias.map((o) => {
     const propios = avisos.filter((a) => a.cuentaZoomId === o.cuentaZoomId && a.uuid === o.uuid);
@@ -34,7 +34,7 @@ export async function leerEjecucionesZoomActuales(
       uuid: o.uuid,
       inicio: inicios.length ? new Date(Math.min(...inicios)) : o.inicioRealAt,
       fin: finales.length ? new Date(Math.max(...finales)) : null,
-      inicioConfirmado: propios.length > 0
+      inicioConfirmado: propios.length > 0,
     };
   });
 }

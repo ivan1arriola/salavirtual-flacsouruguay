@@ -10,7 +10,7 @@ export function SidebarLink({
   className,
   dataTour,
   activeSearch,
-  children
+  children,
 }: Readonly<{
   href: string;
   exact?: boolean;
@@ -21,7 +21,12 @@ export function SidebarLink({
 }>) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const active = isNavigationItemActive({ href, search: activeSearch }, pathname, searchParams, exact);
+  const active = isNavigationItemActive(
+    { href, search: activeSearch },
+    pathname,
+    searchParams,
+    exact,
+  );
 
   return (
     <Link

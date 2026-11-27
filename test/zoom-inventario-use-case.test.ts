@@ -5,7 +5,7 @@ import {
   diasDeBarridoZoom,
   inventariarOcurrenciasVencidasZoomUseCase,
   inventariarZoomUseCase,
-  proximoInventarioZoom
+  proximoInventarioZoom,
 } from "../src/modules/archivos/application/inventariar-zoom.use-case";
 import { procesarMantenimientoZoomUseCase } from "../src/modules/archivos/application/procesar-mantenimiento-zoom.use-case";
 
@@ -20,14 +20,15 @@ const ref = (inicio: Date, uuid = "u1") => ({
   meetingId: "1",
   anfitrionZoomId: "h1",
   inicioRealAt: inicio,
-  titulo: "Clase"
+  titulo: "Clase",
 });
 const VACIO = { recursos: [], observaciones: [], procesamientoPendiente: false };
 
 describe("proximoInventarioZoom (cadencia y corte)", () => {
   const p = (edad: number, pendiente = false, corteDias = 90) =>
     proximoInventarioZoom(hace(edad), AHORA, { procesamientoPendiente: pendiente, corteDias });
-  it("menos de 48 h: cada 10 minutos", () => expect(p(5 * HORA)?.getTime()).toBe(AHORA.getTime() + 10 * MIN));
+  it("menos de 48 h: cada 10 minutos", () =>
+    expect(p(5 * HORA)?.getTime()).toBe(AHORA.getTime() + 10 * MIN));
   it("hasta 30 días: cada hora", () => expect(p(5 * DIA)?.getTime()).toBe(AHORA.getTime() + HORA));
   it("más antiguas: a diario", () => expect(p(40 * DIA)?.getTime()).toBe(AHORA.getTime() + DIA));
   it("pasado el corte se deja de reinventariar", () => expect(p(100 * DIA)).toBeNull());
@@ -44,21 +45,21 @@ describe("inventariarZoomUseCase", () => {
         ocurrenciaId: "o",
         nuevos: 1,
         actualizados: 0,
-        requierenRevision: 0
-      }))
+        requierenRevision: 0,
+      })),
     };
     const origen: any = { obtenerInventario: vi.fn(async () => VACIO) };
     const r = await inventariarZoomUseCase(repo, origen, {
       referencia: ref(hace(5 * HORA)),
       cuentaProveedorId: "cp",
       ahora: AHORA,
-      corteDias: 90
+      corteDias: 90,
     });
     expect(r.tipo).toBe("GUARDADO");
     expect(repo.guardarInventario.mock.calls[0][0]).toMatchObject({
       cuentaProveedorId: "cp",
       inventariadoAt: AHORA,
-      proximoInventarioAt: new Date(AHORA.getTime() + 10 * MIN)
+      proximoInventarioAt: new Date(AHORA.getTime() + 10 * MIN),
     });
   });
 
@@ -69,7 +70,7 @@ describe("inventariarZoomUseCase", () => {
       referencia: ref(hace(HORA)),
       cuentaProveedorId: null,
       ahora: AHORA,
-      corteDias: 90
+      corteDias: 90,
     });
     expect(r.tipo).toBe("NO_ENCONTRADA");
     expect(repo.guardarInventario).not.toHaveBeenCalled();
@@ -80,15 +81,15 @@ describe("inventariarZoomUseCase", () => {
     const origen: any = {
       obtenerInventario: vi.fn(async () => {
         throw new Error("Zoom: CAPACIDAD_PENDIENTE");
-      })
+      }),
     };
     await expect(
       inventariarZoomUseCase(repo, origen, {
         referencia: ref(hace(HORA)),
         cuentaProveedorId: null,
         ahora: AHORA,
-        corteDias: 90
-      })
+        corteDias: 90,
+      }),
     ).rejects.toThrow(/CAPACIDAD/);
     expect(repo.guardarInventario).not.toHaveBeenCalled();
   });
@@ -99,7 +100,7 @@ describe("inventariarOcurrenciasVencidasZoomUseCase", () => {
     const vencidas = [
       { referencia: ref(hace(HORA), "a"), cuentaProveedorId: null },
       { referencia: ref(hace(HORA), "b"), cuentaProveedorId: null },
-      { referencia: ref(hace(HORA), "c"), cuentaProveedorId: null }
+      { referencia: ref(hace(HORA), "c"), cuentaProveedorId: null },
     ];
     const repo: any = {
       listarOcurrenciasPorInventariar: vi.fn(async () => vencidas),
@@ -107,8 +108,8 @@ describe("inventariarOcurrenciasVencidasZoomUseCase", () => {
         ocurrenciaId: "o",
         nuevos: 0,
         actualizados: 0,
-        requierenRevision: 0
-      }))
+        requierenRevision: 0,
+      })),
     };
     const origen: any = {
       obtenerInventario: vi.fn(async (r: any) => {
@@ -116,12 +117,12 @@ describe("inventariarOcurrenciasVencidasZoomUseCase", () => {
           throw new Error("boom");
         }
         return VACIO;
-      })
+      }),
     };
     const r = await inventariarOcurrenciasVencidasZoomUseCase(repo, origen, {
       ahora: AHORA,
       limite: 10,
-      corteDias: 90
+      corteDias: 90,
     });
     expect(r).toMatchObject({ guardadas: 2, fallidas: 1 });
     expect(repo.listarOcurrenciasPorInventariar).toHaveBeenCalledWith(AHORA, 10);
@@ -131,39 +132,44 @@ describe("inventariarOcurrenciasVencidasZoomUseCase", () => {
 describe("barrerAnfitrionesZoomUseCase", () => {
   const anfitriones = [
     { cuentaZoomId: "c", anfitrionZoomId: "h1", cuentaProveedorId: "p1" },
-    { cuentaZoomId: "c", anfitrionZoomId: "h2", cuentaProveedorId: "p2" }
+    { cuentaZoomId: "c", anfitrionZoomId: "h2", cuentaProveedorId: "p2" },
   ];
 
   it("recorre todas las páginas y ventanas de cada anfitrión, incluidos los inactivos del snapshot, e inventaría cada ocurrencia", async () => {
     const paginas: Record<string, any> = {
       "h1:": { elementos: [ref(hace(HORA), "a")], siguiente: "p2" },
       "h1:p2": { elementos: [ref(hace(2 * HORA), "b")], siguiente: null },
-      "h2:": { elementos: [], siguiente: null }
+      "h2:": { elementos: [], siguiente: null },
     };
     const origen: any = {
       listarOcurrencias: vi.fn(async (a: any, v: any, cursor: string | null) =>
-        v.papelera ? { elementos: [], siguiente: null } : paginas[`${a.anfitrionZoomId}:${cursor ?? ""}`]
+        v.papelera
+          ? { elementos: [], siguiente: null }
+          : paginas[`${a.anfitrionZoomId}:${cursor ?? ""}`],
       ),
-      obtenerInventario: vi.fn(async () => VACIO)
+      obtenerInventario: vi.fn(async () => VACIO),
     };
     const repo: any = {
       guardarInventario: vi.fn(async () => ({
         ocurrenciaId: "o",
         nuevos: 0,
         actualizados: 0,
-        requierenRevision: 0
-      }))
+        requierenRevision: 0,
+      })),
     };
     const r = await barrerAnfitrionesZoomUseCase(repo, origen, {
       anfitriones,
       ahora: AHORA,
       diasAtras: 3,
-      corteDias: 90
+      corteDias: 90,
     });
     expect(r).toMatchObject({ ocurrencias: 2, anfitrionesConError: 0 });
     expect(repo.guardarInventario).toHaveBeenCalledTimes(2);
     // Una sola ventana de 3 días en hora de Montevideo.
-    expect(origen.listarOcurrencias.mock.calls[0][1]).toEqual({ desde: "2026-11-06", hasta: "2026-11-09" });
+    expect(origen.listarOcurrencias.mock.calls[0][1]).toEqual({
+      desde: "2026-11-06",
+      hasta: "2026-11-09",
+    });
   });
 
   it("un anfitrión que ya no existe en Zoom (404:z1001) se omite sin contarlo como error y los demás se procesan", async () => {
@@ -171,7 +177,7 @@ describe("barrerAnfitrionesZoomUseCase", () => {
       name: "ZoomApiError",
       code: "NO_ENCONTRADO",
       status: 404,
-      codigoZoom: 1001
+      codigoZoom: 1001,
     });
     const origen: any = {
       listarOcurrencias: vi.fn(async (a: any, v: any) => {
@@ -180,27 +186,27 @@ describe("barrerAnfitrionesZoomUseCase", () => {
         }
         return { elementos: v.papelera ? [] : [ref(hace(HORA), "x")], siguiente: null };
       }),
-      obtenerInventario: vi.fn(async () => VACIO)
+      obtenerInventario: vi.fn(async () => VACIO),
     };
     const repo: any = {
       guardarInventario: vi.fn(async () => ({
         ocurrenciaId: "o",
         nuevos: 0,
         actualizados: 0,
-        requierenRevision: 0
-      }))
+        requierenRevision: 0,
+      })),
     };
     const r = await barrerAnfitrionesZoomUseCase(repo, origen, {
       anfitriones,
       ahora: AHORA,
       diasAtras: 3,
-      corteDias: 90
+      corteDias: 90,
     });
     expect(r).toMatchObject({
       ocurrencias: 1,
       anfitrionesConError: 0,
       anfitrionesInexistentes: 1,
-      errores: []
+      errores: [],
     });
   });
 
@@ -208,29 +214,29 @@ describe("barrerAnfitrionesZoomUseCase", () => {
     const origen: any = {
       listarOcurrencias: vi.fn(async (_a: any, v: any) => ({
         elementos: v.papelera ? [ref(hace(HORA), "borrada")] : [],
-        siguiente: null
+        siguiente: null,
       })),
-      obtenerInventario: vi.fn(async () => VACIO)
+      obtenerInventario: vi.fn(async () => VACIO),
     };
     const repo: any = {
       guardarInventario: vi.fn(async () => ({
         ocurrenciaId: "o",
         nuevos: 0,
         actualizados: 0,
-        requierenRevision: 0
-      }))
+        requierenRevision: 0,
+      })),
     };
     const r = await barrerAnfitrionesZoomUseCase(repo, origen, {
       anfitriones: [anfitriones[0]!],
       ahora: AHORA,
       diasAtras: 3,
-      corteDias: 90
+      corteDias: 90,
     });
     expect(r).toMatchObject({ ocurrencias: 1, ocurrenciasPapelera: 1 });
     expect(repo.guardarInventario).toHaveBeenCalledTimes(1);
     expect(origen.listarOcurrencias.mock.calls.map((c: any[]) => Boolean(c[1].papelera))).toEqual([
       false,
-      true
+      true,
     ]);
   });
 
@@ -242,29 +248,31 @@ describe("barrerAnfitrionesZoomUseCase", () => {
         }
         return { elementos: v.papelera ? [] : [ref(hace(HORA), "z")], siguiente: null };
       }),
-      obtenerInventario: vi.fn(async () => VACIO)
+      obtenerInventario: vi.fn(async () => VACIO),
     };
     const repo: any = {
       guardarInventario: vi.fn(async () => ({
         ocurrenciaId: "o",
         nuevos: 0,
         actualizados: 0,
-        requierenRevision: 0
-      }))
+        requierenRevision: 0,
+      })),
     };
     const r = await barrerAnfitrionesZoomUseCase(repo, origen, {
       anfitriones,
       ahora: AHORA,
       diasAtras: 3,
-      corteDias: 90
+      corteDias: 90,
     });
     expect(r).toMatchObject({ ocurrencias: 1, anfitrionesConError: 1 });
   });
 
   it("informa el código (no el mensaje) del error de cada anfitrión para poder diagnosticar", async () => {
     const error403 = Object.assign(
-      new Error("Zoom: CAPACIDAD_PENDIENTE (grabaciones.listado, HTTP 403) https://secreto?token=1"),
-      { name: "ZoomApiError", code: "CAPACIDAD_PENDIENTE", status: 403 }
+      new Error(
+        "Zoom: CAPACIDAD_PENDIENTE (grabaciones.listado, HTTP 403) https://secreto?token=1",
+      ),
+      { name: "ZoomApiError", code: "CAPACIDAD_PENDIENTE", status: 403 },
     );
     const origen: any = {
       listarOcurrencias: vi.fn(async (a: any) => {
@@ -273,17 +281,17 @@ describe("barrerAnfitrionesZoomUseCase", () => {
         }
         throw new TypeError("fetch failed");
       }),
-      obtenerInventario: vi.fn()
+      obtenerInventario: vi.fn(),
     };
     const r = await barrerAnfitrionesZoomUseCase({} as any, origen, {
       anfitriones,
       ahora: AHORA,
       diasAtras: 3,
-      corteDias: 90
+      corteDias: 90,
     });
     expect(r.errores).toEqual([
       { anfitrionZoomId: "h1", codigo: "CAPACIDAD_PENDIENTE:403" },
-      { anfitrionZoomId: "h2", codigo: "TypeError" }
+      { anfitrionZoomId: "h2", codigo: "TypeError" },
     ]);
     expect(JSON.stringify(r)).not.toContain("secreto");
   });
@@ -293,19 +301,19 @@ describe("barrerAnfitrionesZoomUseCase", () => {
       name: "ZoomApiError",
       code: "SOLICITUD_RECHAZADA",
       status: 400,
-      codigoZoom: 300
+      codigoZoom: 300,
     });
     const origen: any = {
       listarOcurrencias: vi.fn(async () => {
         throw rechazo;
       }),
-      obtenerInventario: vi.fn()
+      obtenerInventario: vi.fn(),
     };
     const r = await barrerAnfitrionesZoomUseCase({} as any, origen, {
       anfitriones: [anfitriones[0]!],
       ahora: AHORA,
       diasAtras: 3,
-      corteDias: 90
+      corteDias: 90,
     });
     expect(r.errores[0]).toEqual({ anfitrionZoomId: "h1", codigo: "SOLICITUD_RECHAZADA:400:z300" });
   });
@@ -313,13 +321,13 @@ describe("barrerAnfitrionesZoomUseCase", () => {
   it("un barrido de más de 28 días se parte en ventanas consecutivas sin huecos", async () => {
     const origen: any = {
       listarOcurrencias: vi.fn(async () => ({ elementos: [], siguiente: null })),
-      obtenerInventario: vi.fn()
+      obtenerInventario: vi.fn(),
     };
     await barrerAnfitrionesZoomUseCase({} as any, origen, {
       anfitriones: [anfitriones[0]!],
       ahora: AHORA,
       diasAtras: 60,
-      corteDias: 90
+      corteDias: 90,
     });
     // Cada ventana se consulta dos veces (activas y papelera): la continuidad se comprueba sobre las activas.
     const todas = origen.listarOcurrencias.mock.calls.map((c: any[]) => c[1]);
@@ -345,13 +353,13 @@ describe("procesarMantenimientoZoomUseCase (equidad)", () => {
             nombre: "recientes",
             ejecutar: async () => {
               ciclos.push("recientes");
-            }
+            },
           },
           {
             nombre: "historico",
             ejecutar: async () => {
               ciclos.push("historico");
-            }
+            },
           },
           {
             nombre: "reintentos",
@@ -360,13 +368,13 @@ describe("procesarMantenimientoZoomUseCase (equidad)", () => {
               if (ciclos.length >= 6) {
                 control.abort();
               }
-            }
-          }
+            },
+          },
         ],
         esperar: async () => undefined,
-        intervaloMs: 1
+        intervaloMs: 1,
       },
-      { signal: control.signal }
+      { signal: control.signal },
     );
     await Promise.race([Promise.all([mantenimiento, bloqueada]), mantenimiento]);
     expect(ciclos.slice(0, 3)).toEqual(["recientes", "historico", "reintentos"]);
@@ -384,21 +392,21 @@ describe("procesarMantenimientoZoomUseCase (equidad)", () => {
             nombre: "mala",
             ejecutar: async () => {
               throw new Error("x");
-            }
+            },
           },
           {
             nombre: "buena",
             ejecutar: async () => {
               hechas.push("b");
               control.abort();
-            }
-          }
+            },
+          },
         ],
         esperar: async () => undefined,
         intervaloMs: 1,
-        alFallar: (n: string) => errores.push(n)
-      } as any,
-      { signal: control.signal }
+        alFallar: (n: string) => errores.push(n),
+      },
+      { signal: control.signal },
     );
     expect(hechas).toEqual(["b"]);
     expect(errores).toEqual(["mala"]);

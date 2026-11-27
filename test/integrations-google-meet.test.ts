@@ -11,7 +11,7 @@ import {
   listarMiembrosMeetHttp,
   obtenerEspacioMeet,
   type GoogleMeetSpace,
-  type GoogleMeetSpaceMember
+  type GoogleMeetSpaceMember,
 } from "../src/integrations/google/meet";
 
 describe("integrations/google/meet", () => {
@@ -20,23 +20,23 @@ describe("integrations/google/meet", () => {
 
   it("obtenerEspacioMeet llama a la URL adecuada para spaceName y para meetingCode", async () => {
     const auth = {
-      request: vi.fn().mockResolvedValue({ data: { name: spaceName } })
+      request: vi.fn().mockResolvedValue({ data: { name: spaceName } }),
     } as unknown as JWT;
 
     await obtenerEspacioMeet(auth, meetingCode);
     expect(auth.request).toHaveBeenCalledWith(
       expect.objectContaining({
         url: "https://meet.googleapis.com/v2/spaces/abc-defg-hij",
-        method: "GET"
-      })
+        method: "GET",
+      }),
     );
 
     await obtenerEspacioMeet(auth, spaceName);
     expect(auth.request).toHaveBeenCalledWith(
       expect.objectContaining({
         url: "https://meet.googleapis.com/v2/spaces/space-123",
-        method: "GET"
-      })
+        method: "GET",
+      }),
     );
   });
 
@@ -44,10 +44,10 @@ describe("integrations/google/meet", () => {
     const spaceData: GoogleMeetSpace = {
       name: spaceName,
       meetingCode,
-      meetingUri: "https://meet.google.com/abc-defg-hij"
+      meetingUri: "https://meet.google.com/abc-defg-hij",
     };
     const auth = {
-      request: vi.fn().mockResolvedValue({ data: spaceData })
+      request: vi.fn().mockResolvedValue({ data: spaceData }),
     } as unknown as JWT;
 
     const result = await crearEspacioMeetHttp(auth, { moderation: "ON", accessType: "TRUSTED" });
@@ -56,14 +56,14 @@ describe("integrations/google/meet", () => {
       expect.objectContaining({
         url: "https://meet.googleapis.com/v2/spaces",
         method: "POST",
-        data: { config: { moderation: "ON", accessType: "TRUSTED" } }
-      })
+        data: { config: { moderation: "ON", accessType: "TRUSTED" } },
+      }),
     );
   });
 
   it("actualizarEspacioMeetHttp realiza PATCH con updateMask y config", async () => {
     const auth = {
-      request: vi.fn().mockResolvedValue({ data: { name: spaceName } })
+      request: vi.fn().mockResolvedValue({ data: { name: spaceName } }),
     } as unknown as JWT;
 
     await actualizarEspacioMeetHttp(auth, spaceName, { moderation: "ON" }, ["config.moderation"]);
@@ -71,24 +71,24 @@ describe("integrations/google/meet", () => {
       expect.objectContaining({
         url: "https://meet.googleapis.com/v2/spaces/space-123?updateMask=config.moderation",
         method: "PATCH",
-        data: { name: spaceName, config: { moderation: "ON" } }
-      })
+        data: { name: spaceName, config: { moderation: "ON" } },
+      }),
     );
   });
 
   it("listarMiembrosMeetHttp pagina todas las páginas con nextPageToken", async () => {
     const page1: GoogleMeetSpaceMember[] = [
-      { name: "spaces/space-123/members/1", email: "a@flacso.edu.uy", role: "COHOST" }
+      { name: "spaces/space-123/members/1", email: "a@flacso.edu.uy", role: "COHOST" },
     ];
     const page2: GoogleMeetSpaceMember[] = [
-      { name: "spaces/space-123/members/2", email: "b@flacso.edu.uy", role: "COHOST" }
+      { name: "spaces/space-123/members/2", email: "b@flacso.edu.uy", role: "COHOST" },
     ];
 
     const auth = {
       request: vi
         .fn()
         .mockResolvedValueOnce({ data: { members: page1, nextPageToken: "token-2" } })
-        .mockResolvedValueOnce({ data: { members: page2 } })
+        .mockResolvedValueOnce({ data: { members: page2 } }),
     } as unknown as JWT;
 
     const members = await listarMiembrosMeetHttp(auth, spaceName);
@@ -101,10 +101,10 @@ describe("integrations/google/meet", () => {
     const member: GoogleMeetSpaceMember = {
       name: "spaces/space-123/members/docente",
       email: "docente@flacso.edu.uy",
-      role: "COHOST"
+      role: "COHOST",
     };
     const auth = {
-      request: vi.fn().mockResolvedValue({ data: member })
+      request: vi.fn().mockResolvedValue({ data: member }),
     } as unknown as JWT;
 
     const result = await crearMiembroMeetHttp(auth, spaceName, "docente@flacso.edu.uy", "COHOST");
@@ -113,22 +113,22 @@ describe("integrations/google/meet", () => {
       expect.objectContaining({
         url: "https://meet.googleapis.com/v2/spaces/space-123/members",
         method: "POST",
-        data: { email: "docente@flacso.edu.uy", role: "COHOST" }
-      })
+        data: { email: "docente@flacso.edu.uy", role: "COHOST" },
+      }),
     );
   });
 
   it("eliminarMiembroMeetHttp realiza DELETE al recurso del miembro", async () => {
     const auth = {
-      request: vi.fn().mockResolvedValue({ data: {} })
+      request: vi.fn().mockResolvedValue({ data: {} }),
     } as unknown as JWT;
 
     await eliminarMiembroMeetHttp(auth, "spaces/space-123/members/1");
     expect(auth.request).toHaveBeenCalledWith(
       expect.objectContaining({
         url: "https://meet.googleapis.com/v2/spaces/space-123/members/1",
-        method: "DELETE"
-      })
+        method: "DELETE",
+      }),
     );
   });
 
@@ -151,19 +151,19 @@ describe("integrations/google/meet", () => {
       expect(
         isMemberPermissionError({
           code: 403,
-          message: "403: Permission denied on resource Member"
-        })
+          message: "403: Permission denied on resource Member",
+        }),
       ).toBe(true);
       expect(
         isMemberPermissionError({
-          response: { status: 403, data: "Permission denied on resource member" }
-        })
+          response: { status: 403, data: "Permission denied on resource member" },
+        }),
       ).toBe(true);
       expect(
         isMemberPermissionError({
           code: 403,
-          message: "Permission denied on resource Space"
-        })
+          message: "Permission denied on resource Space",
+        }),
       ).toBe(false);
       expect(isMemberPermissionError({ code: 404 })).toBe(false);
     });

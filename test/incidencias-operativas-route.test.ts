@@ -3,20 +3,20 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const state = vi.hoisted(() => ({
   session: { user: { id: "at-1", email: "at@flacso.edu.uy" } } as any,
   actor: { id: "at-1", rol: "ASISTENTE_TECNICO", activo: true } as any,
-  calls: [] as unknown[]
+  calls: [] as unknown[],
 }));
 
 vi.mock("next/server", () => ({
   NextResponse: {
     json: (body: unknown, init?: { status?: number }) => ({
       body,
-      status: init?.status ?? 200
-    })
-  }
+      status: init?.status ?? 200,
+    }),
+  },
 }));
 vi.mock("@/auth", () => ({ auth: async () => state.session }));
 vi.mock("@/src/lib/auth/session-actor.adapter", () => ({
-  resolveSessionActor: async () => state.actor
+  resolveSessionActor: async () => state.actor,
 }));
 vi.mock("@/src/lib/db", () => ({ db: {} }));
 vi.mock("@/src/bootstrap/reunion-operativa.server", () => ({
@@ -28,9 +28,9 @@ vi.mock("@/src/bootstrap/reunion-operativa.server", () => ({
       severidad: "MEDIA",
       descripcion: "Audio entrecortado",
       estado: "ABIERTA",
-      createdAt: new Date("2026-09-23T18:10:00-03:00")
+      createdAt: new Date("2026-09-23T18:10:00-03:00"),
     };
-  }
+  },
 }));
 
 import { POST } from "../app/api/v1/reuniones/instancias/[instanciaId]/incidencias/route";
@@ -39,7 +39,7 @@ function request(body: unknown) {
   return new Request("http://localhost/api/v1/reuniones/instancias/meeting-1/incidencias", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body)
+    body: JSON.stringify(body),
   });
 }
 
@@ -55,9 +55,9 @@ describe("POST incidencia operativa", () => {
       request({
         tipo: "AUDIO_VIDEO",
         severidad: "MEDIA",
-        descripcion: "Audio entrecortado"
+        descripcion: "Audio entrecortado",
       }),
-      { params: Promise.resolve({ instanciaId: "meeting-1" }) }
+      { params: Promise.resolve({ instanciaId: "meeting-1" }) },
     )) as any;
 
     expect(response.status).toBe(201);
@@ -69,18 +69,21 @@ describe("POST incidencia operativa", () => {
         {
           tipo: "AUDIO_VIDEO",
           severidad: "MEDIA",
-          descripcion: "Audio entrecortado"
-        }
-      ]
+          descripcion: "Audio entrecortado",
+        },
+      ],
     ]);
   });
 
   it("rechaza una sesión ausente antes de llamar al servicio", async () => {
     state.session = null;
 
-    const response = (await POST(request({ tipo: "OTRA", severidad: "BAJA", descripcion: "Detalle" }), {
-      params: Promise.resolve({ instanciaId: "meeting-1" })
-    })) as any;
+    const response = (await POST(
+      request({ tipo: "OTRA", severidad: "BAJA", descripcion: "Detalle" }),
+      {
+        params: Promise.resolve({ instanciaId: "meeting-1" }),
+      },
+    )) as any;
 
     expect(response.status).toBe(401);
     expect(state.calls).toEqual([]);
@@ -89,9 +92,12 @@ describe("POST incidencia operativa", () => {
   it("rechaza un actor inactivo antes de llamar al servicio", async () => {
     state.actor.activo = false;
 
-    const response = (await POST(request({ tipo: "OTRA", severidad: "BAJA", descripcion: "Detalle" }), {
-      params: Promise.resolve({ instanciaId: "meeting-1" })
-    })) as any;
+    const response = (await POST(
+      request({ tipo: "OTRA", severidad: "BAJA", descripcion: "Detalle" }),
+      {
+        params: Promise.resolve({ instanciaId: "meeting-1" }),
+      },
+    )) as any;
 
     expect(response.status).toBe(401);
     expect(state.calls).toEqual([]);

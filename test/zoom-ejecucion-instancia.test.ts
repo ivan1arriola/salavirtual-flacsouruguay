@@ -11,8 +11,8 @@ function tx(avisos: unknown[]) {
     updateMany,
     cliente: {
       eventoWebhookZoom: { findMany: vi.fn().mockResolvedValue(avisos) },
-      instanciaSala: { updateMany }
-    } as never
+      instanciaSala: { updateMany },
+    } as never,
   };
 }
 
@@ -24,25 +24,31 @@ describe("aplicarEjecucionZoomAInstancia", () => {
   });
 
   it("solo started: pasa a EN_CURSO sin inventar fin", async () => {
-    const { updateMany, cliente } = tx([{ tipo: "meeting.started", inicioRealAt: inicio, finRealAt: null }]);
+    const { updateMany, cliente } = tx([
+      { tipo: "meeting.started", inicioRealAt: inicio, finRealAt: null },
+    ]);
     await aplicarEjecucionZoomAInstancia(cliente, entrada);
     expect(updateMany).toHaveBeenCalledWith({
       where: { id: "i1", estado: "PROGRAMADA" },
-      data: { estado: "EN_CURSO" }
+      data: { estado: "EN_CURSO" },
     });
-    expect(updateMany).not.toHaveBeenCalledWith(expect.objectContaining({ data: { finRealAt: fin } }));
+    expect(updateMany).not.toHaveBeenCalledWith(
+      expect.objectContaining({ data: { finRealAt: fin } }),
+    );
   });
 
   it("ended llegado antes que started (fuera de orden) finaliza con las marcas oficiales", async () => {
-    const { updateMany, cliente } = tx([{ tipo: "meeting.ended", inicioRealAt: inicio, finRealAt: fin }]);
+    const { updateMany, cliente } = tx([
+      { tipo: "meeting.ended", inicioRealAt: inicio, finRealAt: fin },
+    ]);
     await aplicarEjecucionZoomAInstancia(cliente, entrada);
     expect(updateMany).toHaveBeenCalledWith({
       where: { id: "i1", finRealAt: null },
-      data: { finRealAt: fin }
+      data: { finRealAt: fin },
     });
     expect(updateMany).toHaveBeenCalledWith({
       where: { id: "i1", estado: { in: ["PROGRAMADA", "EN_CURSO"] } },
-      data: { estado: "FINALIZADA" }
+      data: { estado: "FINALIZADA" },
     });
   });
 });

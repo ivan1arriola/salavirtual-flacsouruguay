@@ -11,20 +11,25 @@ describe("participantes Zoom en vivo", () => {
         new Response(
           JSON.stringify({
             participants: [
-              { id: "1", user_name: "Ana", email: "ana@example.com", join_time: "2026-11-05T14:00:00Z" }
+              {
+                id: "1",
+                user_name: "Ana",
+                email: "ana@example.com",
+                join_time: "2026-11-05T14:00:00Z",
+              },
             ],
-            next_page_token: "page2"
+            next_page_token: "page2",
           }),
-          { status: 200 }
-        )
+          { status: 200 },
+        ),
       )
       .mockResolvedValueOnce(
         new Response(
           JSON.stringify({
-            participants: [{ id: "2", user_name: "Invitado" }]
+            participants: [{ id: "2", user_name: "Invitado" }],
           }),
-          { status: 200 }
-        )
+          { status: 200 },
+        ),
       );
     vi.stubGlobal("fetch", fetchMock);
     const result = await obtenerParticipantesZoomEnVivoHttp("token", "123");
@@ -43,7 +48,7 @@ describe("participantes Zoom en vivo", () => {
     expect(await obtenerParticipantesZoomEnVivoHttp("token", "123")).toEqual({
       estado: "NO_DISPONIBLE",
       motivo: "SIN_PERMISOS",
-      httpStatus: 403
+      httpStatus: 403,
     });
   });
 
@@ -52,7 +57,7 @@ describe("participantes Zoom en vivo", () => {
     expect(await obtenerParticipantesZoomEnVivoHttp("token", "123")).toEqual({
       estado: "NO_DISPONIBLE",
       motivo: "ERROR_API",
-      httpStatus: 500
+      httpStatus: 500,
     });
   });
 });

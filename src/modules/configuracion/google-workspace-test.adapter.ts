@@ -27,12 +27,14 @@ const REQUIRED_SCOPES: readonly Omit<GoogleWorkspaceScopeValidation, "autorizado
   { key: "calendar.events", label: "Google Calendar", scope: CALENDAR_SCOPE },
   { key: "drive", label: "Google Drive", scope: DRIVE_SCOPE },
   { key: "gmail.send", label: "Gmail · envío", scope: GMAIL_SEND_SCOPE },
-  { key: "spreadsheets", label: "Sheets · asistencia", scope: SHEETS_SCOPE }
+  { key: "spreadsheets", label: "Sheets · asistencia", scope: SHEETS_SCOPE },
 ];
 
 const WRITER_ROLES = new Set(["organizer", "fileOrganizer", "writer"]);
 
-export async function probarCredencialGoogle(credential: ServiceAccountCredential): Promise<string> {
+export async function probarCredencialGoogle(
+  credential: ServiceAccountCredential,
+): Promise<string> {
   const auth = crearJwt(credential, CALENDAR_SCOPE);
   await auth.authorize();
   return "Google aceptó la cuenta de servicio y la clave privada.";
@@ -43,13 +45,13 @@ export async function probarDelegacionGoogle(credential: DelegatedCredential): P
   const calendarId = encodeURIComponent(credential.subject);
   await auth.request({
     url: `${CALENDAR_API}/calendars/${calendarId}/events?maxResults=1&singleEvents=true`,
-    method: "GET"
+    method: "GET",
   });
   return `Delegación válida para ${credential.subject}: Calendar, Drive, Gmail y Sheets autorizados.`;
 }
 
 export async function validarScopesGoogle(
-  credential: DelegatedCredential
+  credential: DelegatedCredential,
 ): Promise<readonly GoogleWorkspaceScopeValidation[]> {
   return Promise.all(
     REQUIRED_SCOPES.map(async (required) => {
@@ -61,14 +63,17 @@ export async function validarScopesGoogle(
         return {
           ...required,
           autorizado: false,
-          error: mensajeScope(error)
+          error: mensajeScope(error),
         };
       }
-    })
+    }),
   );
 }
 
-export async function probarDestinoDrive(credential: DelegatedCredential, folderId: string): Promise<string> {
+export async function probarDestinoDrive(
+  credential: DelegatedCredential,
+  folderId: string,
+): Promise<string> {
   const auth = crearJwt(credential, DRIVE_SCOPE);
   const response = await auth.request<{
     id?: string;
@@ -77,7 +82,7 @@ export async function probarDestinoDrive(credential: DelegatedCredential, folder
     trashed?: boolean;
   }>({
     url: `${DRIVE_API}/files/${encodeURIComponent(folderId)}?fields=id,name,mimeType,trashed&supportsAllDrives=true`,
-    method: "GET"
+    method: "GET",
   });
   if (response.data.mimeType !== DRIVE_FOLDER_MIME_TYPE || response.data.trashed) {
     throw new Error("El ID no corresponde a una carpeta de Drive disponible.");
@@ -88,8 +93,8 @@ export async function probarDestinoDrive(credential: DelegatedCredential, folder
     data: {
       name: `.prueba-gestor-meet-${Date.now()}`,
       mimeType: DRIVE_FOLDER_MIME_TYPE,
-      parents: [folderId]
-    }
+      parents: [folderId],
+    },
   });
   if (!probe.data.id) {
     throw new Error("Drive no confirmó la prueba de escritura.");
@@ -101,7 +106,7 @@ export async function probarDestinoDrive(credential: DelegatedCredential, folder
 export async function prepararAccesoSalasDrive(
   credential: DelegatedCredential,
   folderId: string,
-  hostEmails: readonly string[]
+  hostEmails: readonly string[],
 ): Promise<string> {
   const auth = crearJwt(credential, DRIVE_SCOPE);
   const response = await auth.request<{
@@ -112,14 +117,14 @@ export async function prepararAccesoSalasDrive(
     }>[];
   }>({
     url: `${DRIVE_API}/files/${encodeURIComponent(folderId)}/permissions?fields=permissions(id,emailAddress,role)&supportsAllDrives=true`,
-    method: "GET"
+    method: "GET",
   });
   const writable = new Set(
     (response.data.permissions ?? []).flatMap((permission) =>
       permission.emailAddress && permission.role && WRITER_ROLES.has(permission.role)
         ? [permission.emailAddress.toLowerCase()]
-        : []
-    )
+        : [],
+    ),
   );
   const pending = hostEmails.filter((email) => !writable.has(email.toLowerCase()));
   await pending.reduce<Promise<unknown>>(async (previous, emailAddress) => {
@@ -127,7 +132,7 @@ export async function prepararAccesoSalasDrive(
     return auth.request({
       url: `${DRIVE_API}/files/${encodeURIComponent(folderId)}/permissions?supportsAllDrives=true&sendNotificationEmail=false&fields=id`,
       method: "POST",
-      data: { type: "user", role: "fileOrganizer", emailAddress }
+      data: { type: "user", role: "fileOrganizer", emailAddress },
     });
   }, Promise.resolve());
   return `${hostEmails.length - pending.length} salas ya tenían acceso; ${pending.length} fueron habilitadas con administración de contenido.`;
@@ -137,26 +142,26 @@ async function eliminarPrueba(auth: JWT, fileId: string): Promise<void> {
   try {
     await auth.request({
       url: `${DRIVE_API}/files/${encodeURIComponent(fileId)}?supportsAllDrives=true`,
-      method: "DELETE"
+      method: "DELETE",
     });
   } catch {
     await auth.request({
       url: `${DRIVE_API}/files/${encodeURIComponent(fileId)}?supportsAllDrives=true`,
       method: "PATCH",
-      data: { trashed: true }
+      data: { trashed: true },
     });
   }
 }
 
 function crearJwt(
   credential: ServiceAccountCredential & Readonly<{ subject?: string }>,
-  scope: string | readonly string[]
+  scope: string | readonly string[],
 ): JWT {
   return new JWT({
     email: credential.serviceAccountEmail,
     key: credential.privateKey,
     scopes: typeof scope === "string" ? [scope] : [...scope],
-    subject: credential.subject
+    subject: credential.subject,
   });
 }
 

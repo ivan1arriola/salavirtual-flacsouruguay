@@ -3,7 +3,7 @@ import { Clock3, Mail } from "lucide-react";
 export function AssistantReportConfigForm({
   emails,
   adminEmails,
-  action
+  action,
 }: Readonly<{
   emails: readonly string[];
   adminEmails: readonly string[];
@@ -15,7 +15,8 @@ export function AssistantReportConfigForm({
         <div>
           <h2>Destinatarios adicionales</h2>
           <p>
-            El sistema envía el reporte el 1.º de cada mes con las horas registradas durante el mes anterior.
+            El sistema envía el reporte el 1.º de cada mes con las horas registradas durante el mes
+            anterior.
           </p>
         </div>
         <Clock3 size={22} color="var(--brand)" aria-hidden="true" />
@@ -31,8 +32,8 @@ export function AssistantReportConfigForm({
             rows={5}
           />
           <small>
-            Ingresá un correo por línea o separalos con comas. Los administradores aparecen debajo y no hace
-            falta repetirlos.
+            Ingresá un correo por línea o separalos con comas. Los administradores aparecen debajo y
+            no hace falta repetirlos.
           </small>
         </label>
         <button className="primary-action" type="submit">

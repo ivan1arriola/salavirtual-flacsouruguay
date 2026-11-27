@@ -20,7 +20,9 @@ export type NotificacionesRepositoryPort = Readonly<{
 
   esAsistenteCesado: (usuarioId: string) => Promise<boolean>;
 
-  obtenerDestinatariosDocentesPrograma: (solicitudId: string) => Promise<readonly NotificationRecipient[]>;
+  obtenerDestinatariosDocentesPrograma: (
+    solicitudId: string,
+  ) => Promise<readonly NotificationRecipient[]>;
 
   obtenerCredencialesGmail: () => Promise<CredencialGmailTransport | null>;
 
@@ -33,6 +35,6 @@ export type NotificacionesRepositoryPort = Readonly<{
       estado: "ACEPTADO" | "OMITIDO" | "ERROR";
       transporte?: "AMAZON_SES" | "GMAIL_API" | "SMTP";
       motivo?: string;
-    }>
+    }>,
   ) => Promise<void>;
 }>;

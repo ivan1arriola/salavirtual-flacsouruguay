@@ -19,7 +19,7 @@ export function AssistantAssignmentSelect({
   assistants,
   currentAssistantId,
   applicants = [],
-  suggestedAssistant = null
+  suggestedAssistant = null,
 }: Readonly<{
   meetingId: string;
   assistants: readonly AssistantOption[];
@@ -42,7 +42,7 @@ export function AssistantAssignmentSelect({
       const response = await fetch("/api/v1/asistencia/asignaciones", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ instanciaSalaId: meetingId, asistenteTecnicoId: assistantId })
+        body: JSON.stringify({ instanciaSalaId: meetingId, asistenteTecnicoId: assistantId }),
       });
       const result = await response.json().catch(() => ({}));
       if (!response.ok) {
@@ -136,7 +136,9 @@ export function AssistantAssignmentSelect({
             </button>
           ) : null}
           <select
-            aria-label={applicants.length > 0 ? "Asignación manual o postulantes" : "Asignación manual"}
+            aria-label={
+              applicants.length > 0 ? "Asignación manual o postulantes" : "Asignación manual"
+            }
             defaultValue={currentAssistantId ?? ""}
             disabled={pending}
             onChange={(event) => assign(event.target.value)}

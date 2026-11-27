@@ -6,10 +6,10 @@ const listado = vi.fn();
 const descarga = vi.fn();
 vi.mock("../src/integrations/zoom/zoom-recordings.client", () => ({
   obtenerInventarioOcurrenciaZoomHttp: (...a: unknown[]) => inventario(...a),
-  listarGrabacionesAnfitrionZoomHttp: (...a: unknown[]) => listado(...a)
+  listarGrabacionesAnfitrionZoomHttp: (...a: unknown[]) => listado(...a),
 }));
 vi.mock("../src/integrations/zoom/zoom-download.client", () => ({
-  abrirDescargaZoomHttp: (...a: unknown[]) => descarga(...a)
+  abrirDescargaZoomHttp: (...a: unknown[]) => descarga(...a),
 }));
 
 import { crearZoomOrigenAdapter } from "../src/modules/archivos/infrastructure/zoom/zoom-origen.adapter";
@@ -21,7 +21,7 @@ const ref = {
   meetingId: "9",
   anfitrionZoomId: "h1",
   inicioRealAt: new Date("2026-11-08T10:00:00Z"),
-  titulo: "Clase"
+  titulo: "Clase",
 };
 const recurso: any = {
   claveOrigen: "k",
@@ -34,7 +34,7 @@ const recurso: any = {
   finAt: null,
   tamanoBytes: 10n,
   estadoOrigen: "completed",
-  descargable: true
+  descargable: true,
 };
 const AUTH = "token";
 
@@ -42,8 +42,10 @@ function inv(url: string | null) {
   return {
     uuid: "u/1",
     meetingId: "9",
-    respuesta: { recording_files: [{ id: "f1", file_type: "MP4", status: "completed", file_size: 10 }] },
-    urlDescarga: vi.fn(() => url)
+    respuesta: {
+      recording_files: [{ id: "f1", file_type: "MP4", status: "completed", file_size: 10 }],
+    },
+    urlDescarga: vi.fn(() => url),
   };
 }
 
@@ -70,13 +72,13 @@ describe("crearZoomOrigenAdapter", () => {
     await origen().listarOcurrencias(
       { cuentaZoomId: "acct", anfitrionZoomId: "h1", cuentaProveedorId: "p" },
       { desde: "2026-11-01", hasta: "2026-11-09" },
-      "cur"
+      "cur",
     );
     expect(listado).toHaveBeenCalledWith(
       AUTH,
       "h1",
       { desde: "2026-11-01", hasta: "2026-11-09", cuentaZoomId: "acct" },
-      "cur"
+      "cur",
     );
   });
 
@@ -91,12 +93,14 @@ describe("crearZoomOrigenAdapter", () => {
       totalBytes: 10n,
       bytesEsperados: 5n,
       contentType: null,
-      bytesRecibidos: () => 0n
+      bytesRecibidos: () => 0n,
     });
     const signal = new AbortController().signal;
     const r = await origen().abrirDescarga(ref, recurso, 5n, signal);
     expect(inventario).toHaveBeenCalledTimes(1);
-    expect(descarga).toHaveBeenCalledWith(AUTH, "https://zoom.us/rec/x", 5n, signal, { permitirJson: false });
+    expect(descarga).toHaveBeenCalledWith(AUTH, "https://zoom.us/rec/x", 5n, signal, {
+      permitirJson: false,
+    });
     expect(r).toMatchObject({ tipo: "CONTENIDO", offsetOrigen: 5n, totalBytes: 10n });
   });
 
@@ -110,7 +114,7 @@ describe("crearZoomOrigenAdapter", () => {
       totalBytes: null,
       bytesEsperados: null,
       contentType: null,
-      bytesRecibidos: () => 0n
+      bytesRecibidos: () => 0n,
     });
     const r: any = await origen().abrirDescarga(ref, recurso, 0n, new AbortController().signal);
     expect(r.offsetOrigen).toBe(0n);
@@ -126,13 +130,13 @@ describe("crearZoomOrigenAdapter", () => {
       totalBytes: null,
       bytesEsperados: null,
       contentType: null,
-      bytesRecibidos: () => 0n
+      bytesRecibidos: () => 0n,
     });
     await origen().abrirDescarga(
       ref,
       { ...recurso, tipoOriginal: "TIMELINE" },
       0n,
-      new AbortController().signal
+      new AbortController().signal,
     );
     expect(descarga.mock.calls[0]![4]).toEqual({ permitirJson: true });
 
@@ -141,7 +145,7 @@ describe("crearZoomOrigenAdapter", () => {
       ref,
       { ...recurso, archivoZoomId: null },
       0n,
-      new AbortController().signal
+      new AbortController().signal,
     );
     expect(sinId).toEqual({ tipo: "REQUIERE_REVISION", motivo: "RECURSO_SIN_ID" });
     inventario.mockResolvedValue(inv(null));
@@ -154,7 +158,7 @@ describe("crearZoomOrigenAdapter", () => {
     inventario.mockResolvedValue(null);
     expect(await origen().abrirDescarga(ref, recurso, 0n, new AbortController().signal)).toEqual({
       tipo: "REQUIERE_REVISION",
-      motivo: "OCURRENCIA_NO_ENCONTRADA"
+      motivo: "OCURRENCIA_NO_ENCONTRADA",
     });
   });
 
@@ -162,11 +166,11 @@ describe("crearZoomOrigenAdapter", () => {
     inventario.mockResolvedValue(inv("https://zoom.us/rec/x"));
     descarga.mockResolvedValue({
       tipo: "REQUIERE_REVISION",
-      motivo: "RANGE_IGNORADO_DESCARTE_EXCEDE_MAXIMO"
+      motivo: "RANGE_IGNORADO_DESCARTE_EXCEDE_MAXIMO",
     });
     expect(await origen().abrirDescarga(ref, recurso, 5n, new AbortController().signal)).toEqual({
       tipo: "REQUIERE_REVISION",
-      motivo: "RANGE_IGNORADO_DESCARTE_EXCEDE_MAXIMO"
+      motivo: "RANGE_IGNORADO_DESCARTE_EXCEDE_MAXIMO",
     });
   });
 });

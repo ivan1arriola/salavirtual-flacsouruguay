@@ -4,7 +4,7 @@ import { useState } from "react";
 
 type Registro = { correo: string; externo: boolean | null; conferenciaId: string };
 export function MeetAttendanceEmails({
-  meetings
+  meetings,
 }: {
   meetings: readonly {
     id: string;
@@ -27,7 +27,7 @@ export function MeetAttendanceEmails({
     try {
       const response = await fetch(
         `/api/v1/reuniones/instancias/${encodeURIComponent(id)}/correos-asistencia`,
-        { cache: "no-store" }
+        { cache: "no-store" },
       );
       const data = await response.json();
       if (!response.ok) {
@@ -47,8 +47,10 @@ export function MeetAttendanceEmails({
       [
         "Correo,Externo,Conferencia",
         ...records.map((r) =>
-          [r.correo, r.externo === null ? "" : r.externo ? "Sí" : "No", r.conferenciaId].map(escape).join(",")
-        )
+          [r.correo, r.externo === null ? "" : r.externo ? "Sí" : "No", r.conferenciaId]
+            .map(escape)
+            .join(","),
+        ),
       ].join("\r\n");
     const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
     const a = document.createElement("a");
@@ -64,8 +66,8 @@ export function MeetAttendanceEmails({
     <section aria-label="Correos de asistencia Meet" style={{ marginBlock: "1.5rem" }}>
       <h2>Correos de asistencia de Google Meet</h2>
       <p>
-        Consultá los registros de Google Workspace por encuentro. Solo se muestran correos identificados por
-        Google; no se infieren identidades por nombre.
+        Consultá los registros de Google Workspace por encuentro. Solo se muestran correos
+        identificados por Google; no se infieren identidades por nombre.
       </p>
       <label htmlFor="meet-audit-meeting">Encuentro finalizado</label>{" "}
       <select
@@ -95,8 +97,8 @@ export function MeetAttendanceEmails({
       {error ? <p role="alert">{error}</p> : null}
       {!busy && selected && !error ? (
         <p>
-          {records.length} correos recuperados de la última consulta. Un resultado vacío no demuestra
-          ausencia.
+          {records.length} correos recuperados de la última consulta. Un resultado vacío no
+          demuestra ausencia.
         </p>
       ) : null}
       {records.length > 0 ? (

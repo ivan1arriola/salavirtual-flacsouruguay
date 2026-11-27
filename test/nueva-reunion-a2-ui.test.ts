@@ -16,7 +16,7 @@ const fecha = {
   horaFin: "23:45",
   horaAsistenciaInicio: "22:30",
   horaAsistenciaFin: "00:15",
-  descripcion: ""
+  descripcion: "",
 };
 const recurrence = {
   desde: "",
@@ -25,7 +25,7 @@ const recurrence = {
   horaInicio: "",
   horaFin: "",
   horaAsistenciaInicio: "",
-  horaAsistenciaFin: ""
+  horaAsistenciaFin: "",
 };
 const program = { id: "uno", label: "Educación", teacher: "Ana Pérez" };
 
@@ -50,8 +50,8 @@ function editor(cambios: Partial<Parameters<typeof MeetingScheduleEditor>[0]> = 
       onAdd: noop,
       onDuplicate: noop,
       onSort: noop,
-      ...cambios
-    })
+      ...cambios,
+    }),
   );
 }
 function resumen(cambios: Partial<Parameters<typeof MeetingSummary>[0]> = {}) {
@@ -68,8 +68,8 @@ function resumen(cambios: Partial<Parameters<typeof MeetingSummary>[0]> = {}) {
       canAssignAssistant: false,
       assistanceMode: "OPEN",
       selectedAssistant: undefined,
-      ...cambios
-    })
+      ...cambios,
+    }),
   );
 }
 
@@ -83,8 +83,8 @@ describe("A2: tipo y modos", () => {
           onModeChange: noop,
           pendingMode: null,
           onConfirm: noop,
-          onCancel: noop
-        })
+          onCancel: noop,
+        }),
       );
       expect(html).toContain("<fieldset");
       expect(html).toContain("<legend>Tipo de reunión</legend>");
@@ -93,10 +93,10 @@ describe("A2: tipo y modos", () => {
       expect(html).toContain("Serie de encuentros");
       expect(html).toMatch(
         new RegExp(
-          `<input(?=[^>]*value="${dateMode === "SINGLE" ? "SINGLE" : "SERIES"}")(?=[^>]*checked="")[^>]*>`
-        )
+          `<input(?=[^>]*value="${dateMode === "SINGLE" ? "SINGLE" : "SERIES"}")(?=[^>]*checked="")[^>]*>`,
+        ),
       );
-    }
+    },
   );
   it("la confirmación en línea explica la pérdida, ofrece cancelar y no cambia el radio seleccionado", () => {
     const html = renderToStaticMarkup(
@@ -105,8 +105,8 @@ describe("A2: tipo y modos", () => {
         onModeChange: noop,
         pendingMode: "SINGLE",
         onConfirm: noop,
-        onCancel: noop
-      })
+        onCancel: noop,
+      }),
     );
     expect(html).toContain('role="group"');
     expect(html).toContain('tabindex="-1"');
@@ -123,7 +123,10 @@ describe("A2: tipo y modos", () => {
     expect(html.match(/class="date-row date-row-single"/g)).toHaveLength(1);
   });
   it("serie ofrece dos modos, muestra contador y conserva el orden de edición sin reordenar en vivo", () => {
-    const html = editor({ dateMode: "MANUAL", dates: [fecha, { ...fecha, id: 8, fecha: "2026-11-09" }] });
+    const html = editor({
+      dateMode: "MANUAL",
+      dates: [fecha, { ...fecha, id: 8, fecha: "2026-11-09" }],
+    });
     expect(html.match(/name="dateMode"/g)).toHaveLength(2);
     expect(html).toContain("2 encuentros");
     expect(html.indexOf('value="2026-11-10"')).toBeLessThan(html.indexOf('value="2026-11-09"'));
@@ -142,21 +145,21 @@ describe("A2: tipo y modos", () => {
       onTimeChange: noop,
       onAdd: noop,
       onRemove: (index) => llamadas.push(["quitar", index]),
-      onDuplicate: (index) => llamadas.push(["duplicar", index])
+      onDuplicate: (index) => llamadas.push(["duplicar", index]),
     });
     const nodos = elementos(tree);
-    const primeraFecha = nodos.find((n) => n.type === "input" && n.props.type === "date")!;
-    (primeraFecha.props.onChange as (event: { target: { value: string } }) => void)({
-      target: { value: "2026-11-08" }
+    const primeraFecha = nodos.find((n) => n.type === "input" && n.props["type"] === "date")!;
+    (primeraFecha.props["onChange"] as (event: { target: { value: string } }) => void)({
+      target: { value: "2026-11-08" },
     });
     const duplicar = nodos.find((n) => n.props["aria-label"] === "Duplicar encuentro 1")!;
     const quitar = nodos.find((n) => n.props["aria-label"] === "Quitar encuentro 1")!;
-    (duplicar.props.onClick as () => void)();
-    (quitar.props.onClick as () => void)();
+    (duplicar.props["onClick"] as () => void)();
+    (quitar.props["onClick"] as () => void)();
     expect(llamadas).toEqual([
       [0, "fecha", "2026-11-08"],
       ["duplicar", 0],
-      ["quitar", 0]
+      ["quitar", 0],
     ]);
   });
   it("advierte solapamientos sin invalidar campos ni bloquear acciones", () => {
@@ -168,10 +171,14 @@ describe("A2: tipo y modos", () => {
   it("al llegar a 100 permite quitar pero no agregar ni duplicar", () => {
     const html = editor({
       dateMode: "MANUAL",
-      dates: Array.from({ length: 100 }, (_, id) => ({ ...fecha, id }))
+      dates: Array.from({ length: 100 }, (_, id) => ({ ...fecha, id })),
     });
-    expect(html).toMatch(/<button(?=[^>]*disabled="")(?=[^>]*aria-label="Duplicar encuentro 1")[^>]*>/);
-    expect(html).toMatch(/<button(?=[^>]*disabled="")(?=[^>]*class="secondary-action add-date")[^>]*>/);
+    expect(html).toMatch(
+      /<button(?=[^>]*disabled="")(?=[^>]*aria-label="Duplicar encuentro 1")[^>]*>/,
+    );
+    expect(html).toMatch(
+      /<button(?=[^>]*disabled="")(?=[^>]*class="secondary-action add-date")[^>]*>/,
+    );
     expect(html).toContain("Máximo de 100 encuentros");
   });
   it("la regla no generada no muestra ninguna fecha obsoleta como vista previa", () => {
@@ -187,8 +194,8 @@ describe("A2: tipo y modos", () => {
         selectedProgramId: "uno",
         title: "",
         onProgramChange: noop,
-        onTitleChange: noop
-      })
+        onTitleChange: noop,
+      }),
     );
     expect(html.indexOf('name="docenteProgramaId"')).toBeLessThan(html.indexOf('name="titulo"'));
     expect(html).toMatch(/<details[^>]*><summary>Descripción general \(opcional\)<\/summary>/);
@@ -197,14 +204,18 @@ describe("A2: tipo y modos", () => {
   });
   it("el formulario inicial conserva campos, sin stepper, y presenta tipo, datos, fechas, organización y resumen en orden", () => {
     const html = renderToStaticMarkup(
-      createElement(MeetingFormZoom, { programs: [program], assistants: [], canAssignAssistant: false })
+      createElement(MeetingFormZoom, {
+        programs: [program],
+        assistants: [],
+        canAssignAssistant: false,
+      }),
     );
     const posiciones = [
       "Tipo de reunión",
       'id="datos-academicos"',
       'id="fechas"',
       'id="organizacion"',
-      "Resumen de la reunión"
+      "Resumen de la reunión",
     ].map((texto) => html.indexOf(texto));
     expect(posiciones.every((valor) => valor >= 0)).toBe(true);
     expect(posiciones).toEqual([...posiciones].sort((a, b) => a - b));
@@ -223,12 +234,15 @@ function elementos(nodo: ReactNode): ReactElement<Record<string, unknown>>[] {
   if (!isValidElement<Record<string, unknown>>(nodo)) {
     return [];
   }
-  return [nodo, ...elementos(nodo.props.children as ReactNode)];
+  return [nodo, ...elementos(nodo.props["children"] as ReactNode)];
 }
 
 describe("A2: resumen derivado", () => {
   it("muestra datos académicos, tipo, extremos en Montevideo y enlace único sin identificadores", () => {
-    const html = resumen({ dateMode: "MANUAL", dates: [fecha, { ...fecha, id: 6, fecha: "2026-11-12" }] });
+    const html = resumen({
+      dateMode: "MANUAL",
+      dates: [fecha, { ...fecha, id: 6, fecha: "2026-11-12" }],
+    });
     for (const texto of [
       "Serie de encuentros",
       "Educación",
@@ -239,7 +253,7 @@ describe("A2: resumen derivado", () => {
       "10 de noviembre de 2026, 23:00–23:45",
       "12 de noviembre de 2026, 23:00–23:45",
       "America/Montevideo",
-      "Un solo enlace de Zoom para todos los encuentros"
+      "Un solo enlace de Zoom para todos los encuentros",
     ]) {
       expect(html).toContain(texto);
     }
@@ -260,7 +274,7 @@ describe("A2: resumen derivado", () => {
       requiresAssistance: true,
       requiresRecording: true,
       assistanceMode: "ASSIGN",
-      selectedAssistant: { id: "a", label: "Luis" }
+      selectedAssistant: { id: "a", label: "Luis" },
     });
     expect(html).toContain("Con monitoreo · Se graba");
     expect(html).toContain("15 minutos antes");
@@ -274,7 +288,7 @@ describe("A2: resumen derivado", () => {
       meetingMode: "HIBRIDA",
       canAssignAssistant: true,
       assistanceMode: "ASSIGN",
-      selectedAssistant: { id: "a", label: "Luis" }
+      selectedAssistant: { id: "a", label: "Luis" },
     });
     expect(html).toContain("Híbrida");
     expect(html).toContain("mínimo 30 minutos antes y después");
@@ -283,7 +297,7 @@ describe("A2: resumen derivado", () => {
     expect(html).toContain("Asignación");
     expect(html).toContain("Luis");
     expect(resumen({ requiresAssistance: true, canAssignAssistant: true })).toContain(
-      "Abierta a postulaciones"
+      "Abierta a postulaciones",
     );
   });
   it("sin monitoreo resume modalidad virtual y no muestra horarios ni asignación residuales", () => {
@@ -291,7 +305,7 @@ describe("A2: resumen derivado", () => {
       meetingMode: "HIBRIDA",
       canAssignAssistant: true,
       assistanceMode: "ASSIGN",
-      selectedAssistant: { id: "a", label: "Luis" }
+      selectedAssistant: { id: "a", label: "Luis" },
     });
     expect(html).toContain("Virtual");
     expect(html).not.toContain("Híbrida");
@@ -302,7 +316,10 @@ describe("A2: resumen derivado", () => {
 
 describe("A2: orden explícito y fechas inválidas", () => {
   it("sin filas desordenadas no ofrece el botón de ordenar", () => {
-    const html = editor({ dateMode: "MANUAL", dates: [{ ...fecha, fecha: "2026-11-09", id: 8 }, fecha] });
+    const html = editor({
+      dateMode: "MANUAL",
+      dates: [{ ...fecha, fecha: "2026-11-09", id: 8 }, fecha],
+    });
     expect(html).not.toContain("Ordenar por fecha y hora");
   });
   it("el botón de ordenar invoca onSort", () => {
@@ -319,10 +336,12 @@ describe("A2: orden explícito y fechas inválidas", () => {
       onDuplicate: noop,
       onSort: () => {
         veces++;
-      }
+      },
     });
-    const boton = elementos(tree).find((n) => n.type === "button" && n.props["data-accion"] === "ordenar")!;
-    (boton.props.onClick as () => void)();
+    const boton = elementos(tree).find(
+      (n) => n.type === "button" && n.props["data-accion"] === "ordenar",
+    )!;
+    (boton.props["onClick"] as () => void)();
     expect(veces).toBe(1);
   });
 });

@@ -11,14 +11,14 @@ export const runtime = "nodejs";
 const payloadSchema = z.discriminatedUnion("accion", [
   z.object({
     accion: z.literal("descartar"),
-    eventoProveedorId: z.string().min(1)
+    eventoProveedorId: z.string().min(1),
   }),
   z.object({
-    accion: z.literal("descartar-no-bloqueantes")
+    accion: z.literal("descartar-no-bloqueantes"),
   }),
   z.object({
-    accion: z.literal("reclasificar")
-  })
+    accion: z.literal("reclasificar"),
+  }),
 ]);
 
 export async function POST(request: Request) {
@@ -30,7 +30,7 @@ export async function POST(request: Request) {
   try {
     const actor = await resolveSessionActor(db, {
       id: session.user.id,
-      email: session.user.email
+      email: session.user.email,
     });
     if (!actor?.activo || actor.rol !== "ADMINISTRACION") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -45,12 +45,12 @@ export async function POST(request: Request) {
     switch (parsed.data.accion) {
       case "descartar": {
         const result = await obtenerServicioConferencias().descartarOperacionPendiente(
-          parsed.data.eventoProveedorId
+          parsed.data.eventoProveedorId,
         );
         if (!result.descartada) {
           return NextResponse.json(
             { error: result.motivo ?? "No se pudo descartar la operación." },
-            { status: 400 }
+            { status: 400 },
           );
         }
         return NextResponse.json({ ok: true, resultado: result });

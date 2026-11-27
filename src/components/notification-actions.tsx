@@ -17,7 +17,7 @@ export function NotificationMarkReadOnOpen({ unreadCount }: Readonly<{ unreadCou
     void fetch("/api/v1/notificaciones", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ all: true })
+      body: JSON.stringify({ all: true }),
     })
       .then((response) => {
         if (response.ok) {
@@ -36,7 +36,7 @@ export function NotificationMarkReadOnOpen({ unreadCount }: Readonly<{ unreadCou
 
 export function NotificationReadButton({
   notificationId,
-  className
+  className,
 }: Readonly<{ notificationId: string; className: string }>) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -48,7 +48,7 @@ export function NotificationReadButton({
       const response = await fetch("/api/v1/notificaciones", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ notificationId })
+        body: JSON.stringify({ notificationId }),
       });
       if (!response.ok) {
         const result = await response.json().catch(() => ({}));
@@ -82,7 +82,7 @@ export function NotificationReadButton({
 
 export function NotificationDeleteButton({
   notificationId,
-  className
+  className,
 }: Readonly<{ notificationId: string; className: string }>) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -97,7 +97,7 @@ export function NotificationDeleteButton({
       const response = await fetch("/api/v1/notificaciones", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ notificationId })
+        body: JSON.stringify({ notificationId }),
       });
       if (!response.ok) {
         const result = await response.json().catch(() => ({}));

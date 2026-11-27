@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { invitarUsuarioSchema, puedeInvitarUsuarios } from "../src/modules/usuarios/invitaciones.domain";
+import {
+  invitarUsuarioSchema,
+  puedeInvitarUsuarios,
+} from "../src/modules/usuarios/invitaciones.domain";
 
 describe("invitaciones de usuarios", () => {
   it("reserva las invitaciones a Administración activa", () => {
@@ -16,8 +19,8 @@ describe("invitaciones de usuarios", () => {
         email: "ANA@GMAIL.COM",
         rol: "DOCENTE",
         programaId: "programa",
-        programaNuevo: ""
-      }).success
+        programaNuevo: "",
+      }).success,
     ).toBe(true);
   });
 
@@ -28,8 +31,8 @@ describe("invitaciones de usuarios", () => {
         email: "ana@gmail.com",
         rol: "DOCENTE",
         programaId: "",
-        programaNuevo: ""
-      }).success
+        programaNuevo: "",
+      }).success,
     ).toBe(false);
   });
 });

@@ -3,10 +3,13 @@ import { describe, expect, it } from "vitest";
 
 const component = (file: string) =>
   readFileSync(new URL(`../src/components/dashboard/admin/${file}`, import.meta.url), "utf8");
-const styles = readFileSync(new URL("../app/(gestion)/admin-dashboard-mobile.css", import.meta.url), "utf8");
+const styles = readFileSync(
+  new URL("../app/(gestion)/admin-dashboard-mobile.css", import.meta.url),
+  "utf8",
+);
 const upcomingStyles = readFileSync(
   new URL("../src/components/dashboard/admin/admin-upcoming-list.module.css", import.meta.url),
-  "utf8"
+  "utf8",
 );
 
 describe("dashboard administración en teléfonos", () => {
@@ -14,7 +17,7 @@ describe("dashboard administración en teléfonos", () => {
     const layout = readFileSync(new URL("../app/(gestion)/layout.tsx", import.meta.url), "utf8");
     expect(layout).toContain('import "./admin-dashboard-mobile.css"');
     expect(layout.indexOf('import "./admin-dashboard-mobile.css"')).toBeGreaterThan(
-      layout.indexOf('import "./admin-upcoming-refresh.css"')
+      layout.indexOf('import "./admin-upcoming-refresh.css"'),
     );
     expect(styles).toContain(".admin-dashboard-redesigned .dashboard-content-section");
     expect(styles).toContain("@media (max-width: 360px)");

@@ -22,16 +22,22 @@ export type PlanCorreccionSerie = Readonly<{
 }>;
 
 type Host = Readonly<{ id: string; prioridad: number; limiteConcurrente: number | null }>;
-type ReservaZoom = Readonly<{ cuentaProveedorId: string; inicio: Date; fin: Date; instanciaId?: string }>;
+type ReservaZoom = Readonly<{
+  cuentaProveedorId: string;
+  inicio: Date;
+  fin: Date;
+  instanciaId?: string;
+}>;
 
 const unicos = <T>(valores: readonly T[]): readonly T[] => [...new Set(valores)];
 
 /** La cuenta que ya usan más encuentros de la serie, solo entre las salas disponibles; empata por orden de `hosts`. */
 function cuentaMasUsada(
   encuentros: readonly EncuentroSerieParaCorregir[],
-  hosts: readonly Host[]
+  hosts: readonly Host[],
 ): string | null {
-  const usos = (id: string) => encuentros.filter(({ cuentaProveedorId }) => cuentaProveedorId === id).length;
+  const usos = (id: string) =>
+    encuentros.filter(({ cuentaProveedorId }) => cuentaProveedorId === id).length;
   const [elegida] = hosts.reduce<readonly Host[]>((ordenados, host) => {
     const posicion = ordenados.findIndex((otro) => usos(host.id) > usos(otro.id));
     return posicion < 0
@@ -53,18 +59,18 @@ export function planificarCorreccionSerie(
     encuentros: readonly EncuentroSerieParaCorregir[];
     hosts: readonly Host[];
     reservasZoom: readonly ReservaZoom[];
-  }>
+  }>,
 ): PlanCorreccionSerie {
   const vigentes = input.encuentros.filter(({ fin }) => fin > input.ahora);
   const encuentroIds = vigentes.map(({ instanciaId }) => instanciaId);
   const base = {
     encuentroIds,
     reunionesARetirar: unicos(
-      vigentes.flatMap(({ externalEventId }) => (externalEventId ? [externalEventId] : []))
+      vigentes.flatMap(({ externalEventId }) => (externalEventId ? [externalEventId] : [])),
     ),
     encuentrosSinCalendar: vigentes
       .filter(({ calendarId, calendarEventId }) => !calendarId || !calendarEventId)
-      .map(({ instanciaId }) => instanciaId)
+      .map(({ instanciaId }) => instanciaId),
   };
   if (vigentes.length === 0) {
     return { ...base, estado: "REVISAR", hostId: null };
@@ -77,13 +83,15 @@ export function planificarCorreccionSerie(
 
   const propios = new Set(encuentroIds);
   const reservasAjenas = input.reservasZoom.filter(
-    ({ instanciaId }) => !instanciaId || !propios.has(instanciaId)
+    ({ instanciaId }) => !instanciaId || !propios.has(instanciaId),
   );
   const hostId = elegirCuentaHostParaPeriodos(
     cuentaMasUsada(vigentes, input.hosts),
     input.hosts,
     reservasAjenas,
-    vigentes.map(({ inicio, fin }) => ({ inicio, fin }))
+    vigentes.map(({ inicio, fin }) => ({ inicio, fin })),
   );
-  return hostId ? { ...base, estado: "CORREGIBLE", hostId } : { ...base, estado: "SIN_SALA", hostId: null };
+  return hostId
+    ? { ...base, estado: "CORREGIBLE", hostId }
+    : { ...base, estado: "SIN_SALA", hostId: null };
 }

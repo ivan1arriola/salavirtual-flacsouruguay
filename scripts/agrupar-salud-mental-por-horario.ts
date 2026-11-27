@@ -1,11 +1,11 @@
-import { Prisma } from "@prisma/client";
+import type { Prisma } from "@prisma/client";
 import { loadEnvConfig } from "@next/env";
 import { db } from "../src/lib/db";
 import { extraerConferenceData } from "../src/modules/meet/google-calendar.domain";
 import {
   compartirConferenciaGoogleCalendar,
   crearGoogleCalendarProvider,
-  type GoogleCalendarCredentials
+  type GoogleCalendarCredentials,
 } from "../src/modules/meet/google-calendar.adapter";
 import { recalcularSolicitud } from "../src/modules/reuniones/encuentros-persistence.adapter";
 
@@ -15,7 +15,7 @@ const programName = "Programa Salud Mental";
 const meetingTitle = "Diploma Salud Mental, subjetividad y trabajo";
 const scheduleNames = new Map([
   ["3-18:30", "Miércoles 18:30"],
-  ["6-10:00", "Sábados 10:00"]
+  ["6-10:00", "Sábados 10:00"],
 ]);
 
 type Candidate = Awaited<ReturnType<typeof loadCandidates>>[number];
@@ -30,7 +30,11 @@ async function main(): Promise<void> {
   const candidates = await loadCandidates();
   if (candidates.length === 0) {
     console.log(
-      JSON.stringify({ mode: applyChanges ? "apply" : "dry-run", status: "already-grouped" }, null, 2)
+      JSON.stringify(
+        { mode: applyChanges ? "apply" : "dry-run", status: "already-grouped" },
+        null,
+        2,
+      ),
     );
     return;
   }
@@ -46,12 +50,12 @@ async function main(): Promise<void> {
           schedule: plan.schedule,
           targetRequestId: plan.target.id,
           meetings: plan.retained.map(summary),
-          duplicatesToCancel: plan.duplicates.map(summary)
-        }))
+          duplicatesToCancel: plan.duplicates.map(summary),
+        })),
       },
       null,
-      2
-    )
+      2,
+    ),
   );
   if (!applyChanges) {
     return;
@@ -59,9 +63,10 @@ async function main(): Promise<void> {
 
   loadEnvConfig(process.cwd());
   const { descifrarConfiguracion } = await import("../src/lib/config/encryption");
-  const { obtenerCredencialPrincipalGoogleWorkspace } = await import("../src/modules/configuracion/api");
+  const { obtenerCredencialPrincipalGoogleWorkspace } =
+    await import("../src/modules/configuracion/api");
   const config = await obtenerCredencialPrincipalGoogleWorkspace(db, descifrarConfiguracion, {
-    requireActiva: true
+    requireActiva: true,
   });
   if (!config) {
     throw new Error("Google Workspace no está configurado para reagrupar los eventos.");
@@ -79,7 +84,7 @@ function loadCandidates() {
       titulo: meetingTitle,
       tipoInstancias: "UNICA",
       fechaInicioSolicitada: { gte: cutoff },
-      docentePrograma: { programa: { nombre: programName } }
+      docentePrograma: { programa: { nombre: programName } },
     },
     orderBy: [{ fechaInicioSolicitada: "asc" }, { createdAt: "asc" }, { id: "asc" }],
     include: {
@@ -87,11 +92,11 @@ function loadCandidates() {
         include: {
           eventosProveedor: {
             where: { proveedor: { tipo: "GOOGLE_MEET" } },
-            include: { cuentaProveedor: true }
-          }
-        }
-      }
-    }
+            include: { cuentaProveedor: true },
+          },
+        },
+      },
+    },
   });
 }
 
@@ -118,14 +123,15 @@ function buildPlans(candidates: readonly Candidate[]): readonly GroupPlan[] {
       for (const sameStart of byStart.values()) {
         const ordered = [...sameStart].sort(
           (left, right) =>
-            left.createdAt.getTime() - right.createdAt.getTime() || left.id.localeCompare(right.id)
+            left.createdAt.getTime() - right.createdAt.getTime() || left.id.localeCompare(right.id),
         );
         retained.push(ordered[0]);
         duplicates.push(...ordered.slice(1));
       }
       retained.sort(
         (left, right) =>
-          onlyMeeting(left).inicioProgramadoAt.getTime() - onlyMeeting(right).inicioProgramadoAt.getTime()
+          onlyMeeting(left).inicioProgramadoAt.getTime() -
+          onlyMeeting(right).inicioProgramadoAt.getTime(),
       );
       return { schedule, target: retained[0], retained, duplicates };
     })
@@ -136,7 +142,10 @@ function validatePlans(plans: readonly GroupPlan[], candidates: readonly Candida
   if (plans.length !== 2) {
     throw new Error(`Se esperaban dos horarios y se encontraron ${plans.length}.`);
   }
-  const planned = plans.reduce((total, plan) => total + plan.retained.length + plan.duplicates.length, 0);
+  const planned = plans.reduce(
+    (total, plan) => total + plan.retained.length + plan.duplicates.length,
+    0,
+  );
   if (planned !== candidates.length) {
     throw new Error("No todas las solicitudes quedaron incluidas en el plan.");
   }
@@ -151,12 +160,18 @@ function validatePlans(plans: readonly GroupPlan[], candidates: readonly Candida
       !event.joinUrl ||
       !event.cuentaProveedor?.emailOrganizador
     ) {
-      throw new Error(`La solicitud ${candidate.id} no tiene un evento Google Meet sincronizado completo.`);
+      throw new Error(
+        `La solicitud ${candidate.id} no tiene un evento Google Meet sincronizado completo.`,
+      );
     }
   }
 }
 
-async function applyPlan(plan: GroupPlan, serviceAccountEmail: string, privateKey: string): Promise<void> {
+async function applyPlan(
+  plan: GroupPlan,
+  serviceAccountEmail: string,
+  privateKey: string,
+): Promise<void> {
   const targetEvent = onlyEvent(plan.target);
   const conferenceData = extraerConferenceData(targetEvent.payloadUltimo);
   if (!conferenceData) {
@@ -169,7 +184,7 @@ async function applyPlan(plan: GroupPlan, serviceAccountEmail: string, privateKe
     const { calendarId, externalEventId } = calendarConnection(event, candidate.id);
     const credentials = credentialsFor(serviceAccountEmail, privateKey, calendarId);
     const result = await withRateLimitRetries(() =>
-      compartirConferenciaGoogleCalendar(credentials, calendarId, externalEventId, conferenceData)
+      compartirConferenciaGoogleCalendar(credentials, calendarId, externalEventId, conferenceData),
     );
     synchronized.set(event.id, JSON.parse(JSON.stringify(result.payload)) as Prisma.InputJsonValue);
   }
@@ -180,7 +195,7 @@ async function applyPlan(plan: GroupPlan, serviceAccountEmail: string, privateKe
     const credentials = credentialsFor(serviceAccountEmail, privateKey, calendarId);
     try {
       await withRateLimitRetries(() =>
-        crearGoogleCalendarProvider(credentials).cancelarEvento(calendarId, externalEventId)
+        crearGoogleCalendarProvider(credentials).cancelarEvento(calendarId, externalEventId),
       );
     } catch (error) {
       if (!isMissingCalendarEvent(error)) {
@@ -198,8 +213,8 @@ async function applyPlan(plan: GroupPlan, serviceAccountEmail: string, privateKe
           data: {
             solicitudSalaId: plan.target.id,
             ordinal: index + 1,
-            descripcion: candidate.descripcion
-          }
+            descripcion: candidate.descripcion,
+          },
         });
         const payload = synchronized.get(onlyEvent(candidate).id);
         if (payload) {
@@ -211,15 +226,15 @@ async function applyPlan(plan: GroupPlan, serviceAccountEmail: string, privateKe
               payloadUltimo: payload,
               sincronizadoAt: new Date(),
               estadoIntegracion: "SINCRONIZADA",
-              errorIntegracion: null
-            }
+              errorIntegracion: null,
+            },
           });
         }
       }
 
       const sourceIds = [
         ...plan.retained.slice(1).map(({ id }) => id),
-        ...plan.duplicates.map(({ id }) => id)
+        ...plan.duplicates.map(({ id }) => id),
       ];
       await tx.solicitudSala.deleteMany({ where: { id: { in: sourceIds } } });
       await recalcularSolicitud(tx, plan.target.id);
@@ -230,17 +245,17 @@ async function applyPlan(plan: GroupPlan, serviceAccountEmail: string, privateKe
           entidadId: plan.target.id,
           valorAnterior: {
             solicitudes: [plan.target.id, ...sourceIds],
-            duplicados: plan.duplicates.map(({ id }) => id)
+            duplicados: plan.duplicates.map(({ id }) => id),
           },
           valorNuevo: {
             horario: plan.schedule,
             encuentros: plan.retained.length,
-            codigoMeet: targetEvent.codigoReunion
-          }
-        }
+            codigoMeet: targetEvent.codigoReunion,
+          },
+        },
       });
     },
-    { timeout: 30000 }
+    { timeout: 30000 },
   );
 }
 
@@ -279,14 +294,14 @@ function summary(candidate: Candidate) {
   return {
     requestId: candidate.id,
     start: meeting.inicioProgramadoAt.toISOString(),
-    meet: onlyEvent(candidate).codigoReunion
+    meet: onlyEvent(candidate).codigoReunion,
   };
 }
 
 function credentialsFor(
   serviceAccountEmail: string,
   privateKey: string,
-  subject: string
+  subject: string,
 ): GoogleCalendarCredentials {
   return { serviceAccountEmail, privateKey, subject };
 }
@@ -323,7 +338,8 @@ function isMissingCalendarEvent(error: unknown): boolean {
   }
   const candidate = error as { code?: unknown; response?: { status?: unknown } };
   return (
-    [404, 410].includes(Number(candidate.code)) || [404, 410].includes(Number(candidate.response?.status))
+    [404, 410].includes(Number(candidate.code)) ||
+    [404, 410].includes(Number(candidate.response?.status))
   );
 }
 

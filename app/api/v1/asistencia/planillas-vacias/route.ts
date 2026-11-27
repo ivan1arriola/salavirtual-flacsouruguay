@@ -11,7 +11,7 @@ export const maxDuration = 300;
 
 const reparacionSchema = z
   .object({
-    eventoProveedorIds: z.array(z.string().min(1).max(160)).min(1).max(200).optional()
+    eventoProveedorIds: z.array(z.string().min(1).max(160)).min(1).max(200).optional(),
   })
   .strict();
 
@@ -31,7 +31,7 @@ export async function POST(request: Request) {
   try {
     const result = await repararPlanillasAsistenciaVacias(input.data.eventoProveedorIds);
     return NextResponse.json(result, {
-      headers: { "Cache-Control": "private, no-store, max-age=0" }
+      headers: { "Cache-Control": "private, no-store, max-age=0" },
     });
   } catch (error) {
     const mapped = toHttpError(error);

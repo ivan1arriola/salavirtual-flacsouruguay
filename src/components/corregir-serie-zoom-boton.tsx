@@ -9,7 +9,7 @@ type Resultado = Readonly<{ resultado: string; mensaje?: string }>;
 /** Unifica la cuenta anfitriona y el enlace de una serie de Zoom que hoy los tiene distintos. */
 export function CorregirSerieZoomBoton({
   serieClave,
-  titulo
+  titulo,
 }: Readonly<{ serieClave: string; titulo: string }>) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -19,7 +19,7 @@ export function CorregirSerieZoomBoton({
     if (
       !window.confirm(
         `Se creará una sola reunión de Zoom para “${titulo}” y todos sus encuentros pasarán al mismo enlace. ` +
-          "Quienes ya tenían un enlace recibirán el nuevo; el anterior seguirá activo 7 días. ¿Continuar?"
+          "Quienes ya tenían un enlace recibirán el nuevo; el anterior seguirá activo 7 días. ¿Continuar?",
       )
     ) {
       return;
@@ -29,7 +29,7 @@ export function CorregirSerieZoomBoton({
       const response = await fetch("/api/v1/reuniones/migracion-zoom/series-enlaces", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ modo: "PILOTO", serieClaves: [serieClave] })
+        body: JSON.stringify({ modo: "PILOTO", serieClaves: [serieClave] }),
       });
       const cuerpo = await response.json().catch(() => ({}));
       const resultado = (cuerpo.resultados as readonly Resultado[] | undefined)?.[0];

@@ -2,7 +2,10 @@ import "server-only";
 import { db } from "@/src/lib/db";
 import { descifrarConfiguracion } from "@/src/lib/config/encryption";
 import { crearGoogleCalendarAuthClient } from "@/src/integrations/google/auth";
-import { actualizarEventoCalendarHttp, obtenerEventoCalendar } from "@/src/integrations/google/calendar";
+import {
+  actualizarEventoCalendarHttp,
+  obtenerEventoCalendar,
+} from "@/src/integrations/google/calendar";
 import {
   actualizarOcurrenciaZoomHttp,
   buscarReunionZoomPorMarcaHttp,
@@ -10,7 +13,7 @@ import {
   eliminarOcurrenciaZoomHttp,
   eliminarReunionZoomHttp,
   obtenerReunionZoomHttp,
-  obtenerZoomAccessToken
+  obtenerZoomAccessToken,
 } from "@/src/integrations/zoom/zoom-client";
 import { obtenerCredencialPrincipalGoogleWorkspace } from "@/src/modules/configuracion/api";
 import { obtenerCredencialesZoom } from "@/src/modules/configuracion/zoom-config.service";
@@ -28,7 +31,7 @@ async function calendarAuth(calendarId: string) {
   return crearGoogleCalendarAuthClient({
     serviceAccountEmail: cred.serviceAccountEmail,
     privateKey: cred.privateKey,
-    subject: calendarId
+    subject: calendarId,
   });
 }
 
@@ -45,7 +48,7 @@ export function crearDependenciasMigracionZoom(): DependenciasMigracionZoom {
       const token = await obtenerZoomAccessToken({
         accountId: creds.accountId,
         clientId: creds.clientId,
-        clientSecret: creds.clientSecret
+        clientSecret: creds.clientSecret,
       });
       const { joinUrl } = await obtenerReunionZoomHttp(token, meetingId);
       return { joinUrl };
@@ -53,18 +56,24 @@ export function crearDependenciasMigracionZoom(): DependenciasMigracionZoom {
     calendar: {
       async obtener({ calendarId, eventId }) {
         return obtenerEventoCalendar(await calendarAuth(calendarId), calendarId, eventId, {
-          conferenceDataVersion: 1
+          conferenceDataVersion: 1,
         });
       },
       async actualizar({ calendarId, eventId, cambio }) {
         // Sin avisos de Google: los correos individuales se envían desde Sala Virtual,
         // deduplicados, una vez cambiado el proveedor activo.
-        await actualizarEventoCalendarHttp(await calendarAuth(calendarId), calendarId, eventId, cambio, {
-          conferenceDataVersion: 1,
-          sendUpdates: "none"
-        });
-      }
-    }
+        await actualizarEventoCalendarHttp(
+          await calendarAuth(calendarId),
+          calendarId,
+          eventId,
+          cambio,
+          {
+            conferenceDataVersion: 1,
+            sendUpdates: "none",
+          },
+        );
+      },
+    },
   };
 }
 
@@ -76,7 +85,7 @@ async function tokenZoom(): Promise<string> {
   return obtenerZoomAccessToken({
     accountId: creds.accountId,
     clientId: creds.clientId,
-    clientSecret: creds.clientSecret
+    clientSecret: creds.clientSecret,
   });
 }
 
@@ -93,7 +102,7 @@ export function crearDependenciasCorreccionSerie(): DependenciasCorreccionSerie 
         return {
           meetingId: res.meetingId,
           joinUrl: res.joinUrl,
-          occurrences: res.occurrences
+          occurrences: res.occurrences,
         };
       },
       async eliminar(meetingId) {
@@ -104,7 +113,7 @@ export function crearDependenciasCorreccionSerie(): DependenciasCorreccionSerie 
       },
       async actualizarOcurrencia(meetingId, occurrenceId, input) {
         await actualizarOcurrenciaZoomHttp(await tokenZoom(), meetingId, occurrenceId, input);
-      }
-    }
+      },
+    },
   };
 }

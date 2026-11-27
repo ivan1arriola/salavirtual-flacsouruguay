@@ -40,11 +40,13 @@ async function main(): Promise<number> {
   // El script lo ejecuta quien administra el servidor: actúa como administración.
   const resumen = await solicitarRecuperacionZoom(
     { id: null, rol: "ADMINISTRACION" },
-    { anfitrionIds, desde, hasta, dryRun: !apply }
+    { anfitrionIds, desde, hasta, dryRun: !apply },
   );
   console.log(JSON.stringify(resumen, null, 2));
   if (resumen.tipo === "DRY_RUN") {
-    console.log("Dry-run: no se escribió nada. Revisar cantidad y fechas y volver a ejecutar con --apply.");
+    console.log(
+      "Dry-run: no se escribió nada. Revisar cantidad y fechas y volver a ejecutar con --apply.",
+    );
   }
   return resumen.tipo === "DRY_RUN" || resumen.tipo === "ENCOLADA" ? 0 : 1;
 }

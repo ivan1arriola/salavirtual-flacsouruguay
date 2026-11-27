@@ -7,7 +7,7 @@ describe("presentación del proveedor de reuniones", () => {
       name: "Zoom",
       joinLabel: "Entrar a Zoom",
       pendingLinkLabel: "Enlace de Zoom pendiente",
-      supportsCohosts: false
+      supportsCohosts: false,
     });
   });
 
@@ -16,7 +16,7 @@ describe("presentación del proveedor de reuniones", () => {
       name: "Google Meet",
       joinLabel: "Entrar a Google Meet",
       pendingLinkLabel: "Enlace de Google Meet pendiente",
-      supportsCohosts: true
+      supportsCohosts: true,
     });
   });
 
@@ -25,7 +25,7 @@ describe("presentación del proveedor de reuniones", () => {
       name: "videollamada",
       joinLabel: "Entrar a la videollamada",
       pendingLinkLabel: "Enlace de la videollamada pendiente",
-      supportsCohosts: false
+      supportsCohosts: false,
     });
   });
 });

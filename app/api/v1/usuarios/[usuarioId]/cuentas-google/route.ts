@@ -17,7 +17,7 @@ export async function GET(_request: Request, context: RouteContext) {
   }
   const actor = await resolveSessionActor(db, {
     id: session.user.id,
-    email: session.user.email
+    email: session.user.email,
   });
   if (!actor?.activo || actor.rol !== "ADMINISTRACION") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -33,11 +33,11 @@ export async function GET(_request: Request, context: RouteContext) {
         select: {
           email: true,
           providerAccountId: true,
-          ultimoAccesoAt: true
+          ultimoAccesoAt: true,
         },
-        orderBy: { email: "asc" }
-      }
-    }
+        orderBy: { email: "asc" },
+      },
+    },
   });
   if (!usuario) {
     return NextResponse.json({ error: "Usuario no encontrado." }, { status: 404 });
@@ -49,8 +49,8 @@ export async function GET(_request: Request, context: RouteContext) {
     cuentas: usuario.cuentasGoogle.map((cuenta) => ({
       email: cuenta.email,
       vinculada: Boolean(cuenta.providerAccountId),
-      ultimoAccesoAt: cuenta.ultimoAccesoAt
-    }))
+      ultimoAccesoAt: cuenta.ultimoAccesoAt,
+    })),
   });
 }
 
@@ -65,12 +65,12 @@ export async function PUT(request: Request, context: RouteContext) {
   try {
     const actor = await resolveSessionActor(db, {
       id: session.user.id,
-      email: session.user.email
+      email: session.user.email,
     });
     if (!actor) {
       return NextResponse.json(
         { error: "La sesión está desactualizada. Volvé a iniciar sesión." },
-        { status: 401 }
+        { status: 401 },
       );
     }
     const emails = await reemplazarCuentasGooglePermitidas({ db }, actor, usuarioId, input);

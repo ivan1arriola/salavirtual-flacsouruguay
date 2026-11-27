@@ -4,7 +4,7 @@ import { obtenerParticipantesZoomEnVivoHttp } from "../src/integrations/zoom/zoo
 function respuesta(cuerpo: unknown, status = 200): Response {
   return new Response(JSON.stringify(cuerpo), {
     status,
-    headers: { "Content-Type": "application/json" }
+    headers: { "Content-Type": "application/json" },
   });
 }
 
@@ -34,13 +34,13 @@ describe("consulta de participantes en vivo de Zoom", () => {
             internal_ip_addresses: ["internal-ip-address"],
             mac_addr: "00:00:00:00:00:00",
             harddisk_id: "disk-privado",
-            pc_name: "equipo-privado"
+            pc_name: "equipo-privado",
           },
           {
             participant_uuid: "conexion-2",
             user_name: "Participante en espera",
             join_time: "2026-11-25T18:02:00Z",
-            status: "in_waiting_room"
+            status: "in_waiting_room",
           },
           {
             participant_uuid: "conexion-3",
@@ -48,11 +48,11 @@ describe("consulta de participantes en vivo de Zoom", () => {
             join_time: "2026-11-25T17:55:00Z",
             leave_time: "2026-11-25T18:03:00Z",
             leave_reason: "Someone got disconnected from the meeting.",
-            status: "in_meeting"
-          }
+            status: "in_meeting",
+          },
         ],
-        next_page_token: ""
-      })
+        next_page_token: "",
+      }),
     );
     vi.stubGlobal("fetch", fetchMock);
 
@@ -72,12 +72,12 @@ describe("consulta de participantes en vivo de Zoom", () => {
       calidadVideo: "fair",
       calidadPantalla: "poor",
       tipoConexion: "UDP",
-      tipoRed: "Wifi"
+      tipoRed: "Wifi",
     });
     expect(resultado.participantes[1]?.estado).toBe("EN_ESPERA");
     expect(resultado.participantes[2]).toMatchObject({
       estado: "DESCONECTADO",
-      motivoSalida: "Desconexión o problema de red"
+      motivoSalida: "Desconexión o problema de red",
     });
     expect(JSON.stringify(resultado)).not.toContain("192.0.2.1");
     expect(JSON.stringify(resultado)).not.toContain("internal-ip-address");
@@ -86,7 +86,7 @@ describe("consulta de participantes en vivo de Zoom", () => {
     expect(JSON.stringify(resultado)).not.toContain("equipo-privado");
     expect(fetchMock).toHaveBeenCalledWith(
       expect.stringContaining("/metrics/meetings/123456789/participants?type=live&page_size=300"),
-      expect.objectContaining({ cache: "no-store" })
+      expect.objectContaining({ cache: "no-store" }),
     );
   });
 
@@ -98,11 +98,11 @@ describe("consulta de participantes en vivo de Zoom", () => {
           {
             code: 200,
             message:
-              "Only available for ZMP and Business or higher accounts that have enabled the Dashboard feature."
+              "Only available for ZMP and Business or higher accounts that have enabled the Dashboard feature.",
           },
-          400
-        )
-      )
+          400,
+        ),
+      ),
     );
 
     const resultado = await obtenerParticipantesZoomEnVivoHttp("token", "123456789");
@@ -111,14 +111,14 @@ describe("consulta de participantes en vivo de Zoom", () => {
       estado: "NO_DISPONIBLE",
       motivo: "PLAN_DASHBOARD_REQUERIDO",
       httpStatus: 400,
-      codigoZoom: 200
+      codigoZoom: 200,
     });
   });
 
   it("distingue scopes incorrectos de una respuesta vacía", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue(respuesta({ code: 200, message: "Invalid scope" }, 403))
+      vi.fn().mockResolvedValue(respuesta({ code: 200, message: "Invalid scope" }, 403)),
     );
 
     const resultado = await obtenerParticipantesZoomEnVivoHttp("token", "123456789");
@@ -126,7 +126,7 @@ describe("consulta de participantes en vivo de Zoom", () => {
     expect(resultado).toMatchObject({
       estado: "NO_DISPONIBLE",
       motivo: "SIN_PERMISOS",
-      httpStatus: 403
+      httpStatus: 403,
     });
   });
 
@@ -137,7 +137,7 @@ describe("consulta de participantes en vivo de Zoom", () => {
 
     expect(resultado).toMatchObject({
       estado: "NO_DISPONIBLE",
-      motivo: "ERROR_CONEXION"
+      motivo: "ERROR_CONEXION",
     });
   });
 });

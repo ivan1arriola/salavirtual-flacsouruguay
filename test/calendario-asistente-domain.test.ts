@@ -4,7 +4,7 @@ import {
   hayErroresSincronizacionCalendarioAsistente,
   idEventoCalendarioAsistente,
   idEventoCalendarioAsistenteSegmento,
-  planificarSincronizacionCalendarioAsistente
+  planificarSincronizacionCalendarioAsistente,
 } from "../src/modules/asistencia/domain";
 import * as facade from "../src/modules/asistencia/calendario-asistente.domain";
 
@@ -13,7 +13,7 @@ const linkedAccount = {
   email: "asistente@flacso.edu.uy",
   dominio: "flacso.edu.uy",
   providerAccountId: "subject-1",
-  emailVerificadoAt: new Date("2026-09-01T12:00:00Z")
+  emailVerificadoAt: new Date("2026-09-01T12:00:00Z"),
 };
 
 function assignment(overrides: Record<string, unknown> = {}) {
@@ -25,10 +25,10 @@ function assignment(overrides: Record<string, unknown> = {}) {
         rol: "ASISTENTE_TECNICO",
         activo: true,
         fusionadoEnId: null,
-        cuentasGoogle: [linkedAccount]
-      }
+        cuentasGoogle: [linkedAccount],
+      },
     },
-    ...overrides
+    ...overrides,
   } as never;
 }
 
@@ -42,7 +42,11 @@ describe("calendario de asistentes de monitoreo", () => {
   });
 
   it("genera IDs independientes para preparación y cierre técnico", () => {
-    const preparation = idEventoCalendarioAsistenteSegmento("instancia-1", "google-1", "PREPARACION");
+    const preparation = idEventoCalendarioAsistenteSegmento(
+      "instancia-1",
+      "google-1",
+      "PREPARACION",
+    );
     const closing = idEventoCalendarioAsistenteSegmento("instancia-1", "google-1", "CIERRE");
 
     expect(preparation).toMatch(/^[0-9a-f]{64}$/);
@@ -55,7 +59,7 @@ describe("calendario de asistentes de monitoreo", () => {
     const accounts = cuentasCalendarioDeseadas({
       estado: "PROGRAMADA",
       requiereAsistenciaTecnica: true,
-      asignaciones: [assignment()]
+      asignaciones: [assignment()],
     });
 
     expect(accounts).toEqual([linkedAccount]);
@@ -72,11 +76,11 @@ describe("calendario de asistentes de monitoreo", () => {
               rol: "DOCENTE",
               activo: true,
               fusionadoEnId: null,
-              cuentasGoogle: [linkedAccount]
-            }
-          }
-        })
-      ]
+              cuentasGoogle: [linkedAccount],
+            },
+          },
+        }),
+      ],
     });
 
     expect(accounts).toEqual([]);
@@ -93,11 +97,13 @@ describe("calendario de asistentes de monitoreo", () => {
               rol: "ASISTENTE_TECNICO",
               activo: true,
               fusionadoEnId: null,
-              cuentasGoogle: [{ ...linkedAccount, providerAccountId: null, emailVerificadoAt: null }]
-            }
-          }
-        })
-      ]
+              cuentasGoogle: [
+                { ...linkedAccount, providerAccountId: null, emailVerificadoAt: null },
+              ],
+            },
+          },
+        }),
+      ],
     });
 
     expect(accounts).toEqual([]);
@@ -108,7 +114,7 @@ describe("calendario de asistentes de monitoreo", () => {
       estado: "PROGRAMADA",
       requiereAsistenciaTecnica: true,
       vigente: false,
-      asignaciones: [assignment()]
+      asignaciones: [assignment()],
     });
 
     expect(accounts).toEqual([]);
@@ -120,7 +126,7 @@ describe("calendario de asistentes de monitoreo", () => {
       ...linkedAccount,
       id: "google-new",
       email: "nuevo@flacso.edu.uy",
-      providerAccountId: "subject-2"
+      providerAccountId: "subject-2",
     };
     const plan = planificarSincronizacionCalendarioAsistente({
       instanciaId: "instancia-1",
@@ -135,18 +141,23 @@ describe("calendario de asistentes de monitoreo", () => {
               rol: "ASISTENTE_TECNICO",
               activo: true,
               fusionadoEnId: null,
-              cuentasGoogle: [previous]
-            }
-          }
+              cuentasGoogle: [previous],
+            },
+          },
         }),
         assignment({
           id: "new",
           estado: "ASIGNADO",
           asistenteTecnico: {
-            usuario: { rol: "ASISTENTE_TECNICO", activo: true, fusionadoEnId: null, cuentasGoogle: [current] }
-          }
-        })
-      ]
+            usuario: {
+              rol: "ASISTENTE_TECNICO",
+              activo: true,
+              fusionadoEnId: null,
+              cuentasGoogle: [current],
+            },
+          },
+        }),
+      ],
     });
 
     expect(plan.publicar.map(({ cuenta }) => cuenta.id)).toEqual(["google-new"]);
@@ -158,7 +169,7 @@ describe("calendario de asistentes de monitoreo", () => {
       instanciaId: "instancia-1",
       estado: "CANCELADA",
       requiereAsistenciaTecnica: true,
-      asignaciones: [assignment()]
+      asignaciones: [assignment()],
     });
 
     expect(plan.publicar).toEqual([]);
@@ -168,15 +179,31 @@ describe("calendario de asistentes de monitoreo", () => {
   it("detecta presencia o ausencia de errores en resultados de sincronizacion", () => {
     expect(
       hayErroresSincronizacionCalendarioAsistente([
-        { cuentaGoogleId: "g1", email: "a@flacso.edu.uy", accion: "PUBLICAR", estado: "SINCRONIZADA" }
-      ])
+        {
+          cuentaGoogleId: "g1",
+          email: "a@flacso.edu.uy",
+          accion: "PUBLICAR",
+          estado: "SINCRONIZADA",
+        },
+      ]),
     ).toBe(false);
 
     expect(
       hayErroresSincronizacionCalendarioAsistente([
-        { cuentaGoogleId: "g1", email: "a@flacso.edu.uy", accion: "PUBLICAR", estado: "SINCRONIZADA" },
-        { cuentaGoogleId: "g2", email: "b@flacso.edu.uy", accion: "ELIMINAR", estado: "ERROR", error: "fail" }
-      ])
+        {
+          cuentaGoogleId: "g1",
+          email: "a@flacso.edu.uy",
+          accion: "PUBLICAR",
+          estado: "SINCRONIZADA",
+        },
+        {
+          cuentaGoogleId: "g2",
+          email: "b@flacso.edu.uy",
+          accion: "ELIMINAR",
+          estado: "ERROR",
+          error: "fail",
+        },
+      ]),
     ).toBe(true);
   });
 
@@ -185,10 +212,10 @@ describe("calendario de asistentes de monitoreo", () => {
     expect(facade.idEventoCalendarioAsistenteSegmento).toBe(idEventoCalendarioAsistenteSegmento);
     expect(facade.cuentasCalendarioDeseadas).toBe(cuentasCalendarioDeseadas);
     expect(facade.planificarSincronizacionCalendarioAsistente).toBe(
-      planificarSincronizacionCalendarioAsistente
+      planificarSincronizacionCalendarioAsistente,
     );
     expect(facade.hayErroresSincronizacionCalendarioAsistente).toBe(
-      hayErroresSincronizacionCalendarioAsistente
+      hayErroresSincronizacionCalendarioAsistente,
     );
   });
 });

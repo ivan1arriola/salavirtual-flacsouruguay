@@ -33,7 +33,7 @@ export default async function ConfiguracionSalasPage() {
             enUso: host._count.eventosProveedor > 0,
             proveedorTipo: "ZOOM" as const,
             fueraDelGrupoAt: host.fueraDelGrupoAt?.toISOString() ?? null,
-            reunionesFuturas: host.reunionesFuturas
+            reunionesFuturas: host.reunionesFuturas,
           }))}
         />
       </div>

@@ -8,7 +8,7 @@ type SearchableProgram = Readonly<{
 
 export function filterPrograms<T extends SearchableProgram>(
   programs: readonly T[],
-  filters: Readonly<{ query: string; state: ProgramFilterState }>
+  filters: Readonly<{ query: string; state: ProgramFilterState }>,
 ): T[] {
   const query = normalize(filters.query);
 

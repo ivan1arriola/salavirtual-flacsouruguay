@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   debeEliminarseReunionCompartida,
   usosActivos,
-  type UsoReunionCompartida
+  type UsoReunionCompartida,
 } from "../src/modules/reuniones/reunion-compartida.domain";
 
 const ahora = new Date("2026-11-10T12:00:00Z");
@@ -10,7 +10,7 @@ const hora = (horas: number) => new Date(ahora.getTime() + horas * 3_600_000);
 const uso = (id: string, estado = "PROGRAMADA", finEnHoras = 24): UsoReunionCompartida => ({
   eventoProveedorId: id,
   instanciaEstado: estado,
-  instanciaFin: hora(finEnHoras)
+  instanciaFin: hora(finEnHoras),
 });
 
 describe("usos activos de una reunión compartida", () => {
@@ -22,8 +22,8 @@ describe("usos activos de una reunión compartida", () => {
     expect(
       usosActivos(
         [uso("a"), uso("b", "CANCELADA"), uso("c", "PROGRAMADA", -2), uso("d", "REALIZADA", -5)],
-        ahora
-      )
+        ahora,
+      ),
     ).toBe(1);
   });
 
@@ -42,12 +42,19 @@ describe("cuándo se elimina la reunión compartida", () => {
   });
 
   it("los encuentros cancelados o ya pasados no la mantienen viva", () => {
-    const usos = [uso("a"), uso("b", "CANCELADA"), uso("c", "PROGRAMADA", -3), uso("d", "REALIZADA", -48)];
+    const usos = [
+      uso("a"),
+      uso("b", "CANCELADA"),
+      uso("c", "PROGRAMADA", -3),
+      uso("d", "REALIZADA", -48),
+    ];
     expect(debeEliminarseReunionCompartida(usos, "a", ahora)).toBe(true);
   });
 
   it("un encuentro en curso sí la mantiene viva", () => {
-    expect(debeEliminarseReunionCompartida([uso("a"), uso("b", "EN_CURSO", 1)], "a", ahora)).toBe(false);
+    expect(debeEliminarseReunionCompartida([uso("a"), uso("b", "EN_CURSO", 1)], "a", ahora)).toBe(
+      false,
+    );
   });
 
   it("repetir la cancelación del último sigue indicando eliminar (idempotente)", () => {

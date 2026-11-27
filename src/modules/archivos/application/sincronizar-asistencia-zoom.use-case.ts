@@ -1,12 +1,12 @@
 import {
   consolidarAsistenciaOcurrenciasZoom,
   type SesionObservadaZoom,
-  type VentanaAsistenciaZoom
+  type VentanaAsistenciaZoom,
 } from "../domain";
 import type {
   AsistenciaZoomRepositoryPort,
   ResultadoSesionesZoom,
-  SincronizacionAsistenciaZoomPort
+  SincronizacionAsistenciaZoomPort,
 } from "../ports";
 
 export type ProveedorSesionesZoom = Readonly<{
@@ -21,7 +21,12 @@ export type SincronizarAsistenciaZoomDeps = Readonly<{
 
 /** El estado del reporte de Zoom es independiente del de cualquier planilla de Workspace. */
 export type ResultadoAsistenciaZoom =
-  | Readonly<{ tipo: "OK"; estadoReporte: "DISPONIBLE"; participantes: number; sesionesNuevas: number }>
+  | Readonly<{
+      tipo: "OK";
+      estadoReporte: "DISPONIBLE";
+      participantes: number;
+      sesionesNuevas: number;
+    }>
   | Readonly<{ tipo: "OK"; estadoReporte: "VACIO" }>
   /** Zoom todavía no tiene el reporte (404): se reintenta más tarde, no equivale a "nadie asistió". */
   | Readonly<{ tipo: "PENDIENTE"; estadoReporte: "NO_DISPONIBLE" }>
@@ -50,7 +55,7 @@ function ventanaObservada(sesiones: readonly SesionObservadaZoom[]): VentanaAsis
   }
   return {
     inicioAt: new Date(Math.min(...validas.map((s) => s.entradaAt.getTime()))),
-    finAt: new Date(Math.max(...validas.map((s) => s.salidaAt.getTime())))
+    finAt: new Date(Math.max(...validas.map((s) => s.salidaAt.getTime()))),
   };
 }
 
@@ -60,14 +65,16 @@ function ventanaObservada(sesiones: readonly SesionObservadaZoom[]): VentanaAsis
  */
 export async function sincronizarAsistenciaZoomUseCase(
   deps: SincronizarAsistenciaZoomDeps,
-  ocurrenciaId: string
+  ocurrenciaId: string,
 ): Promise<ResultadoAsistenciaZoom> {
   const ocurrencia = await deps.sync.cargarOcurrencia(ocurrenciaId);
   if (!ocurrencia) {
     return { tipo: "ERROR", codigo: "OCURRENCIA_NO_ENCONTRADA" };
   }
 
-  const reporte = await deps.provider.obtenerSesiones(ocurrencia.uuid).catch((error: unknown) => ({ error }));
+  const reporte = await deps.provider
+    .obtenerSesiones(ocurrencia.uuid)
+    .catch((error: unknown) => ({ error }));
   if ("error" in reporte) {
     const codigo = codigoSeguro(reporte.error);
     await deps.sync.marcarEstadoReporte(ocurrenciaId, "ERROR", codigo);
@@ -89,7 +96,7 @@ export async function sincronizarAsistenciaZoomUseCase(
   const nuevas = reporte.sesiones.map((s) =>
     s.rol === null && idsAnfitrion(s).includes(ocurrencia.anfitrionZoomId)
       ? { ...s, rol: "HOST" as const }
-      : s
+      : s,
   );
   const ventanaProgramada =
     ocurrencia.inicioProgramadoAt && ocurrencia.finProgramadoAt
@@ -104,7 +111,7 @@ export async function sincronizarAsistenciaZoomUseCase(
       uuid: ocurrencia.uuid,
       eventoProveedorId: ocurrencia.eventoProveedorId,
       inicioProgramadoAt: ocurrencia.inicioProgramadoAt,
-      finProgramadoAt: ocurrencia.finProgramadoAt
+      finProgramadoAt: ocurrencia.finProgramadoAt,
     },
     nuevas,
     (persistidas) => {
@@ -115,21 +122,23 @@ export async function sincronizarAsistenciaZoomUseCase(
           g.ocurrenciaId === ocurrenciaId
             ? {
                 ocurrenciaId: g.ocurrenciaId,
-                sesiones: [...g.sesiones.filter((s) => !claves.has(s.claveSesion)), ...nuevas]
+                sesiones: [...g.sesiones.filter((s) => !claves.has(s.claveSesion)), ...nuevas],
               }
-            : g
+            : g,
         ),
         ...(persistidas.some((g) => g.ocurrenciaId === ocurrenciaId)
           ? []
-          : [{ ocurrenciaId, sesiones: nuevas }])
+          : [{ ocurrenciaId, sesiones: nuevas }]),
       ];
       const ventana = ventanaProgramada ?? ventanaObservada(grupos.flatMap((g) => g.sesiones));
       if (!ventana) {
         return null;
       }
       // Todas las ocurrencias de un encuentro comparten su horario; la unión evita sumar solapes entre ejecuciones.
-      return consolidarAsistenciaOcurrenciasZoom(grupos.map((g) => ({ sesiones: g.sesiones, ventana })));
-    }
+      return consolidarAsistenciaOcurrenciasZoom(
+        grupos.map((g) => ({ sesiones: g.sesiones, ventana })),
+      );
+    },
   );
   if (guardado.tipo === "SIN_VENTANA") {
     await deps.sync.marcarEstadoReporte(ocurrenciaId, "VACIO", null);
@@ -147,6 +156,6 @@ export async function sincronizarAsistenciaZoomUseCase(
     tipo: "OK",
     estadoReporte: "DISPONIBLE",
     participantes: guardado.registrosCreados + guardado.registrosActualizados,
-    sesionesNuevas: guardado.sesionesNuevas
+    sesionesNuevas: guardado.sesionesNuevas,
   };
 }

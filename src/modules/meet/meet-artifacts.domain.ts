@@ -11,5 +11,5 @@ export {
   type FilaAsistenciaMeet,
   type RegistroConferenciaMeet,
   type SesionParticipanteMeet,
-  type TipoArtefactoMeet
+  type TipoArtefactoMeet,
 } from "@/src/modules/archivos/presentation";

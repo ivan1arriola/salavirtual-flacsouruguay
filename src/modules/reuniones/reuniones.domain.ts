@@ -1,7 +1,10 @@
 import { z } from "zod";
 import type { RolUsuario } from "../usuarios/roles";
 import { pertenecenAlMismoDia } from "./periodos.domain";
-import { ANTICIPACION_VIRTUAL_MINUTOS, MARGEN_ASISTENCIA_MINUTOS } from "./horarios-asistencia.domain";
+import {
+  ANTICIPACION_VIRTUAL_MINUTOS,
+  MARGEN_ASISTENCIA_MINUTOS,
+} from "./horarios-asistencia.domain";
 
 export type FechaReunion = Readonly<{ inicioProgramadoAt: Date }>;
 export type PeriodoReunion = Readonly<{ inicio: Date }>;
@@ -12,10 +15,10 @@ const instanciaSchema = z
     fin: z.coerce.date(),
     asistenciaInicio: z.coerce.date().optional(),
     asistenciaFin: z.coerce.date().optional(),
-    descripcion: z.string().trim().max(4000).optional()
+    descripcion: z.string().trim().max(4000).optional(),
   })
   .refine(({ inicio, fin }) => fin.getTime() > inicio.getTime(), {
-    message: "La hora de fin debe ser posterior al inicio."
+    message: "La hora de fin debe ser posterior al inicio.",
   });
 
 const emailListSchema = z.preprocess(
@@ -31,7 +34,7 @@ const emailListSchema = z.preprocess(
   z
     .array(z.email().transform((email) => email.toLowerCase()))
     .max(50)
-    .default([])
+    .default([]),
 );
 
 export const crearReunionesSchema = z
@@ -50,26 +53,34 @@ export const crearReunionesSchema = z
     modalidad: z.enum(["HIBRIDA", "VIRTUAL"]),
     plataforma: z.literal("ZOOM").default("ZOOM"),
     timezone: z.string().trim().refine(esTimezoneIanaValida, "Timezone IANA inválida."),
-    instancias: z.array(instanciaSchema).min(1).max(100)
+    instancias: z.array(instanciaSchema).min(1).max(100),
   })
   .superRefine(
     (
-      { instancias, timezone, modalidad, requiereAsistenciaTecnica, hostTipo, hostCuentaId, hostEmail },
-      context
+      {
+        instancias,
+        timezone,
+        modalidad,
+        requiereAsistenciaTecnica,
+        hostTipo,
+        hostCuentaId,
+        hostEmail,
+      },
+      context,
     ) => {
       if (!requiereAsistenciaTecnica) {
         if (hostTipo === "OTRA_CUENTA" && !hostCuentaId) {
           context.addIssue({
             code: "custom",
             message: "Debe seleccionar una cuenta Google para el anfitrión.",
-            path: ["hostCuentaId"]
+            path: ["hostCuentaId"],
           });
         }
         if (hostTipo === "OTRO_CORREO" && !hostEmail) {
           context.addIssue({
             code: "custom",
             message: "Debe ingresar un correo válido para el anfitrión.",
-            path: ["hostEmail"]
+            path: ["hostEmail"],
           });
         }
       }
@@ -79,7 +90,7 @@ export const crearReunionesSchema = z
             context.addIssue({
               code: "custom",
               message: "El inicio y el fin deben ser del mismo dia.",
-              path: ["instancias", index, "fin"]
+              path: ["instancias", index, "fin"],
             });
           }
         });
@@ -91,7 +102,7 @@ export const crearReunionesSchema = z
           context.addIssue({
             code: "custom",
             message: "La hora de llegada y de salida del asistente deben definirse juntas.",
-            path: ["instancias", index, asistenciaInicio ? "asistenciaFin" : "asistenciaInicio"]
+            path: ["instancias", index, asistenciaInicio ? "asistenciaFin" : "asistenciaInicio"],
           });
         }
         if (asistenciaInicio && asistenciaFin) {
@@ -99,32 +110,41 @@ export const crearReunionesSchema = z
             context.addIssue({
               code: "custom",
               message: "La hora de salida del asistente debe ser posterior a la de llegada.",
-              path: ["instancias", index, "asistenciaFin"]
+              path: ["instancias", index, "asistenciaFin"],
             });
           }
           if (asistenciaInicio > inicio || asistenciaFin < fin) {
             context.addIssue({
               code: "custom",
               message: "El horario de monitoreo debe cubrir todo el encuentro.",
-              path: ["instancias", index, "asistenciaInicio"]
+              path: ["instancias", index, "asistenciaInicio"],
             });
           }
         }
         // Las reuniones virtuales con asistencia tienen cobertura fija. Los clientes anteriores
         // pueden omitir las horas: el servicio las completa al guardar, sin permitir otras horas.
-        if (requiereAsistenciaTecnica && modalidad === "VIRTUAL" && asistenciaInicio && asistenciaFin) {
-          if (asistenciaInicio.getTime() !== inicio.getTime() - ANTICIPACION_VIRTUAL_MINUTOS * 60 * 1000) {
+        if (
+          requiereAsistenciaTecnica &&
+          modalidad === "VIRTUAL" &&
+          asistenciaInicio &&
+          asistenciaFin
+        ) {
+          if (
+            asistenciaInicio.getTime() !==
+            inicio.getTime() - ANTICIPACION_VIRTUAL_MINUTOS * 60 * 1000
+          ) {
             context.addIssue({
               code: "custom",
-              message: "La asistencia virtual debe comenzar exactamente 15 minutos antes del encuentro.",
-              path: ["instancias", index, "asistenciaInicio"]
+              message:
+                "La asistencia virtual debe comenzar exactamente 15 minutos antes del encuentro.",
+              path: ["instancias", index, "asistenciaInicio"],
             });
           }
           if (asistenciaFin.getTime() !== fin.getTime()) {
             context.addIssue({
               code: "custom",
               message: "La asistencia virtual debe terminar exactamente al finalizar el encuentro.",
-              path: ["instancias", index, "asistenciaFin"]
+              path: ["instancias", index, "asistenciaFin"],
             });
           }
         }
@@ -132,8 +152,9 @@ export const crearReunionesSchema = z
           if (!asistenciaInicio || !asistenciaFin) {
             context.addIssue({
               code: "custom",
-              message: "Las reuniones híbridas con monitoreo requieren hora exacta de llegada y salida.",
-              path: ["instancias", index, "asistenciaInicio"]
+              message:
+                "Las reuniones híbridas con monitoreo requieren hora exacta de llegada y salida.",
+              path: ["instancias", index, "asistenciaInicio"],
             });
           } else {
             const margenMinimoMs = MARGEN_ASISTENCIA_MINUTOS * 60 * 1000;
@@ -142,7 +163,7 @@ export const crearReunionesSchema = z
                 code: "custom",
                 message:
                   "El asistente debe llegar al menos 30 minutos antes del inicio de la reunión híbrida.",
-                path: ["instancias", index, "asistenciaInicio"]
+                path: ["instancias", index, "asistenciaInicio"],
               });
             }
             if (asistenciaFin.getTime() - fin.getTime() < margenMinimoMs) {
@@ -150,7 +171,7 @@ export const crearReunionesSchema = z
                 code: "custom",
                 message:
                   "El asistente debe salir al menos 30 minutos después de finalizar la reunión híbrida.",
-                path: ["instancias", index, "asistenciaFin"]
+                path: ["instancias", index, "asistenciaFin"],
               });
             }
           }
@@ -163,11 +184,11 @@ export const crearReunionesSchema = z
           context.addIssue({
             code: "custom",
             message: "Los encuentros de una misma serie no pueden superponerse.",
-            path: ["instancias", index, "inicio"]
+            path: ["instancias", index, "inicio"],
           });
         }
       });
-    }
+    },
   );
 
 function esTimezoneIanaValida(timezone: string): boolean {
@@ -181,7 +202,10 @@ function esTimezoneIanaValida(timezone: string): boolean {
 
 export const claveIdempotenciaCreacionSchema = z.uuid();
 
-export function encuentrosComienzanEnFuturo(encuentros: readonly PeriodoReunion[], ahora: Date): boolean {
+export function encuentrosComienzanEnFuturo(
+  encuentros: readonly PeriodoReunion[],
+  ahora: Date,
+): boolean {
   return encuentros.every(({ inicio }) => inicio > ahora);
 }
 
@@ -196,7 +220,7 @@ export function puedeVerAgendaCompleta(rol: RolUsuario): boolean {
 export function puedeCrearReuniones(
   rol: RolUsuario,
   actorUsuarioId: string,
-  docenteUsuarioId: string
+  docenteUsuarioId: string,
 ): boolean {
   return rol === "ADMINISTRACION" || (rol === "DOCENTE" && actorUsuarioId === docenteUsuarioId);
 }
@@ -204,15 +228,21 @@ export function puedeCrearReuniones(
 export function resolverAsignacionInicial(
   rol: RolUsuario,
   requiereAsistenciaTecnica: boolean,
-  asistenteTecnicoId?: string
+  asistenteTecnicoId?: string,
 ): string | null {
   if (!requiereAsistenciaTecnica && asistenteTecnicoId) {
-    throw new Error("No se puede asignar un asistente de monitoreo si la reunión no requiere monitoreo.");
+    throw new Error(
+      "No se puede asignar un asistente de monitoreo si la reunión no requiere monitoreo.",
+    );
   }
   if (rol !== "ADMINISTRACION" && asistenteTecnicoId) {
-    throw new Error("Solo Administración puede asignar un asistente de monitoreo al crear una reunión.");
+    throw new Error(
+      "Solo Administración puede asignar un asistente de monitoreo al crear una reunión.",
+    );
   }
-  return rol === "ADMINISTRACION" && requiereAsistenciaTecnica ? (asistenteTecnicoId ?? null) : null;
+  return rol === "ADMINISTRACION" && requiereAsistenciaTecnica
+    ? (asistenteTecnicoId ?? null)
+    : null;
 }
 
 const DIAS = Object.freeze([
@@ -222,10 +252,13 @@ const DIAS = Object.freeze([
   "miercoles",
   "jueves",
   "viernes",
-  "sabado"
+  "sabado",
 ] as const);
 
-export function diasDeReunion(reuniones: readonly FechaReunion[], timezone: string): readonly string[] {
+export function diasDeReunion(
+  reuniones: readonly FechaReunion[],
+  timezone: string,
+): readonly string[] {
   const formatter = new Intl.DateTimeFormat("en-US", { timeZone: timezone, weekday: "short" });
   const dayIndex: Readonly<Record<string, number>> = Object.freeze({
     Sun: 0,
@@ -234,7 +267,7 @@ export function diasDeReunion(reuniones: readonly FechaReunion[], timezone: stri
     Wed: 3,
     Thu: 4,
     Fri: 5,
-    Sat: 6
+    Sat: 6,
   });
   const indexes = reuniones
     .map(({ inicioProgramadoAt }) => dayIndex[formatter.format(inicioProgramadoAt)])

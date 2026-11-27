@@ -1,7 +1,7 @@
 import { EmailTestForm } from "@/src/components/email-test-form";
 import {
   MailDeliveryDiagnostics,
-  type EstadoCorreoAuditado
+  type EstadoCorreoAuditado,
 } from "@/src/components/mail-delivery-diagnostics";
 import { SettingsBlock, SettingsNotices } from "@/src/components/settings-block";
 import { SettingsCenterShell, SettingsSectionHeader } from "@/src/components/settings-center-shell";
@@ -10,7 +10,7 @@ import { db } from "@/src/lib/db";
 import { requireAdminPage } from "../require-admin-page";
 
 export default async function ConfiguracionCorreoPage({
-  searchParams
+  searchParams,
 }: Readonly<{ searchParams: Promise<{ estado?: string; error?: string }> }>) {
   const session = await requireAdminPage();
   const query = await searchParams;
@@ -20,8 +20,8 @@ export default async function ConfiguracionCorreoPage({
       where: { accion: "NOTIFICACION_CORREO_ESTADO" },
       orderBy: { createdAt: "desc" },
       take: 75,
-      select: { id: true, createdAt: true, valorNuevo: true }
-    })
+      select: { id: true, createdAt: true, valorNuevo: true },
+    }),
   ]);
 
   const mailAttempts: readonly EstadoCorreoAuditado[] = recentDeliveryAudits.map((audit) => {
@@ -29,16 +29,18 @@ export default async function ConfiguracionCorreoPage({
     const details =
       raw && typeof raw === "object" && !Array.isArray(raw) ? (raw as Record<string, unknown>) : {};
     const estado =
-      details.estado === "ACEPTADO" || details.estado === "OMITIDO" || details.estado === "ERROR"
-        ? details.estado
+      details["estado"] === "ACEPTADO" ||
+      details["estado"] === "OMITIDO" ||
+      details["estado"] === "ERROR"
+        ? details["estado"]
         : "ERROR";
     return {
       id: audit.id,
       fecha: audit.createdAt.toISOString().replace("T", " ").slice(0, 19),
-      tipo: typeof details.tipo === "string" ? details.tipo : "desconocido",
+      tipo: typeof details["tipo"] === "string" ? details["tipo"] : "desconocido",
       estado,
-      transporte: typeof details.transporte === "string" ? details.transporte : null,
-      motivo: typeof details.motivo === "string" ? details.motivo : null
+      transporte: typeof details["transporte"] === "string" ? details["transporte"] : null,
+      motivo: typeof details["motivo"] === "string" ? details["motivo"] : null,
     };
   });
   const sesActiva = sesConfig?.activa ?? false;

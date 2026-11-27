@@ -1,14 +1,14 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { parseEncryptionKey } from "../src/modules/configuracion/encryption-key.domain";
 
-const originalKey = process.env.CONFIG_ENCRYPTION_KEY;
+const originalKey = process.env["CONFIG_ENCRYPTION_KEY"];
 const validKey = "0123456789abcdef".repeat(4);
 
 afterEach(() => {
   if (originalKey === undefined) {
-    delete process.env.CONFIG_ENCRYPTION_KEY;
+    delete process.env["CONFIG_ENCRYPTION_KEY"];
   } else {
-    process.env.CONFIG_ENCRYPTION_KEY = originalKey;
+    process.env["CONFIG_ENCRYPTION_KEY"] = originalKey;
   }
   vi.resetModules();
 });
@@ -28,7 +28,7 @@ describe("clave de cifrado", () => {
 
 describe("cifrado de configuración", () => {
   async function moduleWithKey() {
-    process.env.CONFIG_ENCRYPTION_KEY = validKey;
+    process.env["CONFIG_ENCRYPTION_KEY"] = validKey;
     vi.resetModules();
     return import("../src/lib/config/encryption");
   }

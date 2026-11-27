@@ -12,9 +12,9 @@ describe("correo de notificaciones", () => {
         href: "/reuniones/abc",
         emailSubject: "Confirmación de reunión",
         emailText: "Miércoles 12 de agosto, 18:30.",
-        emailActionLabel: "Ver reunión"
+        emailActionLabel: "Ver reunión",
       },
-      "https://salas-meet.flacso.edu.uy"
+      "https://salas-meet.flacso.edu.uy",
     );
 
     expect(email.subject).toBe("Confirmación de reunión");
@@ -29,9 +29,9 @@ describe("correo de notificaciones", () => {
       {
         tipo: "ASISTENCIA_REQUERIDA",
         titulo: "Clase <script>",
-        cuerpo: "Docente & programa"
+        cuerpo: "Docente & programa",
       },
-      "https://salas-meet.flacso.edu.uy/"
+      "https://salas-meet.flacso.edu.uy/",
     );
 
     expect(email.html).toContain("Clase &lt;script&gt;");
@@ -54,9 +54,9 @@ describe("correo de notificaciones", () => {
           sala: "host-principal@flacso.edu.uy",
           password: "Clave-actualizada-2026+",
           meet: "ids-zrev-eas",
-          joinUrl: "https://meet.google.com/ids-zrev-eas"
-        }
-      ]
+          joinUrl: "https://meet.google.com/ids-zrev-eas",
+        },
+      ],
     });
 
     expect(detalle).toContain("Sala: host-principal@flacso.edu.uy");
@@ -72,9 +72,9 @@ describe("correo de notificaciones", () => {
         {
           inicio: "Martes, 18 de agosto, 18:15",
           fin: "21:15",
-          sala: "host-secundario@flacso.edu.uy"
-        }
-      ]
+          sala: "host-secundario@flacso.edu.uy",
+        },
+      ],
     });
 
     expect(detalle).toContain("Sala: host-secundario@flacso.edu.uy");
@@ -92,18 +92,20 @@ describe("correo de notificaciones", () => {
           inicio: "Lunes, 15 de setiembre, 18:00",
           fin: "20:00",
           sala: "sala01@flacso.edu.uy",
-          joinUrl: "https://meet.google.com/abc-defg-hij"
-        }
-      ]
+          joinUrl: "https://meet.google.com/abc-defg-hij",
+        },
+      ],
     });
 
     expect(detalle).toContain("¿CÓMO ACCEDER A LA REUNIÓN?");
     expect(detalle).toContain(
-      "No es necesario iniciar sesión con la cuenta de la sala ni usar su contraseña"
+      "No es necesario iniciar sesión con la cuenta de la sala ni usar su contraseña",
     );
-    expect(detalle).toContain("Google Meet les otorgará automáticamente permisos de co-anfitrión (co-host)");
     expect(detalle).toContain(
-      "Participantes y estudiantes: ingresan directamente a través del enlace de Google Meet"
+      "Google Meet les otorgará automáticamente permisos de co-anfitrión (co-host)",
+    );
+    expect(detalle).toContain(
+      "Participantes y estudiantes: ingresan directamente a través del enlace de Google Meet",
     );
     expect(detalle).toContain("Monitoreo: no requerido");
   });
@@ -116,11 +118,13 @@ describe("correo de notificaciones", () => {
         {
           inicio: "Miércoles, 17 de setiembre, 19:00",
           fin: "21:00",
-          joinUrl: "https://meet.google.com/xyz-uvwx-rst"
-        }
-      ]
+          joinUrl: "https://meet.google.com/xyz-uvwx-rst",
+        },
+      ],
     });
-    expect(pendiente).toContain("Monitoreo: la reunión requiere monitoreo (pendiente de asignación)");
+    expect(pendiente).toContain(
+      "Monitoreo: la reunión requiere monitoreo (pendiente de asignación)",
+    );
 
     const asignada = reunionEmailText({
       titulo: "Seminario Abierto",
@@ -130,9 +134,9 @@ describe("correo de notificaciones", () => {
         {
           inicio: "Miércoles, 17 de setiembre, 19:00",
           fin: "21:00",
-          joinUrl: "https://meet.google.com/xyz-uvwx-rst"
-        }
-      ]
+          joinUrl: "https://meet.google.com/xyz-uvwx-rst",
+        },
+      ],
     });
     expect(asignada).toContain("Monitoreo: asignado a Juan Asistente");
   });
@@ -144,9 +148,9 @@ describe("correo de notificaciones", () => {
         {
           inicio: "Jueves, 18 de setiembre, 18:00",
           fin: "20:00",
-          joinUrl: "https://meet.google.com/aaa-bbbb-ccc"
-        }
-      ]
+          joinUrl: "https://meet.google.com/aaa-bbbb-ccc",
+        },
+      ],
     });
 
     const email = construirCorreoNotificacion(
@@ -155,9 +159,9 @@ describe("correo de notificaciones", () => {
         titulo: "Reunión creada",
         cuerpo: "La reunión ha sido creada exitosamente.",
         emailText,
-        href: "/reuniones/123"
+        href: "/reuniones/123",
       },
-      "https://salas-meet.flacso.edu.uy"
+      "https://salas-meet.flacso.edu.uy",
     );
 
     expect(email.html).toContain("¿Cómo acceder?");

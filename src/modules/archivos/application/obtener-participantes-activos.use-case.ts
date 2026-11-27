@@ -5,7 +5,7 @@ export async function obtenerParticipantesActivosUseCase(
   repositorio: ArchivosRepositoryPort,
   providerFactory: ArtifactProviderFactory,
   descifrar: (cifrado: string) => string,
-  instanciaId: string
+  instanciaId: string,
 ): Promise<LiveParticipantsResult> {
   const evento = await repositorio.obtenerDatosInstanciaParaParticipantes(instanciaId);
 
@@ -20,26 +20,30 @@ export async function obtenerParticipantesActivosUseCase(
 
   const configuracion = await repositorio.obtenerConfiguracionWorkspacePrincipal();
 
-  if (!configuracion?.activa || !configuracion.serviceAccountEmail || !configuracion.privateKeyCifrada) {
+  if (
+    !configuracion?.activa ||
+    !configuracion.serviceAccountEmail ||
+    !configuracion.privateKeyCifrada
+  ) {
     return { estado: "NO_DISPONIBLE", motivo: "SIN_CREDENCIALES", participantes: [] };
   }
 
   const provider = providerFactory({
     serviceAccountEmail: configuracion.serviceAccountEmail,
     privateKey: descifrar(configuracion.privateKeyCifrada),
-    subject
+    subject,
   });
 
   const scan = await provider.obtenerParticipantesActivos(
     evento.codigoReunion,
     evento.inicioProgramadoAt,
-    evento.finProgramadoAt
+    evento.finProgramadoAt,
   );
 
   return {
     estado: "OK",
     conferenciaExiste: scan.conferenciaExiste,
     ...(scan.conferenceName ? { conferenceName: scan.conferenceName } : {}),
-    participantes: scan.participantesActivos
+    participantes: scan.participantesActivos,
   };
 }

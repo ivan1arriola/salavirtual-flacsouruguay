@@ -7,7 +7,7 @@ export type ConsultarResumenAsistentesDeps = Readonly<{
 
 export async function consultarResumenAsistentesUseCase(
   deps: ConsultarResumenAsistentesDeps,
-  periodo: PeriodoMes
+  periodo: PeriodoMes,
 ): Promise<readonly FilaResumenAsistente[]> {
   return deps.liquidacionesRepo.obtenerResumenAsistentes(periodo);
 }

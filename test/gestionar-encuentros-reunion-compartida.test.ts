@@ -2,19 +2,19 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("../src/modules/reuniones/encuentros-persistence.adapter", () => ({
   auditarEncuentro: vi.fn(),
-  recalcularSolicitud: vi.fn()
+  recalcularSolicitud: vi.fn(),
 }));
 vi.mock("../src/modules/reuniones/permisos-programa.service", () => ({
-  puedeGestionarPrograma: vi.fn().mockResolvedValue(true)
+  puedeGestionarPrograma: vi.fn().mockResolvedValue(true),
 }));
 vi.mock("../src/modules/asistencia/reserva-asistencia.service", () => ({
-  reservarAsistenteDisponible: vi.fn()
+  reservarAsistenteDisponible: vi.fn(),
 }));
 
 import {
   actualizarEncuentro,
   agregarEncuentro,
-  eliminarEncuentro
+  eliminarEncuentro,
 } from "../src/modules/reuniones/gestionar-encuentros.service";
 
 const admin = { id: "admin-1", rol: "ADMINISTRACION", activo: true } as never;
@@ -29,7 +29,7 @@ const eventoZoom = (extra: Record<string, unknown> = {}) => ({
   codigoReunion: null,
   reunionProveedorId: "reunion-1",
   proveedor: { tipo: "ZOOM" },
-  ...extra
+  ...extra,
 });
 
 const dbCon = (tx: Record<string, unknown>) =>
@@ -55,26 +55,26 @@ function txAgregar(eventos: unknown[], conflicts: unknown[] = []) {
             finProgramadoAt: new Date("2099-05-01T16:00:00-03:00"),
             eventosProveedor: eventos,
             cohosts: [],
-            cohostEmails: []
-          }
-        ]
-      })
+            cohostEmails: [],
+          },
+        ],
+      }),
     },
     proveedorReunion: { findUnique: vi.fn().mockResolvedValue({ id: "prov-zoom", tipo: "ZOOM" }) },
     cuentaProveedor: {
       findMany: vi.fn().mockResolvedValue([
         { id: "zoom-host-a", prioridad: 1 },
-        { id: "zoom-host-b", prioridad: 2 }
-      ])
+        { id: "zoom-host-b", prioridad: 2 },
+      ]),
     },
     reunionZoomObservada: { findMany: vi.fn().mockResolvedValue([]) },
     eventoProveedor: {
       findMany: vi.fn().mockResolvedValue(conflicts),
-      create: vi.fn().mockResolvedValue({ id: "ev-nuevo" })
+      create: vi.fn().mockResolvedValue({ id: "ev-nuevo" }),
     },
     instanciaSala: { create: vi.fn().mockResolvedValue({ id: "inst-2", descripcion: null }) },
     cohostReunion: { createMany: vi.fn() },
-    cohostEmailReunion: { createMany: vi.fn() }
+    cohostEmailReunion: { createMany: vi.fn() },
   };
 }
 
@@ -86,7 +86,7 @@ describe("agregar un encuentro a una serie con reunión compartida", () => {
       proveedorId: "prov-zoom",
       cuentaProveedorId: "zoom-host-b",
       reunionProveedorId: "reunion-1",
-      operacionPendiente: "PROVISIONAR"
+      operacionPendiente: "PROVISIONAR",
     });
   });
 
@@ -96,12 +96,12 @@ describe("agregar un encuentro a una serie con reunión compartida", () => {
       [
         {
           cuentaProveedorId: "zoom-host-b",
-          instancia: { inicioProgramadoAt: inicio, finProgramadoAt: fin }
-        }
-      ]
+          instancia: { inicioProgramadoAt: inicio, finProgramadoAt: fin },
+        },
+      ],
     );
     await expect(agregarEncuentro(dbCon(tx), admin, "sol-1", { inicio, fin })).rejects.toThrow(
-      "La sala de la serie está ocupada en ese horario."
+      "La sala de la serie está ocupada en ese horario.",
     );
     expect(tx.eventoProveedor.create).not.toHaveBeenCalled();
     expect(tx.instanciaSala.create).not.toHaveBeenCalled();
@@ -115,7 +115,7 @@ describe("agregar un encuentro a una serie con reunión compartida", () => {
     Object.assign(tx.cuentaProveedor, { findUnique: cuenta });
 
     await expect(agregarEncuentro(dbCon(tx), admin, "sol-1", { inicio, fin })).rejects.toThrow(
-      "La sala de esta serie salió del grupo de Zoom. Usá «Unificar enlace» o creá una serie nueva."
+      "La sala de esta serie salió del grupo de Zoom. Usá «Unificar enlace» o creá una serie nueva.",
     );
     expect(cuenta).toHaveBeenCalledWith(expect.objectContaining({ where: { id: "zoom-host-b" } }));
     expect(tx.eventoProveedor.create).not.toHaveBeenCalled();
@@ -125,10 +125,12 @@ describe("agregar un encuentro a una serie con reunión compartida", () => {
   it("si la sala de la serie está desactivada o sin licencia lo dice, sin elegir otra sala", async () => {
     const tx = txAgregar([eventoZoom()]);
     tx.cuentaProveedor.findMany.mockResolvedValue([{ id: "zoom-host-a", prioridad: 1 }]);
-    Object.assign(tx.cuentaProveedor, { findUnique: vi.fn().mockResolvedValue({ fueraDelGrupoAt: null }) });
+    Object.assign(tx.cuentaProveedor, {
+      findUnique: vi.fn().mockResolvedValue({ fueraDelGrupoAt: null }),
+    });
 
     await expect(agregarEncuentro(dbCon(tx), admin, "sol-1", { inicio, fin })).rejects.toThrow(
-      "La sala de esta serie no está disponible para reuniones nuevas (está desactivada o sin licencia). Usá «Unificar enlace» o creá una serie nueva."
+      "La sala de esta serie no está disponible para reuniones nuevas (está desactivada o sin licencia). Usá «Unificar enlace» o creá una serie nueva.",
     );
     expect(tx.eventoProveedor.create).not.toHaveBeenCalled();
   });
@@ -139,9 +141,9 @@ describe("agregar un encuentro a una serie con reunión compartida", () => {
       [
         {
           cuentaProveedorId: "zoom-host-b",
-          instancia: { inicioProgramadoAt: inicio, finProgramadoAt: fin }
-        }
-      ]
+          instancia: { inicioProgramadoAt: inicio, finProgramadoAt: fin },
+        },
+      ],
     );
     await agregarEncuentro(dbCon(tx), admin, "sol-1", { inicio, fin });
     const data = tx.eventoProveedor.create.mock.calls[0][0].data;
@@ -167,18 +169,27 @@ function txEncuentro(evento: Record<string, unknown>) {
         requiereAsistenciaTecnica: false,
         descripcion: null,
         solicitud: { modalidad: "VIRTUAL", docentePrograma: { programaId: "prog-1" } },
-        eventosProveedor: [evento]
+        eventosProveedor: [evento],
       }),
       count: vi.fn().mockResolvedValue(0),
-      update: vi.fn()
+      update: vi.fn(),
     },
     cuentaProveedor: {
-      findUnique: vi.fn().mockResolvedValue({ id: "zoom-host-b", prioridad: 1, limiteConcurrente: 5 })
+      findUnique: vi
+        .fn()
+        .mockResolvedValue({ id: "zoom-host-b", prioridad: 1, limiteConcurrente: 5 }),
     },
     reunionZoomObservada: { findMany: vi.fn().mockResolvedValue([]) },
-    eventoProveedor: { findMany: vi.fn().mockResolvedValue([]), update: vi.fn(), updateMany: vi.fn() },
-    asignacionAsistenciaTecnica: { findFirst: vi.fn().mockResolvedValue(null), updateMany: vi.fn() },
-    postulacionAsistenciaTecnica: { updateMany: vi.fn() }
+    eventoProveedor: {
+      findMany: vi.fn().mockResolvedValue([]),
+      update: vi.fn(),
+      updateMany: vi.fn(),
+    },
+    asignacionAsistenciaTecnica: {
+      findFirst: vi.fn().mockResolvedValue(null),
+      updateMany: vi.fn(),
+    },
+    postulacionAsistenciaTecnica: { updateMany: vi.fn() },
   };
 }
 
@@ -188,7 +199,7 @@ describe("reprogramar y cancelar encuentros con reunión compartida", () => {
     const resultado = await actualizarEncuentro(dbCon(tx), admin, "sol-1", "inst-1", {
       accion: "EDITAR_FECHA",
       inicio,
-      fin
+      fin,
     });
     expect(tx.instanciaSala.update).toHaveBeenCalledTimes(1);
     expect(tx.eventoProveedor.update).not.toHaveBeenCalled();
@@ -197,19 +208,27 @@ describe("reprogramar y cancelar encuentros con reunión compartida", () => {
 
   it("si la reunión compartida todavía no tiene ID de Zoom, el evento sigue pendiente de provisionar", async () => {
     const tx = txEncuentro(eventoZoom({ externalEventId: null }));
-    await actualizarEncuentro(dbCon(tx), admin, "sol-1", "inst-1", { accion: "EDITAR_FECHA", inicio, fin });
+    await actualizarEncuentro(dbCon(tx), admin, "sol-1", "inst-1", {
+      accion: "EDITAR_FECHA",
+      inicio,
+      fin,
+    });
     expect(tx.eventoProveedor.update.mock.calls[0][0]).toMatchObject({
       where: { id: "ev-zoom" },
-      data: { operacionPendiente: "PROVISIONAR" }
+      data: { operacionPendiente: "PROVISIONAR" },
     });
   });
 
   it("un evento Zoom sin reunión compartida sigue reprogramándose como hoy", async () => {
     const tx = txEncuentro(eventoZoom({ reunionProveedorId: null, externalEventId: "propia-1" }));
-    await actualizarEncuentro(dbCon(tx), admin, "sol-1", "inst-1", { accion: "EDITAR_FECHA", inicio, fin });
+    await actualizarEncuentro(dbCon(tx), admin, "sol-1", "inst-1", {
+      accion: "EDITAR_FECHA",
+      inicio,
+      fin,
+    });
     expect(tx.eventoProveedor.update.mock.calls[0][0]).toMatchObject({
       where: { id: "ev-zoom" },
-      data: { operacionPendiente: "REPROGRAMAR" }
+      data: { operacionPendiente: "REPROGRAMAR" },
     });
   });
 
@@ -220,7 +239,7 @@ describe("reprogramar y cancelar encuentros con reunión compartida", () => {
     expect(resultado.eventoProveedorIds).toEqual(["ev-zoom"]);
     expect(tx.eventoProveedor.updateMany.mock.calls[0][0]).toMatchObject({
       where: { id: { in: ["ev-zoom"] } },
-      data: { operacionPendiente: "CANCELAR" }
+      data: { operacionPendiente: "CANCELAR" },
     });
   });
 });

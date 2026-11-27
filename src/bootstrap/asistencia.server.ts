@@ -11,7 +11,7 @@ import {
   type AsistenciaRepositoryPort,
   type ControladorAsignaciones,
   type ServicioAsistencia,
-  type ServicioCalendarioAsistente
+  type ServicioCalendarioAsistente,
 } from "@/src/modules/asistencia/api";
 import { notificarUsuarios } from "@/src/modules/notificaciones/notificaciones.service";
 import type { SessionActor } from "@/src/modules/asistencia/api";
@@ -20,20 +20,20 @@ import { sincronizarCalendarioAsistenteInstancia } from "@/src/modules/asistenci
 import { intentarSincronizacionCalendarioAsistente } from "@/src/modules/asistencia/calendario-asistente-safe.service";
 import {
   eliminarEventoCalendarioAsistente,
-  publicarEventoCalendarioAsistente
+  publicarEventoCalendarioAsistente,
 } from "@/src/modules/asistencia/calendario-asistente-google.adapter";
 import { configurarGoogleMeetExistente } from "@/src/modules/conferencias/api";
 
 const defaultCalendarRepository = crearPrismaAssistantCalendarRepository({
   db,
-  descifrar: descifrarConfiguracion
+  descifrar: descifrarConfiguracion,
 });
 
 const defaultCalendarProvider = crearGoogleAssistantCalendarProvider();
 
 const servicioCalendarioAsistente = crearServicioCalendarioAsistente(
   defaultCalendarRepository,
-  defaultCalendarProvider
+  defaultCalendarProvider,
 );
 
 export function obtenerServicioCalendarioAsistente(): ServicioCalendarioAsistente {
@@ -57,17 +57,17 @@ export function obtenerServicioAsistencia(): ServicioAsistencia {
           cuerpo: input.mensaje,
           href: "/agenda-abierta",
           emailSubject: input.asunto,
-          emailText: input.mensaje
-        }
+          emailText: input.mensaje,
+        },
       );
-    }
+    },
   });
 }
 
 export function obtenerControladorAsignaciones(): ControladorAsignaciones {
   return crearControladorAsignaciones({
     repo: crearAsistenciaRepository(),
-    sincronizar: sincronizarAsignacionAsistenteInterno
+    sincronizar: sincronizarAsignacionAsistenteInterno,
   });
 }
 
@@ -87,12 +87,15 @@ export function sincronizarAsignacionAsistente(instanciaSalaId: string, calendar
   return obtenerControladorAsignaciones().sincronizar(instanciaSalaId, calendarWarning);
 }
 
-async function sincronizarAsignacionAsistenteInterno(instanciaSalaId: string, calendarWarning: string) {
+async function sincronizarAsignacionAsistenteInterno(
+  instanciaSalaId: string,
+  calendarWarning: string,
+) {
   const warnings: string[] = [];
   try {
     await sincronizarCohostsDeInstancia(
       { db, descifrar: descifrarConfiguracion, configurarEspacio: configurarGoogleMeetExistente },
-      instanciaSalaId
+      instanciaSalaId,
     );
   } catch (error) {
     console.error("Falló la sincronización de cohosts de asistencia técnica.", error);
@@ -104,13 +107,16 @@ async function sincronizarAsignacionAsistenteInterno(instanciaSalaId: string, ca
         db,
         descifrar: descifrarConfiguracion,
         publicarEvento: publicarEventoCalendarioAsistente,
-        eliminarEvento: eliminarEventoCalendarioAsistente
+        eliminarEvento: eliminarEventoCalendarioAsistente,
       },
-      instanciaSalaId
-    )
+      instanciaSalaId,
+    ),
   );
   if (intento.error || intento.resultados.some((resultado) => resultado.estado === "ERROR")) {
     warnings.push(calendarWarning);
   }
-  return { calendarioAsistente: intento.resultados, warning: warnings.length ? warnings.join(" ") : null };
+  return {
+    calendarioAsistente: intento.resultados,
+    warning: warnings.length ? warnings.join(" ") : null,
+  };
 }

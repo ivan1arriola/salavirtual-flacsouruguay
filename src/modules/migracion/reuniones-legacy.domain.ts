@@ -3,7 +3,7 @@ export function normalizarNombrePrograma(nombre: string): string {
 }
 
 export function mapearEstadoSolicitudLegacy(
-  estado: string
+  estado: string,
 ): "REGISTRADA" | "PROVISIONANDO" | "PROVISIONADA" | "REQUIERE_REVISION" | "CANCELADA" {
   if (estado === "PROVISIONADA") {
     return "PROVISIONADA";
@@ -18,7 +18,7 @@ export function mapearEstadoSolicitudLegacy(
 }
 
 export function mapearEstadoInstanciaLegacy(
-  estado: string
+  estado: string,
 ): "PROGRAMADA" | "FINALIZADA" | "CANCELADA" | "NO_REALIZADA" {
   if (estado === "FINALIZADO") {
     return "FINALIZADA";
@@ -33,7 +33,7 @@ export function mapearEstadoInstanciaLegacy(
 }
 
 export function mapearEstadoAsignacionLegacy(
-  estado: string
+  estado: string,
 ): "ASIGNADO" | "ACEPTADO" | "RECHAZADO" | "CANCELADO" {
   if (estado === "ACEPTADO") {
     return "ACEPTADO";

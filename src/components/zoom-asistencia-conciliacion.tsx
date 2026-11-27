@@ -24,7 +24,7 @@ const ETIQUETA: Record<Registro["estadoConciliacion"], string> = {
   SIN_CONCILIAR: "Sin identificar",
   SUGERIDO: "Posible coincidencia",
   CONCILIADO: "Identificada",
-  EXTERNO: "No figura entre los invitados"
+  EXTERNO: "No figura entre los invitados",
 };
 
 const hora = (iso: string) =>
@@ -35,7 +35,7 @@ const hora = (iso: string) =>
     hour: "2-digit",
     minute: "2-digit",
     second: "2-digit",
-    hour12: false
+    hour12: false,
   }).format(new Date(iso));
 
 /** Asistencia persistida de Zoom. Solo quien puede conciliar ve los controles; el resto solo lee. */
@@ -43,7 +43,7 @@ export function ZoomAsistenciaConciliacion({
   instanciaId,
   registros,
   invitados,
-  puedeConciliar
+  puedeConciliar,
 }: Readonly<{
   instanciaId: string;
   registros: readonly Registro[];
@@ -66,9 +66,9 @@ export function ZoomAsistenciaConciliacion({
             registroId: registro.id,
             invitadoReunionId,
             externo,
-            version: registro.version
-          })
-        }
+            version: registro.version,
+          }),
+        },
       ).catch(() => null);
       if (r?.ok) {
         router.refresh();
@@ -77,7 +77,7 @@ export function ZoomAsistenciaConciliacion({
       setMensaje(
         r?.status === 409
           ? "Otra persona modificó este registro. Recargá la página."
-          : "No se pudo guardar el cambio."
+          : "No se pudo guardar el cambio.",
       );
     });
   }
@@ -147,11 +147,19 @@ export function ZoomAsistenciaConciliacion({
                         ))}
                       </select>
                     </label>
-                    <button type="button" disabled={pendiente} onClick={() => enviar(r, null, true)}>
+                    <button
+                      type="button"
+                      disabled={pendiente}
+                      onClick={() => enviar(r, null, true)}
+                    >
                       No figura entre los invitados
                     </button>
                     {r.estadoConciliacion !== "SIN_CONCILIAR" ? (
-                      <button type="button" disabled={pendiente} onClick={() => enviar(r, null, false)}>
+                      <button
+                        type="button"
+                        disabled={pendiente}
+                        onClick={() => enviar(r, null, false)}
+                      >
                         Quitar identificación
                       </button>
                     ) : null}

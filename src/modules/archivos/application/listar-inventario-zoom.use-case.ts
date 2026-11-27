@@ -1,5 +1,9 @@
 import { puedeVerInventarioZoom } from "../domain";
-import type { EntradaInventarioZoom, PaginaInventarioZoom, ZoomInventarioLecturaPort } from "../ports";
+import type {
+  EntradaInventarioZoom,
+  PaginaInventarioZoom,
+  ZoomInventarioLecturaPort,
+} from "../ports";
 
 export type ResultadoInventarioZoomListado =
   Readonly<{ tipo: "OK"; pagina: PaginaInventarioZoom }> | Readonly<{ tipo: "PROHIBIDO" }>;
@@ -8,7 +12,7 @@ export type ResultadoInventarioZoomListado =
 export async function listarInventarioZoomUseCase(
   repo: ZoomInventarioLecturaPort,
   actor: Readonly<{ id: string; rol: "ADMINISTRACION" | "DOCENTE" | "ASISTENTE_TECNICO" }>,
-  entrada: EntradaInventarioZoom
+  entrada: EntradaInventarioZoom,
 ): Promise<ResultadoInventarioZoomListado> {
   if (!puedeVerInventarioZoom(actor.rol)) {
     return { tipo: "PROHIBIDO" };

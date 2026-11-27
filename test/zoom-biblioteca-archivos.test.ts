@@ -4,7 +4,7 @@ import {
   describirVarianteZoom,
   esArchivoSecundarioZoom,
   etiquetaEstadoArchivoZoom,
-  type ArchivoZoomBibliotecaFila
+  type ArchivoZoomBibliotecaFila,
 } from "../src/modules/archivos/domain";
 
 function fila(over: Partial<ArchivoZoomBibliotecaFila> = {}): ArchivoZoomBibliotecaFila {
@@ -19,7 +19,7 @@ function fila(over: Partial<ArchivoZoomBibliotecaFila> = {}): ArchivoZoomBibliot
     nombreDestino: "clase.mp4",
     webViewUrl: "https://drive.google.com/file/d/abc/view",
     errorCodigo: null,
-    ...over
+    ...over,
   };
 }
 
@@ -32,13 +32,13 @@ describe("archivoBibliotecaZoom", () => {
       etiqueta: "Video",
       nombre: "clase.mp4",
       enlace: "https://drive.google.com/file/d/abc/view",
-      pendiente: false
+      pendiente: false,
     });
   });
 
   it("audios y chat quedan visibles con su etiqueta propia aunque su tipo Meet sea OTRO", () => {
     const audio = archivoBibliotecaZoom(
-      fila({ tipoOriginal: "M4A", mimeType: "audio/mp4", nombreDestino: "audio.m4a" })
+      fila({ tipoOriginal: "M4A", mimeType: "audio/mp4", nombreDestino: "audio.m4a" }),
     );
     expect(audio).toMatchObject({ tipo: "OTRO", etiqueta: "Audio" });
     const chat = archivoBibliotecaZoom(fila({ tipoOriginal: "CHAT", nombreDestino: "chat.txt" }));
@@ -64,7 +64,7 @@ describe("archivoBibliotecaZoom", () => {
 
   it("un error reintentable expone su código para diagnóstico sin volverse enlace", () => {
     const a = archivoBibliotecaZoom(
-      fila({ estado: "ERROR_REINTENTABLE", errorCodigo: "TOPE_DIARIO", webViewUrl: null })
+      fila({ estado: "ERROR_REINTENTABLE", errorCodigo: "TOPE_DIARIO", webViewUrl: null }),
     );
     expect(a).toMatchObject({ pendiente: true, errorCodigo: "TOPE_DIARIO", enlace: null });
   });
@@ -77,7 +77,7 @@ describe("archivoBibliotecaZoom", () => {
       "COPIANDO",
       "CONSERVADO",
       "ERROR_REINTENTABLE",
-      "REQUIERE_REVISION"
+      "REQUIERE_REVISION",
     ] as const) {
       expect(etiquetaEstadoArchivoZoom(estado)).toBeTruthy();
     }
@@ -85,17 +85,17 @@ describe("archivoBibliotecaZoom", () => {
 
   it("traduce variantes técnicas de Zoom y distingue pistas individuales de participante", () => {
     expect(describirVarianteZoom("shared_screen_with_speaker_view(CC)", "MP4")).toBe(
-      "Pantalla compartida con orador (con subtítulos)"
+      "Pantalla compartida con orador (con subtítulos)",
     );
     expect(describirVarianteZoom("gallery_view", "MP4")).toBe("Vista de galería");
     expect(describirVarianteZoom("audio_only", "M4A")).toBe("Audio general de la reunión");
     expect(describirVarianteZoom("Audio only - Andrea Hadjez", "M4A")).toBe(
-      "Pista de participante · Andrea Hadjez"
+      "Pista de participante · Andrea Hadjez",
     );
     expect(describirVarianteZoom(null, "CHAT")).toBe("Chat de la reunión");
-    expect(esArchivoSecundarioZoom({ tipoOriginal: "M4A", variante: "Audio only - Andrea Hadjez" })).toBe(
-      true
-    );
+    expect(
+      esArchivoSecundarioZoom({ tipoOriginal: "M4A", variante: "Audio only - Andrea Hadjez" }),
+    ).toBe(true);
     expect(esArchivoSecundarioZoom({ tipoOriginal: "M4A", variante: "audio_only" })).toBe(false);
     expect(esArchivoSecundarioZoom({ tipoOriginal: "TIMELINE", variante: "timeline" })).toBe(true);
   });

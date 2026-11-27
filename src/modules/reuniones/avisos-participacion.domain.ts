@@ -2,7 +2,7 @@ import {
   envolverCorreo,
   panelCorreo,
   botonCorreo,
-  escaparHtmlEmail
+  escaparHtmlEmail,
 } from "@/src/lib/email/email-design-system";
 import { formatLongDate, formatTime } from "@/src/lib/ui/format";
 
@@ -19,9 +19,10 @@ export type AvisoEncuentro = Readonly<{
 export function construirCorreoParticipacion(
   tipo: "INVITACION" | "ENLACE_CAMBIADO" | "RECORDATORIO",
   encuentros: readonly AvisoEncuentro[],
-  rol: "INVITADO" | "COHOST"
+  rol: "INVITADO" | "COHOST",
 ): Readonly<{ subject: string; text: string; html: string }> {
-  const todosZoom = encuentros.length > 0 && encuentros.every(({ proveedor }) => proveedor === "ZOOM");
+  const todosZoom =
+    encuentros.length > 0 && encuentros.every(({ proveedor }) => proveedor === "ZOOM");
   const titulo =
     tipo === "INVITACION"
       ? "Invitación a reuniones de FLACSO"
@@ -57,9 +58,9 @@ export function construirCorreoParticipacion(
           (meeting.urlMeet
             ? botonCorreo({
                 texto: meeting.proveedor === "ZOOM" ? "Abrir Zoom" : "Abrir Google Meet",
-                url: meeting.urlMeet
+                url: meeting.urlMeet,
               })
-            : '<p style="color:#995218;font-size:12px">Enlace todavía no disponible.</p>')
+            : '<p style="color:#995218;font-size:12px">Enlace todavía no disponible.</p>'),
       );
     })
     .join("");
@@ -67,8 +68,8 @@ export function construirCorreoParticipacion(
     [
       m.titulo,
       formatLongDate(m.inicio) + " " + formatTime(m.inicio) + "–" + formatTime(m.fin) + " h UY",
-      m.urlMeet ?? "Enlace pendiente"
-    ].join("\n")
+      m.urlMeet ?? "Enlace pendiente",
+    ].join("\n"),
   );
   return {
     subject: titulo + " · Sala Virtual FLACSO",
@@ -83,7 +84,7 @@ export function construirCorreoParticipacion(
         escaparHtmlEmail(etiquetas) +
         "</p>" +
         filas,
-      nota: "Si se modifican las reuniones, consultá el último aviso o contactá con FLACSO Uruguay."
-    })
+      nota: "Si se modifican las reuniones, consultá el último aviso o contactá con FLACSO Uruguay.",
+    }),
   };
 }

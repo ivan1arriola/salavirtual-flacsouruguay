@@ -80,7 +80,7 @@ function siguienteUsuarioId(base: string, reservados: ReadonlySet<string>): stri
   }
 
   const suffix = Array.from({ length: 999 }, (_, index) => index + 2).find(
-    (number) => !reservados.has(`${base}-${number}`)
+    (number) => !reservados.has(`${base}-${number}`),
   );
   if (!suffix) {
     throw new Error(`No se pudo generar un usuario unico para ${base}.`);
@@ -91,7 +91,7 @@ function siguienteUsuarioId(base: string, reservados: ReadonlySet<string>): stri
 export function planificarMigracionUsuarios(
   usuarios: readonly UsuarioLegacy[],
   idsReservados: ReadonlySet<string>,
-  idsExistentesPorLegacy: ReadonlyMap<string, string>
+  idsExistentesPorLegacy: ReadonlyMap<string, string>,
 ): readonly PlanUsuarioMigrado[] {
   return usuarios.reduce<
     Readonly<{
@@ -101,10 +101,13 @@ export function planificarMigracionUsuarios(
   >(
     (state, usuario) => {
       const base = crearUsuarioIdBase(usuario.email);
-      const usuarioId = idsExistentesPorLegacy.get(usuario.id) ?? siguienteUsuarioId(base, state.reservados);
+      const usuarioId =
+        idsExistentesPorLegacy.get(usuario.id) ?? siguienteUsuarioId(base, state.reservados);
       const emailPrincipal = usuario.email.trim().toLowerCase();
       const aliases = usuario.emailAliases.map(({ email }) => email.trim().toLowerCase());
-      const emailsFlacso = [emailPrincipal, ...aliases].filter((email) => email.endsWith("@flacso.edu.uy"));
+      const emailsFlacso = [emailPrincipal, ...aliases].filter((email) =>
+        email.endsWith("@flacso.edu.uy"),
+      );
       const cuentasGoogle = usuario.accounts.filter((_, index) => Boolean(emailsFlacso[index]));
       const plan: PlanUsuarioMigrado = {
         legacyZoomUserId: usuario.id,
@@ -126,14 +129,14 @@ export function planificarMigracionUsuarios(
         cuentasGoogle,
         docente: usuario.docenteProfile,
         asistenteTecnico: usuario.asistenteProfile,
-        cuentasGoogleOmitidas: usuario.accounts.length - cuentasGoogle.length
+        cuentasGoogleOmitidas: usuario.accounts.length - cuentasGoogle.length,
       };
 
       return {
         planes: [...state.planes, plan],
-        reservados: new Set([...state.reservados, usuarioId])
+        reservados: new Set([...state.reservados, usuarioId]),
       };
     },
-    { planes: [], reservados: new Set(idsReservados) }
+    { planes: [], reservados: new Set(idsReservados) },
   ).planes;
 }

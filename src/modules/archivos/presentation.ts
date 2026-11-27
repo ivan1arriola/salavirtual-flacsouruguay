@@ -19,5 +19,5 @@ export {
   type RegistroConferenciaMeet,
   type SesionParticipanteMeet,
   type TipoArtefactoMeet,
-  type TipoFiltroArtefacto
+  type TipoFiltroArtefacto,
 } from "./domain";

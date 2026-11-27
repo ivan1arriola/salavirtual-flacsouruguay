@@ -1,11 +1,11 @@
-import { JWT } from "google-auth-library";
+import type { JWT } from "google-auth-library";
 import { crearGoogleAuthJwt, conReintentosGoogleLectura } from "@/src/integrations/google";
 import { normalizarCodigoMeet } from "../../domain/meet-attendance-summary.domain";
 
 import type {
   ParametroAuditoriaMeet,
   EventoAuditoriaMeet,
-  CorreoAuditadoMeet
+  CorreoAuditadoMeet,
 } from "../../domain/archivos.types";
 
 export type { ParametroAuditoriaMeet, EventoAuditoriaMeet, CorreoAuditadoMeet };
@@ -13,7 +13,7 @@ export type { ParametroAuditoriaMeet, EventoAuditoriaMeet, CorreoAuditadoMeet };
 export function filtrarEventosAuditoriaConferencia(
   eventos: readonly EventoAuditoriaMeet[],
   inicio: string,
-  fin: string
+  fin: string,
 ): Readonly<{
   eventosSolapados: readonly EventoAuditoriaMeet[];
   eventosAtribuibles: readonly EventoAuditoriaMeet[];
@@ -58,9 +58,9 @@ export async function obtenerEventosAuditoriaMeet(input: {
     {
       serviceAccountEmail: input.serviceAccountEmail,
       privateKey: input.privateKey,
-      subject: input.adminEmail
+      subject: input.adminEmail,
     },
-    ["https://www.googleapis.com/auth/admin.reports.audit.readonly"]
+    ["https://www.googleapis.com/auth/admin.reports.audit.readonly"],
   );
   const code = normalizarCodigoMeet(input.meetingCode);
   const result: EventoAuditoriaMeet[] = [];
@@ -70,7 +70,7 @@ export async function obtenerEventosAuditoriaMeet(input: {
       eventName: "call_ended",
       startTime: start.toISOString(),
       endTime: end.toISOString(),
-      maxResults: "1000"
+      maxResults: "1000",
     });
     if (token) {
       params.set("pageToken", token);
@@ -79,8 +79,8 @@ export async function obtenerEventosAuditoriaMeet(input: {
       auth.request<Pagina>({
         url: `https://admin.googleapis.com/admin/reports/v1/activity/users/all/applications/meet?${params}`,
         method: "GET",
-        timeout: 20_000
-      })
+        timeout: 20_000,
+      }),
     );
     for (const item of response.data.items ?? []) {
       for (const event of item.events ?? []) {
@@ -103,7 +103,7 @@ export async function obtenerEventosAuditoriaMeet(input: {
           displayName: String(value("display_name")),
           timestamp: item.id?.time ?? "",
           durationSeconds: Math.max(0, Number(value("duration_seconds")) || 0),
-          parameters
+          parameters,
         });
       }
     }
@@ -113,13 +113,13 @@ export async function obtenerEventosAuditoriaMeet(input: {
 }
 
 export async function obtenerCorreosAuditoriaMeet(
-  input: Parameters<typeof obtenerEventosAuditoriaMeet>[0]
+  input: Parameters<typeof obtenerEventosAuditoriaMeet>[0],
 ): Promise<readonly CorreoAuditadoMeet[]> {
   return agruparCorreosAuditoriaMeet(await obtenerEventosAuditoriaMeet(input));
 }
 
 export function agruparCorreosAuditoriaMeet(
-  eventos: readonly EventoAuditoriaMeet[]
+  eventos: readonly EventoAuditoriaMeet[],
 ): readonly CorreoAuditadoMeet[] {
   const agrupados = new Map<string, CorreoAuditadoMeet>();
   for (const event of eventos) {
@@ -136,7 +136,9 @@ export function agruparCorreosAuditoriaMeet(
     }
     const key = `${event.conferenceId}|${correo}`;
     const previous = agrupados.get(key);
-    const inicio = new Date(Date.parse(event.timestamp) - event.durationSeconds * 1000).toISOString();
+    const inicio = new Date(
+      Date.parse(event.timestamp) - event.durationSeconds * 1000,
+    ).toISOString();
     const session = {
       inicio,
       fin: event.timestamp,
@@ -147,7 +149,7 @@ export function agruparCorreosAuditoriaMeet(
       meetingCode: event.meetingCode,
       identifierType: event.identifierType,
       timestamp: event.timestamp,
-      parameters: event.parameters
+      parameters: event.parameters,
     };
     const external = event.parameters.find((p) => p.name === "is_external")?.boolValue;
     agrupados.set(key, {
@@ -156,10 +158,10 @@ export function agruparCorreosAuditoriaMeet(
       externo: typeof external === "boolean" ? external : (previous?.externo ?? null),
       nombre: event.displayName || previous?.nombre,
       salida: event.timestamp,
-      conexiones: [...(previous?.conexiones ?? []), session]
+      conexiones: [...(previous?.conexiones ?? []), session],
     });
   }
   return [...agrupados.values()].sort(
-    (a, b) => a.conferenciaId.localeCompare(b.conferenciaId) || a.correo.localeCompare(b.correo)
+    (a, b) => a.conferenciaId.localeCompare(b.conferenciaId) || a.correo.localeCompare(b.correo),
   );
 }

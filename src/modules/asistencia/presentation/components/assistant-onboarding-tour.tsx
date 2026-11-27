@@ -13,7 +13,9 @@ function firstVisible(selector: string): Element | undefined {
   return Array.from(document.querySelectorAll(selector)).find((element) => {
     const rect = element.getBoundingClientRect();
     const style = window.getComputedStyle(element);
-    return rect.width > 0 && rect.height > 0 && style.display !== "none" && style.visibility !== "hidden";
+    return (
+      rect.width > 0 && rect.height > 0 && style.display !== "none" && style.visibility !== "hidden"
+    );
   });
 }
 
@@ -29,56 +31,56 @@ function homeSteps(): DriveStep[] {
       description:
         "Este resumen muestra tu próxima cobertura, requerimientos de atención y siguientes coberturas asignadas.",
       side: "bottom",
-      align: "start"
+      align: "start",
     }),
     step('[data-tour="assistant-my-agenda"]', {
       title: "Mi agenda",
       description:
         "Acá aparecen tus reuniones asignadas, el desglose del mes en curso y tu histórico personal.",
       side: "right",
-      align: "start"
+      align: "start",
     }),
     step('[data-tour="assistant-open-agenda"]', {
       title: "Agenda abierta",
       description:
         "Consultá las reuniones que necesitan monitoreo, revisá disponibilidad o posibles conflictos y postuláte.",
       side: "right",
-      align: "start"
+      align: "start",
     }),
     step('[data-tour="assistant-month"]', {
       title: "Reuniones del mes",
       description:
         "Revisá tus horas e importes estimados y, después de una cobertura, confirmá el horario real e incidencias si corresponde.",
       side: "right",
-      align: "start"
+      align: "start",
     }),
     step('[data-tour="assistant-recordings"]', {
       title: "Grabaciones",
       description: "Consultá las grabaciones que tenés habilitadas para ver desde Sala Virtual.",
       side: "right",
-      align: "start"
+      align: "start",
     }),
     step('[data-tour="assistant-history"], [data-tour="assistant-more"]', {
       title: "Mi histórico",
       description:
         "Consultá tus reuniones, horas e importes de meses anteriores. En celular, esta opción se encuentra dentro de Más.",
       side: "right",
-      align: "start"
+      align: "start",
     }),
     step('[data-tour="assistant-notifications"]', {
       title: "Notificaciones",
       description:
         "Consultá Notificaciones en la navegación o la campana del celular. El contador indica los avisos sin leer.",
       side: "bottom",
-      align: "end"
+      align: "end",
     }),
     step('[data-tour="assistant-profile"]', {
       title: "Tu cuenta",
       description:
         "Desde este menú podés abrir Notificaciones y Mi perfil, cambiar de cuenta, repetir el tutorial o cerrar sesión.",
       side: "top",
-      align: "start"
-    })
+      align: "start",
+    }),
   ].filter((item): item is DriveStep => item !== null);
 }
 
@@ -89,15 +91,15 @@ function openAgendaSteps(): DriveStep[] {
       description:
         "Esta lista contiene únicamente reuniones futuras que requieren monitoreo y todavía no tienen un asistente asignado.",
       side: "top",
-      align: "start"
+      align: "start",
     }),
     step('[data-tour="assistant-interest"]', {
       title: "Postularme",
       description:
         "Usá Postularme para marcar tu interés. Una postulación no es una asignación: cuando la cobertura quede confirmada aparecerá en Mi agenda. Si cambiás de idea, podés usar Retirar mientras siga disponible.",
       side: "left",
-      align: "center"
-    })
+      align: "center",
+    }),
   ].filter((item): item is DriveStep => item !== null);
 }
 
@@ -108,21 +110,22 @@ function monthSteps(): DriveStep[] {
       description:
         "Acá se muestran por separado las horas virtuales e híbridas y la cotización total estimada del mes en curso.",
       side: "bottom",
-      align: "start"
+      align: "start",
     }),
     step('[data-tour="assistant-month-list"]', {
       title: "Tus coberturas del mes",
-      description: "La lista muestra modalidad, horario, duración y estado de cada monitoreo asignada.",
+      description:
+        "La lista muestra modalidad, horario, duración y estado de cada monitoreo asignada.",
       side: "top",
-      align: "start"
+      align: "start",
     }),
     step('[data-tour="assistant-close-assistance"]', {
       title: "Finalizar monitoreo",
       description:
         "Cuando una reunión haya terminado, confirmá el inicio y fin efectivos. También podés agregar observaciones y registrar una incidencia con su tipo, severidad y descripción.",
       side: "left",
-      align: "center"
-    })
+      align: "center",
+    }),
   ].filter((item): item is DriveStep => item !== null);
 }
 
@@ -198,12 +201,12 @@ export function AssistantOnboardingTour({ userId }: Readonly<{ userId: string }>
         onDestroyed: () => {
           localStorage.setItem(currentStorageKey, "done");
           runningRef.current = false;
-        }
+        },
       });
 
       tour.drive();
     },
-    [currentStorageKey, pathname]
+    [currentStorageKey, pathname],
   );
 
   useEffect(() => {

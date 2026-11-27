@@ -4,10 +4,13 @@ import {
   detectarPosiblesReunionesDuplicadas,
   esDecisionRevisionDuplicado,
   huellaRevisionDuplicado,
-  type CandidataReunionDuplicada
+  type CandidataReunionDuplicada,
 } from "../src/modules/reuniones/duplicados.domain";
 
-function meeting(id: string, overrides: Partial<CandidataReunionDuplicada> = {}): CandidataReunionDuplicada {
+function meeting(
+  id: string,
+  overrides: Partial<CandidataReunionDuplicada> = {},
+): CandidataReunionDuplicada {
   return {
     id,
     solicitudId: `solicitud-${id}`,
@@ -18,7 +21,7 @@ function meeting(id: string, overrides: Partial<CandidataReunionDuplicada> = {})
     docenteNombre: "Docente Uno",
     inicio: new Date("2026-08-20T15:00:00Z"),
     fin: new Date("2026-08-20T16:00:00Z"),
-    ...overrides
+    ...overrides,
   };
 }
 
@@ -37,8 +40,8 @@ describe("detección de reuniones duplicadas", () => {
       huellaRevisionDuplicado({
         izquierda: derecha,
         derecha: izquierda,
-        motivo: "HORARIO_SUPERPUESTO"
-      })
+        motivo: "HORARIO_SUPERPUESTO",
+      }),
     );
   });
 
@@ -52,7 +55,7 @@ describe("detección de reuniones duplicadas", () => {
   it("detecta coincidencias exactas normalizando mayúsculas, tildes y puntuación", () => {
     const result = detectarPosiblesReunionesDuplicadas([
       meeting("b", { titulo: "metodos numericos" }),
-      meeting("a", { titulo: "  Métodos---Numéricos! " })
+      meeting("a", { titulo: "  Métodos---Numéricos! " }),
     ]);
 
     expect(result).toHaveLength(1);
@@ -67,8 +70,8 @@ describe("detección de reuniones duplicadas", () => {
       meeting("b", {
         programaId: "programa-2",
         inicio: new Date("2026-08-20T15:30:00Z"),
-        fin: new Date("2026-08-20T16:30:00Z")
-      })
+        fin: new Date("2026-08-20T16:30:00Z"),
+      }),
     ]);
 
     expect(result).toHaveLength(1);
@@ -82,12 +85,12 @@ describe("detección de reuniones duplicadas", () => {
       meeting("otro-docente", { docenteId: "docente-2" }),
       meeting("despues", {
         inicio: new Date("2026-08-20T17:00:00Z"),
-        fin: new Date("2026-08-20T18:00:00Z")
+        fin: new Date("2026-08-20T18:00:00Z"),
       }),
       meeting("limite", {
         inicio: new Date("2026-08-20T16:00:00Z"),
-        fin: new Date("2026-08-20T17:00:00Z")
-      })
+        fin: new Date("2026-08-20T17:00:00Z"),
+      }),
     ]);
 
     expect(results).toEqual([]);

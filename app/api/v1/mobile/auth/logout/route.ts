@@ -4,7 +4,7 @@ import { db } from "@/src/lib/db";
 import {
   mobileActorFromRequest,
   mobileSessionHash,
-  mobileSessionIdentifier
+  mobileSessionIdentifier,
 } from "@/src/lib/auth/mobile-token";
 
 export async function POST(request: Request) {
@@ -16,16 +16,16 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         error:
-          "La sesión antigua no admite cierre remoto. Iniciá sesión de nuevo para utilizar sesiones revocables."
+          "La sesión antigua no admite cierre remoto. Iniciá sesión de nuevo para utilizar sesiones revocables.",
       },
-      { status: 409 }
+      { status: 409 },
     );
   }
   await db.tokenVerificacion.deleteMany({
     where: {
       identifier: mobileSessionIdentifier(token.sub),
-      token: mobileSessionHash(token.sid)
-    }
+      token: mobileSessionHash(token.sid),
+    },
   });
   return NextResponse.json({ message: "Sesión móvil cerrada." });
 }

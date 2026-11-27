@@ -3,23 +3,32 @@ import { describe, expect, it } from "vitest";
 
 const page = readFileSync(
   new URL("../src/bootstrap/ui/reuniones/reunion-detail-page.server.tsx", import.meta.url),
-  "utf8"
+  "utf8",
 );
 const manager = readFileSync(
-  new URL("../src/modules/reuniones/presentation/components/meeting-detail-manager.tsx", import.meta.url),
-  "utf8"
+  new URL(
+    "../src/modules/reuniones/presentation/components/meeting-detail-manager.tsx",
+    import.meta.url,
+  ),
+  "utf8",
 );
 const layout = readFileSync(
-  new URL("../src/modules/reuniones/presentation/components/meeting-detail-tabs.tsx", import.meta.url),
-  "utf8"
+  new URL(
+    "../src/modules/reuniones/presentation/components/meeting-detail-tabs.tsx",
+    import.meta.url,
+  ),
+  "utf8",
 );
 const styles = readFileSync(
   new URL("../app/(gestion)/meeting-detail-mobile-continuous.css", import.meta.url),
-  "utf8"
+  "utf8",
 );
 const admin = readFileSync(
-  new URL("../src/modules/reuniones/presentation/components/series-management.tsx", import.meta.url),
-  "utf8"
+  new URL(
+    "../src/modules/reuniones/presentation/components/series-management.tsx",
+    import.meta.url,
+  ),
+  "utf8",
 );
 describe("secciones de la ficha de reunión", () => {
   it("muestra todas las secciones en mosaico sin paneles ocultos", () => {
@@ -38,7 +47,9 @@ describe("secciones de la ficha de reunión", () => {
     expect(layout).not.toContain("hidden={!selected}");
     expect(styles).toContain("container-type: inline-size");
     expect(styles).toContain("@container (max-width: 930px)");
-    expect(styles).toMatch(/\.meeting-mosaic-columns\s*\{\s*grid-template-columns: minmax\(0, 1fr\);\s*\}/);
+    expect(styles).toMatch(
+      /\.meeting-mosaic-columns\s*\{\s*grid-template-columns: minmax\(0, 1fr\);\s*\}/,
+    );
   });
 
   it("permite consultar todas las secciones en una página continua en móvil", () => {
@@ -73,7 +84,9 @@ describe("secciones de la ficha de reunión", () => {
   it("no muestra el acceso a la asistencia de encuentros que todavía no ocurrieron", () => {
     const enlace = manager.indexOf('className="encounter-attendance-link"');
     expect(enlace).toBeGreaterThan(-1);
-    expect(manager.slice(Math.max(0, enlace - 140), enlace)).toContain('meeting.temporalidad !== "FUTURO"');
+    expect(manager.slice(Math.max(0, enlace - 140), enlace)).toContain(
+      'meeting.temporalidad !== "FUTURO"',
+    );
   });
 
   it("ubica archivos y planillas en Archivos y las incidencias en Actividad", () => {

@@ -8,8 +8,8 @@ describe("sugerencias de cohosts", () => {
     const html = renderToStaticMarkup(
       createElement(CohostSuggestions, {
         options: [{ email: "ana@example.com", name: "Ana", source: "Programa" }],
-        onSelect: vi.fn()
-      })
+        onSelect: vi.fn(),
+      }),
     );
     expect(html).toContain('aria-label="Sugerencias de cohosts"');
     expect(html).toContain("<ul");

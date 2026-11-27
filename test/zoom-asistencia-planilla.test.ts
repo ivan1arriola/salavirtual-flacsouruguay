@@ -5,7 +5,7 @@ import {
   exportacionAsistenciaZoom,
   filasResumenPlanillaZoom,
   filasSesionesPlanillaZoom,
-  type RegistroPlanillaZoom
+  type RegistroPlanillaZoom,
 } from "../src/modules/archivos/domain/planilla-asistencia-zoom.domain";
 import { generarPlanillaAsistenciaZoomUseCase } from "../src/modules/archivos/application/generar-planilla-asistencia-zoom.use-case";
 
@@ -21,7 +21,7 @@ const registro = (extra: Partial<RegistroPlanillaZoom> = {}): RegistroPlanillaZo
   sesiones: 2,
   estadoConciliacion: "SIN_CONCILIAR",
   rolComprobado: null,
-  ...extra
+  ...extra,
 });
 
 describe("contenido de la planilla Zoom", () => {
@@ -30,8 +30,8 @@ describe("contenido de la planilla Zoom", () => {
       registro({
         emailConfirmado: "ana@flacso.edu.uy",
         estadoConciliacion: "CONCILIADO",
-        rolComprobado: "HOST"
-      })
+        rolComprobado: "HOST",
+      }),
     ]);
     expect(cabecera).toEqual(
       expect.arrayContaining([
@@ -40,11 +40,19 @@ describe("contenido de la planilla Zoom", () => {
         "Conciliación",
         "Rol comprobado",
         "Minutos",
-        "Conexiones"
-      ])
+        "Conexiones",
+      ]),
     );
     expect(fila).toEqual(
-      expect.arrayContaining(["ana@gmail.com", "ana@flacso.edu.uy", "Conciliado", "HOST", 30, 50, 2])
+      expect.arrayContaining([
+        "ana@gmail.com",
+        "ana@flacso.edu.uy",
+        "Conciliado",
+        "HOST",
+        30,
+        50,
+        2,
+      ]),
     );
   });
 
@@ -62,16 +70,25 @@ describe("contenido de la planilla Zoom", () => {
         entradaAt: t("13:00"),
         salidaAt: t("13:10"),
         status: "in_meeting",
-        participanteId: "p1"
-      }
+        participanteId: "p1",
+      },
     ]);
     expect(sesiones[0]).toContain("Entrada (UTC)");
-    expect(sesiones[1]).toEqual(expect.arrayContaining(["2026-11-09T13:00:00.000Z", 600, "in_meeting"]));
+    expect(sesiones[1]).toEqual(
+      expect.arrayContaining(["2026-11-09T13:00:00.000Z", 600, "in_meeting"]),
+    );
     expect(filasResumenPlanillaZoom([registro()])[0]).not.toContain("Entrada (UTC)");
   });
 
   it("escapa fórmulas en nombres y correos externos (Sheets y CSV)", () => {
-    for (const peligroso of ['=HYPERLINK("http://x")', "+1+1", "-2", "@SUM(A1)", "\tcmd", "  =1+1"]) {
+    for (const peligroso of [
+      '=HYPERLINK("http://x")',
+      "+1+1",
+      "-2",
+      "@SUM(A1)",
+      "\tcmd",
+      "  =1+1",
+    ]) {
       expect(escaparCeldaPlanillaZoom(peligroso).startsWith("'")).toBe(true);
     }
     expect(escaparCeldaPlanillaZoom("Ana Pérez")).toBe("Ana Pérez");
@@ -93,7 +110,13 @@ describe("generarPlanillaAsistenciaZoomUseCase", () => {
   function crear(opciones: { datos?: any; error?: Error } = {}) {
     const datos =
       opciones.datos === undefined
-        ? { titulo: "Clase", carpetaId: "carpeta", marcador: "m1", registros: [registro()], sesiones: [] }
+        ? {
+            titulo: "Clase",
+            carpetaId: "carpeta",
+            marcador: "m1",
+            registros: [registro()],
+            sesiones: [],
+          }
         : opciones.datos;
     const lectura = { cargarDatosPlanilla: vi.fn(async () => datos) };
     const planillas = {
@@ -102,18 +125,21 @@ describe("generarPlanillaAsistenciaZoomUseCase", () => {
           throw opciones.error;
         }
         return { webViewUrl: "https://docs.google.com/spreadsheets/d/x", creada: true };
-      })
+      }),
     };
     return {
       lectura,
       planillas,
-      ejecutar: () => generarPlanillaAsistenciaZoomUseCase({ lectura, planillas } as any, "o1")
+      ejecutar: () => generarPlanillaAsistenciaZoomUseCase({ lectura, planillas }, "o1"),
     };
   }
 
   it("con registros genera la planilla en la carpeta destino con ambas pestañas", async () => {
     const { planillas, ejecutar } = crear();
-    expect(await ejecutar()).toEqual({ tipo: "OK", webViewUrl: "https://docs.google.com/spreadsheets/d/x" });
+    expect(await ejecutar()).toEqual({
+      tipo: "OK",
+      webViewUrl: "https://docs.google.com/spreadsheets/d/x",
+    });
     const arg = (planillas.crearOActualizar.mock.calls[0] as any[])[0];
     expect(arg).toMatchObject({ carpetaId: "carpeta", marcador: "m1" });
     expect(arg.resumen[0]).toContain("Participante");
@@ -122,7 +148,7 @@ describe("generarPlanillaAsistenciaZoomUseCase", () => {
 
   it("sin registro final no crea una lista vacía: queda pendiente", async () => {
     const { planillas, ejecutar } = crear({
-      datos: { titulo: "Clase", carpetaId: "c", marcador: "m", registros: [], sesiones: [] }
+      datos: { titulo: "Clase", carpetaId: "c", marcador: "m", registros: [], sesiones: [] },
     });
     expect(await ejecutar()).toEqual({ tipo: "PENDIENTE" });
     expect(planillas.crearOActualizar).not.toHaveBeenCalled();
@@ -130,7 +156,13 @@ describe("generarPlanillaAsistenciaZoomUseCase", () => {
 
   it("sin carpeta destino: PENDIENTE de carpeta, sin llamar a Drive", async () => {
     const { planillas, ejecutar } = crear({
-      datos: { titulo: "Clase", carpetaId: null, marcador: "m", registros: [registro()], sesiones: [] }
+      datos: {
+        titulo: "Clase",
+        carpetaId: null,
+        marcador: "m",
+        registros: [registro()],
+        sesiones: [],
+      },
     });
     expect(await ejecutar()).toEqual({ tipo: "SIN_CARPETA" });
     expect(planillas.crearOActualizar).not.toHaveBeenCalled();
@@ -145,6 +177,9 @@ describe("generarPlanillaAsistenciaZoomUseCase", () => {
   });
 
   it("ocurrencia inexistente", async () => {
-    expect(await crear({ datos: null }).ejecutar()).toEqual({ tipo: "ERROR", codigo: "NO_ENCONTRADA" });
+    expect(await crear({ datos: null }).ejecutar()).toEqual({
+      tipo: "ERROR",
+      codigo: "NO_ENCONTRADA",
+    });
   });
 });

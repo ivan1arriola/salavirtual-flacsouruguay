@@ -10,13 +10,13 @@ import {
   obtenerOCrearCarpetaDrive,
   subirBloqueDriveReanudable,
   type ArchivoDriveSubido,
-  type ResultadoSubidaDrive
+  type ResultadoSubidaDrive,
 } from "../../../../integrations/google";
 import type {
   ArchivoStoragePort,
   BusquedaConservadoArchivo,
   DestinoSubidaArchivo,
-  EstadoSubidaArchivo
+  EstadoSubidaArchivo,
 } from "../../ports";
 import type { DestinoConservadoZoom } from "../../ports";
 
@@ -33,7 +33,7 @@ function aDestino(a: ArchivoDriveSubido): DestinoConservadoZoom {
     nombre: a.name ?? "",
     tamanoBytes: BigInt(a.size ?? "0"),
     mimeType: a.mimeType ?? null,
-    webViewUrl: a.webViewLink ?? null
+    webViewUrl: a.webViewLink ?? null,
   };
 }
 
@@ -64,7 +64,7 @@ export class GoogleDriveArchivoStorageAdapter implements ArchivoStoragePort {
       carpetaId: destino.carpetaId,
       mimeType: destino.mimeType,
       origenHash: origenKey,
-      tamanoTotal: destino.tamanoTotal
+      tamanoTotal: destino.tamanoTotal,
     });
     return this.deps.cifrar(url);
   }
@@ -72,12 +72,17 @@ export class GoogleDriveArchivoStorageAdapter implements ArchivoStoragePort {
   async consultarSubida(
     sesionCifrada: string,
     total: bigint | null,
-    signal?: AbortSignal
+    signal?: AbortSignal,
   ): Promise<EstadoSubidaArchivo> {
     return aEstado(
-      await consultarSubidaDriveReanudable(this.deps.auth, this.deps.descifrar(sesionCifrada), total, {
-        signal
-      })
+      await consultarSubidaDriveReanudable(
+        this.deps.auth,
+        this.deps.descifrar(sesionCifrada),
+        total,
+        {
+          signal,
+        },
+      ),
     );
   }
 
@@ -86,7 +91,7 @@ export class GoogleDriveArchivoStorageAdapter implements ArchivoStoragePort {
     offset: bigint,
     bytes: Uint8Array,
     total: bigint | null,
-    opciones: Readonly<{ ultimo?: boolean; signal?: AbortSignal }> = {}
+    opciones: Readonly<{ ultimo?: boolean; signal?: AbortSignal }> = {},
   ): Promise<EstadoSubidaArchivo> {
     return aEstado(
       await subirBloqueDriveReanudable(
@@ -95,15 +100,15 @@ export class GoogleDriveArchivoStorageAdapter implements ArchivoStoragePort {
         offset,
         bytes,
         total,
-        opciones
-      )
+        opciones,
+      ),
     );
   }
 
   async buscarConservado(
     origenKey: string,
     fileId: string | null,
-    signal?: AbortSignal
+    signal?: AbortSignal,
   ): Promise<BusquedaConservadoArchivo> {
     if (fileId) {
       const porId = await obtenerArchivoDrivePorId(this.deps.auth, fileId, { signal });

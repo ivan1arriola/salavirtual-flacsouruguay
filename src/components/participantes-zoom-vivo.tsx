@@ -18,7 +18,7 @@ export function ParticipantesZoomVivo({ instanciaId }: Readonly<{ instanciaId: s
     try {
       const response = await fetch(
         `/api/v1/reuniones/instancias/${encodeURIComponent(instanciaId)}/participantes-zoom`,
-        { cache: "no-store" }
+        { cache: "no-store" },
       );
       if (!response.ok) {
         throw new Error("No disponible");
@@ -27,7 +27,7 @@ export function ParticipantesZoomVivo({ instanciaId }: Readonly<{ instanciaId: s
     } catch {
       setResultado({
         estado: "NO_DISPONIBLE",
-        motivo: "No se pudieron consultar los participantes. Probá desde Zoom."
+        motivo: "No se pudieron consultar los participantes. Probá desde Zoom.",
       });
     } finally {
       setCargando(false);
@@ -66,7 +66,8 @@ export function ParticipantesZoomVivo({ instanciaId }: Readonly<{ instanciaId: s
   return (
     <section aria-label="Participantes conectados en Zoom">
       <h3>
-        Conectados ahora {resultado?.estado === "DISPONIBLE" ? `(${resultado.participantes.length})` : ""}
+        Conectados ahora{" "}
+        {resultado?.estado === "DISPONIBLE" ? `(${resultado.participantes.length})` : ""}
       </h3>
       <p>Datos en vivo de Zoom; no equivalen a la asistencia final.</p>
       <button type="button" onClick={() => void actualizar()} disabled={cargando}>

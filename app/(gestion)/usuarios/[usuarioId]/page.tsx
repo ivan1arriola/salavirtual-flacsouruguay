@@ -13,12 +13,12 @@ const messages: Readonly<Record<string, string>> = {
   "error-programas": "No se pudieron actualizar los programas del docente.",
   "asistente-cesado": "El asistente de monitoreo quedó cesado hasta su próximo inicio de sesión.",
   "error-cese-asistente": "No se pudo cesar al asistente de monitoreo.",
-  "error-eliminar": "No se pudo eliminar el usuario."
+  "error-eliminar": "No se pudo eliminar el usuario.",
 };
 
 export default async function UsuarioPage({
   params,
-  searchParams
+  searchParams,
 }: Readonly<{
   params: Promise<{ usuarioId: string }>;
   searchParams: Promise<{ estado?: string; error?: string }>;
@@ -33,17 +33,19 @@ export default async function UsuarioPage({
       where: { id: usuarioId },
       include: {
         cuentasGoogle: { orderBy: { email: "asc" } },
-        docente: { include: { programas: { where: { activo: true }, select: { programaId: true } } } },
+        docente: {
+          include: { programas: { where: { activo: true }, select: { programaId: true } } },
+        },
         asistenteTecnico: {
-          select: { slug: true, disponibleGeneral: true, cesadoHastaProximoInicioSesion: true }
-        }
-      }
+          select: { slug: true, disponibleGeneral: true, cesadoHastaProximoInicioSesion: true },
+        },
+      },
     }),
     db.programa.findMany({
       where: { activo: true },
       orderBy: { nombre: "asc" },
-      select: { id: true, nombre: true }
-    })
+      select: { id: true, nombre: true },
+    }),
   ]);
   if (!user) {
     notFound();
@@ -74,7 +76,10 @@ export default async function UsuarioPage({
         </div>
       </header>
       {estado && messages[estado] ? (
-        <p className={`form-notice ${estado === "error-eliminar" ? "form-notice-error" : ""}`} role="status">
+        <p
+          className={`form-notice ${estado === "error-eliminar" ? "form-notice-error" : ""}`}
+          role="status"
+        >
           {estado === "error-eliminar" && error ? error : messages[estado]}
         </p>
       ) : null}
@@ -92,8 +97,8 @@ export default async function UsuarioPage({
               <div>
                 <h2>Disponibilidad operativa</h2>
                 <p>
-                  El cese temporal excluye a la persona de notificaciones, postulaciones y algoritmos de
-                  asignación hasta que vuelva a iniciar sesión.
+                  El cese temporal excluye a la persona de notificaciones, postulaciones y
+                  algoritmos de asignación hasta que vuelva a iniciar sesión.
                 </p>
               </div>
             </div>
@@ -108,7 +113,9 @@ export default async function UsuarioPage({
               <span
                 className={`status ${user.asistenteTecnico.disponibleGeneral ? "status-ok" : "status-warning"}`}
               >
-                {user.asistenteTecnico.disponibleGeneral ? "Recibe asignaciones" : "Asignaciones pausadas"}
+                {user.asistenteTecnico.disponibleGeneral
+                  ? "Recibe asignaciones"
+                  : "Asignaciones pausadas"}
               </span>
             </div>
             <form action={cesarAsistenteUsuario}>
@@ -151,9 +158,9 @@ export default async function UsuarioPage({
             <div>
               <h2 style={{ color: "#9f2f2f" }}>Zona de peligro</h2>
               <p>
-                Elimina permanentemente la identidad y sus datos asociados: cuentas Google, sesiones,
-                programas, solicitudes y reuniones propias, asignaciones o liquidaciones de monitoreo y demás
-                relaciones. Esta operación no se puede deshacer.
+                Elimina permanentemente la identidad y sus datos asociados: cuentas Google,
+                sesiones, programas, solicitudes y reuniones propias, asignaciones o liquidaciones
+                de monitoreo y demás relaciones. Esta operación no se puede deshacer.
               </p>
             </div>
           </div>
@@ -176,8 +183,8 @@ export default async function UsuarioPage({
               </label>
               <footer className="form-actions">
                 <span className="muted-text">
-                  Se conservará únicamente una entrada técnica de auditoría sin nombre ni correo de la persona
-                  eliminada.
+                  Se conservará únicamente una entrada técnica de auditoría sin nombre ni correo de
+                  la persona eliminada.
                 </span>
                 <button
                   className="secondary-action"

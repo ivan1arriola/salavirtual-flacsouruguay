@@ -5,7 +5,7 @@ const base = {
   activa: true,
   serviceAccountEmail: "sa@x",
   driveDestinationId: "raiz",
-  serviceAccountSubject: "admin@flacso.edu.uy"
+  serviceAccountSubject: "admin@flacso.edu.uy",
 };
 
 describe("comprobarSaludWorkerZoom", () => {
@@ -16,8 +16,8 @@ describe("comprobarSaludWorkerZoom", () => {
         workspace: base,
         zoomDisponible: true,
         driveHistoricoId: "admin",
-        verificarEscritura: verificar
-      })
+        verificarEscritura: verificar,
+      }),
     ).toMatchObject({ ok: true, motivos: [] });
     expect(verificar).toHaveBeenCalledWith("raiz");
     expect(verificar).toHaveBeenCalledWith("admin");
@@ -28,7 +28,7 @@ describe("comprobarSaludWorkerZoom", () => {
       workspace: { ...base, serviceAccountSubject: null },
       zoomDisponible: true,
       driveHistoricoId: null,
-      verificarEscritura: async () => true
+      verificarEscritura: async () => true,
     });
     expect(r.ok).toBe(false);
     expect(r.motivos.join(" ")).toMatch(/serviceAccountSubject/);
@@ -41,9 +41,9 @@ describe("comprobarSaludWorkerZoom", () => {
           workspace: null,
           zoomDisponible: true,
           driveHistoricoId: null,
-          verificarEscritura: async () => true
+          verificarEscritura: async () => true,
         })
-      ).motivos.join(" ")
+      ).motivos.join(" "),
     ).toMatch(/Workspace/);
     expect(
       (
@@ -51,15 +51,15 @@ describe("comprobarSaludWorkerZoom", () => {
           workspace: base,
           zoomDisponible: false,
           driveHistoricoId: null,
-          verificarEscritura: async () => true
+          verificarEscritura: async () => true,
         })
-      ).motivos.join(" ")
+      ).motivos.join(" "),
     ).toMatch(/Zoom/);
     const r = await comprobarSaludWorkerZoom({
       workspace: base,
       zoomDisponible: true,
       driveHistoricoId: "admin",
-      verificarEscritura: async (id) => id !== "admin"
+      verificarEscritura: async (id) => id !== "admin",
     });
     expect(r.ok).toBe(false);
     expect(r.motivos.join(" ")).toMatch(/histórica/);
@@ -70,7 +70,7 @@ describe("comprobarSaludWorkerZoom", () => {
       workspace: base,
       zoomDisponible: true,
       driveHistoricoId: null,
-      verificarEscritura: async () => true
+      verificarEscritura: async () => true,
     });
     expect(r.ok).toBe(true);
     expect(r.avisos).toEqual([expect.stringMatching(/HISTORICO_ID/)]);
@@ -83,7 +83,7 @@ describe("comprobarSaludWorkerZoom", () => {
       driveHistoricoId: null,
       verificarEscritura: async () => {
         throw new Error("red");
-      }
+      },
     });
     expect(r.ok).toBe(false);
   });

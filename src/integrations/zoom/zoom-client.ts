@@ -50,14 +50,14 @@ async function solicitarNuevoToken(creds: ZoomCredentials): Promise<string> {
     method: "POST",
     headers: {
       Authorization: `Basic ${basicAuth}`,
-      "Content-Type": "application/x-www-form-urlencoded"
-    }
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
   });
 
   if (!response.ok) {
     const errorBody = await response.text().catch(() => "");
     throw new Error(
-      `Error al autenticar con Zoom API (${response.status}): ${errorBody || response.statusText}`
+      `Error al autenticar con Zoom API (${response.status}): ${errorBody || response.statusText}`,
     );
   }
 
@@ -94,7 +94,7 @@ export async function obtenerZoomAccessToken(creds: ZoomCredentials): Promise<st
  */
 export async function invalidarZoomAccessToken(
   creds: ZoomCredentials,
-  tokenRechazado: string
+  tokenRechazado: string,
 ): Promise<string> {
   const cacheKey = claveCache(creds);
   const cached = tokenCache.get(cacheKey);
@@ -116,7 +116,7 @@ export type ProveedorTokenZoom = Readonly<{
 export function crearProveedorTokenZoom(creds: ZoomCredentials): ProveedorTokenZoom {
   return {
     obtener: () => obtenerZoomAccessToken(creds),
-    renovar: (tokenRechazado) => invalidarZoomAccessToken(creds, tokenRechazado)
+    renovar: (tokenRechazado) => invalidarZoomAccessToken(creds, tokenRechazado),
   };
 }
 
@@ -137,25 +137,25 @@ export function inicioLocalZoom(fecha: Date, timezone: string): string {
       hour: "2-digit",
       minute: "2-digit",
       second: "2-digit",
-      hourCycle: "h23"
+      hourCycle: "h23",
     })
       .formatToParts(fecha)
-      .map(({ type, value }) => [type, value])
+      .map(({ type, value }) => [type, value]),
   );
-  return `${partes.year}-${partes.month}-${partes.day}T${partes.hour}:${partes.minute}:${partes.second}`;
+  return `${partes["year"]}-${partes["month"]}-${partes["day"]}T${partes["hour"]}:${partes["minute"]}:${partes["second"]}`;
 }
 
 export async function crearReunionZoomHttp(
   token: string,
   userEmail: string,
-  input: ZoomCreateMeetingInput
+  input: ZoomCreateMeetingInput,
 ): Promise<ZoomMeetingResult> {
   const url = `https://api.zoom.us/v2/users/${encodeURIComponent(userEmail)}/meetings`;
   const response = await fetch(url, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json"
+      "Content-Type": "application/json",
     },
     body: JSON.stringify({
       topic: input.topic,
@@ -171,15 +171,15 @@ export async function crearReunionZoomHttp(
         waiting_room: true,
         mute_upon_entry: true,
         auto_recording: input.requiereGrabacion ? "cloud" : "none",
-        approval_type: 2 // 2 = sin registro; 0 sería "aprobar automáticamente" tras registrarse
-      }
-    })
+        approval_type: 2, // 2 = sin registro; 0 sería "aprobar automáticamente" tras registrarse
+      },
+    }),
   });
 
   if (!response.ok) {
     const errorBody = await response.text().catch(() => "");
     throw new Error(
-      `Zoom API error al crear reunión (${response.status}): ${errorBody || response.statusText}`
+      `Zoom API error al crear reunión (${response.status}): ${errorBody || response.statusText}`,
     );
   }
 
@@ -194,60 +194,63 @@ export async function crearReunionZoomHttp(
     meetingId: String(data.id),
     joinUrl: data.join_url,
     startUrl: data.start_url,
-    password: data.password
+    password: data.password,
   };
 }
 
 export async function actualizarReunionZoomHttp(
   token: string,
   meetingId: string,
-  input: ZoomUpdateMeetingInput
+  input: ZoomUpdateMeetingInput,
 ): Promise<void> {
   const url = `https://api.zoom.us/v2/meetings/${encodeURIComponent(meetingId)}`;
   const body: Record<string, unknown> = {};
   if (input.topic) {
-    body.topic = input.topic;
+    body["topic"] = input.topic;
   }
   if (input.startTime) {
     const zona = input.timezone || ZONA_ZOOM_POR_DEFECTO;
-    body.start_time = inicioLocalZoom(input.startTime, zona);
-    body.timezone = zona;
+    body["start_time"] = inicioLocalZoom(input.startTime, zona);
+    body["timezone"] = zona;
   } else if (input.timezone) {
-    body.timezone = input.timezone;
+    body["timezone"] = input.timezone;
   }
   if (input.durationMinutes) {
-    body.duration = Math.max(1, input.durationMinutes);
+    body["duration"] = Math.max(1, input.durationMinutes);
   }
   if (input.agenda !== undefined) {
-    body.agenda = input.agenda ?? "";
+    body["agenda"] = input.agenda ?? "";
   }
 
   const response = await fetch(url, {
     method: "PATCH",
     headers: {
       Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json"
+      "Content-Type": "application/json",
     },
-    body: JSON.stringify(body)
+    body: JSON.stringify(body),
   });
 
   if (!response.ok && response.status !== 204) {
     const errorBody = await response.text().catch(() => "");
     throw new Error(
-      `Zoom API error al actualizar reunión (${response.status}): ${errorBody || response.statusText}`
+      `Zoom API error al actualizar reunión (${response.status}): ${errorBody || response.statusText}`,
     );
   }
 }
 
-export async function obtenerReunionZoomHttp(token: string, meetingId: string): Promise<ZoomMeetingResult> {
+export async function obtenerReunionZoomHttp(
+  token: string,
+  meetingId: string,
+): Promise<ZoomMeetingResult> {
   const url = `https://api.zoom.us/v2/meetings/${encodeURIComponent(meetingId)}`;
   const response = await fetch(url, {
-    headers: { Authorization: `Bearer ${token}` }
+    headers: { Authorization: `Bearer ${token}` },
   });
   if (!response.ok) {
     const errorBody = await response.text().catch(() => "");
     throw new Error(
-      `Zoom API error al obtener reunión (${response.status}): ${errorBody || response.statusText}`
+      `Zoom API error al obtener reunión (${response.status}): ${errorBody || response.statusText}`,
     );
   }
   const data = (await response.json()) as {
@@ -263,7 +266,7 @@ export async function obtenerReunionZoomHttp(token: string, meetingId: string): 
     meetingId: String(data.id),
     joinUrl: data.join_url,
     startUrl: data.start_url,
-    password: data.password
+    password: data.password,
   };
 }
 
@@ -272,14 +275,14 @@ export async function eliminarReunionZoomHttp(token: string, meetingId: string):
   const response = await fetch(url, {
     method: "DELETE",
     headers: {
-      Authorization: `Bearer ${token}`
-    }
+      Authorization: `Bearer ${token}`,
+    },
   });
 
   if (!response.ok && response.status !== 204 && response.status !== 404) {
     const errorBody = await response.text().catch(() => "");
     throw new Error(
-      `Zoom API error al eliminar reunión (${response.status}): ${errorBody || response.statusText}`
+      `Zoom API error al eliminar reunión (${response.status}): ${errorBody || response.statusText}`,
     );
   }
 }
@@ -322,14 +325,14 @@ export type ZoomCreateRecurringMeetingInput = Readonly<{
 export async function crearReunionZoomRecurrenteHttp(
   token: string,
   userEmail: string,
-  input: ZoomCreateRecurringMeetingInput
+  input: ZoomCreateRecurringMeetingInput,
 ): Promise<ZoomMeetingWithOccurrencesResult> {
   const url = `https://api.zoom.us/v2/users/${encodeURIComponent(userEmail)}/meetings`;
   const response = await fetch(url, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json"
+      "Content-Type": "application/json",
     },
     body: JSON.stringify({
       topic: input.topic,
@@ -343,7 +346,7 @@ export async function crearReunionZoomRecurrenteHttp(
         repeat_interval: input.recurrence.repeatInterval,
         weekly_days: input.recurrence.weeklyDays,
         end_times: input.recurrence.endTimes,
-        end_date_time: input.recurrence.endDateTime
+        end_date_time: input.recurrence.endDateTime,
       },
       settings: {
         host_video: true,
@@ -352,15 +355,15 @@ export async function crearReunionZoomRecurrenteHttp(
         waiting_room: true,
         mute_upon_entry: true,
         auto_recording: input.requiereGrabacion ? "cloud" : "none",
-        approval_type: 2
-      }
-    })
+        approval_type: 2,
+      },
+    }),
   });
 
   if (!response.ok) {
     const errorBody = await response.text().catch(() => "");
     throw new Error(
-      `Zoom API error al crear reunión recurrente (${response.status}): ${errorBody || response.statusText}`
+      `Zoom API error al crear reunión recurrente (${response.status}): ${errorBody || response.statusText}`,
     );
   }
 
@@ -384,7 +387,7 @@ export async function crearReunionZoomRecurrenteHttp(
     occurrenceId: String(occ.occurrence_id),
     startTime: occ.start_time,
     duration: occ.duration,
-    status: occ.status
+    status: occ.status,
   }));
 
   return {
@@ -392,27 +395,27 @@ export async function crearReunionZoomRecurrenteHttp(
     joinUrl: data.join_url,
     startUrl: data.start_url,
     password: data.password,
-    ...(occurrences ? { occurrences } : {})
+    ...(occurrences ? { occurrences } : {}),
   };
 }
 
 export async function eliminarOcurrenciaZoomHttp(
   token: string,
   meetingId: string,
-  occurrenceId: string
+  occurrenceId: string,
 ): Promise<void> {
   const url = `https://api.zoom.us/v2/meetings/${encodeURIComponent(meetingId)}?occurrence_id=${encodeURIComponent(occurrenceId)}`;
   const response = await fetch(url, {
     method: "DELETE",
     headers: {
-      Authorization: `Bearer ${token}`
-    }
+      Authorization: `Bearer ${token}`,
+    },
   });
 
   if (!response.ok && response.status !== 204 && response.status !== 404) {
     const errorBody = await response.text().catch(() => "");
     throw new Error(
-      `Zoom API error al eliminar ocurrencia (${response.status}): ${errorBody || response.statusText}`
+      `Zoom API error al eliminar ocurrencia (${response.status}): ${errorBody || response.statusText}`,
     );
   }
 }
@@ -421,32 +424,32 @@ export async function actualizarOcurrenciaZoomHttp(
   token: string,
   meetingId: string,
   occurrenceId: string,
-  input: Readonly<{ startTime?: Date; durationMinutes?: number; timezone?: string }>
+  input: Readonly<{ startTime?: Date; durationMinutes?: number; timezone?: string }>,
 ): Promise<void> {
   const url = `https://api.zoom.us/v2/meetings/${encodeURIComponent(meetingId)}?occurrence_id=${encodeURIComponent(occurrenceId)}`;
   const body: Record<string, unknown> = {};
   if (input.startTime) {
     const zona = input.timezone || ZONA_ZOOM_POR_DEFECTO;
-    body.start_time = inicioLocalZoom(input.startTime, zona);
-    body.timezone = zona;
+    body["start_time"] = inicioLocalZoom(input.startTime, zona);
+    body["timezone"] = zona;
   }
   if (input.durationMinutes) {
-    body.duration = Math.max(1, input.durationMinutes);
+    body["duration"] = Math.max(1, input.durationMinutes);
   }
 
   const response = await fetch(url, {
     method: "PATCH",
     headers: {
       Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json"
+      "Content-Type": "application/json",
     },
-    body: JSON.stringify(body)
+    body: JSON.stringify(body),
   });
 
   if (!response.ok && response.status !== 204) {
     const errorBody = await response.text().catch(() => "");
     throw new Error(
-      `Zoom API error al actualizar ocurrencia (${response.status}): ${errorBody || response.statusText}`
+      `Zoom API error al actualizar ocurrencia (${response.status}): ${errorBody || response.statusText}`,
     );
   }
 }
@@ -458,7 +461,7 @@ export async function actualizarOcurrenciaZoomHttp(
 export async function buscarReunionZoomPorMarcaHttp(
   token: string,
   userEmail: string,
-  marca: string
+  marca: string,
 ): Promise<ZoomMeetingResult | null> {
   const base = `https://api.zoom.us/v2/users/${encodeURIComponent(userEmail)}/meetings?type=scheduled&page_size=300`;
   const buscarPagina = async (paginaToken: string | null): Promise<ZoomMeetingResult | null> => {
@@ -467,7 +470,7 @@ export async function buscarReunionZoomPorMarcaHttp(
     if (!response.ok) {
       const errorBody = await response.text().catch(() => "");
       throw new Error(
-        `Zoom API error al listar reuniones (${response.status}): ${errorBody || response.statusText}`
+        `Zoom API error al listar reuniones (${response.status}): ${errorBody || response.statusText}`,
       );
     }
     const data = (await response.json()) as {
@@ -475,7 +478,7 @@ export async function buscarReunionZoomPorMarcaHttp(
       next_page_token?: string;
     };
     const encontrada = (data.meetings ?? []).find(
-      ({ agenda, join_url }) => join_url && agenda?.includes(marca)
+      ({ agenda, join_url }) => join_url && agenda?.includes(marca),
     );
     if (encontrada?.join_url) {
       return { meetingId: String(encontrada.id), joinUrl: encontrada.join_url };
@@ -490,7 +493,7 @@ export async function obtenerEstadoActualZoomHttp(token: string, meetingId: stri
   const response = await fetch(`https://api.zoom.us/v2/meetings/${encodeURIComponent(meetingId)}`, {
     headers: { Authorization: `Bearer ${token}` },
     cache: "no-store",
-    signal: AbortSignal.timeout(5000)
+    signal: AbortSignal.timeout(5000),
   });
   if (!response.ok) {
     throw new Error("Zoom API: no se pudo consultar el estado actual (" + response.status + ")");
@@ -509,10 +512,11 @@ export async function obtenerEstadoActualZoomHttp(token: string, meetingId: stri
   return {
     estado,
     uuid: typeof data.uuid === "string" && data.uuid ? data.uuid : null,
-    salaEspera: typeof data.settings?.waiting_room === "boolean" ? data.settings.waiting_room : null,
+    salaEspera:
+      typeof data.settings?.["waiting_room"] === "boolean" ? data.settings["waiting_room"] : null,
     configuracion: extraerConfiguracionZoom(data),
     tipoReunion: typeof data.type === "number" ? data.type : null,
-    ocurrencias: Array.isArray(data.occurrences) ? data.occurrences : []
+    ocurrencias: Array.isArray(data.occurrences) ? data.occurrences : [],
   };
 }
 
@@ -536,7 +540,7 @@ export function extraerConfiguracionZoom(data: {
   const settings = data.settings ?? {};
   const bool = (v: unknown) => (typeof v === "boolean" ? v : null);
   const cadena = (v: unknown) => (typeof v === "string" ? v : null);
-  const aprobacion = settings.approval_type;
+  const aprobacion = settings["approval_type"];
   let inscripcion: boolean | null = null;
   if (aprobacion === 0 || aprobacion === 1) {
     inscripcion = true;
@@ -544,14 +548,14 @@ export function extraerConfiguracionZoom(data: {
     inscripcion = false;
   }
   return {
-    salaEspera: bool(settings.waiting_room),
+    salaEspera: bool(settings["waiting_room"]),
     inscripcion,
     clave: typeof data.password === "string" ? data.password.length > 0 : null,
-    autenticacion: bool(settings.meeting_authentication),
-    ingresoAntes: bool(settings.join_before_host),
-    silencio: bool(settings.mute_upon_entry),
-    grabacion: cadena(settings.auto_recording),
+    autenticacion: bool(settings["meeting_authentication"]),
+    ingresoAntes: bool(settings["join_before_host"]),
+    silencio: bool(settings["mute_upon_entry"]),
+    grabacion: cadena(settings["auto_recording"]),
     anfitrion: cadena(data.host_email),
-    alternativos: cadena(settings.alternative_hosts)
+    alternativos: cadena(settings["alternative_hosts"]),
   };
 }

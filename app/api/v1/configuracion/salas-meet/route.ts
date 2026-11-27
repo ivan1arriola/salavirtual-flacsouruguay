@@ -19,35 +19,39 @@ const hostFields = z.object({
   limiteConcurrente: z.number().int().min(1).max(100).nullable(),
   tieneLicencia: z.boolean(),
   activa: z.boolean(),
-  proveedorTipo: z.enum(["GOOGLE_MEET", "ZOOM"]).default("GOOGLE_MEET")
+  proveedorTipo: z.enum(["GOOGLE_MEET", "ZOOM"]).default("GOOGLE_MEET"),
 });
 
-const passwordSchema = z.string().trim().min(8, "La contraseña debe tener al menos 8 caracteres.").max(200);
+const passwordSchema = z
+  .string()
+  .trim()
+  .min(8, "La contraseña debe tener al menos 8 caracteres.")
+  .max(200);
 
 const createSchema = hostFields
   .extend({
-    password: passwordSchema.optional()
+    password: passwordSchema.optional(),
   })
   .superRefine(({ proveedorTipo, password, limiteConcurrente }, context) => {
     if (proveedorTipo === "GOOGLE_MEET" && !password) {
       context.addIssue({
         code: "custom",
         path: ["password"],
-        message: "La contraseña de la sala Meet es obligatoria."
+        message: "La contraseña de la sala Meet es obligatoria.",
       });
     }
     if (proveedorTipo === "ZOOM" && password) {
       context.addIssue({
         code: "custom",
         path: ["password"],
-        message: "Las salas Zoom usan el OAuth institucional y no necesitan contraseña individual."
+        message: "Las salas Zoom usan el OAuth institucional y no necesitan contraseña individual.",
       });
     }
     if (proveedorTipo === "ZOOM" && limiteConcurrente !== 1) {
       context.addIssue({
         code: "custom",
         path: ["limiteConcurrente"],
-        message: "Cada cuenta Zoom admite una sola reunión simultánea."
+        message: "Cada cuenta Zoom admite una sola reunión simultánea.",
       });
     }
   });
@@ -56,14 +60,14 @@ const updateSchema = hostFields
   .extend({
     id: z.string().min(1),
     password: z.union([z.literal(""), passwordSchema]).optional(),
-    notificarCambioPassword: z.boolean().default(true)
+    notificarCambioPassword: z.boolean().default(true),
   })
   .superRefine(({ proveedorTipo, limiteConcurrente }, context) => {
     if (proveedorTipo === "ZOOM" && limiteConcurrente !== 1) {
       context.addIssue({
         code: "custom",
         path: ["limiteConcurrente"],
-        message: "Cada cuenta Zoom admite una sola reunión simultánea."
+        message: "Cada cuenta Zoom admite una sola reunión simultánea.",
       });
     }
   });
@@ -79,27 +83,27 @@ const zoomUpdateSchema = z
     prioridad: hostFields.shape.prioridad,
     activa: hostFields.shape.activa,
     limiteConcurrente: hostFields.shape.limiteConcurrente.optional(),
-    password: z.string().optional()
+    password: z.string().optional(),
   })
   .superRefine(({ limiteConcurrente, password }, context) => {
     if (limiteConcurrente !== undefined && limiteConcurrente !== 1) {
       context.addIssue({
         code: "custom",
         path: ["limiteConcurrente"],
-        message: "Cada cuenta Zoom admite una sola reunión simultánea."
+        message: "Cada cuenta Zoom admite una sola reunión simultánea.",
       });
     }
     if (password?.trim()) {
       context.addIssue({
         code: "custom",
         path: ["password"],
-        message: "Las salas Zoom usan el OAuth institucional y no necesitan contraseña individual."
+        message: "Las salas Zoom usan el OAuth institucional y no necesitan contraseña individual.",
       });
     }
   });
 
 const deleteSchema = z.object({
-  id: z.string().min(1)
+  id: z.string().min(1),
 });
 
 const CUENTAS_ZOOM_POR_GRUPO = "Las cuentas de Zoom vienen del grupo elegido en Configuración.";
@@ -135,20 +139,20 @@ export async function POST(request: Request) {
           tipo: input.proveedorTipo,
           nombre: input.proveedorTipo === "ZOOM" ? "Zoom" : "Google Meet",
           operativo: true,
-          historico: false
+          historico: false,
         },
-        update: { operativo: true, historico: false }
+        update: { operativo: true, historico: false },
       });
       const duplicate = await tx.cuentaProveedor.findFirst({
         where: {
           proveedorId: provider.id,
-          externalAccountId: input.email
+          externalAccountId: input.email,
         },
-        select: { id: true }
+        select: { id: true },
       });
       if (duplicate) {
         throw new Error(
-          `Ya existe una cuenta ${input.proveedorTipo === "ZOOM" ? "Zoom" : "Meet"} con ese correo.`
+          `Ya existe una cuenta ${input.proveedorTipo === "ZOOM" ? "Zoom" : "Meet"} con ese correo.`,
         );
       }
 
@@ -162,8 +166,8 @@ export async function POST(request: Request) {
           prioridad: input.prioridad,
           limiteConcurrente: input.limiteConcurrente,
           tieneLicencia: input.tieneLicencia,
-          activa: input.activa
-        }
+          activa: input.activa,
+        },
       });
       await tx.auditoria.create({
         data: {
@@ -178,9 +182,9 @@ export async function POST(request: Request) {
             limiteConcurrente: created.limiteConcurrente,
             tieneLicencia: created.tieneLicencia,
             activa: created.activa,
-            passwordConfigurada: Boolean(created.secretRef)
-          }
-        }
+            passwordConfigurada: Boolean(created.secretRef),
+          },
+        },
       });
       return created;
     });
@@ -188,9 +192,9 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         host: toSafeHost(host, false),
-        message: `Sala ${input.proveedorTipo === "ZOOM" ? "Zoom" : "Meet"} agregada.`
+        message: `Sala ${input.proveedorTipo === "ZOOM" ? "Zoom" : "Meet"} agregada.`,
       },
-      { status: 201 }
+      { status: 201 },
     );
   } catch (error) {
     return errorResponse(error);
@@ -214,10 +218,13 @@ export async function PUT(request: Request) {
         where: { id: input.id },
         include: {
           proveedor: { select: { tipo: true } },
-          _count: { select: { eventosProveedor: true } }
-        }
+          _count: { select: { eventosProveedor: true } },
+        },
       });
-      if (!current || (current.proveedor.tipo !== "GOOGLE_MEET" && current.proveedor.tipo !== "ZOOM")) {
+      if (
+        !current ||
+        (current.proveedor.tipo !== "GOOGLE_MEET" && current.proveedor.tipo !== "ZOOM")
+      ) {
         throw new Error("La cuenta organizadora no existe.");
       }
 
@@ -225,13 +232,15 @@ export async function PUT(request: Request) {
         throw new Error("La plataforma de una cuenta existente no se puede cambiar.");
       }
       if (current.proveedor.tipo === "ZOOM" && input.password) {
-        throw new Error("Las salas Zoom usan el OAuth institucional y no necesitan contraseña individual.");
+        throw new Error(
+          "Las salas Zoom usan el OAuth institucional y no necesitan contraseña individual.",
+        );
       }
 
       const emailChanged = current.emailOrganizador?.toLowerCase() !== input.email;
       if (emailChanged && current._count.eventosProveedor > 0) {
         throw new Error(
-          "Esta cuenta ya tiene reuniones asociadas. Para reemplazarla, desactivala y agregá una cuenta nueva."
+          "Esta cuenta ya tiene reuniones asociadas. Para reemplazarla, desactivala y agregá una cuenta nueva.",
         );
       }
       if (emailChanged) {
@@ -239,13 +248,13 @@ export async function PUT(request: Request) {
           where: {
             proveedorId: current.proveedorId,
             externalAccountId: input.email,
-            id: { not: current.id }
+            id: { not: current.id },
           },
-          select: { id: true }
+          select: { id: true },
         });
         if (duplicate) {
           throw new Error(
-            `Ya existe una cuenta ${input.proveedorTipo === "ZOOM" ? "Zoom" : "Meet"} con ese correo.`
+            `Ya existe una cuenta ${input.proveedorTipo === "ZOOM" ? "Zoom" : "Meet"} con ese correo.`,
           );
         }
       }
@@ -274,8 +283,8 @@ export async function PUT(request: Request) {
           limiteConcurrente: input.limiteConcurrente,
           tieneLicencia: input.tieneLicencia,
           activa: input.activa,
-          ...(passwordChanged && password ? { secretRef: cifrarConfiguracion(password) } : {})
-        }
+          ...(passwordChanged && password ? { secretRef: cifrarConfiguracion(password) } : {}),
+        },
       });
 
       await tx.auditoria.create({
@@ -295,7 +304,7 @@ export async function PUT(request: Request) {
             limiteConcurrente: current.limiteConcurrente,
             tieneLicencia: current.tieneLicencia,
             activa: current.activa,
-            passwordConfigurada: Boolean(current.secretRef)
+            passwordConfigurada: Boolean(current.secretRef),
           },
           valorNuevo: {
             nombre: updated.nombre,
@@ -305,9 +314,9 @@ export async function PUT(request: Request) {
             tieneLicencia: updated.tieneLicencia,
             activa: updated.activa,
             passwordConfigurada: Boolean(updated.secretRef),
-            passwordActualizada: passwordChanged
-          }
-        }
+            passwordActualizada: passwordChanged,
+          },
+        },
       });
 
       return {
@@ -315,7 +324,7 @@ export async function PUT(request: Request) {
         enUso: current._count.eventosProveedor > 0,
         passwordChanged,
         password,
-        proveedorTipo: current.proveedor.tipo
+        proveedorTipo: current.proveedor.tipo,
       };
     });
 
@@ -325,7 +334,7 @@ export async function PUT(request: Request) {
         result.host.id,
         result.host.nombre,
         result.host.emailOrganizador,
-        result.password
+        result.password,
       );
     }
 
@@ -340,7 +349,7 @@ export async function PUT(request: Request) {
     return NextResponse.json({
       host: toSafeHost(result.host, result.enUso),
       notificados,
-      message: passwordMessage
+      message: passwordMessage,
     });
   } catch (error) {
     return errorResponse(error);
@@ -361,10 +370,13 @@ export async function DELETE(request: Request) {
         where: { id: input.id },
         include: {
           proveedor: { select: { tipo: true } },
-          _count: { select: { eventosProveedor: true } }
-        }
+          _count: { select: { eventosProveedor: true } },
+        },
       });
-      if (!current || (current.proveedor.tipo !== "GOOGLE_MEET" && current.proveedor.tipo !== "ZOOM")) {
+      if (
+        !current ||
+        (current.proveedor.tipo !== "GOOGLE_MEET" && current.proveedor.tipo !== "ZOOM")
+      ) {
         throw new Error("La cuenta organizadora no existe.");
       }
       if (current.proveedor.tipo === "ZOOM") {
@@ -376,13 +388,13 @@ export async function DELETE(request: Request) {
           cuentaProveedorId: current.id,
           instancia: {
             finProgramadoAt: { gte: now },
-            estado: { in: ["PROGRAMADA", "EN_CURSO"] }
-          }
-        }
+            estado: { in: ["PROGRAMADA", "EN_CURSO"] },
+          },
+        },
       });
       if (activeMeetings > 0) {
         throw new Error(
-          `No se puede eliminar porque tiene ${activeMeetings} encuentro${activeMeetings === 1 ? "" : "s"} futuro${activeMeetings === 1 ? "" : "s"} o en curso. Desactivala primero y reasigná esos encuentros.`
+          `No se puede eliminar porque tiene ${activeMeetings} encuentro${activeMeetings === 1 ? "" : "s"} futuro${activeMeetings === 1 ? "" : "s"} o en curso. Desactivala primero y reasigná esos encuentros.`,
         );
       }
 
@@ -401,9 +413,9 @@ export async function DELETE(request: Request) {
             tieneLicencia: current.tieneLicencia,
             activa: current.activa,
             passwordConfigurada: Boolean(current.secretRef),
-            encuentrosHistoricosDesvinculados: current._count.eventosProveedor
-          }
-        }
+            encuentrosHistoricosDesvinculados: current._count.eventosProveedor,
+          },
+        },
       });
       return current;
     });
@@ -419,7 +431,10 @@ export async function DELETE(request: Request) {
 
 function esCuentaZoom(body: unknown): boolean {
   return (
-    typeof body === "object" && body !== null && "proveedorTipo" in body && body.proveedorTipo === "ZOOM"
+    typeof body === "object" &&
+    body !== null &&
+    "proveedorTipo" in body &&
+    body.proveedorTipo === "ZOOM"
   );
 }
 
@@ -433,10 +448,13 @@ async function actualizarCuentaZoom(actorId: string, input: z.infer<typeof zoomU
       where: { id: input.id },
       include: {
         proveedor: { select: { tipo: true } },
-        _count: { select: { eventosProveedor: true } }
-      }
+        _count: { select: { eventosProveedor: true } },
+      },
     });
-    if (!current || (current.proveedor.tipo !== "GOOGLE_MEET" && current.proveedor.tipo !== "ZOOM")) {
+    if (
+      !current ||
+      (current.proveedor.tipo !== "GOOGLE_MEET" && current.proveedor.tipo !== "ZOOM")
+    ) {
       throw new Error("La cuenta organizadora no existe.");
     }
     if (current.proveedor.tipo !== "ZOOM") {
@@ -445,7 +463,7 @@ async function actualizarCuentaZoom(actorId: string, input: z.infer<typeof zoomU
 
     const updated = await tx.cuentaProveedor.update({
       where: { id: current.id },
-      data: { prioridad: input.prioridad, activa: input.activa }
+      data: { prioridad: input.prioridad, activa: input.activa },
     });
     await tx.auditoria.create({
       data: {
@@ -454,8 +472,8 @@ async function actualizarCuentaZoom(actorId: string, input: z.infer<typeof zoomU
         entidadTipo: "CuentaProveedor",
         entidadId: current.id,
         valorAnterior: datosAuditables(current),
-        valorNuevo: datosAuditables(updated)
-      }
+        valorNuevo: datosAuditables(updated),
+      },
     });
     return { host: updated, enUso: current._count.eventosProveedor > 0 };
   });
@@ -463,7 +481,7 @@ async function actualizarCuentaZoom(actorId: string, input: z.infer<typeof zoomU
   return NextResponse.json({
     host: toSafeHost(result.host, result.enUso),
     notificados: 0,
-    message: "Sala Zoom actualizada."
+    message: "Sala Zoom actualizada.",
   });
 }
 
@@ -475,7 +493,7 @@ function datosAuditables(host: Parameters<typeof toSafeHost>[0]) {
     limiteConcurrente: host.limiteConcurrente,
     tieneLicencia: host.tieneLicencia,
     activa: host.activa,
-    passwordConfigurada: Boolean(host.secretRef)
+    passwordConfigurada: Boolean(host.secretRef),
   };
 }
 
@@ -488,7 +506,7 @@ async function requireAdmin(): Promise<{ id: string } | NextResponse> {
   if (!actor?.activo || actor.rol !== "ADMINISTRACION") {
     return NextResponse.json(
       { error: "La sesión está desactualizada. Volvé a iniciar sesión." },
-      { status: 401 }
+      { status: 401 },
     );
   }
   return { id: actor.id };
@@ -498,7 +516,7 @@ async function notificarCambioPassword(
   cuentaId: string,
   nombre: string,
   email: string | null,
-  password: string
+  password: string,
 ): Promise<number> {
   const now = new Date();
   const events = await db.eventoProveedor.findMany({
@@ -507,8 +525,8 @@ async function notificarCambioPassword(
       proveedor: { tipo: "GOOGLE_MEET" },
       instancia: {
         finProgramadoAt: { gte: now },
-        estado: { in: ["PROGRAMADA", "EN_CURSO"] }
-      }
+        estado: { in: ["PROGRAMADA", "EN_CURSO"] },
+      },
     },
     select: {
       instancia: {
@@ -520,23 +538,23 @@ async function notificarCambioPassword(
               docentePrograma: {
                 select: {
                   docente: {
-                    select: { usuario: { select: { id: true, emailPrincipal: true } } }
-                  }
-                }
-              }
-            }
+                    select: { usuario: { select: { id: true, emailPrincipal: true } } },
+                  },
+                },
+              },
+            },
           },
           asignaciones: {
             where: { estado: { in: ["ASIGNADO", "ACEPTADO"] } },
             select: {
               asistenteTecnico: {
-                select: { usuario: { select: { id: true, emailPrincipal: true } } }
-              }
-            }
-          }
-        }
-      }
-    }
+                select: { usuario: { select: { id: true, emailPrincipal: true } } },
+              },
+            },
+          },
+        },
+      },
+    },
   });
 
   const recipients = new Map<string, { usuarioId: string; email?: string | null }>();
@@ -544,7 +562,7 @@ async function notificarCambioPassword(
     const solicitud = event.instancia.solicitud;
     recipients.set(solicitud.creadaPor.id, {
       usuarioId: solicitud.creadaPor.id,
-      email: solicitud.creadaPor.emailPrincipal
+      email: solicitud.creadaPor.emailPrincipal,
     });
     const docente = solicitud.docentePrograma.docente.usuario;
     recipients.set(docente.id, { usuarioId: docente.id, email: docente.emailPrincipal });
@@ -569,9 +587,9 @@ async function notificarCambioPassword(
       `Usuario: ${email ?? "Cuenta Meet"}`,
       `Nueva contraseña: ${password}`,
       "",
-      `Este cambio afecta ${events.length} encuentro${events.length === 1 ? "" : "s"} próximo${events.length === 1 ? "" : "s"} asociado${events.length === 1 ? "" : "s"} a esta sala.`
+      `Este cambio afecta ${events.length} encuentro${events.length === 1 ? "" : "s"} próximo${events.length === 1 ? "" : "s"} asociado${events.length === 1 ? "" : "s"} a esta sala.`,
     ].join("\n"),
-    emailActionLabel: "Ver mis reuniones"
+    emailActionLabel: "Ver mis reuniones",
   });
   return unique.length;
 }
@@ -587,7 +605,7 @@ function toSafeHost(
     activa: boolean;
     secretRef: string | null;
   }>,
-  enUso: boolean
+  enUso: boolean,
 ): SafeHost {
   return {
     id: host.id,
@@ -598,13 +616,16 @@ function toSafeHost(
     tieneLicencia: host.tieneLicencia,
     activa: host.activa,
     passwordConfigurada: Boolean(host.secretRef),
-    enUso
+    enUso,
   };
 }
 
 function errorResponse(error: unknown) {
   if (error instanceof z.ZodError) {
-    return NextResponse.json({ error: error.issues[0]?.message ?? "Datos inválidos." }, { status: 400 });
+    return NextResponse.json(
+      { error: error.issues[0]?.message ?? "Datos inválidos." },
+      { status: 400 },
+    );
   }
   const message = error instanceof Error ? error.message : "No se pudo guardar la sala.";
   return NextResponse.json({ error: message }, { status: 400 });

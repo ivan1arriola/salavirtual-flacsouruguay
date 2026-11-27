@@ -16,7 +16,7 @@ export async function POST(request: Request, context: RouteContext) {
   try {
     const actor = await resolveSessionActor(db, {
       id: session.user.id,
-      email: session.user.email
+      email: session.user.email,
     });
     if (!actor?.activo) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -26,7 +26,7 @@ export async function POST(request: Request, context: RouteContext) {
     const incidencia = await registrarIncidenciaOperativa(
       { id: actor.id, rol: actor.rol },
       instanciaId,
-      await request.json().catch(() => null)
+      await request.json().catch(() => null),
     );
 
     return NextResponse.json({ incidencia }, { status: 201 });

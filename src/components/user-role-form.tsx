@@ -8,10 +8,13 @@ import type { RolUsuario } from "@/src/modules/usuarios/roles";
 const ROLE_OPTIONS: ReadonlyArray<Readonly<{ value: RolUsuario; label: string }>> = [
   { value: "DOCENTE", label: "Docente" },
   { value: "ASISTENTE_TECNICO", label: "Asistente de monitoreo" },
-  { value: "ADMINISTRACION", label: "Administracion" }
+  { value: "ADMINISTRACION", label: "Administracion" },
 ];
 
-export function UserRoleForm({ userId, initialRole }: Readonly<{ userId: string; initialRole: RolUsuario }>) {
+export function UserRoleForm({
+  userId,
+  initialRole,
+}: Readonly<{ userId: string; initialRole: RolUsuario }>) {
   const router = useRouter();
   const [role, setRole] = useState<RolUsuario>(initialRole);
   const [savedRole, setSavedRole] = useState<RolUsuario>(initialRole);
@@ -24,7 +27,7 @@ export function UserRoleForm({ userId, initialRole }: Readonly<{ userId: string;
     const response = await fetch(`/api/v1/usuarios/${encodeURIComponent(userId)}/rol`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ rol: role })
+      body: JSON.stringify({ rol: role }),
     });
     const result = await response.json();
     if (response.ok) {

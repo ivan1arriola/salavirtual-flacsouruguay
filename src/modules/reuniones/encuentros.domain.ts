@@ -3,7 +3,7 @@ import type { RolUsuario } from "../usuarios/roles";
 
 const periodoFields = {
   inicio: z.coerce.date(),
-  fin: z.coerce.date()
+  fin: z.coerce.date(),
 } as const;
 
 export const agregarEncuentroSchema = z
@@ -13,28 +13,32 @@ export const agregarEncuentroSchema = z
     inicioAsistenciaTecnica: z.coerce.date().optional(),
     finAsistenciaTecnica: z.coerce.date().optional(),
     requiereAsistenciaTecnica: z.boolean().default(false),
-    requiereGrabacion: z.boolean().default(false)
+    requiereGrabacion: z.boolean().default(false),
   })
   .superRefine(({ inicio, fin, inicioAsistenciaTecnica, finAsistenciaTecnica }, context) => {
     if (fin.getTime() <= inicio.getTime()) {
       context.addIssue({
         code: "custom",
         message: "La hora de fin debe ser posterior al inicio.",
-        path: ["fin"]
+        path: ["fin"],
       });
     }
     if (Boolean(inicioAsistenciaTecnica) !== Boolean(finAsistenciaTecnica)) {
       context.addIssue({
         code: "custom",
         message: "La hora de llegada y salida del asistente deben definirse juntas.",
-        path: [inicioAsistenciaTecnica ? "finAsistenciaTecnica" : "inicioAsistenciaTecnica"]
+        path: [inicioAsistenciaTecnica ? "finAsistenciaTecnica" : "inicioAsistenciaTecnica"],
       });
     }
-    if (inicioAsistenciaTecnica && finAsistenciaTecnica && finAsistenciaTecnica <= inicioAsistenciaTecnica) {
+    if (
+      inicioAsistenciaTecnica &&
+      finAsistenciaTecnica &&
+      finAsistenciaTecnica <= inicioAsistenciaTecnica
+    ) {
       context.addIssue({
         code: "custom",
         message: "La hora de salida del asistente debe ser posterior a la de llegada.",
-        path: ["finAsistenciaTecnica"]
+        path: ["finAsistenciaTecnica"],
       });
     }
   });
@@ -44,35 +48,36 @@ export const actualizarEncuentroSchema = z.union([
     .object({
       ...periodoFields,
       accion: z.enum(["EDITAR_FECHA", "EDITAR_ENCUENTRO"]),
-      descripcion: z.string().trim().max(4000).optional()
+      descripcion: z.string().trim().max(4000).optional(),
     })
     .refine(({ inicio, fin }) => fin.getTime() > inicio.getTime(), {
-      message: "La hora de fin debe ser posterior al inicio."
+      message: "La hora de fin debe ser posterior al inicio.",
     }),
   z.object({ accion: z.literal("CAMBIAR_ASISTENCIA"), requiereAsistenciaTecnica: z.boolean() }),
   z.object({
     accion: z.literal("CAMBIAR_MODALIDAD"),
-    modalidad: z.enum(["HIBRIDA", "VIRTUAL"]).nullable()
+    modalidad: z.enum(["HIBRIDA", "VIRTUAL"]).nullable(),
   }),
   z
     .object({
       accion: z.literal("EDITAR_HORARIO_ASISTENCIA"),
       inicioAsistenciaTecnica: z.coerce.date(),
-      finAsistenciaTecnica: z.coerce.date()
+      finAsistenciaTecnica: z.coerce.date(),
     })
     .refine(
-      ({ inicioAsistenciaTecnica, finAsistenciaTecnica }) => finAsistenciaTecnica > inicioAsistenciaTecnica,
+      ({ inicioAsistenciaTecnica, finAsistenciaTecnica }) =>
+        finAsistenciaTecnica > inicioAsistenciaTecnica,
       {
-        message: "La hora de salida del asistente debe ser posterior a la de llegada."
-      }
+        message: "La hora de salida del asistente debe ser posterior a la de llegada.",
+      },
     ),
-  z.object({ accion: z.literal("RESTABLECER_HORARIO_ASISTENCIA") })
+  z.object({ accion: z.literal("RESTABLECER_HORARIO_ASISTENCIA") }),
 ]);
 
 export function puedeGestionarEncuentros(
   rol: RolUsuario,
   actorUsuarioId: string,
-  docenteUsuarioId: string
+  docenteUsuarioId: string,
 ): boolean {
   return rol === "ADMINISTRACION" || (rol === "DOCENTE" && actorUsuarioId === docenteUsuarioId);
 }
@@ -81,7 +86,11 @@ export function puedeCorregirModalidadHistorica(rol: RolUsuario, estado: string)
   return rol === "ADMINISTRACION" && estado !== "CANCELADA";
 }
 
-export function puedeCambiarAsistenciaEncuentro(estado: string, finProgramadoAt: Date, ahora: Date): boolean {
+export function puedeCambiarAsistenciaEncuentro(
+  estado: string,
+  finProgramadoAt: Date,
+  ahora: Date,
+): boolean {
   return estado === "PROGRAMADA" && finProgramadoAt > ahora;
 }
 
@@ -89,7 +98,7 @@ type EstadoIntegracionReunion = "PENDIENTE" | "SINCRONIZADA" | "ERROR" | "HISTOR
 type EstadoSolicitudReunion = "REGISTRADA" | "PROVISIONANDO" | "PROVISIONADA" | "REQUIERE_REVISION";
 
 export function resolverEstadoSolicitudPorIntegraciones(
-  estados: readonly EstadoIntegracionReunion[]
+  estados: readonly EstadoIntegracionReunion[],
 ): EstadoSolicitudReunion {
   if (estados.length === 0) {
     return "REGISTRADA";
@@ -106,7 +115,7 @@ export function resolverEstadoSolicitudPorIntegraciones(
 export function elegirCuentaHost(
   preferidaId: string | null,
   cuentas: readonly Readonly<{ id: string; prioridad: number }>[],
-  ocupadas: readonly string[]
+  ocupadas: readonly string[],
 ): string | null {
   const disponibles = cuentas
     .filter(({ id }) => !ocupadas.includes(id))
@@ -129,13 +138,14 @@ export function elegirCuentaHostParaPeriodos(
     limiteConcurrente: number | null;
   }>[],
   reservas: readonly Readonly<Periodo & { cuentaProveedorId: string }>[],
-  periodos: readonly Periodo[]
+  periodos: readonly Periodo[],
 ): string | null {
   const disponibles = cuentas
     .filter((cuenta) => {
       const reservasCuenta = reservas.filter(
         (reserva) =>
-          reserva.cuentaProveedorId === cuenta.id && periodos.some((periodo) => seSolapan(reserva, periodo))
+          reserva.cuentaProveedorId === cuenta.id &&
+          periodos.some((periodo) => seSolapan(reserva, periodo)),
       );
       return respetaCapacidadConcurrente(reservasCuenta, periodos, cuenta.limiteConcurrente ?? 1);
     })
@@ -143,7 +153,7 @@ export function elegirCuentaHostParaPeriodos(
       const position = ordered.findIndex(
         (item) =>
           cuenta.prioridad < item.prioridad ||
-          (cuenta.prioridad === item.prioridad && cuenta.id.localeCompare(item.id) < 0)
+          (cuenta.prioridad === item.prioridad && cuenta.id.localeCompare(item.id) < 0),
       );
       return position < 0
         ? [...ordered, cuenta]
@@ -160,7 +170,7 @@ export type ModalidadEncuentro = "HIBRIDA" | "VIRTUAL";
 
 export function modalidadEfectivaEncuentro(
   modalidadSerie: ModalidadEncuentro,
-  modalidadOverride: ModalidadEncuentro | null | undefined
+  modalidadOverride: ModalidadEncuentro | null | undefined,
 ): ModalidadEncuentro {
   return modalidadOverride ?? modalidadSerie;
 }
@@ -171,13 +181,15 @@ export function periodoAsistenciaTecnica(
     finProgramadoAt: Date;
     inicioAsistenciaTecnicaAt?: Date | null;
     finAsistenciaTecnicaAt?: Date | null;
-  }>
+  }>,
 ): Readonly<{ inicio: Date; fin: Date; personalizado: boolean }> {
-  const personalizado = Boolean(encuentro.inicioAsistenciaTecnicaAt && encuentro.finAsistenciaTecnicaAt);
+  const personalizado = Boolean(
+    encuentro.inicioAsistenciaTecnicaAt && encuentro.finAsistenciaTecnicaAt,
+  );
   return {
     inicio: encuentro.inicioAsistenciaTecnicaAt ?? encuentro.inicioProgramadoAt,
     fin: encuentro.finAsistenciaTecnicaAt ?? encuentro.finProgramadoAt,
-    personalizado
+    personalizado,
   };
 }
 
@@ -192,10 +204,12 @@ export function idsCancelacionesPendientes(
       proveedor: Readonly<{ tipo: string }>;
       operacionPendiente: string | null;
     }>[];
-  }>[]
+  }>[],
 ): readonly string[] {
   return instancias.flatMap(({ eventosProveedor }) =>
-    eventosProveedor.filter(({ operacionPendiente }) => operacionPendiente === "CANCELAR").map(({ id }) => id)
+    eventosProveedor
+      .filter(({ operacionPendiente }) => operacionPendiente === "CANCELAR")
+      .map(({ id }) => id),
   );
 }
 
@@ -206,15 +220,16 @@ export function idsCancelacionesGooglePendientes(
       proveedor: Readonly<{ tipo: string }>;
       operacionPendiente: string | null;
     }>[];
-  }>[]
+  }>[],
 ): readonly string[] {
   return instancias.flatMap(({ eventosProveedor }) =>
     eventosProveedor
       .filter(
         ({ proveedor, operacionPendiente }) =>
-          (proveedor.tipo === "GOOGLE_MEET" || proveedor.tipo === "ZOOM") && operacionPendiente === "CANCELAR"
+          (proveedor.tipo === "GOOGLE_MEET" || proveedor.tipo === "ZOOM") &&
+          operacionPendiente === "CANCELAR",
       )
-      .map(({ id }) => id)
+      .map(({ id }) => id),
   );
 }
 
@@ -226,7 +241,7 @@ export function idsCancelacionesGooglePendientes(
 function respetaCapacidadConcurrente(
   existentes: readonly Periodo[],
   nuevos: readonly Periodo[],
-  limite: number
+  limite: number,
 ): boolean {
   if (!Number.isInteger(limite) || limite < 1) {
     return false;
@@ -237,7 +252,7 @@ function respetaCapacidadConcurrente(
       ({ inicio, fin }) =>
         !Number.isFinite(inicio.getTime()) ||
         !Number.isFinite(fin.getTime()) ||
-        inicio.getTime() >= fin.getTime()
+        inicio.getTime() >= fin.getTime(),
     )
   ) {
     return false;
@@ -246,13 +261,13 @@ function respetaCapacidadConcurrente(
   const cambios = intervalos
     .flatMap(({ inicio, fin }) => [
       { instante: inicio.getTime(), delta: 1 },
-      { instante: fin.getTime(), delta: -1 }
+      { instante: fin.getTime(), delta: -1 },
     ])
     .reduce<readonly Readonly<{ instante: number; delta: number }>[]>((ordenados, cambio) => {
       const posicion = ordenados.findIndex(
         (existente) =>
           existente.instante > cambio.instante ||
-          (existente.instante === cambio.instante && existente.delta > cambio.delta)
+          (existente.instante === cambio.instante && existente.delta > cambio.delta),
       );
       return posicion < 0
         ? [...ordenados, cambio]
@@ -264,7 +279,7 @@ function respetaCapacidadConcurrente(
       const activas = estado.activas + cambio.delta;
       return { activas, maximo: Math.max(estado.maximo, activas) };
     },
-    { activas: 0, maximo: 0 }
+    { activas: 0, maximo: 0 },
   );
   return ocupacion.maximo <= limite;
 }

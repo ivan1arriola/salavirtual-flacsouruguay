@@ -105,7 +105,10 @@ describe("reunión compartida por serie", () => {
   const migraciones = readdirSync(new URL("../prisma/migrations/", import.meta.url));
   const carpeta = migraciones.find((nombre) => nombre.endsWith("_reunion_proveedor_compartida"));
   const sql = carpeta
-    ? readFileSync(new URL(`../prisma/migrations/${carpeta}/migration.sql`, import.meta.url), "utf8")
+    ? readFileSync(
+        new URL(`../prisma/migrations/${carpeta}/migration.sql`, import.meta.url),
+        "utf8",
+      )
     : "";
 
   it("define ReunionProveedor con estado de creación persistido y sus unicidades", () => {
@@ -116,7 +119,7 @@ describe("reunión compartida por serie", () => {
       "joinUrl",
       "estadoCreacion",
       "reclamoToken",
-      "reclamoAt"
+      "reclamoAt",
     ]) {
       expect(reunion, campo).toContain(campo);
     }
@@ -140,7 +143,7 @@ describe("reunión compartida por serie", () => {
       "reunionAnteriorExternalId",
       "eliminarDespuesDe",
       "reunionAnteriorEliminadaAt",
-      "sinCita"
+      "sinCita",
     ]) {
       expect(cita, campo).toContain(campo);
     }
@@ -155,6 +158,8 @@ describe("reunión compartida por serie", () => {
     expect(sql).toContain('CREATE TABLE "CambioEnlaceCita"');
     expect(sql).toContain('CREATE TABLE "AvisoEnlaceSerie"');
     expect(sql).toContain('ADD COLUMN "reunionProveedorId"');
-    expect(sql).toMatch(/DROP INDEX (IF EXISTS )?"EventoProveedor_proveedorId_externalEventId_key"/);
+    expect(sql).toMatch(
+      /DROP INDEX (IF EXISTS )?"EventoProveedor_proveedorId_externalEventId_key"/,
+    );
   });
 });

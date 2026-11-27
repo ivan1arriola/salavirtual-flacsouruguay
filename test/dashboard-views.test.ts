@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import {
   determinarEstadoTemporal,
   esMismoDiaMontevideo,
-  formatearTiempoHastaReunion
+  formatearTiempoHastaReunion,
 } from "../src/modules/dashboard/dashboard.domain";
 
 describe("integración de vistas de dashboard", () => {
@@ -41,15 +41,15 @@ describe("integración de vistas de dashboard", () => {
   it("presenta acciones y estados según el proveedor activo", () => {
     const adapter = readFileSync(
       join(process.cwd(), "src/modules/dashboard/admin-dashboard.adapter.ts"),
-      "utf8"
+      "utf8",
     );
     const dashboard = readFileSync(
       join(process.cwd(), "src/components/dashboard/admin/admin-dashboard.tsx"),
-      "utf8"
+      "utf8",
     );
     const timeline = readFileSync(
       join(process.cwd(), "src/components/dashboard/admin/admin-today-timeline.tsx"),
-      "utf8"
+      "utf8",
     );
 
     expect(adapter).toContain("readonly proveedorTipo: string | null");

@@ -1,13 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   detectarInconsistenciasAgendaZoom,
-  elegirOcurrenciaDelEncuentro
+  elegirOcurrenciaDelEncuentro,
 } from "../src/modules/operaciones/zoom-agenda-observada.domain";
 import {
   adoptarHorarioDeZoom,
   corregirHorarioEnZoom,
   ignorarReunionExterna,
-  recrearReunionEnZoom
+  recrearReunionEnZoom,
 } from "../src/modules/operaciones/zoom-agenda-acciones.service";
 
 const ahora = new Date("2026-11-17T12:00:00Z");
@@ -19,7 +19,7 @@ const reunion = (id: string, meetingId: string, inicio: Date) => ({
   inicio,
   fin: new Date(inicio.getTime() + 3_600_000),
   cuentaId: "c1",
-  meetingId
+  meetingId,
 });
 const obs = (id: string, meetingId: string, inicio: Date, extra = {}) => ({
   id,
@@ -30,14 +30,14 @@ const obs = (id: string, meetingId: string, inicio: Date, extra = {}) => ({
   inicio,
   fin: new Date(inicio.getTime() + 3_600_000),
   estado: "ACTIVA",
-  ...extra
+  ...extra,
 });
 const fila = (o: ReturnType<typeof obs>) => ({
   ...o,
   inicioAt: o.inicio,
   finAt: o.fin,
   observadaAt: ahora,
-  ignoradaAt: null
+  ignoradaAt: null,
 });
 
 describe("ignoradas en el dominio", () => {
@@ -46,7 +46,7 @@ describe("ignoradas en el dominio", () => {
       [obs("o1", "999", h(20, 12), { ignoradaAt: ahora }), obs("o2", "998", h(21, 12))],
       [reunion("1", "100", h(20, 12))],
       new Set(["100"]),
-      ahora
+      ahora,
     );
     expect(r.externas.map(({ observada }) => observada.id)).toEqual(["o2"]);
     expect(r.ignoradas.map(({ id }) => id)).toEqual(["o1"]);
@@ -76,16 +76,18 @@ function entorno(
     observadas?: unknown[];
     reclamoOcupado?: boolean;
     encuentroMovido?: boolean;
-  } = {}
+  } = {},
 ) {
   const local = reunion("1", "100", h(20, 12));
   const escrituras = vi.fn(async (..._args: unknown[]) => ({ count: 1 }));
-  const reclamos = vi.fn(async (..._args: unknown[]) => ({ count: opciones.reclamoOcupado ? 0 : 1 }));
+  const reclamos = vi.fn(async (..._args: unknown[]) => ({
+    count: opciones.reclamoOcupado ? 0 : 1,
+  }));
   const db = {
     reunionZoomObservada: {
       findMany: async () => opciones.observadas ?? [fila(obs("o1", "100", h(20, 15)))],
       update: escrituras,
-      findUnique: async () => ({ id: "o1", meetingId: "999", ignoradaAt: null })
+      findUnique: async () => ({ id: "o1", meetingId: "999", ignoradaAt: null }),
     },
     eventoProveedor: {
       findMany: async () => [{ codigoReunion: "100", externalEventId: "100" }],
@@ -93,7 +95,7 @@ function entorno(
       updateMany: async (arg: { data?: Record<string, unknown> }) =>
         arg.data && "reclamoIntegracionToken" in arg.data && !("externalEventId" in arg.data)
           ? reclamos(arg)
-          : escrituras(arg)
+          : escrituras(arg),
     },
     instanciaSala: {
       findUnique: async () => ({
@@ -112,13 +114,13 @@ function entorno(
             externalEventId: "100",
             reunionProveedorId: null,
             cuentaProveedor: { emailOrganizador: "a@b.c" },
-            proveedor: { tipo: "ZOOM" }
-          }
-        ]
-      })
+            proveedor: { tipo: "ZOOM" },
+          },
+        ],
+      }),
     },
     auditoria: { create: escrituras },
-    $transaction: async (ops: unknown[]) => Promise.all(ops)
+    $transaction: async (ops: unknown[]) => Promise.all(ops),
   };
   const zoom = {
     actualizarHorario: vi.fn(async () => {
@@ -131,7 +133,7 @@ function entorno(
         throw new Error("boom");
       }
       return { meetingId: "200", joinUrl: "https://zoom.us/j/200" };
-    })
+    }),
   };
   const reprogramarEncuentro = vi.fn(async () => ({ eventoProveedorIds: [] }));
   const eliminarEncuentro = vi.fn(async () => ({ eventoProveedorIds: [] }));
@@ -141,7 +143,7 @@ function entorno(
     zoom,
     reprogramarEncuentro,
     eliminarEncuentro,
-    ahora: () => ahora
+    ahora: () => ahora,
   };
   return { deps, escrituras, reclamos, zoom, reprogramarEncuentro, eliminarEncuentro };
 }
@@ -155,7 +157,7 @@ describe("acciones de la agenda de Zoom", () => {
   it("si Zoom falla al corregir el horario no se escribe nada local", async () => {
     const { deps, escrituras } = entorno({ zoomFalla: true });
     await expect(corregirHorarioEnZoom(deps, admin, { instanciaId: "1" })).rejects.toThrow(
-      /No se cambió nada/
+      /No se cambió nada/,
     );
     expect(escrituras).not.toHaveBeenCalled();
   });
@@ -166,7 +168,7 @@ describe("acciones de la agenda de Zoom", () => {
     expect(zoom.actualizarHorario).toHaveBeenCalledWith("100", "", {
       startTime: h(20, 12),
       durationMinutes: 60,
-      timezone: "America/Montevideo"
+      timezone: "America/Montevideo",
     });
     expect(escrituras).toHaveBeenCalled();
   });
@@ -174,10 +176,10 @@ describe("acciones de la agenda de Zoom", () => {
   it("si Zoom falla al recrear no se toca el encuentro", async () => {
     const { deps, escrituras } = entorno({
       zoomFalla: true,
-      observadas: [fila(obs("o1", "100", h(20, 12), { estado: "ELIMINADA" }))]
+      observadas: [fila(obs("o1", "100", h(20, 12), { estado: "ELIMINADA" }))],
     });
     await expect(recrearReunionEnZoom(deps, admin, { instanciaId: "1" })).rejects.toThrow(
-      /No se cambió nada/
+      /No se cambió nada/,
     );
     expect(escrituras).not.toHaveBeenCalled();
   });
@@ -185,15 +187,19 @@ describe("acciones de la agenda de Zoom", () => {
   it("recrear reclama el encuentro antes de llamar a Zoom: si otra operación lo tiene, no crea nada", async () => {
     const { deps, zoom } = entorno({
       reclamoOcupado: true,
-      observadas: [fila(obs("o1", "100", h(20, 12), { estado: "ELIMINADA" }))]
+      observadas: [fila(obs("o1", "100", h(20, 12), { estado: "ELIMINADA" }))],
     });
-    await expect(recrearReunionEnZoom(deps, admin, { instanciaId: "1" })).rejects.toThrow(/otra operación/);
+    await expect(recrearReunionEnZoom(deps, admin, { instanciaId: "1" })).rejects.toThrow(
+      /otra operación/,
+    );
     expect(zoom.crearReunion).not.toHaveBeenCalled();
   });
 
   it("corregir recomprueba el horario justo antes de tocar Zoom", async () => {
     const { deps, zoom } = entorno({ encuentroMovido: true });
-    await expect(corregirHorarioEnZoom(deps, admin, { instanciaId: "1" })).rejects.toThrow(/cambió/);
+    await expect(corregirHorarioEnZoom(deps, admin, { instanciaId: "1" })).rejects.toThrow(
+      /cambió/,
+    );
     expect(zoom.actualizarHorario).not.toHaveBeenCalled();
   });
 
@@ -202,7 +208,7 @@ describe("acciones de la agenda de Zoom", () => {
     (deps.db as unknown as { auditoria: { create: () => Promise<never> } }).auditoria.create = () =>
       Promise.reject(new Error("auditoría caída"));
     await expect(adoptarHorarioDeZoom(deps, admin, { instanciaId: "1" })).resolves.toEqual({
-      eventoProveedorIds: []
+      eventoProveedorIds: [],
     });
   });
 
@@ -212,19 +218,23 @@ describe("acciones de la agenda de Zoom", () => {
     expect(reprogramarEncuentro).toHaveBeenCalledWith(admin, "s-1", "1", {
       accion: "EDITAR_FECHA",
       inicio: h(20, 15),
-      fin: h(20, 16)
+      fin: h(20, 16),
     });
   });
 
   it("solo Administración puede ejecutar cada acción", async () => {
     const { deps, zoom, reprogramarEncuentro, eliminarEncuentro } = entorno();
     await expect(corregirHorarioEnZoom(deps, docente, { instanciaId: "1" })).rejects.toThrow(
-      /Administración/
+      /Administración/,
     );
-    await expect(adoptarHorarioDeZoom(deps, docente, { instanciaId: "1" })).rejects.toThrow(/Administración/);
-    await expect(recrearReunionEnZoom(deps, docente, { instanciaId: "1" })).rejects.toThrow(/Administración/);
+    await expect(adoptarHorarioDeZoom(deps, docente, { instanciaId: "1" })).rejects.toThrow(
+      /Administración/,
+    );
+    await expect(recrearReunionEnZoom(deps, docente, { instanciaId: "1" })).rejects.toThrow(
+      /Administración/,
+    );
     await expect(
-      ignorarReunionExterna(deps.db, docente, { observadaId: "o1", ignorar: true })
+      ignorarReunionExterna(deps.db, docente, { observadaId: "o1", ignorar: true }),
     ).rejects.toThrow(/Administración/);
     expect(zoom.actualizarHorario).not.toHaveBeenCalled();
     expect(zoom.crearReunion).not.toHaveBeenCalled();

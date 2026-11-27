@@ -5,14 +5,17 @@ import { describe, expect, it } from "vitest";
 import { MeetingCreationDialog } from "../src/modules/reuniones/presentation/components/meeting-creation-dialog";
 
 const fuente = readFileSync(
-  new URL("../src/modules/reuniones/presentation/components/meeting-creation-dialog.tsx", import.meta.url),
-  "utf8"
+  new URL(
+    "../src/modules/reuniones/presentation/components/meeting-creation-dialog.tsx",
+    import.meta.url,
+  ),
+  "utf8",
 );
 
 describe("diálogo de creación de reunión", () => {
   it("es modal, está rotulado por su título y puede recibir el foco", () => {
     const html = renderToStaticMarkup(
-      createElement(MeetingCreationDialog, { state: "saving", message: "", meetingCount: 3 })
+      createElement(MeetingCreationDialog, { state: "saving", message: "", meetingCount: 3 }),
     );
     expect(html).toContain('role="dialog"');
     expect(html).toContain('aria-modal="true"');
@@ -23,7 +26,7 @@ describe("diálogo de creación de reunión", () => {
 
   it("mientras guarda no ofrece ningún control; al terminar ofrece ver la reunión o crear otra", () => {
     const guardando = renderToStaticMarkup(
-      createElement(MeetingCreationDialog, { state: "saving", message: "", meetingCount: 1 })
+      createElement(MeetingCreationDialog, { state: "saving", message: "", meetingCount: 1 }),
     );
     expect(guardando).not.toContain("<a ");
     const hecho = renderToStaticMarkup(
@@ -31,8 +34,8 @@ describe("diálogo de creación de reunión", () => {
         state: "done",
         message: "Listo.",
         meetingId: "s1",
-        meetingCount: 1
-      })
+        meetingCount: 1,
+      }),
     );
     expect(hecho).toContain('href="/reuniones/s1"');
     expect(hecho).toContain("Crear otra");

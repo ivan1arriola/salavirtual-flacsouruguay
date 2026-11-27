@@ -26,18 +26,18 @@ export async function GET(request: Request) {
     const result = await verificarCohostsGlobalPagina(
       {
         db,
-        descifrar: descifrarConfiguracion
+        descifrar: descifrarConfiguracion,
       },
-      cursor
+      cursor,
     );
     return NextResponse.json(result, { headers: { "Cache-Control": "no-store" } });
   } catch {
     // Never include provider payloads, service-account keys or tokens.
     return NextResponse.json(
       {
-        error: "No se pudo completar la verificación. Revisá la configuración de Google Workspace."
+        error: "No se pudo completar la verificación. Revisá la configuración de Google Workspace.",
       },
-      { status: 503, headers: { "Cache-Control": "no-store" } }
+      { status: 503, headers: { "Cache-Control": "no-store" } },
     );
   }
 }

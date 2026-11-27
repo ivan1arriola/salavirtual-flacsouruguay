@@ -1,4 +1,11 @@
-import { ArrowLeft, CalendarClock, CalendarRange, FolderOpen, UsersRound, Video } from "lucide-react";
+import {
+  ArrowLeft,
+  CalendarClock,
+  CalendarRange,
+  FolderOpen,
+  UsersRound,
+  Video,
+} from "lucide-react";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
@@ -18,26 +25,26 @@ import {
   estadoIntegracionEfectivo,
   extraerCohostEmailsDeInstancia,
   extraerCohostsUnificadosDeInstancia,
-  requiereAtencionIntegracionMeet
+  requiereAtencionIntegracionMeet,
 } from "@/src/modules/conferencias/api";
 import {
   puedeCambiarAsistenciaEncuentro,
-  resolverEstadoSolicitudPorIntegraciones
+  resolverEstadoSolicitudPorIntegraciones,
 } from "@/src/modules/reuniones/encuentros.domain";
 import {
   destinatariosDocentesPrograma,
-  puedeGestionarPrograma
+  puedeGestionarPrograma,
 } from "@/src/modules/reuniones/permisos-programa.service";
 import { construirFiltroSerieSolicitud } from "@/src/modules/reuniones/serie-reunion.domain";
 import {
   proveedorActivoDeInstancia,
-  type ProveedorReunion
+  type ProveedorReunion,
 } from "@/src/modules/reuniones/proveedor-reunion.domain";
 import { OtroProveedorAviso } from "@/src/components/proveedor-tabs";
 
 export default async function ReunionDetailPage({
   params,
-  otroProveedor = null
+  otroProveedor = null,
 }: Readonly<{
   params: Promise<{ solicitudId: string }>;
   /** Encuentros de la misma serie que ya pasaron a Zoom: viven en su propio panel. */
@@ -56,8 +63,8 @@ export default async function ReunionDetailPage({
   const request = await db.solicitudSala.findUnique({
     where: { id: solicitudId },
     include: {
-      docentePrograma: { include: { programa: true, docente: { include: { usuario: true } } } }
-    }
+      docentePrograma: { include: { programa: true, docente: { include: { usuario: true } } } },
+    },
   });
   if (!request || !(await puedeGestionarPrograma(db, actor, request.docentePrograma.programaId))) {
     notFound();
@@ -82,39 +89,44 @@ export default async function ReunionDetailPage({
                 include: {
                   proveedor: true,
                   cuentaProveedor: true,
-                  archivos: true
-                }
+                  archivos: true,
+                },
               },
               cohosts: {
                 include: {
                   cuentaGoogle: {
-                    include: { user: true }
-                  }
-                }
+                    include: { user: true },
+                  },
+                },
               },
               cohostEmails: { select: { email: true } },
               invitados: { select: { email: true } },
               asignaciones: {
                 where: { estado: { in: ["ASIGNADO", "ACEPTADO"] } },
-                include: { asistenteTecnico: { include: { usuario: true } } }
+                include: { asistenteTecnico: { include: { usuario: true } } },
               },
-              postulaciones: { where: { estado: "ME_INTERESA" }, select: { id: true } }
-            }
-          }
-        }
+              postulaciones: { where: { estado: "ME_INTERESA" }, select: { id: true } },
+            },
+          },
+        },
       }),
       db.cuentaGoogleFlacso.findMany({
         where: { user: { activo: true } },
         orderBy: { email: "asc" },
-        select: { id: true, email: true, userId: true, user: { select: { nombres: true, apellidos: true } } }
+        select: {
+          id: true,
+          email: true,
+          userId: true,
+          user: { select: { nombres: true, apellidos: true } },
+        },
       }),
       destinatariosDocentesPrograma(db, request.docentePrograma.programaId),
       db.usuario.findMany({
         where: { activo: true },
         take: 400,
-        select: { nombres: true, apellidos: true, emailPrincipal: true }
+        select: { nombres: true, apellidos: true, emailPrincipal: true },
       }),
-      db.cohostEmailReunion.findMany({ distinct: ["email"], take: 400, select: { email: true } })
+      db.cohostEmailReunion.findMany({ distinct: ["email"], take: 400, select: { email: true } }),
     ]);
 
   const meetings = seriesRequests
@@ -125,49 +137,57 @@ export default async function ReunionDetailPage({
         modalidadSerie: seriesRequest.modalidad,
         inicioAsistenciaBase: seriesRequest.inicioAsistenciaTecnicaAt,
         finAsistenciaBase: seriesRequest.finAsistenciaTecnicaAt,
-        encuentrosEnSolicitud: seriesRequest.instancias.length
-      }))
+        encuentrosEnSolicitud: seriesRequest.instancias.length,
+      })),
     )
     .filter((meeting) => proveedorActivoDeInstancia(meeting) === "GOOGLE_MEET")
     .sort((left, right) => left.inicioProgramadoAt.getTime() - right.inicioProgramadoAt.getTime());
 
   const manageableMeetings = meetings.filter(
-    (meeting) => meeting.estado === "PROGRAMADA" && meeting.finProgramadoAt > now
+    (meeting) => meeting.estado === "PROGRAMADA" && meeting.finProgramadoAt > now,
   );
 
   const protectedUserIds = new Set([
     request.docentePrograma.docente.usuario.id,
     ...manageableMeetings.flatMap(({ asignaciones }) =>
-      asignaciones.map(({ asistenteTecnico }) => asistenteTecnico.usuario.id)
-    )
+      asignaciones.map(({ asistenteTecnico }) => asistenteTecnico.usuario.id),
+    ),
   ]);
   const protectedCohostIds = new Set(
-    cohostAccounts.filter(({ userId }) => protectedUserIds.has(userId)).map(({ id }) => id)
+    cohostAccounts.filter(({ userId }) => protectedUserIds.has(userId)).map(({ id }) => id),
   );
   const initialCohostCuentaIds = unique([
-    ...manageableMeetings.flatMap(({ cohosts }) => cohosts.map(({ cuentaGoogleId }) => cuentaGoogleId)),
-    ...protectedCohostIds
+    ...manageableMeetings.flatMap(({ cohosts }) =>
+      cohosts.map(({ cuentaGoogleId }) => cuentaGoogleId),
+    ),
+    ...protectedCohostIds,
   ]);
   const initialManualCohostEmails = unique(
-    manageableMeetings.flatMap(({ cohostEmails }) => cohostEmails.map(({ email }) => email.toLowerCase()))
+    manageableMeetings.flatMap(({ cohostEmails }) =>
+      cohostEmails.map(({ email }) => email.toLowerCase()),
+    ),
   );
 
   const initialGuestEmails = unique(
-    manageableMeetings.flatMap((meeting) => meeting.invitados.map((guest) => guest.email.toLowerCase()))
+    manageableMeetings.flatMap((meeting) =>
+      meeting.invitados.map((guest) => guest.email.toLowerCase()),
+    ),
   );
 
   const verificationByEmail = unique([
     ...cohostAccounts
       .filter(({ id }) => initialCohostCuentaIds.includes(id))
       .map(({ email }) => email.toLowerCase()),
-    ...initialManualCohostEmails
+    ...initialManualCohostEmails,
   ]).map((email) => {
     const applicable = manageableMeetings.filter((meeting) => {
       const expected = extraerCohostEmailsDeInstancia(meeting);
       return expected.includes(email);
     });
     const confirmed = applicable.filter((meeting) => {
-      const event = meeting.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET");
+      const event = meeting.eventosProveedor.find(
+        ({ proveedor }) => proveedor.tipo === "GOOGLE_MEET",
+      );
       if (!event || event.errorIntegracion || event.operacionPendiente) {
         return false;
       }
@@ -175,7 +195,7 @@ export default async function ReunionDetailPage({
         event.payloadUltimo,
         event.codigoReunion,
         event.cuentaProveedor?.emailOrganizador,
-        [email]
+        [email],
       );
       return details.emailsConfirmados.includes(email);
     }).length;
@@ -183,7 +203,7 @@ export default async function ReunionDetailPage({
       email,
       confirmed,
       total: manageableMeetings.length,
-      pending: manageableMeetings.length - confirmed
+      pending: manageableMeetings.length - confirmed,
     };
   });
 
@@ -193,15 +213,17 @@ export default async function ReunionDetailPage({
     ? request.estado
     : resolverEstadoSolicitudPorIntegraciones(
         meetings.flatMap(({ eventosProveedor }) =>
-          eventosProveedor.map((event) => estadoIntegracionEfectivo(event))
-        )
+          eventosProveedor.map((event) => estadoIntegracionEfectivo(event)),
+        ),
       );
 
   const todayInMontevideo = toLocalInput(now).slice(0, 10);
   const meetingViews = meetings.map((meeting, index) => {
     // Cohosts, grabaciones y asistencia son artefactos históricos de Google Meet;
     // el enlace y el organizador visibles siguen al proveedor activo.
-    const event = meeting.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET");
+    const event = meeting.eventosProveedor.find(
+      ({ proveedor }) => proveedor.tipo === "GOOGLE_MEET",
+    );
     const activeEvent = seleccionarEventoProveedorActivo(meeting);
     const assignment = meeting.asignaciones[0];
     const organizerAccount =
@@ -209,13 +231,15 @@ export default async function ReunionDetailPage({
       activeEvent?.cuentaProveedor?.nombre ??
       "Cuenta pendiente";
     const cohostLabels = unique(
-      extraerCohostsUnificadosDeInstancia(meeting).map((c) => (c.name ? `${c.name} · ${c.email}` : c.email))
+      extraerCohostsUnificadosDeInstancia(meeting).map((c) =>
+        c.name ? `${c.name} · ${c.email}` : c.email,
+      ),
     );
     const eventVerification = detalleCohostsVerificados(
       event?.payloadUltimo,
       event?.codigoReunion,
       event?.cuentaProveedor?.emailOrganizador,
-      extraerCohostEmailsDeInstancia(meeting)
+      extraerCohostEmailsDeInstancia(meeting),
     );
     const recordingFile = event?.archivos?.find((a) => a.tipo === "GRABACION");
     const attendanceFile = event?.archivos?.find((a) => a.tipo === "LISTA_ASISTENCIA");
@@ -237,16 +261,20 @@ export default async function ReunionDetailPage({
       inicioAsistencia: meeting.inicioAsistenciaTecnicaAt
         ? toLocalInput(meeting.inicioAsistenciaTecnicaAt)
         : null,
-      finAsistencia: meeting.finAsistenciaTecnicaAt ? toLocalInput(meeting.finAsistenciaTecnicaAt) : null,
+      finAsistencia: meeting.finAsistenciaTecnicaAt
+        ? toLocalInput(meeting.finAsistenciaTecnicaAt)
+        : null,
       horarioAsistenciaPersonalizado: Boolean(
         meeting.inicioAsistenciaTecnicaAt &&
         meeting.finAsistenciaTecnicaAt &&
         meeting.inicioAsistenciaBase &&
         meeting.finAsistenciaBase &&
         (meeting.inicioAsistenciaTecnicaAt.getTime() !== meeting.inicioAsistenciaBase.getTime() ||
-          meeting.finAsistenciaTecnicaAt.getTime() !== meeting.finAsistenciaBase.getTime())
+          meeting.finAsistenciaTecnicaAt.getTime() !== meeting.finAsistenciaBase.getTime()),
       ),
-      horarioAsistenciaBaseDisponible: Boolean(meeting.inicioAsistenciaBase && meeting.finAsistenciaBase),
+      horarioAsistenciaBaseDisponible: Boolean(
+        meeting.inicioAsistenciaBase && meeting.finAsistenciaBase,
+      ),
       asistenteTecnico: assignment
         ? `${assignment.asistenteTecnico.usuario.nombres} ${assignment.asistenteTecnico.usuario.apellidos ?? ""}`.trim()
         : null,
@@ -254,7 +282,9 @@ export default async function ReunionDetailPage({
       organizerAccount,
       cohosts: cohostLabels,
       verifiedCohostEmails:
-        !event?.errorIntegracion && !event?.operacionPendiente ? eventVerification.emailsConfirmados : [],
+        !event?.errorIntegracion && !event?.operacionPendiente
+          ? eventVerification.emailsConfirmados
+          : [],
       cohostsConfirmados:
         !event?.errorIntegracion &&
         !event?.operacionPendiente &&
@@ -262,39 +292,49 @@ export default async function ReunionDetailPage({
           event?.payloadUltimo,
           event?.codigoReunion,
           event?.cuentaProveedor?.emailOrganizador,
-          extraerCohostEmailsDeInstancia(meeting)
+          extraerCohostEmailsDeInstancia(meeting),
         ),
       codigoMeet: event?.codigoReunion ?? null,
       joinUrl: activeEvent?.joinUrl ?? null,
       grabacionUrl:
         recordingFile?.webViewUrl ??
-        (recordingFile?.driveFileId ? `https://drive.google.com/open?id=${recordingFile.driveFileId}` : null),
+        (recordingFile?.driveFileId
+          ? `https://drive.google.com/open?id=${recordingFile.driveFileId}`
+          : null),
       asistenciaUrl:
         attendanceFile?.webViewUrl ??
         (attendanceFile?.driveFileId
           ? `https://drive.google.com/open?id=${attendanceFile.driveFileId}`
           : null),
-      driveFolderUrl: driveFolderId ? `https://drive.google.com/drive/folders/${driveFolderId}` : null,
+      driveFolderUrl: driveFolderId
+        ? `https://drive.google.com/drive/folders/${driveFolderId}`
+        : null,
       editable: meeting.estado === "PROGRAMADA" && meeting.inicioProgramadoAt > now,
-      puedeCambiarAsistencia: puedeCambiarAsistenciaEncuentro(meeting.estado, meeting.finProgramadoAt, now),
+      puedeCambiarAsistencia: puedeCambiarAsistenciaEncuentro(
+        meeting.estado,
+        meeting.finProgramadoAt,
+        now,
+      ),
       esDeHoy: toLocalInput(meeting.inicioProgramadoAt).slice(0, 10) === todayInMontevideo,
       temporalidad:
         meeting.finProgramadoAt < now
           ? ("PASADO" as const)
           : meeting.inicioProgramadoAt <= now
             ? ("EN_CURSO" as const)
-            : ("FUTURO" as const)
+            : ("FUTURO" as const),
     };
   });
 
   const nextMeeting = meetingViews.find(
     (meeting) =>
-      meeting.temporalidad !== "PASADO" && meeting.estado !== "CANCELADA" && meeting.estado !== "NO_REALIZADA"
+      meeting.temporalidad !== "PASADO" &&
+      meeting.estado !== "CANCELADA" &&
+      meeting.estado !== "NO_REALIZADA",
   );
   const uniqueCohosts = unique(meetingViews.flatMap(({ cohosts }) => cohosts));
   const teacherName = [
     request.docentePrograma.docente.usuario.nombres,
-    request.docentePrograma.docente.usuario.apellidos
+    request.docentePrograma.docente.usuario.apellidos,
   ]
     .filter(Boolean)
     .join(" ");
@@ -307,7 +347,9 @@ export default async function ReunionDetailPage({
     : "Sin próximos encuentros";
 
   const integrationProblems = meetings.flatMap((meeting, index) => {
-    const event = meeting.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET");
+    const event = meeting.eventosProveedor.find(
+      ({ proveedor }) => proveedor.tipo === "GOOGLE_MEET",
+    );
     if (!event || !requiereAtencionIntegracionMeet(event)) {
       return [];
     }
@@ -317,8 +359,8 @@ export default async function ReunionDetailPage({
         ordinal: index + 1,
         fechaLegible: formatLongDate(meeting.inicioProgramadoAt),
         hasMeet: Boolean(event.joinUrl || event.codigoReunion),
-        error: event.errorIntegracion
-      }
+        error: event.errorIntegracion,
+      },
     ];
   });
 
@@ -371,10 +413,14 @@ export default async function ReunionDetailPage({
                           requiresAssistance={nextMeeting.requiereAsistenciaTecnica}
                           modality={nextMeeting.modalidad}
                           assistanceStartsAt={
-                            nextMeeting.inicioAsistencia ? nextMeeting.inicioAsistencia + ":00-03:00" : null
+                            nextMeeting.inicioAsistencia
+                              ? nextMeeting.inicioAsistencia + ":00-03:00"
+                              : null
                           }
                           assistanceEndsAt={
-                            nextMeeting.finAsistencia ? nextMeeting.finAsistencia + ":00-03:00" : null
+                            nextMeeting.finAsistencia
+                              ? nextMeeting.finAsistencia + ":00-03:00"
+                              : null
                           }
                           compact
                         />
@@ -414,7 +460,9 @@ export default async function ReunionDetailPage({
                           ? `${nextMeeting.inicio.slice(11, 16)}–${nextMeeting.fin.slice(11, 16)}`
                           : "Sin próximos"}
                       </strong>
-                      <small>{nextMeeting?.fechaLegible ?? "La serie no tiene encuentros pendientes"}</small>
+                      <small>
+                        {nextMeeting?.fechaLegible ?? "La serie no tiene encuentros pendientes"}
+                      </small>
                     </div>
                   </article>
                   <article>
@@ -449,7 +497,7 @@ export default async function ReunionDetailPage({
                   </article>
                 </section>
               </>
-            )
+            ),
           },
           {
             id: "encuentros",
@@ -461,7 +509,7 @@ export default async function ReunionDetailPage({
                 meetings={meetingViews}
                 canManageOperationalOverrides={actor.rol === "ADMINISTRACION"}
               />
-            )
+            ),
           },
           {
             id: "personas",
@@ -475,11 +523,11 @@ export default async function ReunionDetailPage({
                     email,
                     name: [
                       cohostAccounts.find((account) => account.id === id)?.user.nombres,
-                      cohostAccounts.find((account) => account.id === id)?.user.apellidos
+                      cohostAccounts.find((account) => account.id === id)?.user.apellidos,
                     ]
                       .filter(Boolean)
                       .join(" "),
-                    required: protectedCohostIds.has(id)
+                    required: protectedCohostIds.has(id),
                   }))}
                   initialCohostCuentaIds={initialCohostCuentaIds}
                   initialManualCohostEmails={initialManualCohostEmails}
@@ -490,26 +538,26 @@ export default async function ReunionDetailPage({
                       .map(({ emailPrincipal, nombres, apellidos }) => ({
                         email: emailPrincipal!.toLowerCase(),
                         name: [nombres, apellidos].filter(Boolean).join(" "),
-                        source: "Usuario registrado"
+                        source: "Usuario registrado",
                       })),
                     ...historicCohostEmails.map(({ email }) => ({
                       email: email.toLowerCase(),
                       name: email.toLowerCase(),
-                      source: "Cohost anterior"
-                    }))
+                      source: "Cohost anterior",
+                    })),
                   ]}
                   verificationByEmail={verificationByEmail}
                   seriesInfo={{
                     titulo: request.titulo,
                     modalidad: request.modalidad === "HIBRIDA" ? "Híbrida" : "Virtual",
                     encuentros: meetings.length,
-                    siguientes: manageableMeetings.length
+                    siguientes: manageableMeetings.length,
                   }}
                   programPeopleCount={programRecipients.length}
                   hasManageableMeetings={manageableMeetings.length > 0}
                 />
               </>
-            )
+            ),
           },
           {
             id: "archivos",
@@ -517,12 +565,12 @@ export default async function ReunionDetailPage({
             content: (
               <>
                 <p className="meeting-section-description">
-                  Grabaciones, listas de asistencia de participantes y carpetas de Drive asociadas a cada
-                  encuentro.
+                  Grabaciones, listas de asistencia de participantes y carpetas de Drive asociadas a
+                  cada encuentro.
                 </p>
                 {meetingViews.some(
                   ({ grabacionUrl, asistenciaUrl, driveFolderUrl }) =>
-                    grabacionUrl || asistenciaUrl || driveFolderUrl
+                    grabacionUrl || asistenciaUrl || driveFolderUrl,
                 ) ? (
                   <ul className="meeting-files-list">
                     {meetingViews.flatMap((meeting) =>
@@ -532,8 +580,8 @@ export default async function ReunionDetailPage({
                               {
                                 label: "Grabación",
                                 url: meeting.grabacionUrl,
-                                icon: <Video size={16} aria-hidden="true" />
-                              }
+                                icon: <Video size={16} aria-hidden="true" />,
+                              },
                             ]
                           : []),
                         ...(meeting.asistenciaUrl
@@ -541,8 +589,8 @@ export default async function ReunionDetailPage({
                               {
                                 label: "Asistencia de participantes",
                                 url: meeting.asistenciaUrl,
-                                icon: <UsersRound size={16} aria-hidden="true" />
-                              }
+                                icon: <UsersRound size={16} aria-hidden="true" />,
+                              },
                             ]
                           : []),
                         ...(meeting.driveFolderUrl
@@ -550,22 +598,27 @@ export default async function ReunionDetailPage({
                               {
                                 label: "Carpeta de Drive",
                                 url: meeting.driveFolderUrl,
-                                icon: <FolderOpen size={16} aria-hidden="true" />
-                              }
+                                icon: <FolderOpen size={16} aria-hidden="true" />,
+                              },
                             ]
-                          : [])
+                          : []),
                       ].map((file) => (
                         <li key={`${meeting.id}-${file.label}`}>
                           <span>
                             <strong>Encuentro {meeting.ordinal}</strong>
                             <small>{meeting.fechaLegible}</small>
                           </span>
-                          <a className="secondary-action" href={file.url!} target="_blank" rel="noreferrer">
+                          <a
+                            className="secondary-action"
+                            href={file.url}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
                             {file.icon}
                             {file.label}
                           </a>
                         </li>
-                      ))
+                      )),
                     )}
                   </ul>
                 ) : (
@@ -581,13 +634,13 @@ export default async function ReunionDetailPage({
                         descripcion,
                         fechaLegible,
                         temporalidad,
-                        codigoMeet
-                      })
+                        codigoMeet,
+                      }),
                     )}
                   />
                 ) : null}
               </>
-            )
+            ),
           },
           {
             id: "actividad",
@@ -595,16 +648,16 @@ export default async function ReunionDetailPage({
             content: (
               <>
                 <p className="meeting-section-description">
-                  Estado actual de las integraciones y sus incidencias. Esta sección no es un historial
-                  completo de cambios.
+                  Estado actual de las integraciones y sus incidencias. Esta sección no es un
+                  historial completo de cambios.
                 </p>
                 <MeetingIntegrationProblems
                   problems={integrationProblems}
                   canRepair={actor.rol === "ADMINISTRACION"}
                 />
               </>
-            )
-          }
+            ),
+          },
         ]}
       />
     </div>

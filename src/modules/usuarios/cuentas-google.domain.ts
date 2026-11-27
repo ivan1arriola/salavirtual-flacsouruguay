@@ -8,12 +8,12 @@ const emailPrincipalSchema = z.union([
     .string()
     .transform((email) => email.trim().toLowerCase())
     .pipe(z.email()),
-  z.null()
+  z.null(),
 ]);
 
 export const reemplazarCuentasGoogleSchema = z.object({
   emails: z.array(emailGoogleSchema).transform((emails) => [...new Set(emails)]),
-  emailPrincipal: emailPrincipalSchema.optional()
+  emailPrincipal: emailPrincipalSchema.optional(),
 });
 
 export type ActorGestionUsuarios = Readonly<{

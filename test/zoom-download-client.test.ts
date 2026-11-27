@@ -1,5 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { abrirDescargaZoomHttp, type DescargaZoomHttp } from "@/src/integrations/zoom/zoom-download.client";
+import {
+  abrirDescargaZoomHttp,
+  type DescargaZoomHttp,
+} from "@/src/integrations/zoom/zoom-download.client";
 import { ZoomApiError } from "@/src/integrations/zoom/zoom-http";
 import { crearProveedorTokenZoom } from "@/src/integrations/zoom/zoom-client";
 
@@ -62,8 +65,8 @@ describe("descarga de archivos Zoom", () => {
         respuesta("lmnop", 206, {
           "content-range": "bytes 5-9/10",
           "content-length": "5",
-          "content-type": "video/mp4"
-        })
+          "content-type": "video/mp4",
+        }),
       );
     vi.stubGlobal("fetch", fetchMock);
     const s = señal();
@@ -92,7 +95,7 @@ describe("descarga de archivos Zoom", () => {
     const fetchMock = vi
       .fn()
       .mockResolvedValue(
-        respuesta("abcdefghij", 200, { "content-length": "10", "content-type": "video/mp4" })
+        respuesta("abcdefghij", 200, { "content-length": "10", "content-type": "video/mp4" }),
       );
     vi.stubGlobal("fetch", fetchMock);
     const d = contenido(await abrirDescargaZoomHttp("tok", URL_ZOOM, 0, señal()));
@@ -108,25 +111,28 @@ describe("descarga de archivos Zoom", () => {
       vi
         .fn()
         .mockResolvedValue(
-          respuesta("xxxxx", 206, { "content-range": "bytes 0-4/10", "content-length": "5" })
-        )
+          respuesta("xxxxx", 206, { "content-range": "bytes 0-4/10", "content-length": "5" }),
+        ),
     );
     expect((await errorDe(abrirDescargaZoomHttp("tok", URL_ZOOM, 5, señal()))).code).toBe(
-      "CONTENT_RANGE_INVALIDO"
+      "CONTENT_RANGE_INVALIDO",
     );
   });
 
   it("rechaza un 206 sin Content-Range", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(respuesta("xxxxx", 206, { "content-length": "5" })));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(respuesta("xxxxx", 206, { "content-length": "5" })),
+    );
     expect((await errorDe(abrirDescargaZoomHttp("tok", URL_ZOOM, 5, señal()))).code).toBe(
-      "CONTENT_RANGE_INVALIDO"
+      "CONTENT_RANGE_INVALIDO",
     );
   });
 
   it("falla el flujo si llegan menos bytes que los anunciados por Content-Range", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue(respuesta("lmn", 206, { "content-range": "bytes 5-9/10" }))
+      vi.fn().mockResolvedValue(respuesta("lmn", 206, { "content-range": "bytes 5-9/10" })),
     );
     const d = contenido(await abrirDescargaZoomHttp("tok", URL_ZOOM, 5, señal()));
     await expect(leer(d.contenido)).rejects.toMatchObject({ code: "TAMANO_INCONSISTENTE" });
@@ -135,7 +141,7 @@ describe("descarga de archivos Zoom", () => {
   it("falla el flujo si llegan más bytes que los anunciados", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue(respuesta("lmnopqr", 206, { "content-range": "bytes 5-9/10" }))
+      vi.fn().mockResolvedValue(respuesta("lmnopqr", 206, { "content-range": "bytes 5-9/10" })),
     );
     const d = contenido(await abrirDescargaZoomHttp("tok", URL_ZOOM, 5, señal()));
     await expect(leer(d.contenido)).rejects.toMatchObject({ code: "TAMANO_INCONSISTENTE" });
@@ -144,7 +150,7 @@ describe("descarga de archivos Zoom", () => {
   it("etiqueta RANGE_IGNORADO y descarta el prefijo cuando Zoom responde 200 con offset > 0", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue(respuesta("abcdefghij", 200, { "content-length": "10" }))
+      vi.fn().mockResolvedValue(respuesta("abcdefghij", 200, { "content-length": "10" })),
     );
     const d = contenido(await abrirDescargaZoomHttp("tok", URL_ZOOM, 4, señal()));
     expect(d.etiquetas).toEqual(["RANGE_IGNORADO"]);
@@ -161,16 +167,21 @@ describe("descarga de archivos Zoom", () => {
       pull(c) {
         c.enqueue(bytes("x"));
       },
-      cancel: cancelar
+      cancel: cancelar,
     });
     vi.stubGlobal(
       "fetch",
       vi
         .fn()
-        .mockResolvedValue(new Response(cuerpo, { status: 200, headers: { "content-length": "100000" } }))
+        .mockResolvedValue(
+          new Response(cuerpo, { status: 200, headers: { "content-length": "100000" } }),
+        ),
     );
     const d = await abrirDescargaZoomHttp("tok", URL_ZOOM, 50_000, señal());
-    expect(d).toEqual({ tipo: "REQUIERE_REVISION", motivo: "RANGE_IGNORADO_DESCARTE_EXCEDE_MAXIMO" });
+    expect(d).toEqual({
+      tipo: "REQUIERE_REVISION",
+      motivo: "RANGE_IGNORADO_DESCARTE_EXCEDE_MAXIMO",
+    });
     expect(cancelar).toHaveBeenCalled();
   });
 
@@ -189,28 +200,34 @@ describe("descarga de archivos Zoom", () => {
       vi
         .fn()
         .mockResolvedValueOnce(
-          respuesta("<html>login</html>", 200, { "content-type": "text/html; charset=utf-8" })
+          respuesta("<html>login</html>", 200, { "content-type": "text/html; charset=utf-8" }),
         )
         .mockResolvedValueOnce(
           respuesta('{"code":124,"message":"Invalid access token"}', 200, {
-            "content-type": "application/json"
-          })
-        )
+            "content-type": "application/json",
+          }),
+        ),
     );
     expect((await errorDe(abrirDescargaZoomHttp("tok", URL_ZOOM, 0, señal()))).code).toBe(
-      "CONTENIDO_NO_ES_ARCHIVO"
+      "CONTENIDO_NO_ES_ARCHIVO",
     );
     expect((await errorDe(abrirDescargaZoomHttp("tok", URL_ZOOM, 0, señal()))).code).toBe(
-      "CONTENIDO_NO_ES_ARCHIVO"
+      "CONTENIDO_NO_ES_ARCHIVO",
     );
   });
 
   it("acepta JSON cuando el archivo esperado es JSON (TIMELINE)", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue(respuesta('{"timeline":[]}', 200, { "content-type": "application/json" }))
+      vi
+        .fn()
+        .mockResolvedValue(
+          respuesta('{"timeline":[]}', 200, { "content-type": "application/json" }),
+        ),
     );
-    const d = contenido(await abrirDescargaZoomHttp("tok", URL_ZOOM, 0, señal(), { permitirJson: true }));
+    const d = contenido(
+      await abrirDescargaZoomHttp("tok", URL_ZOOM, 0, señal(), { permitirJson: true }),
+    );
     expect(await leer(d.contenido)).toBe('{"timeline":[]}');
   });
 
@@ -218,18 +235,25 @@ describe("descarga de archivos Zoom", () => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
     expect(
-      (await errorDe(abrirDescargaZoomHttp("tok", "https://evil.example.com/rec/download/x", 0, señal())))
-        .code
+      (
+        await errorDe(
+          abrirDescargaZoomHttp("tok", "https://evil.example.com/rec/download/x", 0, señal()),
+        )
+      ).code,
     ).toBe("HOST_NO_PERMITIDO");
     expect(
-      (await errorDe(abrirDescargaZoomHttp("tok", "https://zoom.us.evil.com/rec/download/x", 0, señal())))
-        .code
+      (
+        await errorDe(
+          abrirDescargaZoomHttp("tok", "https://zoom.us.evil.com/rec/download/x", 0, señal()),
+        )
+      ).code,
     ).toBe("HOST_NO_PERMITIDO");
     expect(
-      (await errorDe(abrirDescargaZoomHttp("tok", "http://zoom.us/rec/download/x", 0, señal()))).code
+      (await errorDe(abrirDescargaZoomHttp("tok", "http://zoom.us/rec/download/x", 0, señal())))
+        .code,
     ).toBe("HOST_NO_PERMITIDO");
     expect((await errorDe(abrirDescargaZoomHttp("tok", "no es url", 0, señal()))).code).toBe(
-      "HOST_NO_PERMITIDO"
+      "HOST_NO_PERMITIDO",
     );
     expect(fetchMock).not.toHaveBeenCalled();
   });
@@ -240,13 +264,13 @@ describe("descarga de archivos Zoom", () => {
       vi
         .fn()
         .mockResolvedValueOnce(redireccion("https://atacante.example.net/x?firma=SECRETO"))
-        .mockResolvedValueOnce(redireccion("http://ssrweb.zoom.us/x?firma=SECRETO"))
+        .mockResolvedValueOnce(redireccion("http://ssrweb.zoom.us/x?firma=SECRETO")),
     );
     const e1 = await errorDe(abrirDescargaZoomHttp("tok", URL_ZOOM, 0, señal()));
     expect(e1.code).toBe("DESTINO_NO_PERMITIDO");
     expect(`${e1.message} ${e1.recurso}`).not.toContain("SECRETO");
     expect((await errorDe(abrirDescargaZoomHttp("tok", URL_ZOOM, 0, señal()))).code).toBe(
-      "DESTINO_NO_PERMITIDO"
+      "DESTINO_NO_PERMITIDO",
     );
   });
 
@@ -278,17 +302,22 @@ describe("descarga de archivos Zoom", () => {
       "fetch",
       vi.fn(async (url: string | URL, init?: RequestInit) => {
         if (String(url).startsWith("https://zoom.us/oauth/token")) {
-          return new Response(JSON.stringify({ access_token: `t${++emitidos}`, expires_in: 3600 }), {
-            status: 200
-          });
+          return new Response(
+            JSON.stringify({ access_token: `t${++emitidos}`, expires_in: 3600 }),
+            {
+              status: 200,
+            },
+          );
         }
-        auths.push(String((init?.headers as Record<string, string>).Authorization));
+        auths.push(String((init?.headers as Record<string, string>)["Authorization"]));
         return auths.length === 1
           ? new Response(null, { status: 401 })
           : respuesta("ok", 200, { "content-length": "2" });
-      })
+      }),
     );
-    const d = contenido(await abrirDescargaZoomHttp(crearProveedorTokenZoom(creds), URL_ZOOM, 0, señal()));
+    const d = contenido(
+      await abrirDescargaZoomHttp(crearProveedorTokenZoom(creds), URL_ZOOM, 0, señal()),
+    );
     expect(await leer(d.contenido)).toBe("ok");
     expect(auths).toEqual(["Bearer t1", "Bearer t2"]);
   });
@@ -300,13 +329,15 @@ describe("descarga de archivos Zoom", () => {
         .fn()
         .mockResolvedValueOnce(redireccion(URL_FIRMADA))
         .mockResolvedValueOnce(respuesta("<Error>SECRETO</Error>", 403))
-        .mockResolvedValueOnce(new Response(null, { status: 404 }))
+        .mockResolvedValueOnce(new Response(null, { status: 404 })),
     );
     const e403 = await errorDe(abrirDescargaZoomHttp("tok", URL_ZOOM, 0, señal()));
     expect(e403.code).toBe("DESCARGA_RECHAZADA");
     expect(e403.recurso).toBe("descarga");
     expect(`${e403.message} ${e403.recurso}`).not.toMatch(/SECRETO|ssrweb|Signature/);
-    expect((await errorDe(abrirDescargaZoomHttp("tok", URL_ZOOM, 0, señal()))).code).toBe("NO_ENCONTRADO");
+    expect((await errorDe(abrirDescargaZoomHttp("tok", URL_ZOOM, 0, señal()))).code).toBe(
+      "NO_ENCONTRADO",
+    );
   });
 
   it("errores de red no filtran la URL ni el Location firmados", async () => {
@@ -316,7 +347,7 @@ describe("descarga de archivos Zoom", () => {
         .fn()
         .mockRejectedValueOnce(new TypeError(`fetch failed ${URL_ZOOM}`))
         .mockResolvedValueOnce(redireccion(URL_FIRMADA))
-        .mockRejectedValueOnce(new TypeError(`fetch failed ${URL_FIRMADA}`))
+        .mockRejectedValueOnce(new TypeError(`fetch failed ${URL_FIRMADA}`)),
     );
     const e1 = await errorDe(abrirDescargaZoomHttp("tok", URL_ZOOM, 0, señal()));
     const e2 = await errorDe(abrirDescargaZoomHttp("tok", URL_ZOOM, 0, señal()));

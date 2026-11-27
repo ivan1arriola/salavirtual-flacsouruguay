@@ -4,7 +4,7 @@ import { formatShortDate } from "@/src/lib/ui/format";
 import type { RecentRecordingDTO } from "@/src/modules/dashboard/types";
 
 export function TeacherRecentRecordings({
-  recordings
+  recordings,
 }: Readonly<{
   recordings: readonly RecentRecordingDTO[];
 }>) {
@@ -64,7 +64,12 @@ export function TeacherRecentRecordings({
 
               <div className="teacher-recording-card-actions">
                 {rec.driveUrl ? (
-                  <a className="secondary-action" href={rec.driveUrl} rel="noreferrer" target="_blank">
+                  <a
+                    className="secondary-action"
+                    href={rec.driveUrl}
+                    rel="noreferrer"
+                    target="_blank"
+                  >
                     <ExternalLink size={14} />
                     <span>Ver en Drive</span>
                   </a>

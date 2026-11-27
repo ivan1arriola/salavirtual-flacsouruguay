@@ -12,7 +12,7 @@ export function WorkspaceDriveForm({ folderId }: Readonly<{ folderId: string }>)
     setMessage("Guardando…");
     const result = await saveWorkspaceSection({
       seccion: "DRIVE",
-      driveDestinationId: formData.get("driveDestinationId")
+      driveDestinationId: formData.get("driveDestinationId"),
     });
     setSuccess(result.ok);
     setMessage(result.message);

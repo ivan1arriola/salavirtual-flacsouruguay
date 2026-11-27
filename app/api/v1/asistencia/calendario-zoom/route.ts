@@ -9,7 +9,7 @@ import {
   desconectarCalendarioZoom,
   rutaCalendarioZoom,
   scopesCalendarioZoom,
-  sincronizarCalendarioZoom
+  sincronizarCalendarioZoom,
 } from "@/src/bootstrap/calendario-zoom-asistente.server";
 import { authConfig } from "@/src/lib/auth/config";
 import { cifrarConfiguracion, descifrarConfiguracion } from "@/src/lib/config/encryption";
@@ -24,7 +24,7 @@ const intentoOAuth = z.object({
   asistenteTecnicoId: z.string(),
   state: z.string(),
   verifier: z.string(),
-  venceAt: z.number()
+  venceAt: z.number(),
 });
 
 function irAgenda(estado: string) {
@@ -50,9 +50,9 @@ async function obtenerAsistente() {
   return db.asistenteTecnico.findFirst({
     where: {
       usuarioId: session.user.id,
-      usuario: { activo: true, rol: "ASISTENTE_TECNICO", fusionadoEnId: null }
+      usuario: { activo: true, rol: "ASISTENTE_TECNICO", fusionadoEnId: null },
     },
-    select: { id: true, calendarioZoom: { select: { asistenteTecnicoId: true } } }
+    select: { id: true, calendarioZoom: { select: { asistenteTecnicoId: true } } },
   });
 }
 
@@ -105,7 +105,7 @@ async function iniciarOAuth(client: OAuth2Client, id: string) {
     scope: scopesCalendarioZoom(),
     state,
     code_challenge: codeChallenge,
-    code_challenge_method: CodeChallengeMethod.S256
+    code_challenge_method: CodeChallengeMethod.S256,
   });
   const response = NextResponse.redirect(url, 303);
   response.headers.set("Cache-Control", "no-store");
@@ -113,14 +113,14 @@ async function iniciarOAuth(client: OAuth2Client, id: string) {
     asistenteTecnicoId: id,
     state,
     verifier: codeVerifier,
-    venceAt: Date.now() + vigencia * 1000
+    venceAt: Date.now() + vigencia * 1000,
   };
   response.cookies.set(cookieName, cifrarConfiguracion(JSON.stringify(intento)), {
     path: rutaCalendarioZoom,
     httpOnly: true,
     sameSite: "lax",
     secure: authConfig.baseUrl.startsWith("https:"),
-    maxAge: vigencia
+    maxAge: vigencia,
   });
   return response;
 }

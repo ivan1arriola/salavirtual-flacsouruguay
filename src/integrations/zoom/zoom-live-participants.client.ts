@@ -40,7 +40,9 @@ export type EstadoAsistenciaZoomEnVivo =
 type Registro = Record<string, unknown>;
 
 function registro(valor: unknown): Registro | null {
-  return valor !== null && typeof valor === "object" && !Array.isArray(valor) ? (valor as Registro) : null;
+  return valor !== null && typeof valor === "object" && !Array.isArray(valor)
+    ? (valor as Registro)
+    : null;
 }
 
 function texto(valor: unknown): string | null {
@@ -98,9 +100,9 @@ function rolParticipante(valor: unknown): RolParticipanteZoom {
 
 function participanteDesdeZoom(valor: unknown, indice: number): ParticipanteZoomEnVivo {
   const p = registro(valor) ?? {};
-  const ingreso = texto(p.join_time);
-  const salida = texto(p.leave_time);
-  const estadoZoom = texto(p.status);
+  const ingreso = texto(p["join_time"]);
+  const salida = texto(p["leave_time"]);
+  const estadoZoom = texto(p["status"]);
   let estado: EstadoParticipanteZoom = "DESCONOCIDO";
   if (salida) {
     estado = "DESCONECTADO";
@@ -110,26 +112,26 @@ function participanteDesdeZoom(valor: unknown, indice: number): ParticipanteZoom
     estado = "EN_ESPERA";
   }
   const id =
-    texto(p.participant_uuid) ??
-    texto(p.participant_user_id) ??
-    texto(p.user_id) ??
-    texto(p.id) ??
+    texto(p["participant_uuid"]) ??
+    texto(p["participant_user_id"]) ??
+    texto(p["user_id"]) ??
+    texto(p["id"]) ??
     "conexion-" + indice + "-" + (ingreso ?? "sin-hora");
 
   return {
     id,
-    nombre: texto(p.user_name) ?? texto(p.name) ?? "Sin nombre",
-    email: texto(p.email) ?? texto(p.user_email),
+    nombre: texto(p["user_name"]) ?? texto(p["name"]) ?? "Sin nombre",
+    email: texto(p["email"]) ?? texto(p["user_email"]),
     ingreso,
     salida,
     estado,
-    rol: rolParticipante(p.role),
-    motivoSalida: motivoSalidaZoom(p.leave_reason),
-    calidadAudio: calidad(p.audio_quality),
-    calidadVideo: calidad(p.video_quality),
-    calidadPantalla: calidad(p.screen_share_quality),
-    tipoConexion: texto(p.connection_type),
-    tipoRed: texto(p.network_type)
+    rol: rolParticipante(p["role"]),
+    motivoSalida: motivoSalidaZoom(p["leave_reason"]),
+    calidadAudio: calidad(p["audio_quality"]),
+    calidadVideo: calidad(p["video_quality"]),
+    calidadPantalla: calidad(p["screen_share_quality"]),
+    tipoConexion: texto(p["connection_type"]),
+    tipoRed: texto(p["network_type"]),
   };
 }
 
@@ -151,9 +153,12 @@ function detalleSeguro(valor: unknown): string | undefined {
 
 function errorZoom(response: Response, cuerpo: unknown): EstadoAsistenciaZoomEnVivo {
   const error = registro(cuerpo) ?? {};
-  const codigo = typeof error.code === "number" || typeof error.code === "string" ? error.code : undefined;
+  const codigo =
+    typeof error["code"] === "number" || typeof error["code"] === "string"
+      ? error["code"]
+      : undefined;
   const codigoNumerico = codigo === undefined ? null : Number(codigo);
-  const mensaje = detalleSeguro(error.message);
+  const mensaje = detalleSeguro(error["message"]);
   const textoError = (mensaje ?? "").toLowerCase();
 
   let motivo: MotivoAsistenciaZoom = "ERROR_API";
@@ -184,7 +189,7 @@ function errorZoom(response: Response, cuerpo: unknown): EstadoAsistenciaZoomEnV
     motivo,
     httpStatus: response.status,
     ...(codigo === undefined ? {} : { codigoZoom: codigo }),
-    ...(mensaje ? { detalle: mensaje } : {})
+    ...(mensaje ? { detalle: mensaje } : {}),
   };
 }
 
@@ -195,12 +200,14 @@ function errorZoom(response: Response, cuerpo: unknown): EstadoAsistenciaZoomEnV
  */
 export async function obtenerParticipantesZoomEnVivoHttp(
   token: string,
-  meetingId: string
+  meetingId: string,
 ): Promise<EstadoAsistenciaZoomEnVivo> {
   const participantes: ParticipanteZoomEnVivo[] = [];
   const identificador = encodeURIComponent(meetingId);
   const idCodificado =
-    meetingId.startsWith("/") || meetingId.includes("//") ? encodeURIComponent(identificador) : identificador;
+    meetingId.startsWith("/") || meetingId.includes("//")
+      ? encodeURIComponent(identificador)
+      : identificador;
   let siguiente = "";
   const visitados = new Set<string>();
   let pagina = 0;
@@ -211,7 +218,7 @@ export async function obtenerParticipantesZoomEnVivoHttp(
       return {
         estado: "NO_DISPONIBLE",
         motivo: "ERROR_API",
-        detalle: "Zoom devolvió más páginas de las esperadas; se detuvo la consulta por seguridad."
+        detalle: "Zoom devolvió más páginas de las esperadas; se detuvo la consulta por seguridad.",
       };
     }
     const params = new URLSearchParams({ type: "live", page_size: "300" });
@@ -226,14 +233,14 @@ export async function obtenerParticipantesZoomEnVivoHttp(
         {
           headers: { Authorization: "Bearer " + token },
           cache: "no-store",
-          signal: AbortSignal.timeout(8000)
-        }
+          signal: AbortSignal.timeout(8000),
+        },
       );
     } catch {
       return {
         estado: "NO_DISPONIBLE",
         motivo: "ERROR_CONEXION",
-        detalle: "No se pudo conectar con la API de Zoom o la consulta superó el tiempo de espera."
+        detalle: "No se pudo conectar con la API de Zoom o la consulta superó el tiempo de espera.",
       };
     }
 
@@ -243,26 +250,26 @@ export async function obtenerParticipantesZoomEnVivoHttp(
     }
 
     const data = registro(await response.json().catch(() => null));
-    if (!data || !Array.isArray(data.participants)) {
+    if (!data || !Array.isArray(data["participants"])) {
       return {
         estado: "NO_DISPONIBLE",
         motivo: "ERROR_API",
         httpStatus: response.status,
         detalle:
-          "Zoom respondió correctamente, pero la respuesta no contiene una lista válida de participantes."
+          "Zoom respondió correctamente, pero la respuesta no contiene una lista válida de participantes.",
       };
     }
 
-    for (const participante of data.participants) {
+    for (const participante of data["participants"]) {
       participantes.push(participanteDesdeZoom(participante, participantes.length));
     }
 
-    siguiente = texto(data.next_page_token) ?? "";
+    siguiente = texto(data["next_page_token"]) ?? "";
     if (siguiente && visitados.has(siguiente)) {
       return {
         estado: "NO_DISPONIBLE",
         motivo: "ERROR_API",
-        detalle: "Zoom devolvió un cursor de paginación repetido; se detuvo la consulta."
+        detalle: "Zoom devolvió un cursor de paginación repetido; se detuvo la consulta.",
       };
     }
     if (siguiente) {

@@ -2,7 +2,7 @@
 
 import {
   normalizarCuentasRecordadas,
-  type CuentaRecordada
+  type CuentaRecordada,
 } from "@/src/modules/usuarios/cuentas-recordadas.domain";
 
 const REMEMBERED_ACCOUNTS_KEY = "flacso-meet-cuentas-recordadas";

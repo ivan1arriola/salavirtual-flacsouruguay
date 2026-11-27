@@ -6,7 +6,7 @@ import { useEffect } from "react";
 
 export function OperationalAutoRefresh({
   enabled,
-  seconds = 30
+  seconds = 30,
 }: Readonly<{ enabled: boolean; seconds?: number }>) {
   const router = useRouter();
 

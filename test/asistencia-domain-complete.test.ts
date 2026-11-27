@@ -14,7 +14,7 @@ import {
   resolverAccionHistorialAsistente,
   type AsignacionExistente,
   type AssignmentSuggestionInput,
-  type PeriodoAsistencia
+  type PeriodoAsistencia,
 } from "@/src/modules/asistencia/domain";
 
 describe("asistencia domain complete", () => {
@@ -30,15 +30,15 @@ describe("asistencia domain complete", () => {
     it("evalua separacion minima de 30 minutos entre asistencias", () => {
       const p1: PeriodoAsistencia = {
         inicio: new Date("2026-05-10T10:00:00Z"),
-        fin: new Date("2026-05-10T11:00:00Z")
+        fin: new Date("2026-05-10T11:00:00Z"),
       };
       const p2Valido: PeriodoAsistencia = {
         inicio: new Date("2026-05-10T11:30:00Z"),
-        fin: new Date("2026-05-10T12:30:00Z")
+        fin: new Date("2026-05-10T12:30:00Z"),
       };
       const p2Invalido: PeriodoAsistencia = {
         inicio: new Date("2026-05-10T11:20:00Z"),
-        fin: new Date("2026-05-10T12:30:00Z")
+        fin: new Date("2026-05-10T12:30:00Z"),
       };
 
       expect(cumpleSeparacionMinimaAsistencias(p1, p2Valido)).toBe(true);
@@ -57,18 +57,18 @@ describe("asistencia domain complete", () => {
     });
 
     it("resuelve accion historial asistente", () => {
-      expect(resolverAccionHistorialAsistente("ASISTENTE_ASIGNADO", null, "asist-1", "asist-1")).toBe(
-        "ASIGNADO"
-      );
-      expect(resolverAccionHistorialAsistente("ASISTENTE_REASIGNADO", "asist-1", "asist-2", "asist-1")).toBe(
-        "DESVINCULADO"
-      );
-      expect(resolverAccionHistorialAsistente("ASISTENTE_REASIGNADO", "asist-1", "asist-2", "asist-2")).toBe(
-        "REASIGNADO"
-      );
-      expect(resolverAccionHistorialAsistente("ASISTENTE_DESVINCULADO", "asist-1", null, "asist-1")).toBe(
-        "DESVINCULADO"
-      );
+      expect(
+        resolverAccionHistorialAsistente("ASISTENTE_ASIGNADO", null, "asist-1", "asist-1"),
+      ).toBe("ASIGNADO");
+      expect(
+        resolverAccionHistorialAsistente("ASISTENTE_REASIGNADO", "asist-1", "asist-2", "asist-1"),
+      ).toBe("DESVINCULADO");
+      expect(
+        resolverAccionHistorialAsistente("ASISTENTE_REASIGNADO", "asist-1", "asist-2", "asist-2"),
+      ).toBe("REASIGNADO");
+      expect(
+        resolverAccionHistorialAsistente("ASISTENTE_DESVINCULADO", "asist-1", null, "asist-1"),
+      ).toBe("DESVINCULADO");
       expect(resolverAccionHistorialAsistente("OTRO", null, null, "asist-1")).toBeNull();
     });
   });
@@ -77,15 +77,15 @@ describe("asistencia domain complete", () => {
     it("detecta superposicion directa como conflicto estricto", () => {
       const candidata: PeriodoAsistencia = {
         inicio: new Date("2026-05-10T10:00:00Z"),
-        fin: new Date("2026-05-10T12:00:00Z")
+        fin: new Date("2026-05-10T12:00:00Z"),
       };
       const asignadas: readonly AsignacionExistente[] = [
         {
           id: "asig-1",
           titulo: "Clase previa",
           inicio: new Date("2026-05-10T11:00:00Z"),
-          fin: new Date("2026-05-10T13:00:00Z")
-        }
+          fin: new Date("2026-05-10T13:00:00Z"),
+        },
       ];
 
       const res = evaluarConflictoAsistencia(candidata, asignadas);
@@ -96,15 +96,15 @@ describe("asistencia domain complete", () => {
     it("detecta proximidad menor a 30 min como muy proximo", () => {
       const candidata: PeriodoAsistencia = {
         inicio: new Date("2026-05-10T10:00:00Z"),
-        fin: new Date("2026-05-10T11:00:00Z")
+        fin: new Date("2026-05-10T11:00:00Z"),
       };
       const asignadas: readonly AsignacionExistente[] = [
         {
           id: "asig-1",
           titulo: "Clase siguiente",
           inicio: new Date("2026-05-10T11:15:00Z"),
-          fin: new Date("2026-05-10T12:15:00Z")
-        }
+          fin: new Date("2026-05-10T12:15:00Z"),
+        },
       ];
 
       const res = evaluarConflictoAsistencia(candidata, asignadas);
@@ -115,15 +115,15 @@ describe("asistencia domain complete", () => {
     it("devuelve disponible cuando hay suficiente margen", () => {
       const candidata: PeriodoAsistencia = {
         inicio: new Date("2026-05-10T10:00:00Z"),
-        fin: new Date("2026-05-10T11:00:00Z")
+        fin: new Date("2026-05-10T11:00:00Z"),
       };
       const asignadas: readonly AsignacionExistente[] = [
         {
           id: "asig-1",
           titulo: "Clase tarde",
           inicio: new Date("2026-05-10T12:00:00Z"),
-          fin: new Date("2026-05-10T13:00:00Z")
-        }
+          fin: new Date("2026-05-10T13:00:00Z"),
+        },
       ];
 
       const res = evaluarConflictoAsistencia(candidata, asignadas);
@@ -151,7 +151,7 @@ describe("asistencia domain complete", () => {
       const postulaciones = [
         { instanciaSalaId: "inst-1", estado: "ME_INTERESA" as const },
         { instanciaSalaId: "inst-2", estado: "RETIRADO" as const },
-        { instanciaSalaId: "inst-3", estado: "ME_INTERESA" as const }
+        { instanciaSalaId: "inst-3", estado: "ME_INTERESA" as const },
       ];
       expect(contarPostulacionesAbiertas(abiertas, postulaciones)).toBe(1);
     });
@@ -169,8 +169,8 @@ describe("asistencia domain complete", () => {
           horaDesde: "09:00",
           horaHasta: "12:00",
           timezone: "UTC",
-          tipo: "DISPONIBLE"
-        }
+          tipo: "DISPONIBLE",
+        },
       ]);
       expect(disponible.tipo).toBe("DISPONIBLE");
 
@@ -181,8 +181,8 @@ describe("asistencia domain complete", () => {
           horaDesde: "09:00",
           horaHasta: "12:00",
           timezone: "UTC",
-          tipo: "NO_DISPONIBLE"
-        }
+          tipo: "NO_DISPONIBLE",
+        },
       ]);
       expect(noDisponible.tipo).toBe("NO_DISPONIBLE");
     });
@@ -197,15 +197,15 @@ describe("asistencia domain complete", () => {
               inicioProgramadoAt: new Date("2026-05-10T10:00:00Z"),
               finProgramadoAt: new Date("2026-05-10T11:00:00Z"),
               timezone: "UTC",
-              postulaciones: [{ asistenteTecnico: { id: "asist-cesado" } }]
-            }
-          }
+              postulaciones: [{ asistenteTecnico: { id: "asist-cesado" } }],
+            },
+          },
         ],
         assistants: [
           { id: "asist-cesado", name: "Cesado", cesadoHastaProximoInicioSesion: true },
-          { id: "asist-activo", name: "Activo" }
+          { id: "asist-activo", name: "Activo" },
         ],
-        assignments: []
+        assignments: [],
       };
 
       const result = buildAssignmentSuggestions(input);

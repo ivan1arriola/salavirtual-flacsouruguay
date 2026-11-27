@@ -5,7 +5,7 @@ const encuentros = [
   { id: "pasado-anterior", temporalidad: "PASADO" as const, esDeHoy: false },
   { id: "pasado-hoy", temporalidad: "PASADO" as const, esDeHoy: true },
   { id: "en-curso", temporalidad: "EN_CURSO" as const, esDeHoy: true },
-  { id: "futuro", temporalidad: "FUTURO" as const, esDeHoy: false }
+  { id: "futuro", temporalidad: "FUTURO" as const, esDeHoy: false },
 ];
 
 describe("filtrarEncuentrosPorVista", () => {
@@ -14,7 +14,7 @@ describe("filtrarEncuentrosPorVista", () => {
       "pasado-anterior",
       "pasado-hoy",
       "en-curso",
-      "futuro"
+      "futuro",
     ]);
   });
 
@@ -22,11 +22,13 @@ describe("filtrarEncuentrosPorVista", () => {
     expect(filtrarEncuentrosPorVista(encuentros, "PROXIMOS").map(({ id }) => id)).toEqual([
       "pasado-hoy",
       "en-curso",
-      "futuro"
+      "futuro",
     ]);
   });
 
   it("reserva la vista de pasados para encuentros anteriores a hoy", () => {
-    expect(filtrarEncuentrosPorVista(encuentros, "PASADOS").map(({ id }) => id)).toEqual(["pasado-anterior"]);
+    expect(filtrarEncuentrosPorVista(encuentros, "PASADOS").map(({ id }) => id)).toEqual([
+      "pasado-anterior",
+    ]);
   });
 });

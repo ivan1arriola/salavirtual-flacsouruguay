@@ -3,31 +3,32 @@ import { db } from "../src/lib/db";
 import { normalizeCohostEmails } from "../src/modules/meet/cohosts.domain";
 
 const applyChanges = process.argv.includes("--apply");
-const syncGoogle = process.argv.includes("--sync-google") && !process.argv.includes("--no-sync-google");
+const syncGoogle =
+  process.argv.includes("--sync-google") && !process.argv.includes("--no-sync-google");
 const syncAllGoogle = process.argv.includes("--sync-all-google");
 
 async function main(): Promise<void> {
   const meetings = await db.instanciaSala.findMany({
     where: {
       inicioProgramadoAt: { gte: new Date() },
-      estado: { in: ["PROGRAMADA", "EN_CURSO"] }
+      estado: { in: ["PROGRAMADA", "EN_CURSO"] },
     },
     select: {
       id: true,
       eventosProveedor: {
         where: { proveedor: { tipo: "GOOGLE_MEET" } },
         select: { codigoReunion: true },
-        take: 1
+        take: 1,
       },
       solicitud: {
         select: {
           creadaPor: {
             select: {
               emailPrincipal: true,
-              cuentasGoogle: { select: { id: true } }
-            }
-          }
-        }
+              cuentasGoogle: { select: { id: true } },
+            },
+          },
+        },
       },
       asignaciones: {
         where: { estado: { in: ["ASIGNADO", "ACEPTADO"] } },
@@ -37,16 +38,16 @@ async function main(): Promise<void> {
               usuario: {
                 select: {
                   emailPrincipal: true,
-                  cuentasGoogle: { select: { id: true } }
-                }
-              }
-            }
-          }
-        }
+                  cuentasGoogle: { select: { id: true } },
+                },
+              },
+            },
+          },
+        },
       },
       cohosts: { select: { cuentaGoogleId: true } },
-      cohostEmails: { select: { email: true } }
-    }
+      cohostEmails: { select: { email: true } },
+    },
   });
 
   const plan = meetings.flatMap((meeting) => {
@@ -54,13 +55,17 @@ async function main(): Promise<void> {
     const assistants = meeting.asignaciones.map(({ asistenteTecnico }) => asistenteTecnico.usuario);
     const expectedAccountIds = new Set([
       ...requester.cuentasGoogle.map(({ id }) => id),
-      ...assistants.flatMap((assistant) => assistant.cuentasGoogle.map(({ id }) => id))
+      ...assistants.flatMap((assistant) => assistant.cuentasGoogle.map(({ id }) => id)),
     ]);
     const expectedEmails = normalizeCohostEmails([
-      ...(requester.cuentasGoogle.length === 0 && requester.emailPrincipal ? [requester.emailPrincipal] : []),
+      ...(requester.cuentasGoogle.length === 0 && requester.emailPrincipal
+        ? [requester.emailPrincipal]
+        : []),
       ...assistants.flatMap((assistant) =>
-        assistant.cuentasGoogle.length === 0 && assistant.emailPrincipal ? [assistant.emailPrincipal] : []
-      )
+        assistant.cuentasGoogle.length === 0 && assistant.emailPrincipal
+          ? [assistant.emailPrincipal]
+          : [],
+      ),
     ]);
     const currentAccountIds = new Set(meeting.cohosts.map(({ cuentaGoogleId }) => cuentaGoogleId));
     const currentEmails = new Set(meeting.cohostEmails.map(({ email }) => email.toLowerCase()));
@@ -73,8 +78,8 @@ async function main(): Promise<void> {
             instanciaSalaId: meeting.id,
             missingAccountIds,
             missingEmails,
-            hasMeetCode: Boolean(meeting.eventosProveedor[0]?.codigoReunion)
-          }
+            hasMeetCode: Boolean(meeting.eventosProveedor[0]?.codigoReunion),
+          },
         ]
       : [];
   });
@@ -92,11 +97,11 @@ async function main(): Promise<void> {
         instancesWithMeetCode: plan.filter(({ hasMeetCode }) => hasMeetCode).length,
         instancesToSyncWithGoogle: syncAllGoogle
           ? meetings.filter(({ eventosProveedor }) => eventosProveedor[0]?.codigoReunion).length
-          : plan.filter(({ hasMeetCode }) => hasMeetCode).length
+          : plan.filter(({ hasMeetCode }) => hasMeetCode).length,
       },
       null,
-      2
-    )
+      2,
+    ),
   );
 
   if (!applyChanges) {
@@ -108,30 +113,33 @@ async function main(): Promise<void> {
       await db.cohostReunion.createMany({
         data: item.missingAccountIds.map((cuentaGoogleId) => ({
           instanciaSalaId: item.instanciaSalaId,
-          cuentaGoogleId
+          cuentaGoogleId,
         })),
-        skipDuplicates: true
+        skipDuplicates: true,
       });
     }
     if (item.missingEmails.length > 0) {
       await db.cohostEmailReunion.createMany({
         data: item.missingEmails.map((email) => ({
           instanciaSalaId: item.instanciaSalaId,
-          email
+          email,
         })),
-        skipDuplicates: true
+        skipDuplicates: true,
       });
     }
   }
 
   const failures: Array<Readonly<{ instanciaSalaId: string; error: string }>> = [];
   if (syncGoogle) {
-    const [{ descifrarConfiguracion }, { sincronizarCohostsDeInstancia }, { configurarGoogleMeetExistente }] =
-      await Promise.all([
-        import("../src/lib/config/encryption"),
-        import("../src/modules/asistencia/asistencia.service"),
-        import("../src/modules/meet/google-calendar.adapter")
-      ]);
+    const [
+      { descifrarConfiguracion },
+      { sincronizarCohostsDeInstancia },
+      { configurarGoogleMeetExistente },
+    ] = await Promise.all([
+      import("../src/lib/config/encryption"),
+      import("../src/modules/asistencia/asistencia.service"),
+      import("../src/modules/meet/google-calendar.adapter"),
+    ]);
     const syncTargets = syncAllGoogle
       ? meetings
           .filter(({ eventosProveedor }) => eventosProveedor[0]?.codigoReunion)
@@ -143,14 +151,14 @@ async function main(): Promise<void> {
           {
             db,
             descifrar: descifrarConfiguracion,
-            configurarEspacio: configurarGoogleMeetExistente
+            configurarEspacio: configurarGoogleMeetExistente,
           },
-          item.instanciaSalaId
+          item.instanciaSalaId,
         );
       } catch (error) {
         failures.push({
           instanciaSalaId: item.instanciaSalaId,
-          error: error instanceof Error ? error.message : "Error desconocido"
+          error: error instanceof Error ? error.message : "Error desconocido",
         });
       }
     }

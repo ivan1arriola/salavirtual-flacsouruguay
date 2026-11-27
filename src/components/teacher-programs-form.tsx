@@ -10,7 +10,7 @@ export function TeacherProgramsForm({
   initialSelectedIds,
   saveAction,
   title = "Mis programas",
-  targetUserId
+  targetUserId,
 }: Readonly<{
   programs: readonly ProgramOption[];
   initialSelectedIds: readonly string[];
@@ -22,11 +22,13 @@ export function TeacherProgramsForm({
   const [selectedIds, setSelectedIds] = useState<readonly string[]>(initialSelectedIds);
   const normalizedQuery = query.trim().toLocaleLowerCase("es");
   const visiblePrograms = programs.filter(({ name }) =>
-    name.toLocaleLowerCase("es").includes(normalizedQuery)
+    name.toLocaleLowerCase("es").includes(normalizedQuery),
   );
 
   function toggle(programId: string, checked: boolean) {
-    setSelectedIds(checked ? [...selectedIds, programId] : selectedIds.filter((id) => id !== programId));
+    setSelectedIds(
+      checked ? [...selectedIds, programId] : selectedIds.filter((id) => id !== programId),
+    );
   }
 
   return (

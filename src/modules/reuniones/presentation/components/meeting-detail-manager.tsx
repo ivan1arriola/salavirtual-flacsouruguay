@@ -15,7 +15,7 @@ import {
   UsersRound,
   Video,
   Wrench,
-  X
+  X,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -25,7 +25,7 @@ import { MeetingScheduleTimes } from "@/src/components/meeting-schedule-times";
 import { planEliminacionEncuentro } from "@/src/modules/reuniones/eliminacion-encuentro.domain";
 import {
   filtrarEncuentrosPorVista,
-  type VistaTemporalEncuentros
+  type VistaTemporalEncuentros,
 } from "@/src/modules/reuniones/filtro-encuentros.domain";
 
 type Encounter = Readonly<{
@@ -66,7 +66,7 @@ export function MeetingDetailManager({
   solicitudId,
   requestIds,
   meetings,
-  canManageOperationalOverrides
+  canManageOperationalOverrides,
 }: Readonly<{
   solicitudId: string;
   requestIds: readonly string[];
@@ -83,7 +83,7 @@ export function MeetingDetailManager({
   }> | null>(null);
   const [vistaTemporal, setVistaTemporal] = useState<VistaTemporalEncuentros>("PROXIMOS");
   const [expandedIds, setExpandedIds] = useState<ReadonlySet<string>>(
-    () => new Set(meetings.slice(0, 1).map((meeting) => meeting.id))
+    () => new Set(meetings.slice(0, 1).map((meeting) => meeting.id)),
   );
   const [addingOpen, setAddingOpen] = useState(false);
   const removingAllRef = useRef(false);
@@ -93,15 +93,18 @@ export function MeetingDetailManager({
     setBusy(id);
     setMessage("");
     try {
-      const response = await fetch(`/api/v1/reuniones/${requestId}/encuentros${id ? `/${id}` : ""}`, {
-        ...init,
-        headers: { "Content-Type": "application/json" }
-      });
+      const response = await fetch(
+        `/api/v1/reuniones/${requestId}/encuentros${id ? `/${id}` : ""}`,
+        {
+          ...init,
+          headers: { "Content-Type": "application/json" },
+        },
+      );
       const result = await response.json().catch(() => ({}));
       setMessage(
         response.ok
           ? (result.message ?? "Cambios guardados.")
-          : (result.error ?? "No se pudo completar la operación.")
+          : (result.error ?? "No se pudo completar la operación."),
       );
       if (response.ok) {
         router.refresh();
@@ -130,8 +133,8 @@ export function MeetingDetailManager({
           ? localMontevideoToIso(formData, "horaAsistenciaFin")
           : undefined,
         requiereAsistenciaTecnica: formData.get("requiereAsistenciaTecnica") === "on",
-        requiereGrabacion: formData.get("requiereGrabacion") === "on"
-      })
+        requiereGrabacion: formData.get("requiereGrabacion") === "on",
+      }),
     });
     if (added) {
       setAddingOpen(false);
@@ -148,9 +151,9 @@ export function MeetingDetailManager({
           accion: "EDITAR_ENCUENTRO",
           inicio: localMontevideoToIso(formData, "horaInicio"),
           fin: localMontevideoToIso(formData, "horaFin"),
-          descripcion: formData.get("descripcion") ?? ""
-        })
-      }
+          descripcion: formData.get("descripcion") ?? "",
+        }),
+      },
     );
     if (updated) {
       setEditingId(null);
@@ -167,13 +170,13 @@ export function MeetingDetailManager({
     ) {
       setOperationalEditor({ id, type: "ASISTENCIA" });
       setMessage(
-        "Definí primero la hora exacta de llegada y salida del asistente para este encuentro híbrido."
+        "Definí primero la hora exacta de llegada y salida del asistente para este encuentro híbrido.",
       );
       return Promise.resolve(false);
     }
     return request(meeting?.solicitudId ?? solicitudId, id, {
       method: "PATCH",
-      body: JSON.stringify({ accion: "CAMBIAR_ASISTENCIA", requiereAsistenciaTecnica: value })
+      body: JSON.stringify({ accion: "CAMBIAR_ASISTENCIA", requiereAsistenciaTecnica: value }),
     });
   }
 
@@ -185,9 +188,9 @@ export function MeetingDetailManager({
         method: "PATCH",
         body: JSON.stringify({
           accion: "CAMBIAR_MODALIDAD",
-          modalidad: formData.get("modalidad")
-        })
-      }
+          modalidad: formData.get("modalidad"),
+        }),
+      },
     );
     if (updated) {
       setOperationalEditor(null);
@@ -200,8 +203,8 @@ export function MeetingDetailManager({
       id,
       {
         method: "PATCH",
-        body: JSON.stringify({ accion: "CAMBIAR_MODALIDAD", modalidad: null })
-      }
+        body: JSON.stringify({ accion: "CAMBIAR_MODALIDAD", modalidad: null }),
+      },
     );
     if (updated) {
       setOperationalEditor(null);
@@ -217,9 +220,9 @@ export function MeetingDetailManager({
         body: JSON.stringify({
           accion: "EDITAR_HORARIO_ASISTENCIA",
           inicioAsistenciaTecnica: localMontevideoToIso(formData, "horaAsistenciaInicio"),
-          finAsistenciaTecnica: localMontevideoToIso(formData, "horaAsistenciaFin")
-        })
-      }
+          finAsistenciaTecnica: localMontevideoToIso(formData, "horaAsistenciaFin"),
+        }),
+      },
     );
     if (updated) {
       setOperationalEditor(null);
@@ -232,8 +235,8 @@ export function MeetingDetailManager({
       id,
       {
         method: "PATCH",
-        body: JSON.stringify({ accion: "RESTABLECER_HORARIO_ASISTENCIA" })
-      }
+        body: JSON.stringify({ accion: "RESTABLECER_HORARIO_ASISTENCIA" }),
+      },
     );
     if (updated) {
       setOperationalEditor(null);
@@ -245,7 +248,7 @@ export function MeetingDetailManager({
       editable: meeting.editable,
       ocupado: busy !== null,
       encuentrosEnSolicitud: meeting.encuentrosEnSolicitud,
-      encuentrosEnPagina: meetings.length
+      encuentrosEnPagina: meetings.length,
     });
   }
 
@@ -256,13 +259,13 @@ export function MeetingDetailManager({
       const response = await fetch("/api/v1/reuniones/cancelar-serie", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ solicitudIds: [meeting.solicitudId] })
+        body: JSON.stringify({ solicitudIds: [meeting.solicitudId] }),
       });
       const result = await response.json().catch(() => ({}));
       setMessage(
         response.ok
           ? (result.message ?? "Cancelación registrada.")
-          : (result.error ?? "No se pudo cancelar el encuentro.")
+          : (result.error ?? "No se pudo cancelar el encuentro."),
       );
       if (response.ok) {
         router.refresh();
@@ -288,7 +291,7 @@ export function MeetingDetailManager({
     if (plan.modo === "SOLICITUD") {
       if (
         !window.confirm(
-          "Se cancelará este encuentro y su evento de Calendar. Los demás encuentros de la serie no cambian. ¿Continuar?"
+          "Se cancelará este encuentro y su evento de Calendar. Los demás encuentros de la serie no cambian. ¿Continuar?",
         )
       ) {
         return;
@@ -296,7 +299,11 @@ export function MeetingDetailManager({
       await cancelarSolicitudDelEncuentro(meeting);
       return;
     }
-    if (!window.confirm("Se cancelará el evento de Calendar y se eliminará este encuentro. ¿Continuar?")) {
+    if (
+      !window.confirm(
+        "Se cancelará el evento de Calendar y se eliminará este encuentro. ¿Continuar?",
+      )
+    ) {
       return;
     }
     await request(meeting.solicitudId ?? solicitudId, id, { method: "DELETE" });
@@ -308,7 +315,7 @@ export function MeetingDetailManager({
     }
     if (
       !window.confirm(
-        "Se registrará la cancelación de toda la serie. Google Calendar podría tardar unos minutos en reflejarla. ¿Continuar?"
+        "Se registrará la cancelación de toda la serie. Google Calendar podría tardar unos minutos en reflejarla. ¿Continuar?",
       )
     ) {
       return;
@@ -320,7 +327,7 @@ export function MeetingDetailManager({
       const response = await fetch("/api/v1/reuniones/cancelar-serie", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ solicitudIds: requestIds })
+        body: JSON.stringify({ solicitudIds: requestIds }),
       });
       const result = await response.json().catch(() => ({}));
       if (!response.ok) {
@@ -346,7 +353,8 @@ export function MeetingDetailManager({
   }
 
   const canRemoveAll = meetings.length > 0;
-  const removeAllBlockedReason = meetings.length === 0 ? "La reunión no tiene encuentros para eliminar." : "";
+  const removeAllBlockedReason =
+    meetings.length === 0 ? "La reunión no tiene encuentros para eliminar." : "";
   const proximos = filtrarEncuentrosPorVista(meetings, "PROXIMOS");
   const pasados = filtrarEncuentrosPorVista(meetings, "PASADOS");
   const visibleMeetings = filtrarEncuentrosPorVista(meetings, vistaTemporal);
@@ -437,7 +445,8 @@ export function MeetingDetailManager({
         {visibleMeetings.map((meeting) => {
           const editing = editingId === meeting.id;
           const assistance = assistanceLabel(meeting);
-          const expanded = expandedIds.has(meeting.id) || editing || operationalEditor?.id === meeting.id;
+          const expanded =
+            expandedIds.has(meeting.id) || editing || operationalEditor?.id === meeting.id;
           return (
             <article
               className={`encounter-item encounter-card encounter-card-v2 is-${meeting.temporalidad.toLowerCase().replace("_", "-")}`}
@@ -536,11 +545,14 @@ export function MeetingDetailManager({
                         <div className="encounter-v2-description">
                           <span>Detalle del encuentro</span>
                           <p>
-                            {meeting.descripcion?.trim() || "Sin descripción específica para este encuentro."}
+                            {meeting.descripcion?.trim() ||
+                              "Sin descripción específica para este encuentro."}
                           </p>
                         </div>
 
-                        <div className={`encounter-v2-meet ${meeting.joinUrl ? "is-ready" : "is-pending"}`}>
+                        <div
+                          className={`encounter-v2-meet ${meeting.joinUrl ? "is-ready" : "is-pending"}`}
+                        >
                           <Video size={22} aria-hidden="true" />
                           <div>
                             <span>Google Meet</span>
@@ -562,7 +574,10 @@ export function MeetingDetailManager({
                               </a>
                             ) : null}
                             {meeting.joinUrl ? (
-                              <MeetLinkActions openClassName="primary-action" url={meeting.joinUrl} />
+                              <MeetLinkActions
+                                openClassName="primary-action"
+                                url={meeting.joinUrl}
+                              />
                             ) : (
                               <span className="muted-text">No disponible todavía</span>
                             )}
@@ -584,17 +599,24 @@ export function MeetingDetailManager({
                             <div className="encounter-v2-cohost-list">
                               {meeting.cohosts.map((cohost) => {
                                 const confirmed = meeting.verifiedCohostEmails?.some((email) =>
-                                  cohost.toLowerCase().includes(email.toLowerCase())
+                                  cohost.toLowerCase().includes(email.toLowerCase()),
                                 );
                                 return (
                                   <span
                                     key={cohost}
-                                    title={confirmed ? "Verificado en Google Meet" : "Verificación pendiente"}
+                                    title={
+                                      confirmed
+                                        ? "Verificado en Google Meet"
+                                        : "Verificación pendiente"
+                                    }
                                     style={{ display: "flex", alignItems: "center", gap: 6 }}
                                   >
                                     <span
                                       aria-label={confirmed ? "Verificado" : "Pendiente"}
-                                      style={{ color: confirmed ? "#177245" : "#737b8c", fontWeight: 700 }}
+                                      style={{
+                                        color: confirmed ? "#177245" : "#737b8c",
+                                        fontWeight: 700,
+                                      }}
                                     >
                                       {confirmed ? "✓" : "○"}
                                     </span>
@@ -623,7 +645,9 @@ export function MeetingDetailManager({
                                 {meeting.modalidad === "HIBRIDA" ? " · presencial" : ""}
                               </small>
                             ) : meeting.modalidad === "HIBRIDA" ? (
-                              <small className="status status-warning">Falta definir llegada y salida</small>
+                              <small className="status status-warning">
+                                Falta definir llegada y salida
+                              </small>
                             ) : null
                           ) : null}
                         </div>
@@ -654,7 +678,9 @@ export function MeetingDetailManager({
                             <button
                               className="secondary-action"
                               disabled={busy !== null}
-                              onClick={() => setOperationalEditor({ id: meeting.id, type: "MODALIDAD" })}
+                              onClick={() =>
+                                setOperationalEditor({ id: meeting.id, type: "MODALIDAD" })
+                              }
                               type="button"
                             >
                               <Pencil size={16} />
@@ -664,7 +690,9 @@ export function MeetingDetailManager({
                               <button
                                 className="secondary-action"
                                 disabled={busy !== null}
-                                onClick={() => setOperationalEditor({ id: meeting.id, type: "ASISTENCIA" })}
+                                onClick={() =>
+                                  setOperationalEditor({ id: meeting.id, type: "ASISTENCIA" })
+                                }
                                 type="button"
                               >
                                 <CalendarClock size={16} />
@@ -674,7 +702,10 @@ export function MeetingDetailManager({
                           </>
                         ) : null}
                         {canManageOperationalOverrides ? (
-                          <a className="secondary-action" href={`/monitoreo/gestionar/${meeting.id}`}>
+                          <a
+                            className="secondary-action"
+                            href={`/monitoreo/gestionar/${meeting.id}`}
+                          >
                             <UserRoundPlus size={16} />
                             Gestionar monitoreo
                           </a>
@@ -760,7 +791,11 @@ export function MeetingDetailManager({
                                 <option value="HIBRIDA">Híbrida / presencial</option>
                               </select>
                             </label>
-                            <button className="primary-action" disabled={busy !== null} type="submit">
+                            <button
+                              className="primary-action"
+                              disabled={busy !== null}
+                              type="submit"
+                            >
                               {busy === meeting.id ? (
                                 <LoaderCircle className="button-spinner" size={16} />
                               ) : (
@@ -791,7 +826,8 @@ export function MeetingDetailManager({
                                 name="horaAsistenciaInicio"
                                 type="time"
                                 defaultValue={
-                                  meeting.inicioAsistencia?.slice(11, 16) ?? meeting.inicio.slice(11, 16)
+                                  meeting.inicioAsistencia?.slice(11, 16) ??
+                                  meeting.inicio.slice(11, 16)
                                 }
                                 disabled={busy !== null}
                                 required
@@ -809,7 +845,11 @@ export function MeetingDetailManager({
                                 required
                               />
                             </label>
-                            <button className="primary-action" disabled={busy !== null} type="submit">
+                            <button
+                              className="primary-action"
+                              disabled={busy !== null}
+                              type="submit"
+                            >
                               {busy === meeting.id ? (
                                 <LoaderCircle className="button-spinner" size={16} />
                               ) : (
@@ -855,7 +895,10 @@ export function MeetingDetailManager({
                         <span className="sr-only">Cerrar edición</span>
                       </button>
                     </div>
-                    <form className="encounter-edit-form" action={(formData) => edit(meeting.id, formData)}>
+                    <form
+                      className="encounter-edit-form"
+                      action={(formData) => edit(meeting.id, formData)}
+                    >
                       <label className="field">
                         <span>Fecha</span>
                         <input
@@ -967,7 +1010,11 @@ export function MeetingDetailManager({
           </button>
           <label className="field encounter-add-description">
             <span>Descripción del encuentro (opcional)</span>
-            <textarea name="descripcion" placeholder="Tema, docente o indicaciones específicas" rows={2} />
+            <textarea
+              name="descripcion"
+              placeholder="Tema, docente o indicaciones específicas"
+              rows={2}
+            />
           </label>
         </form>
       </details>
@@ -978,8 +1025,13 @@ export function MeetingDetailManager({
           <div className="meeting-danger-zone">
             <div>
               <h2>Eliminar serie completa</h2>
-              <p>Cancela la serie y todos sus eventos de Calendar, incluso si algún encuentro ya ocurrió.</p>
-              {removeAllBlockedReason ? <p className="danger-note">{removeAllBlockedReason}</p> : null}
+              <p>
+                Cancela la serie y todos sus eventos de Calendar, incluso si algún encuentro ya
+                ocurrió.
+              </p>
+              {removeAllBlockedReason ? (
+                <p className="danger-note">{removeAllBlockedReason}</p>
+              ) : null}
             </div>
             <button
               className="secondary-action danger-action"
@@ -988,7 +1040,11 @@ export function MeetingDetailManager({
               title={removeAllBlockedReason || "Eliminar serie completa"}
               type="button"
             >
-              {busy === "all" ? <LoaderCircle className="button-spinner" size={17} /> : <Trash2 size={17} />}
+              {busy === "all" ? (
+                <LoaderCircle className="button-spinner" size={17} />
+              ) : (
+                <Trash2 size={17} />
+              )}
               {busy === "all" ? `Eliminando ${meetings.length}…` : "Eliminar serie"}
             </button>
           </div>
@@ -1004,7 +1060,7 @@ function assistanceLabel(meeting: Encounter): Readonly<{ title: string; detail?:
       title: meeting.asistenteTecnico,
       detail: meeting.cohostsConfirmados
         ? "Cohost técnico verificado en Google."
-        : "Monitoreo asignado; permisos Meet pendientes de verificar."
+        : "Monitoreo asignado; permisos Meet pendientes de verificar.",
     };
   }
   if (meeting.requiereAsistenciaTecnica) {
@@ -1013,7 +1069,7 @@ function assistanceLabel(meeting: Encounter): Readonly<{ title: string; detail?:
       detail:
         meeting.postulantes > 0
           ? `${meeting.postulantes} ${meeting.postulantes === 1 ? "postulación disponible" : "postulaciones disponibles"}`
-          : "Todavía no hay postulaciones."
+          : "Todavía no hay postulaciones.",
     };
   }
   return { title: "No requiere" };

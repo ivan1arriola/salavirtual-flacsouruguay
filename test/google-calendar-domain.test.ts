@@ -4,7 +4,7 @@ import {
   crearConferenceDataMeet,
   eventoCalendarCoincideConSolicitud,
   extraerConferenceData,
-  extraerMeetProvisionado
+  extraerMeetProvisionado,
 } from "../src/modules/meet/google-calendar.domain";
 
 describe("evento Google Calendar puro", () => {
@@ -15,7 +15,7 @@ describe("evento Google Calendar puro", () => {
       fin: new Date("2026-08-03T15:00:00.000Z"),
       timezone: "America/Montevideo",
       calendarId: "sala01@flacso.edu.uy",
-      calendarEventId: "calendar-request-1"
+      calendarEventId: "calendar-request-1",
     });
 
     expect(event).not.toHaveProperty("conferenceData");
@@ -23,22 +23,25 @@ describe("evento Google Calendar puro", () => {
   });
 
   it("construye conferenceData para un espacio creado por Meet API", () => {
-    const conferenceData = crearConferenceDataMeet("abc-defg-hij", "https://meet.google.com/abc-defg-hij");
+    const conferenceData = crearConferenceDataMeet(
+      "abc-defg-hij",
+      "https://meet.google.com/abc-defg-hij",
+    );
 
     expect(conferenceData).toEqual({
       conferenceId: "abc-defg-hij",
       conferenceSolution: {
         key: { type: "hangoutsMeet" },
-        name: "Google Meet"
+        name: "Google Meet",
       },
       entryPoints: [
         {
           entryPointType: "video",
           uri: "https://meet.google.com/abc-defg-hij",
           label: "meet.google.com/abc-defg-hij",
-          meetingCode: "abc-defg-hij"
-        }
-      ]
+          meetingCode: "abc-defg-hij",
+        },
+      ],
     });
   });
 
@@ -47,11 +50,11 @@ describe("evento Google Calendar puro", () => {
       extraerMeetProvisionado({
         id: "calendar-event",
         hangoutLink: "https://meet.google.com/abc-defg-hij",
-        conferenceData: { conferenceId: "abc-defg-hij" }
-      })
+        conferenceData: { conferenceId: "abc-defg-hij" },
+      }),
     ).toMatchObject({
       externalEventId: "calendar-event",
-      codigoReunion: "abc-defg-hij"
+      codigoReunion: "abc-defg-hij",
     });
   });
 
@@ -67,10 +70,13 @@ describe("evento Google Calendar puro", () => {
       timezone: "America/Montevideo",
       calendarId: "sala01@flacso.edu.uy",
       calendarEventId: "calendar-cohosts",
-      cohostEmails: ["docente@flacso.edu.uy", "web@flacso.edu.uy"]
+      cohostEmails: ["docente@flacso.edu.uy", "web@flacso.edu.uy"],
     });
 
-    expect(event.attendees).toEqual([{ email: "docente@flacso.edu.uy" }, { email: "web@flacso.edu.uy" }]);
+    expect(event.attendees).toEqual([
+      { email: "docente@flacso.edu.uy" },
+      { email: "web@flacso.edu.uy" },
+    ]);
   });
 
   it("incluye invitados de Calendar sin duplicar los cohosts", () => {
@@ -82,17 +88,20 @@ describe("evento Google Calendar puro", () => {
       calendarId: "sala01@flacso.edu.uy",
       calendarEventId: "calendar-guests",
       cohostEmails: ["DOCENTE@FLACSO.EDU.UY"],
-      guestEmails: ["invitado@ejemplo.org", "docente@flacso.edu.uy"]
+      guestEmails: ["invitado@ejemplo.org", "docente@flacso.edu.uy"],
     });
 
-    expect(event.attendees).toEqual([{ email: "docente@flacso.edu.uy" }, { email: "invitado@ejemplo.org" }]);
+    expect(event.attendees).toEqual([
+      { email: "docente@flacso.edu.uy" },
+      { email: "invitado@ejemplo.org" },
+    ]);
   });
 
   it("reutiliza la conferencia de la serie en un evento Calendar independiente", () => {
     const conferenceData = {
       conferenceId: "abc-defg-hij",
       conferenceSolution: { key: { type: "hangoutsMeet" } },
-      entryPoints: [{ entryPointType: "video", uri: "https://meet.google.com/abc-defg-hij" }]
+      entryPoints: [{ entryPointType: "video", uri: "https://meet.google.com/abc-defg-hij" }],
     };
     const event = crearCalendarEvent({
       titulo: "Encuentro 2",
@@ -101,7 +110,7 @@ describe("evento Google Calendar puro", () => {
       timezone: "America/Montevideo",
       calendarId: "sala01@flacso.edu.uy",
       calendarEventId: "calendar-shared",
-      conferenceData
+      conferenceData,
     });
 
     expect(event.conferenceData).toBe(conferenceData);
@@ -115,7 +124,7 @@ describe("evento Google Calendar puro", () => {
       descripcion: "Tema",
       inicio: new Date("2026-08-20T16:00:00Z"),
       fin: new Date("2026-08-20T17:00:00Z"),
-      timezone: "America/Montevideo"
+      timezone: "America/Montevideo",
     };
     expect(
       eventoCalendarCoincideConSolicitud(
@@ -123,10 +132,10 @@ describe("evento Google Calendar puro", () => {
           summary: "Clase",
           description: "Tema",
           start: { dateTime: "2026-08-20T16:00:00Z", timeZone: "America/Montevideo" },
-          end: { dateTime: "2026-08-20T17:00:00Z", timeZone: "America/Montevideo" }
+          end: { dateTime: "2026-08-20T17:00:00Z", timeZone: "America/Montevideo" },
         },
-        request
-      )
+        request,
+      ),
     ).toBe(true);
     expect(
       eventoCalendarCoincideConSolicitud(
@@ -134,10 +143,10 @@ describe("evento Google Calendar puro", () => {
           summary: "Clase",
           description: "Tema",
           start: { dateTime: "2026-08-20T14:00:00Z", timeZone: "America/Montevideo" },
-          end: { dateTime: "2026-08-20T15:00:00Z", timeZone: "America/Montevideo" }
+          end: { dateTime: "2026-08-20T15:00:00Z", timeZone: "America/Montevideo" },
         },
-        request
-      )
+        request,
+      ),
     ).toBe(false);
   });
 });

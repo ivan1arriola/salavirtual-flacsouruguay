@@ -8,8 +8,8 @@ describe("sincronizacion segura del calendario de asistentes", () => {
         cuentaGoogleId: "google-1",
         email: "asistente@flacso.edu.uy",
         accion: "PUBLICAR" as const,
-        estado: "SINCRONIZADA" as const
-      }
+        estado: "SINCRONIZADA" as const,
+      },
     ]);
 
     expect(result.error).toBeNull();

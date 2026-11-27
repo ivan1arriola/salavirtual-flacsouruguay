@@ -5,7 +5,7 @@ export const SETTINGS_SECTION_IDS = [
   "salas",
   "correo",
   "notificaciones",
-  "historico"
+  "historico",
 ] as const;
 
 export type SettingsSection = (typeof SETTINGS_SECTION_IDS)[number];
@@ -17,57 +17,65 @@ export type SettingsSectionMetadata = Readonly<{
   group?: "Integraciones" | "Operación" | "Comunicación";
   /** No aparece en el menú; se llega por un enlace. */
   hidden?: true;
-  icon: "overview" | "workspace" | "zoom" | "rooms" | "programs" | "assistance" | "email" | "history";
+  icon:
+    "overview" | "workspace" | "zoom" | "rooms" | "programs" | "assistance" | "email" | "history";
 }>;
 
 export const SETTINGS_SECTIONS: readonly SettingsSectionMetadata[] = [
-  { id: "resumen", label: "Resumen", description: "Estado general y tareas pendientes", icon: "overview" },
+  {
+    id: "resumen",
+    label: "Resumen",
+    description: "Estado general y tareas pendientes",
+    icon: "overview",
+  },
   {
     id: "zoom",
     label: "Zoom",
     description: "Conexión, grupo de cuentas, avisos y agenda",
     group: "Integraciones",
-    icon: "zoom"
+    icon: "zoom",
   },
   {
     id: "google",
     label: "Google",
     description: "Cuenta de servicio, delegación y Drive",
     group: "Integraciones",
-    icon: "workspace"
+    icon: "workspace",
   },
   {
     id: "salas",
     label: "Salas",
     description: "Cuentas de Zoom que alojan reuniones",
     group: "Operación",
-    icon: "rooms"
+    icon: "rooms",
   },
   {
     id: "correo",
     label: "Correo",
     description: "Envío de invitaciones y avisos",
     group: "Comunicación",
-    icon: "email"
+    icon: "email",
   },
   {
     id: "notificaciones",
     label: "Notificaciones",
     description: "Reportes mensuales y destinatarios",
     group: "Comunicación",
-    icon: "assistance"
+    icon: "assistance",
   },
   {
     id: "historico",
     label: "Registros Zoom importados",
     description: "Reuniones importadas disponibles para consulta",
     hidden: true,
-    icon: "history"
-  }
+    icon: "history",
+  },
 ];
 
 export function resolveSettingsSection(value?: string): SettingsSection {
-  return SETTINGS_SECTION_IDS.includes(value as SettingsSection) ? (value as SettingsSection) : "resumen";
+  return SETTINGS_SECTION_IDS.includes(value as SettingsSection)
+    ? (value as SettingsSection)
+    : "resumen";
 }
 
 export function settingsHref(section: SettingsSection) {
@@ -81,16 +89,18 @@ const LEGACY_SECTION_ROUTES: Readonly<Record<string, string>> = {
   salas: "/configuracion/salas",
   correo: "/configuracion/correo",
   historico: "/configuracion/historico",
-  programas: "/usuarios?vista=programas"
+  programas: "/usuarios?vista=programas",
 };
 
 /** Enlaces viejos `/configuracion?seccion=…`; conservan la búsqueda del histórico. */
 export function legacySettingsRedirect(
   section?: string,
-  params: Readonly<{ busqueda?: string; pagina?: string }> = {}
+  params: Readonly<{ busqueda?: string; pagina?: string }> = {},
 ): string | null {
   const ruta =
-    section && Object.hasOwn(LEGACY_SECTION_ROUTES, section) ? LEGACY_SECTION_ROUTES[section] : undefined;
+    section && Object.hasOwn(LEGACY_SECTION_ROUTES, section)
+      ? LEGACY_SECTION_ROUTES[section]
+      : undefined;
   if (!ruta) {
     return null;
   }
@@ -124,12 +134,12 @@ export function workspaceReadiness(input: WorkspaceReadinessInput) {
     Boolean(input.serviceAccountEmail && input.privateKeyConfigurada),
     Boolean(input.serviceAccountSubject),
     Boolean(input.driveDestinationId),
-    input.activa
+    input.activa,
   ];
   const readyCount = checks.filter(Boolean).length;
   return {
     readyCount,
     totalCount: checks.length,
-    ready: readyCount === checks.length
+    ready: readyCount === checks.length,
   };
 }

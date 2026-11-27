@@ -2,5 +2,5 @@ export {
   parseAuthConfig,
   resolverRedireccionAutorizada,
   type AuthConfig,
-  type AuthEnvironment
+  type AuthEnvironment,
 } from "@/src/modules/identity/api";

@@ -1,5 +1,6 @@
 .app-frame {
-  background: radial-gradient(circle at 100% 0%, rgba(44, 71, 119, 0.06), transparent 30rem), var(--bg);
+  background:
+    radial-gradient(circle at 100% 0%, rgba(44, 71, 119, 0.06), transparent 30rem), var(--bg);
 }
 
 /* Navegación lateral: base clara, identidad azul y CTA amarillo */
@@ -262,7 +263,8 @@
   border: 0;
   border-radius: 18px;
   background:
-    radial-gradient(circle at 88% 12%, rgba(255, 207, 31, 0.15), transparent 13rem), var(--hero-gradient);
+    radial-gradient(circle at 88% 12%, rgba(255, 207, 31, 0.15), transparent 13rem),
+    var(--hero-gradient);
   color: #ffffff;
   box-shadow: 0 16px 42px rgba(21, 42, 80, 0.18);
 }
@@ -297,7 +299,8 @@
 
 .teacher-dashboard .role-dashboard-hero {
   background:
-    radial-gradient(circle at 88% 12%, rgba(255, 207, 31, 0.15), transparent 13rem), var(--hero-gradient);
+    radial-gradient(circle at 88% 12%, rgba(255, 207, 31, 0.15), transparent 13rem),
+    var(--hero-gradient);
 }
 
 .role-dashboard-hero h1,

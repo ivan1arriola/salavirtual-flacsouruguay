@@ -1,4 +1,5 @@
-import { Prisma, type PrismaClient } from "@prisma/client";
+import type { Prisma } from "@prisma/client";
+import { type PrismaClient } from "@prisma/client";
 import type { SessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { ConflictApiError, ForbiddenApiError, NotFoundApiError } from "@/src/lib/http/api-error";
 import { normalizeMeetLink, invalidarVerificacionCohosts } from "@/src/modules/conferencias/api";
@@ -21,16 +22,23 @@ export type RescateLinkDeps = Readonly<{
     host: string,
     eventId: string,
     newUrl: string,
-    current: EstadoCalendarRescate
+    current: EstadoCalendarRescate,
   ) => Promise<EstadoCalendarRescate>;
-  restaurarEnCalendar: (host: string, eventId: string, previous: EstadoCalendarRescate) => Promise<void>;
-  enviarCorreo: (to: string, message: ReturnType<typeof construirCorreoParticipacion>) => Promise<boolean>;
+  restaurarEnCalendar: (
+    host: string,
+    eventId: string,
+    previous: EstadoCalendarRescate,
+  ) => Promise<void>;
+  enviarCorreo: (
+    to: string,
+    message: ReturnType<typeof construirCorreoParticipacion>,
+  ) => Promise<boolean>;
 }>;
 
 export function descripcionConAccesoMeet(description: string | undefined, url: string): string {
   return [
     ...(description ?? "").split("\n").filter((line) => !/^\s*Acceso Google Meet:/i.test(line)),
-    "Acceso Google Meet: " + url
+    "Acceso Google Meet: " + url,
   ]
     .join("\n")
     .trim();
@@ -40,7 +48,7 @@ export async function recuperarEnlaceSerie(
   deps: RescateLinkDeps,
   actor: SessionActor,
   solicitudId: string,
-  rawUrl: string
+  rawUrl: string,
 ): Promise<
   Readonly<{
     encuentros: number;
@@ -62,8 +70,8 @@ export async function recuperarEnlaceSerie(
       titulo: true,
       docenteProgramaId: true,
       createdAt: true,
-      docentePrograma: { select: { programaId: true } }
-    }
+      docentePrograma: { select: { programaId: true } },
+    },
   });
   if (!request) {
     throw new NotFoundApiError("La serie no existe.");
@@ -77,7 +85,7 @@ export async function recuperarEnlaceSerie(
       estado: "PROGRAMADA",
       proveedorActivoTipo: "GOOGLE_MEET",
       conservarGoogleMeet: true,
-      inicioProgramadoAt: { gt: new Date() }
+      inicioProgramadoAt: { gt: new Date() },
     },
     orderBy: { inicioProgramadoAt: "asc" },
     include: {
@@ -92,19 +100,19 @@ export async function recuperarEnlaceSerie(
               usuario: {
                 select: {
                   emailPrincipal: true,
-                  cuentasGoogle: { select: { email: true } }
-                }
-              }
-            }
-          }
-        }
+                  cuentasGoogle: { select: { email: true } },
+                },
+              },
+            },
+          },
+        },
       },
       eventosProveedor: {
         where: { proveedor: { tipo: "GOOGLE_MEET" } },
         include: { cuentaProveedor: { select: { emailOrganizador: true } } },
-        take: 1
-      }
-    }
+        take: 1,
+      },
+    },
   });
   if (!meetings.length) {
     throw new ConflictApiError("No hay encuentros futuros programados para cambiar el enlace.");
@@ -114,13 +122,15 @@ export async function recuperarEnlaceSerie(
     const host = event?.cuentaProveedor?.emailOrganizador;
     if (!event?.externalEventId || !host) {
       throw new ConflictApiError(
-        "Todos los encuentros necesitan un evento de Calendar con anfitrión configurado."
+        "Todos los encuentros necesitan un evento de Calendar con anfitrión configurado.",
       );
     }
     return { meeting, event, host };
   });
   if (records.every(({ event }) => event.joinUrl === link.url)) {
-    throw new ConflictApiError("El enlace indicado ya está asignado a todos los encuentros futuros.");
+    throw new ConflictApiError(
+      "El enlace indicado ya está asignado a todos los encuentros futuros.",
+    );
   }
   // No basta con una URL bien formada: Google debe reconocer el espacio.
   for (const host of new Set(records.map((r) => r.host))) {
@@ -135,7 +145,9 @@ export async function recuperarEnlaceSerie(
       const before = await deps.leerCalendario(record.host, eventId);
       const changed = await deps.reemplazarEnCalendar(record.host, eventId, link.url, before);
       if (changed.location !== link.url || changed.hangoutLink) {
-        throw new ConflictApiError("Google Calendar no confirmó la sustitución completa del enlace de Meet.");
+        throw new ConflictApiError(
+          "Google Calendar no confirmó la sustitución completa del enlace de Meet.",
+        );
       }
       patches.push({ host: record.host, eventId, before });
       calendarResult.set(record.event.id, changed);
@@ -146,7 +158,7 @@ export async function recuperarEnlaceSerie(
         await deps.restaurarEnCalendar(patch.host, patch.eventId, patch.before);
       } catch {
         console.error(
-          "Recuperación Meet: error crítico al revertir Calendar; requiere revisión de operaciones."
+          "Recuperación Meet: error crítico al revertir Calendar; requiere revisión de operaciones.",
         );
       }
     }
@@ -167,8 +179,8 @@ export async function recuperarEnlaceSerie(
             sincronizadoAt: new Date(),
             estadoIntegracion: "SINCRONIZADA",
             operacionPendiente: null,
-            errorIntegracion: null
-          }
+            errorIntegracion: null,
+          },
         });
       }
       await tx.auditoria.create({
@@ -177,9 +189,15 @@ export async function recuperarEnlaceSerie(
           accion: "ENLACE_SERIE_REEMPLAZADO",
           entidadTipo: "SolicitudSala",
           entidadId: solicitudId,
-          valorAnterior: { enlaces: [...new Set(records.map(({ event }) => event.joinUrl).filter(Boolean))] },
-          valorNuevo: { enlace: link.url, encuentros: records.length, notificaciones: "PENDIENTES" }
-        }
+          valorAnterior: {
+            enlaces: [...new Set(records.map(({ event }) => event.joinUrl).filter(Boolean))],
+          },
+          valorNuevo: {
+            enlace: link.url,
+            encuentros: records.length,
+            notificaciones: "PENDIENTES",
+          },
+        },
       });
     });
   } catch (error) {
@@ -187,20 +205,25 @@ export async function recuperarEnlaceSerie(
       try {
         await deps.restaurarEnCalendar(patch.host, patch.eventId, patch.before);
       } catch {
-        console.error("No fue posible revertir Calendar después de fallar el guardado del nuevo enlace.");
+        console.error(
+          "No fue posible revertir Calendar después de fallar el guardado del nuevo enlace.",
+        );
       }
     }
     throw error;
   }
   // Correos individuales por destinatario; no revelamos la lista de invitados a terceros.
-  const destinatarios = new Map<string, { rol: "INVITADO" | "COHOST"; encuentros: AvisoEncuentro[] }>();
+  const destinatarios = new Map<
+    string,
+    { rol: "INVITADO" | "COHOST"; encuentros: AvisoEncuentro[] }
+  >();
   for (const { meeting, host } of records) {
     const aviso: AvisoEncuentro = {
       id: meeting.id,
       titulo: request.titulo,
       inicio: meeting.inicioProgramadoAt,
       fin: meeting.finProgramadoAt,
-      urlMeet: link.url
+      urlMeet: link.url,
     };
     const cohosts = [
       ...meeting.cohosts.map((c) => c.cuentaGoogle.email),
@@ -212,11 +235,11 @@ export async function recuperarEnlaceSerie(
           : u.emailPrincipal
             ? [u.emailPrincipal]
             : [];
-      })
+      }),
     ];
     for (const [rol, emails] of [
       ["COHOST", cohosts],
-      ["INVITADO", meeting.invitados.map((i) => i.email)]
+      ["INVITADO", meeting.invitados.map((i) => i.email)],
     ] as const) {
       for (const value of emails) {
         const email = value.trim().toLowerCase();
@@ -244,7 +267,7 @@ export async function recuperarEnlaceSerie(
     try {
       const accepted = await deps.enviarCorreo(
         email,
-        construirCorreoParticipacion("ENLACE_CAMBIADO", encuentros, rol)
+        construirCorreoParticipacion("ENLACE_CAMBIADO", encuentros, rol),
       );
       if (accepted) {
         if (rol === "COHOST") {
@@ -265,14 +288,14 @@ export async function recuperarEnlaceSerie(
       accion: "ENLACE_SERIE_AVISOS_RESULTADO",
       entidadTipo: "SolicitudSala",
       entidadId: solicitudId,
-      valorNuevo: { cohostsNotificados, invitadosNotificados, erroresCorreo }
-    }
+      valorNuevo: { cohostsNotificados, invitadosNotificados, erroresCorreo },
+    },
   });
   return {
     encuentros: records.length,
     url: link.url,
     cohostsNotificados,
     invitadosNotificados,
-    erroresCorreo
+    erroresCorreo,
   };
 }

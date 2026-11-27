@@ -11,7 +11,7 @@ import { seleccionarEventoProveedorActivo } from "@/src/modules/reuniones/evento
 import {
   agruparPorDia,
   colorCuentaZoom,
-  nombreCuentaZoom
+  nombreCuentaZoom,
 } from "@/src/modules/reuniones/lista-zoom-agrupacion.domain";
 import { formatTime } from "@/src/lib/ui/format";
 
@@ -31,18 +31,20 @@ function obtenerEstadoVacio(total: number, query: string) {
   if (total === 0 && query) {
     return {
       title: "No encontramos coincidencias",
-      description: "Probá con otro término de búsqueda o quitá el filtro para volver a ver la agenda."
+      description:
+        "Probá con otro término de búsqueda o quitá el filtro para volver a ver la agenda.",
     };
   }
   if (total === 0) {
     return {
       title: "No hay reuniones próximas",
-      description: "Cuando haya encuentros programados que requieran monitoreo, aparecerán en esta agenda."
+      description:
+        "Cuando haya encuentros programados que requieran monitoreo, aparecerán en esta agenda.",
     };
   }
   return {
     title: "No encontramos reuniones para este filtro",
-    description: "Probá con otro estado o quitá la búsqueda para volver a ver las reuniones."
+    description: "Probá con otro estado o quitá la búsqueda para volver a ver las reuniones.",
   };
 }
 
@@ -59,7 +61,7 @@ function etiquetaRelativaDia(relativo: string | null | undefined): string | null
 function obtenerEtiquetaHost(
   cuenta: { nombre: string; emailOrganizador: string | null } | null | undefined,
   isZoom: boolean,
-  hostEmail: string | null | undefined
+  hostEmail: string | null | undefined,
 ): string | null {
   if (!cuenta) {
     return null;
@@ -79,7 +81,7 @@ function obtenerPlataforma(isZoom: boolean, hasEvent: boolean): "ZOOM" | "GOOGLE
 }
 
 export default async function AsistenciaTecnicaPage({
-  searchParams
+  searchParams,
 }: Readonly<{ searchParams: Promise<{ estado?: string; q?: string }> }>) {
   const session = await auth();
   if (!session?.user) {
@@ -103,8 +105,8 @@ export default async function AsistenciaTecnicaPage({
               { titulo: { contains: q, mode: "insensitive" } },
               {
                 docentePrograma: {
-                  programa: { nombre: { contains: q, mode: "insensitive" } }
-                }
+                  programa: { nombre: { contains: q, mode: "insensitive" } },
+                },
               },
               {
                 docentePrograma: {
@@ -112,15 +114,15 @@ export default async function AsistenciaTecnicaPage({
                     usuario: {
                       OR: [
                         { nombres: { contains: q, mode: "insensitive" } },
-                        { apellidos: { contains: q, mode: "insensitive" } }
-                      ]
-                    }
-                  }
-                }
-              }
-            ]
+                        { apellidos: { contains: q, mode: "insensitive" } },
+                      ],
+                    },
+                  },
+                },
+              },
+            ],
           }
-        : undefined
+        : undefined,
     },
     orderBy: [{ inicioProgramadoAt: "asc" }, { id: "asc" }],
     include: {
@@ -129,28 +131,28 @@ export default async function AsistenciaTecnicaPage({
           docentePrograma: {
             include: {
               programa: true,
-              docente: { include: { usuario: true } }
-            }
-          }
-        }
+              docente: { include: { usuario: true } },
+            },
+          },
+        },
       },
       asignaciones: {
         where: { estado: { in: [...ACTIVE_ASSIGNMENTS] } },
         include: { asistenteTecnico: { include: { usuario: true } } },
-        orderBy: { updatedAt: "desc" }
+        orderBy: { updatedAt: "desc" },
       },
       postulaciones: {
         where: {
           estado: "ME_INTERESA",
-          asistenteTecnico: { cesadoHastaProximoInicioSesion: false }
+          asistenteTecnico: { cesadoHastaProximoInicioSesion: false },
         },
         select: { asistenteTecnicoId: true },
-        orderBy: { createdAt: "asc" }
+        orderBy: { createdAt: "asc" },
       },
       eventosProveedor: {
-        include: { proveedor: true, cuentaProveedor: true }
-      }
-    }
+        include: { proveedor: true, cuentaProveedor: true },
+      },
+    },
   });
 
   const rows = meetings
@@ -159,7 +161,7 @@ export default async function AsistenciaTecnicaPage({
       return {
         meeting,
         assignment,
-        covered: Boolean(assignment)
+        covered: Boolean(assignment),
       };
     })
     .filter(({ covered }) => coincideFiltroCobertura(covered, estado));
@@ -168,14 +170,16 @@ export default async function AsistenciaTecnicaPage({
   const covered = meetings.filter(({ asignaciones }) => asignaciones.length > 0).length;
   const pending = total - covered;
   const applicantsCount = new Set(
-    meetings.flatMap((meeting) => meeting.postulaciones.map(({ asistenteTecnicoId }) => asistenteTecnicoId))
+    meetings.flatMap((meeting) =>
+      meeting.postulaciones.map(({ asistenteTecnicoId }) => asistenteTecnicoId),
+    ),
   ).size;
   const days = agruparPorDia(rows, ({ meeting }) => meeting.inicioProgramadoAt, now);
   const emptyState = obtenerEstadoVacio(meetings.length, q);
   const filters = [
     { value: "todas", label: "Todas", count: total },
     { value: "pendientes", label: "Pendientes", count: pending },
-    { value: "cubiertas", label: "Cubiertas", count: covered }
+    { value: "cubiertas", label: "Cubiertas", count: covered },
   ] as const;
 
   return (
@@ -191,7 +195,10 @@ export default async function AsistenciaTecnicaPage({
         </span>
       </header>
 
-      <nav className="monitoring-view-tabs monitoring-dashboard-tabs" aria-label="Secciones de monitoreo">
+      <nav
+        className="monitoring-view-tabs monitoring-dashboard-tabs"
+        aria-label="Secciones de monitoreo"
+      >
         <Link className="is-active" href="/monitoreo" aria-current="page">
           <CalendarDays size={17} aria-hidden="true" />
           Reuniones
@@ -236,7 +243,9 @@ export default async function AsistenciaTecnicaPage({
               return (
                 <Link
                   key={filter.value}
-                  className={"monitoring-status-filter " + (estado === filter.value ? "is-active" : "")}
+                  className={
+                    "monitoring-status-filter " + (estado === filter.value ? "is-active" : "")
+                  }
                   href={query ? "/monitoreo?" + query : "/monitoreo"}
                   aria-current={estado === filter.value ? "page" : undefined}
                 >
@@ -298,7 +307,9 @@ export default async function AsistenciaTecnicaPage({
                 <h2 className="monitoring-day-title" id={"monitoring-day-" + day.clave}>
                   <span className="monitoring-day-heading-main">
                     {etiquetaRelativaDia(day.relativo) ? (
-                      <span className="monitoring-day-relative">{etiquetaRelativaDia(day.relativo)}</span>
+                      <span className="monitoring-day-relative">
+                        {etiquetaRelativaDia(day.relativo)}
+                      </span>
                     ) : null}
                     {day.etiqueta}
                   </span>
@@ -311,19 +322,21 @@ export default async function AsistenciaTecnicaPage({
                     const association = meeting.solicitud.docentePrograma;
                     const event = seleccionarEventoProveedorActivo(meeting);
                     const isZoom =
-                      event?.proveedor.tipo === "ZOOM" || event?.proveedor.tipo === "ZOOM_HISTORICO";
+                      event?.proveedor.tipo === "ZOOM" ||
+                      event?.proveedor.tipo === "ZOOM_HISTORICO";
                     const hostEmail = isZoom ? event?.cuentaProveedor?.emailOrganizador : null;
                     const hostColor = colorCuentaZoom(hostEmail);
                     const assistantName = assignment
                       ? [
                           assignment.asistenteTecnico.usuario.nombres,
-                          assignment.asistenteTecnico.usuario.apellidos
+                          assignment.asistenteTecnico.usuario.apellidos,
                         ]
                           .filter(Boolean)
                           .join(" ")
                       : null;
                     const modalidad = meeting.modalidadOverride ?? meeting.solicitud.modalidad;
-                    const inicioAsistencia = meeting.inicioAsistenciaTecnicaAt ?? meeting.inicioProgramadoAt;
+                    const inicioAsistencia =
+                      meeting.inicioAsistenciaTecnicaAt ?? meeting.inicioProgramadoAt;
                     const finAsistencia = meeting.finAsistenciaTecnicaAt ?? meeting.finProgramadoAt;
                     const cuenta = event?.cuentaProveedor;
                     const hostLabel = obtenerEtiquetaHost(cuenta, isZoom, hostEmail);
@@ -338,7 +351,9 @@ export default async function AsistenciaTecnicaPage({
                           titulo: meeting.solicitud.titulo,
                           programa: association.programa.nombre,
                           docente:
-                            association.docente.usuario.nombres + " " + association.docente.usuario.apellidos,
+                            association.docente.usuario.nombres +
+                            " " +
+                            association.docente.usuario.apellidos,
                           horaAsistencia:
                             formatTime(inicioAsistencia) + "–" + formatTime(finAsistencia) + " h",
                           covered,
@@ -347,7 +362,9 @@ export default async function AsistenciaTecnicaPage({
                           joinUrl: event?.joinUrl ?? null,
                           hostLabel,
                           codigoReunion:
-                            isZoom && event ? (event.codigoReunion ?? event.externalEventId ?? null) : null,
+                            isZoom && event
+                              ? (event.codigoReunion ?? event.externalEventId ?? null)
+                              : null,
                           modalidad: modalidad === "HIBRIDA" ? "HIBRIDA" : "VIRTUAL",
                           horarioReunion:
                             modalidad === "HIBRIDA"
@@ -357,7 +374,7 @@ export default async function AsistenciaTecnicaPage({
                                 " h"
                               : null,
                           applicantsCount: meeting.postulaciones.length,
-                          cuenta: String(hostColor ?? "sin")
+                          cuenta: String(hostColor ?? "sin"),
                         }}
                       />
                     );

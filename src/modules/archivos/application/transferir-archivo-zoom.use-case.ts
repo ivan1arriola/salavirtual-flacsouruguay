@@ -3,14 +3,14 @@ import {
   proximoIntentoZoom,
   sanearErrorZoom,
   type LeaseArchivoZoom,
-  type LimitesCupoZoom
+  type LimitesCupoZoom,
 } from "../domain";
 import type {
   ArchivoReclamadoZoom,
   ArchivoStoragePort,
   DestinoConservadoZoom,
   OrigenZoomPort,
-  ZoomArchivoRepositoryPort
+  ZoomArchivoRepositoryPort,
 } from "../ports";
 import { TransferenciaZoomError, transferirStreamZoom } from "./zoom-transferencia-stream";
 
@@ -59,7 +59,7 @@ export async function transferirArchivoZoomUseCase(
   storage: ArchivoStoragePort,
   lease: LeaseArchivoZoom,
   signal: AbortSignal,
-  opciones: OpcionesTransferenciaZoom
+  opciones: OpcionesTransferenciaZoom,
 ): Promise<ResultadoTransferenciaArchivoZoom> {
   const archivo = await repo.obtenerArchivoReclamado(lease);
   if (!archivo) {
@@ -94,17 +94,17 @@ export async function transferirArchivoZoomUseCase(
         leaseObsoleto = true;
         control.abort();
       },
-      Math.max(opciones.leaseMs - margen, 0)
+      Math.max(opciones.leaseMs - margen, 0),
     );
     plazo.unref?.();
   };
   const progreso = async (
-    extra: { driveFileId?: string | null; uploadSessionCifrada?: string | null } = {}
+    extra: { driveFileId?: string | null; uploadSessionCifrada?: string | null } = {},
   ): Promise<void> => {
     const ok = await repo.guardarProgreso(lease, {
       bytesConfirmados: confirmados,
       leaseHasta: new Date(ahora().getTime() + opciones.leaseMs),
-      ...extra
+      ...extra,
     });
     if (!ok) {
       leaseObsoleto = true;
@@ -117,14 +117,14 @@ export async function transferirArchivoZoomUseCase(
     tipo: "REINTENTABLE" | "ESPERA" | "REVISION",
     codigo: string,
     detalle: string | null,
-    proximoIntentoAt: Date | null
+    proximoIntentoAt: Date | null,
   ): Promise<ResultadoTransferenciaArchivoZoom> => {
     const ok = await repo.registrarFallo(lease, {
       tipo,
       codigo,
       detalle: sanearErrorZoom(detalle),
       proximoIntentoAt,
-      ...(tipo === "REINTENTABLE" ? { limiteIntentos: intentosMaximos } : {})
+      ...(tipo === "REINTENTABLE" ? { limiteIntentos: intentosMaximos } : {}),
     });
     if (!ok) {
       return { tipo: "LEASE_OBSOLETO" };
@@ -141,13 +141,17 @@ export async function transferirArchivoZoomUseCase(
 
     // 1. Reconciliar siempre (por ID si se conoce, luego por marca de origen) antes de reservar o transferir.
     {
-      const hallado = await storage.buscarConservado(origenKey, archivo.driveFileId, control.signal);
+      const hallado = await storage.buscarConservado(
+        origenKey,
+        archivo.driveFileId,
+        control.signal,
+      );
       if (hallado.tipo === "AMBIGUO") {
         return await fallo(
           "REVISION",
           "DESTINO_AMBIGUO",
           `Drive tiene ${hallado.cantidad} recursos con la misma marca.`,
-          null
+          null,
         );
       }
       if (hallado.tipo === "UNO") {
@@ -180,13 +184,15 @@ export async function transferirArchivoZoomUseCase(
 
     // 3. Cupo: reservar lo que falta (el tamaño completo en un archivo nuevo).
     const total = archivo.recurso.tamanoBytes;
-    const faltante = total === null ? RESERVA_TAMANO_DESCONOCIDO : total > offset ? total - offset : 0n;
-    const historico = ahora().getTime() - archivo.ocurrencia.inicioRealAt.getTime() > VENTANA_RECIENTE_MS;
+    const faltante =
+      total === null ? RESERVA_TAMANO_DESCONOCIDO : total > offset ? total - offset : 0n;
+    const historico =
+      ahora().getTime() - archivo.ocurrencia.inicioRealAt.getTime() > VENTANA_RECIENTE_MS;
     const reserva = await repo.reservarTransferencia(lease, {
       bytes: faltante,
       prioridad: historico ? "HISTORICO" : "RECIENTE",
       ahora: ahora(),
-      limites: opciones.limites
+      limites: opciones.limites,
     });
     if (reserva.tipo === "LEASE_OBSOLETO") {
       return { tipo: "LEASE_OBSOLETO" };
@@ -196,7 +202,7 @@ export async function transferirArchivoZoomUseCase(
         "ESPERA",
         "TOPE_DIARIO",
         "Tope de transferencia de 24 h alcanzado.",
-        reserva.liberacionEstimadaAt
+        reserva.liberacionEstimadaAt,
       );
     }
     reservaId = reserva.reservaId;
@@ -210,7 +216,7 @@ export async function transferirArchivoZoomUseCase(
           "ESPERA",
           "CARPETA_NO_CONFIGURADA",
           "No hay carpeta de Drive configurada para este archivo.",
-          proximoIntentoZoom(1, ahora(), opciones.aleatorio)
+          proximoIntentoZoom(1, ahora(), opciones.aleatorio),
         );
       }
       await repo.guardarCarpetaOcurrencia(archivo.ocurrenciaId, carpetaId);
@@ -232,9 +238,9 @@ export async function transferirArchivoZoomUseCase(
           nombre: archivo.nombreDestino,
           carpetaId,
           mimeType: "application/octet-stream",
-          tamanoTotal: null
+          tamanoTotal: null,
         },
-        origenKey
+        origenKey,
       );
       confirmados = 0n;
       offset = 0n;
@@ -245,7 +251,12 @@ export async function transferirArchivoZoomUseCase(
     }
 
     // 5. Origen y transferencia con memoria acotada.
-    const descarga = await origen.abrirDescarga(archivo.ocurrencia, archivo.recurso, offset, control.signal);
+    const descarga = await origen.abrirDescarga(
+      archivo.ocurrencia,
+      archivo.recurso,
+      offset,
+      control.signal,
+    );
     if (descarga.tipo === "REQUIERE_REVISION") {
       return await fallo("REVISION", "ORIGEN_REQUIERE_REVISION", descarga.motivo, null);
     }
@@ -265,7 +276,7 @@ export async function transferirArchivoZoomUseCase(
       subirBloque: async (desde, bytes, { ultimo }) => {
         const res = await storage.subirBloque(sesionActual, desde, bytes, null, {
           ultimo,
-          signal: control.signal
+          signal: control.signal,
         });
         if (res.estado === "COMPLETA") {
           destinoFinal = res.destino;
@@ -278,7 +289,7 @@ export async function transferirArchivoZoomUseCase(
           await progreso();
         }
         return res;
-      }
+      },
     });
     if (leaseObsoleto) {
       return { tipo: "LEASE_OBSOLETO" };
@@ -288,14 +299,14 @@ export async function transferirArchivoZoomUseCase(
         "REINTENTABLE",
         "SUBIDA_SIN_FINALIZAR",
         "Drive no confirmó la finalización.",
-        proximoIntentoZoom(archivo.intentos + 1, ahora(), opciones.aleatorio)
+        proximoIntentoZoom(archivo.intentos + 1, ahora(), opciones.aleatorio),
       );
     }
 
     // 6. Verificación contra Drive antes de declarar conservado.
     const verificado = await storage.verificarArchivo(
       (destinoFinal as DestinoConservadoZoom).id,
-      control.signal
+      control.signal,
     );
     if (
       !verificado ||
@@ -306,7 +317,7 @@ export async function transferirArchivoZoomUseCase(
         "REVISION",
         "TAMANO_DISTINTO",
         "El tamaño en Drive no coincide con los bytes transferidos.",
-        null
+        null,
       );
     }
     if (!(await repo.confirmarConservado(lease, verificado))) {
@@ -338,7 +349,7 @@ export async function transferirArchivoZoomUseCase(
           "REINTENTABLE",
           "ORIGEN_INCOMPLETO",
           error.message,
-          proximoIntentoZoom(archivo.intentos + 1, ahora(), opciones.aleatorio)
+          proximoIntentoZoom(archivo.intentos + 1, ahora(), opciones.aleatorio),
         );
       }
       return await fallo("REVISION", error.codigo, error.message, null);
@@ -353,8 +364,8 @@ export async function transferirArchivoZoomUseCase(
         archivo.intentos + 1,
         ahora(),
         opciones.aleatorio,
-        esZoom ? (e.reintentarEnSegundos ?? null) : null
-      )
+        esZoom ? (e.reintentarEnSegundos ?? null) : null,
+      ),
     );
   } finally {
     if (latido) {

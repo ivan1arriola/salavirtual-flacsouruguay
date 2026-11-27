@@ -3,7 +3,7 @@ import {
   etiquetaMes,
   formatearDuracion,
   formatearHorasDecimales,
-  minutosTotales
+  minutosTotales,
 } from "./calculo-horas.domain";
 import type { CorreoReporteMensual, ResumenAsistencia } from "./liquidaciones.types";
 
@@ -12,7 +12,7 @@ export function construirCorreoReporteMensual(
     nombre: string;
     periodo: string;
     resumen: ResumenAsistencia;
-  }>
+  }>,
 ): CorreoReporteMensual {
   const totalMinutos = minutosTotales(input.resumen);
   const total = formatearDuracion(totalMinutos);
@@ -31,12 +31,12 @@ export function construirCorreoReporteMensual(
     `Híbrida: ${hibrida}`,
     "",
     "Este resumen fue generado automáticamente a partir de las asistencias registradas en el sistema.",
-    "Si detectás una diferencia, respondé a todos para que Administración pueda revisarla."
+    "Si detectás una diferencia, respondé a todos para que Administración pueda revisarla.",
   ].join("\n");
   const filas: readonly (readonly [string, string])[] = [
     ["Reuniones", String(input.resumen.reuniones)],
     ["Modalidad virtual", virtual],
-    ["Modalidad híbrida", hibrida]
+    ["Modalidad híbrida", hibrida],
   ];
   const detalle = filas
     .map(
@@ -46,7 +46,7 @@ export function construirCorreoReporteMensual(
         "</td>" +
         '<td align="right" style="padding:10px 0;border-bottom:1px solid #e4eaf0;color:#192b44;font-size:13px;font-weight:700">' +
         escaparHtmlEmail(valor) +
-        "</td></tr>"
+        "</td></tr>",
     )
     .join("");
   const html = envolverCorreo({
@@ -66,13 +66,13 @@ export function construirCorreoReporteMensual(
           '<p style="margin:0;color:#526277;font-size:13px;line-height:20px">' +
           escaparHtmlEmail(decimal) +
           " horas decimales</p>",
-        "Actividad de " + capitalizar(mes)
+        "Actividad de " + capitalizar(mes),
       ) +
       '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;margin-top:14px">' +
       detalle +
       "</table>",
     nota: "Este resumen se genera a partir de las asistencias registradas. Si detectás una diferencia, respondé a todos para que Administración pueda revisarla.",
-    permiteRespuesta: true
+    permiteRespuesta: true,
   });
   return { subject, text, html };
 }

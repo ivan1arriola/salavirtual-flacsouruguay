@@ -6,7 +6,7 @@ type SearchableHistoricalMeeting = Readonly<{
 
 export function filterHistoricalMeetings<T extends SearchableHistoricalMeeting>(
   meetings: readonly T[],
-  query: string
+  query: string,
 ): T[] {
   const normalizedQuery = normalize(query);
   if (!normalizedQuery) {
@@ -15,8 +15,8 @@ export function filterHistoricalMeetings<T extends SearchableHistoricalMeeting>(
 
   return meetings.filter((meeting) =>
     [meeting.title, meeting.program, meeting.account].some((value) =>
-      normalize(value).includes(normalizedQuery)
-    )
+      normalize(value).includes(normalizedQuery),
+    ),
   );
 }
 

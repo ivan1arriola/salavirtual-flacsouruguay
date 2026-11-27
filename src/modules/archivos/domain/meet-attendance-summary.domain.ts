@@ -14,7 +14,7 @@ const resumenVacio: ResumenIntervalosAsistencia = {
   minutosConectados: 0,
   porcentaje: 0,
   cumpleCincoSextos: false,
-  conexiones: 0
+  conexiones: 0,
 };
 export function normalizarCodigoMeet(codigo: string): string {
   return codigo
@@ -25,11 +25,15 @@ export function normalizarCodigoMeet(codigo: string): string {
 export function resumirIntervalosAsistencia(
   intervalos: readonly IntervaloAsistencia[],
   inicioProgramadoAt: Date,
-  finProgramadoAt: Date
+  finProgramadoAt: Date,
 ): ResumenIntervalosAsistencia {
   const inicioHorario = inicioProgramadoAt.getTime();
   const finHorario = finProgramadoAt.getTime();
-  if (!Number.isFinite(inicioHorario) || !Number.isFinite(finHorario) || finHorario <= inicioHorario) {
+  if (
+    !Number.isFinite(inicioHorario) ||
+    !Number.isFinite(finHorario) ||
+    finHorario <= inicioHorario
+  ) {
     return resumenVacio;
   }
   const recortadosSinOrden: readonly IntervaloMs[] = intervalos.flatMap(({ inicio, fin }) => {
@@ -37,11 +41,14 @@ export function resumirIntervalosAsistencia(
       finMs = Date.parse(fin);
     const desde = Math.max(inicioMs, inicioHorario),
       hasta = Math.min(finMs, finHorario);
-    return Number.isFinite(inicioMs) && Number.isFinite(finMs) && hasta > desde ? [{ desde, hasta }] : [];
+    return Number.isFinite(inicioMs) && Number.isFinite(finMs) && hasta > desde
+      ? [{ desde, hasta }]
+      : [];
   });
   const recortados = recortadosSinOrden.reduce<readonly IntervaloMs[]>((acc, current) => {
     const index = acc.findIndex(
-      (item) => item.desde > current.desde || (item.desde === current.desde && item.hasta > current.hasta)
+      (item) =>
+        item.desde > current.desde || (item.desde === current.desde && item.hasta > current.hasta),
     );
     const position = index < 0 ? acc.length : index;
     return [...acc.slice(0, position), current, ...acc.slice(position)];
@@ -49,7 +56,10 @@ export function resumirIntervalosAsistencia(
   const unidos = recortados.reduce<readonly IntervaloMs[]>((acc, intervalo) => {
     const anterior = acc.at(-1);
     return anterior && intervalo.desde <= anterior.hasta
-      ? [...acc.slice(0, -1), { desde: anterior.desde, hasta: Math.max(anterior.hasta, intervalo.hasta) }]
+      ? [
+          ...acc.slice(0, -1),
+          { desde: anterior.desde, hasta: Math.max(anterior.hasta, intervalo.hasta) },
+        ]
       : [...acc, intervalo];
   }, []);
   if (!unidos.length) {
@@ -64,6 +74,6 @@ export function resumirIntervalosAsistencia(
     minutosConectados: Math.round(totalMs / 60_000),
     porcentaje: Math.round(porcentaje * 100) / 100,
     cumpleCincoSextos: totalMs / duracionMs >= 5 / 6,
-    conexiones: recortados.length
+    conexiones: recortados.length,
   };
 }

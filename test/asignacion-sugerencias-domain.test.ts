@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildAssignmentSuggestions,
-  evaluarDisponibilidad
+  evaluarDisponibilidad,
 } from "../src/modules/asistencia/asignacion-sugerencias.service";
 
 const meeting = (id: string, start: string, end: string, applicants: string[] = []) => ({
@@ -13,8 +13,8 @@ const meeting = (id: string, start: string, end: string, applicants: string[] = 
     inicioAsistenciaTecnicaAt: null as Date | null,
     finAsistenciaTecnicaAt: null as Date | null,
     timezone: "America/Montevideo",
-    postulaciones: applicants.map((assistantId) => ({ asistenteTecnico: { id: assistantId } }))
-  }
+    postulaciones: applicants.map((assistantId) => ({ asistenteTecnico: { id: assistantId } })),
+  },
 });
 
 describe("buildAssignmentSuggestions", () => {
@@ -23,9 +23,9 @@ describe("buildAssignmentSuggestions", () => {
       meetings: [meeting("meeting-1", "2026-08-10T13:00:00Z", "2026-08-10T14:00:00Z", ["cesado"])],
       assistants: [
         { id: "cesado", name: "Cesado", cesadoHastaProximoInicioSesion: true },
-        { id: "disponible", name: "Disponible" }
+        { id: "disponible", name: "Disponible" },
       ],
-      assignments: []
+      assignments: [],
     });
 
     expect(result.get("meeting-1")?.id).toBe("disponible");
@@ -33,12 +33,14 @@ describe("buildAssignmentSuggestions", () => {
 
   it("prioriza postulantes disponibles sobre otros asistentes", () => {
     const result = buildAssignmentSuggestions({
-      meetings: [meeting("meeting-1", "2026-08-10T13:00:00Z", "2026-08-10T14:00:00Z", ["assistant-2"])],
+      meetings: [
+        meeting("meeting-1", "2026-08-10T13:00:00Z", "2026-08-10T14:00:00Z", ["assistant-2"]),
+      ],
       assistants: [
         { id: "assistant-1", name: "Ana" },
-        { id: "assistant-2", name: "Bruno" }
+        { id: "assistant-2", name: "Bruno" },
       ],
-      assignments: []
+      assignments: [],
     });
 
     expect(result.get("meeting-1")?.id).toBe("assistant-2");
@@ -47,10 +49,12 @@ describe("buildAssignmentSuggestions", () => {
 
   it("usa un asistente activo cuando todos los postulantes tienen conflicto", () => {
     const result = buildAssignmentSuggestions({
-      meetings: [meeting("meeting-1", "2026-08-10T13:00:00Z", "2026-08-10T14:00:00Z", ["assistant-1"])],
+      meetings: [
+        meeting("meeting-1", "2026-08-10T13:00:00Z", "2026-08-10T14:00:00Z", ["assistant-1"]),
+      ],
       assistants: [
         { id: "assistant-1", name: "Ana" },
-        { id: "assistant-2", name: "Bruno" }
+        { id: "assistant-2", name: "Bruno" },
       ],
       assignments: [
         {
@@ -58,9 +62,9 @@ describe("buildAssignmentSuggestions", () => {
           meetingId: "existing",
           startsAt: new Date("2026-08-10T13:30:00Z"),
           endsAt: new Date("2026-08-10T14:30:00Z"),
-          timezone: "America/Montevideo"
-        }
-      ]
+          timezone: "America/Montevideo",
+        },
+      ],
     });
 
     expect(result.get("meeting-1")?.id).toBe("assistant-2");
@@ -71,13 +75,13 @@ describe("buildAssignmentSuggestions", () => {
     const result = buildAssignmentSuggestions({
       meetings: [
         meeting("meeting-1", "2026-08-10T13:00:00Z", "2026-08-10T14:00:00Z"),
-        meeting("meeting-2", "2026-08-10T13:30:00Z", "2026-08-10T14:30:00Z")
+        meeting("meeting-2", "2026-08-10T13:30:00Z", "2026-08-10T14:30:00Z"),
       ],
       assistants: [
         { id: "assistant-1", name: "Ana" },
-        { id: "assistant-2", name: "Bruno" }
+        { id: "assistant-2", name: "Bruno" },
       ],
-      assignments: []
+      assignments: [],
     });
 
     expect(result.get("meeting-1")?.id).toBe("assistant-1");
@@ -88,13 +92,13 @@ describe("buildAssignmentSuggestions", () => {
     const result = buildAssignmentSuggestions({
       meetings: [
         meeting("meeting-1", "2026-08-10T13:00:00Z", "2026-08-10T14:00:00Z"),
-        meeting("meeting-2", "2026-08-10T14:29:00Z", "2026-08-10T15:30:00Z")
+        meeting("meeting-2", "2026-08-10T14:29:00Z", "2026-08-10T15:30:00Z"),
       ],
       assistants: [
         { id: "assistant-1", name: "Ana" },
-        { id: "assistant-2", name: "Bruno" }
+        { id: "assistant-2", name: "Bruno" },
       ],
-      assignments: []
+      assignments: [],
     });
 
     expect(result.get("meeting-1")?.id).toBe("assistant-1");
@@ -110,7 +114,7 @@ describe("buildAssignmentSuggestions", () => {
       meetings: [pending],
       assistants: [
         { id: "assistant-1", name: "Ana" },
-        { id: "assistant-2", name: "Bruno" }
+        { id: "assistant-2", name: "Bruno" },
       ],
       assignments: [
         {
@@ -118,9 +122,9 @@ describe("buildAssignmentSuggestions", () => {
           meetingId: "existing",
           startsAt: new Date("2026-08-10T13:00:00Z"),
           endsAt: new Date("2026-08-10T13:45:00Z"),
-          timezone: "America/Montevideo"
-        }
-      ]
+          timezone: "America/Montevideo",
+        },
+      ],
     });
 
     expect(result.get("meeting-1")?.id).toBe("assistant-2");
@@ -134,26 +138,31 @@ describe("buildAssignmentSuggestions", () => {
         horaDesde: "09:00",
         horaHasta: "18:00",
         timezone: "America/Montevideo",
-        tipo: "PREFERENTE" as const
-      }
+        tipo: "PREFERENTE" as const,
+      },
     ];
     const result = buildAssignmentSuggestions({
       meetings: [meeting("meeting-1", "2026-08-10T16:00:00Z", "2026-08-10T17:00:00Z")],
       assistants: [
         { id: "assistant-1", name: "Ana" },
-        { id: "assistant-2", name: "Bruno", disponibilidades: recurrent }
+        { id: "assistant-2", name: "Bruno", disponibilidades: recurrent },
       ],
-      assignments: []
+      assignments: [],
     });
     expect(result.get("meeting-1")).toMatchObject({
       id: "assistant-2",
-      reason: expect.stringContaining("preferente")
+      reason: expect.stringContaining("preferente"),
     });
 
     expect(
       evaluarDisponibilidad(new Date("2026-08-10T16:00:00Z"), new Date("2026-08-10T17:00:00Z"), [
-        { ...recurrent[0], fecha: new Date("2026-08-10T00:00:00Z"), diaSemana: null, tipo: "NO_DISPONIBLE" }
-      ]).tipo
+        {
+          ...recurrent[0],
+          fecha: new Date("2026-08-10T00:00:00Z"),
+          diaSemana: null,
+          tipo: "NO_DISPONIBLE",
+        },
+      ]).tipo,
     ).toBe("NO_DISPONIBLE");
   });
 });

@@ -6,7 +6,9 @@ import { useState } from "react";
 
 type Resultado = Readonly<{
   sinIdentidad: number;
-  resultados: ReadonlyArray<Readonly<{ cuenta: string; ok: boolean; reuniones: number; eliminadas: number }>>;
+  resultados: ReadonlyArray<
+    Readonly<{ cuenta: string; ok: boolean; reuniones: number; eliminadas: number }>
+  >;
 }>;
 
 /** Pull manual de la agenda de Zoom: reconcilia lo que los webhooks fueron registrando. */
@@ -26,7 +28,7 @@ export function SincronizarAgendaZoomBoton() {
     try {
       const respuesta = await fetch("/api/v1/configuracion/zoom/agenda/sincronizar", {
         method: "POST",
-        cache: "no-store"
+        cache: "no-store",
       });
       const datos = await respuesta.json().catch(() => ({}));
       if (!respuesta.ok) {
@@ -51,7 +53,8 @@ export function SincronizarAgendaZoomBoton() {
         disabled={ocupado}
         aria-busy={ocupado}
       >
-        <RefreshCw size={16} aria-hidden="true" /> {ocupado ? "Sincronizando…" : "Sincronizar con Zoom"}
+        <RefreshCw size={16} aria-hidden="true" />{" "}
+        {ocupado ? "Sincronizando…" : "Sincronizar con Zoom"}
       </button>
       {error ? <p role="alert">{error}</p> : null}
       {resultado ? (

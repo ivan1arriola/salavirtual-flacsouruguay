@@ -2,14 +2,14 @@ import { describe, expect, it } from "vitest";
 import {
   avisoFueraDelGrupo,
   filterMeetHosts,
-  formatoLimiteConcurrente
+  formatoLimiteConcurrente,
 } from "../src/components/meet-hosts-config.domain";
 import { esCuentaAsignable } from "../src/modules/reuniones/cuenta-asignable.domain";
 
 const hosts = [
   { id: "1", nombre: "Sala Principal", emailOrganizador: "sala01@flacso.edu.uy" },
   { id: "2", nombre: "Aula Posgrados", emailOrganizador: "aula@flacso.edu.uy" },
-  { id: "3", nombre: "Sin correo", emailOrganizador: null }
+  { id: "3", nombre: "Sin correo", emailOrganizador: null },
 ];
 
 describe("filtro de salas", () => {
@@ -46,15 +46,17 @@ describe("aviso de cuenta fuera del grupo de Zoom", () => {
 
   it("usa plural para varias reuniones futuras y singular para una", () => {
     expect(avisoFueraDelGrupo({ fueraDelGrupoAt: FUERA, reunionesFuturas: 3 })).toBe(
-      "Fuera del grupo (3 reuniones futuras)"
+      "Fuera del grupo (3 reuniones futuras)",
     );
     expect(avisoFueraDelGrupo({ fueraDelGrupoAt: FUERA, reunionesFuturas: 1 })).toBe(
-      "Fuera del grupo (1 reunión futura)"
+      "Fuera del grupo (1 reunión futura)",
     );
   });
 
   it("sin reuniones futuras solo indica que está fuera del grupo", () => {
-    expect(avisoFueraDelGrupo({ fueraDelGrupoAt: FUERA, reunionesFuturas: 0 })).toBe("Fuera del grupo");
+    expect(avisoFueraDelGrupo({ fueraDelGrupoAt: FUERA, reunionesFuturas: 0 })).toBe(
+      "Fuera del grupo",
+    );
     expect(avisoFueraDelGrupo({ fueraDelGrupoAt: FUERA })).toBe("Fuera del grupo");
   });
 });
@@ -68,7 +70,7 @@ describe("salas disponibles", () => {
       { ...base, fueraDelGrupoAt: new Date("2026-11-01T12:00:00.000Z") },
       { ...base, activa: false },
       { ...base, tieneLicencia: false },
-      { activa: true, tieneLicencia: true }
+      { activa: true, tieneLicencia: true },
     ];
     expect(cuentas.filter(esCuentaAsignable)).toHaveLength(2);
   });

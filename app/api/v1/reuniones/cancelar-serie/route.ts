@@ -11,7 +11,7 @@ import { puedeGestionarPrograma } from "@/src/modules/reuniones/permisos-program
 export const runtime = "nodejs";
 
 const schema = z.object({
-  solicitudIds: z.array(z.string().min(1).max(128)).min(1).max(50)
+  solicitudIds: z.array(z.string().min(1).max(128)).min(1).max(50),
 });
 
 export async function POST(request: Request) {
@@ -22,7 +22,7 @@ export async function POST(request: Request) {
   try {
     const actor = await resolveSessionActor(db, {
       id: session.user.id,
-      email: session.user.email
+      email: session.user.email,
     });
     if (!actor?.activo) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -37,7 +37,7 @@ export async function POST(request: Request) {
     if (pendientes > 0) {
       try {
         const sincronizacion = await obtenerServicioConferencias().sincronizarEventosPendientes(
-          result.eventoProveedorIds
+          result.eventoProveedorIds,
         );
         pendientes = sincronizacion.filter(({ estado }) => estado !== "SINCRONIZADA").length;
       } catch {
@@ -51,9 +51,9 @@ export async function POST(request: Request) {
             ? "La serie se canceló y se eliminó de Zoom."
             : "La cancelación quedó registrada. Hay eliminaciones pendientes en Zoom que se reintentarán.",
         solicitudesCanceladas: result.solicitudesCanceladas,
-        eventosGooglePendientes: pendientes
+        eventosGooglePendientes: pendientes,
       },
-      { status: pendientes === 0 ? 200 : 202 }
+      { status: pendientes === 0 ? 200 : 202 },
     );
   } catch (error) {
     const mapped = toHttpError(error);
@@ -73,7 +73,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     const ids = schema.parse({
-      solicitudIds: new URL(request.url).searchParams.getAll("solicitudId")
+      solicitudIds: new URL(request.url).searchParams.getAll("solicitudId"),
     }).solicitudIds;
     const uniqueIds = [...new Set(ids)];
     const requests = await db.solicitudSala.findMany({
@@ -86,11 +86,11 @@ export async function GET(request: Request) {
           select: {
             eventosProveedor: {
               where: { proveedor: { tipo: { in: ["GOOGLE_MEET", "ZOOM"] } } },
-              select: { estadoIntegracion: true, operacionPendiente: true }
-            }
-          }
-        }
-      }
+              select: { estadoIntegracion: true, operacionPendiente: true },
+            },
+          },
+        },
+      },
     });
     if (requests.length !== uniqueIds.length) {
       return NextResponse.json({ error: "Una solicitud de la serie no existe." }, { status: 404 });
@@ -107,16 +107,18 @@ export async function GET(request: Request) {
         estado: item.estado,
         googlePendientes: eventos.filter((event) => event.operacionPendiente === "CANCELAR").length,
         googleErrores: eventos.filter(
-          (event) => event.operacionPendiente === "CANCELAR" && event.estadoIntegracion === "ERROR"
-        ).length
+          (event) => event.operacionPendiente === "CANCELAR" && event.estadoIntegracion === "ERROR",
+        ).length,
       };
     });
     return NextResponse.json(
       {
         solicitudes,
-        confirmada: solicitudes.every((item) => item.estado === "CANCELADA" && item.googlePendientes === 0)
+        confirmada: solicitudes.every(
+          (item) => item.estado === "CANCELADA" && item.googlePendientes === 0,
+        ),
       },
-      { headers: { "Cache-Control": "no-store" } }
+      { headers: { "Cache-Control": "no-store" } },
     );
   } catch (error) {
     const mapped = toHttpError(error);

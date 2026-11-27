@@ -1,11 +1,16 @@
 import { beforeEach, describe, it, expect, vi } from "vitest";
-const m = vi.hoisted(() => ({ auth: vi.fn(), actor: vi.fn(), reintentar: vi.fn(), candidatos: vi.fn() }));
+const m = vi.hoisted(() => ({
+  auth: vi.fn(),
+  actor: vi.fn(),
+  reintentar: vi.fn(),
+  candidatos: vi.fn(),
+}));
 vi.mock("@/auth", () => ({ auth: m.auth }));
 vi.mock("@/src/lib/auth/session-actor.adapter", () => ({ resolveSessionActor: m.actor }));
 vi.mock("@/src/lib/db", () => ({ db: {} }));
 vi.mock("@/src/bootstrap/zoom-historico.server", () => ({
   reintentarArchivoZoomAdmin: m.reintentar,
-  listarEncuentrosCandidatosZoomAdmin: m.candidatos
+  listarEncuentrosCandidatosZoomAdmin: m.candidatos,
 }));
 import { POST } from "../app/api/v1/archivos/zoom/archivos/[archivoId]/reintentar/route";
 import { GET } from "../app/api/v1/archivos/zoom/ocurrencias/[ocurrenciaId]/candidatos/route";
@@ -30,7 +35,7 @@ describe("rutas de controles", () => {
     ["OK", 200],
     ["NO_ENCONTRADO", 404],
     ["ESTADO_NO_REINTENTABLE", 409],
-    ["PROHIBIDO", 403]
+    ["PROHIBIDO", 403],
   ] as const)("reintento %s", async (tipo, status) => {
     m.reintentar.mockResolvedValue({ tipo });
     expect((await POST(req, archivo)).status).toBe(status);
@@ -38,7 +43,7 @@ describe("rutas de controles", () => {
   it.each([
     ["OK", 200],
     ["NO_ENCONTRADO", 404],
-    ["PROHIBIDO", 403]
+    ["PROHIBIDO", 403],
   ] as const)("candidatos %s", async (tipo, status) => {
     m.candidatos.mockResolvedValue({ tipo, candidatos: [] });
     expect((await GET(req, ocurrencia)).status).toBe(status);

@@ -12,7 +12,7 @@ type RouteContext = Readonly<{ params: Promise<{ instanciaId: string }> }>;
 
 const bodySchema = z.object({
   conservar: z.boolean(),
-  motivo: z.string().max(500).nullish()
+  motivo: z.string().max(500).nullish(),
 });
 
 export async function PATCH(request: Request, context: RouteContext) {
@@ -31,7 +31,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     const instancia = await actualizarExcepcionGoogleMeet(
       db,
       { id: actor.id, rol: actor.rol },
-      { instanciaId, ...input }
+      { instanciaId, ...input },
     );
     return NextResponse.json({ instancia });
   } catch (error) {

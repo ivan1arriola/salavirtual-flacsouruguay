@@ -50,13 +50,15 @@ function esFecha(valor: Date): boolean {
 function validarVentana(v: VentanaAsistenciaZoom): void {
   if (!esFecha(v.inicioAt) || !esFecha(v.finAt) || v.finAt.getTime() <= v.inicioAt.getTime()) {
     throw new RangeError(
-      "La ventana de asistencia debe tener inicio y fin válidos, con fin posterior al inicio."
+      "La ventana de asistencia debe tener inicio y fin válidos, con fin posterior al inicio.",
     );
   }
 }
 
 function sesionValida(s: SesionObservadaZoom): boolean {
-  return esFecha(s.entradaAt) && esFecha(s.salidaAt) && s.salidaAt.getTime() > s.entradaAt.getTime();
+  return (
+    esFecha(s.entradaAt) && esFecha(s.salidaAt) && s.salidaAt.getTime() > s.entradaAt.getTime()
+  );
 }
 
 type Intervalo = readonly [number, number];
@@ -65,7 +67,9 @@ type Intervalo = readonly [number, number];
 function ordenar<T>(items: readonly T[], comparar: (a: T, b: T) => number): readonly T[] {
   return items.reduce<readonly T[]>((orden, actual) => {
     const indice = orden.findIndex((item) => comparar(actual, item) < 0);
-    return indice < 0 ? [...orden, actual] : [...orden.slice(0, indice), actual, ...orden.slice(indice)];
+    return indice < 0
+      ? [...orden, actual]
+      : [...orden.slice(0, indice), actual, ...orden.slice(indice)];
   }, []);
 }
 
@@ -77,16 +81,18 @@ function unirIntervalos(intervalos: readonly Intervalo[]): readonly Intervalo[] 
         ? [...acc.slice(0, -1), [ultimo[0], Math.max(ultimo[1], fin)] as Intervalo]
         : [...acc, [ini, fin] as Intervalo];
     },
-    []
+    [],
   );
 }
 
-const duracion = (intervalos: readonly Intervalo[]) => intervalos.reduce((suma, [a, b]) => suma + (b - a), 0);
+const duracion = (intervalos: readonly Intervalo[]) =>
+  intervalos.reduce((suma, [a, b]) => suma + (b - a), 0);
 const redondear2 = (valor: number) => Math.round(valor * 100) / 100;
 
 type Observacion = Readonly<{ sesion: SesionObservadaZoom; ventana: VentanaAsistenciaZoom }>;
 
-const correoNormalizado = (s: SesionObservadaZoom): string | null => s.email?.trim().toLowerCase() || null;
+const correoNormalizado = (s: SesionObservadaZoom): string | null =>
+  s.email?.trim().toLowerCase() || null;
 
 /**
  * Clave de persona por sesión. Solo hay evidencia suficiente para unir con el mismo id de participante de Zoom
@@ -94,7 +100,7 @@ const correoNormalizado = (s: SesionObservadaZoom): string | null => s.email?.tr
  * shortcut: un id con dos correos distintos queda en el grupo de su primer correo, no se encadena más; revisar si Zoom lo emite.
  */
 export function claveParticipanteZoom(
-  sesiones: readonly SesionObservadaZoom[]
+  sesiones: readonly SesionObservadaZoom[],
 ): (s: SesionObservadaZoom) => string {
   const conId = sesiones.filter((s) => s.participanteId);
   const porCorreo = [...conId, ...sesiones.filter((s) => !s.participanteId)].reduce<
@@ -122,7 +128,7 @@ export function claveParticipanteZoom(
 function consolidar(
   grupos: ReadonlyArray<
     Readonly<{ sesiones: readonly SesionObservadaZoom[]; ventana: VentanaAsistenciaZoom }>
-  >
+  >,
 ): readonly AsistenciaZoomConsolidada[] {
   const ventanas = grupos.map((g): Intervalo => {
     validarVentana(g.ventana);
@@ -131,14 +137,17 @@ function consolidar(
   const total = duracion(unirIntervalos(ventanas));
 
   const observaciones = grupos.flatMap(({ sesiones, ventana }) =>
-    sesiones.filter(sesionValida).map((sesion): Observacion => ({ sesion, ventana }))
+    sesiones.filter(sesionValida).map((sesion): Observacion => ({ sesion, ventana })),
   );
   // Agrupa conservando el orden de aparición: Object conserva el orden de inserción de claves de texto.
   const clavePersona = claveParticipanteZoom(observaciones.map((o) => o.sesion));
-  const porPersona = observaciones.reduce<Readonly<Record<string, readonly Observacion[]>>>((acc, o) => {
-    const clave = clavePersona(o.sesion);
-    return { ...acc, [clave]: [...(acc[clave] ?? []), o] };
-  }, {});
+  const porPersona = observaciones.reduce<Readonly<Record<string, readonly Observacion[]>>>(
+    (acc, o) => {
+      const clave = clavePersona(o.sesion);
+      return { ...acc, [clave]: [...(acc[clave] ?? []), o] };
+    },
+    {},
+  );
 
   const consolidadas = Object.entries(porPersona).map(
     ([claveParticipante, items]): AsistenciaZoomConsolidada => {
@@ -155,7 +164,8 @@ function consolidar(
       return {
         claveParticipante,
         nombre: items[0]!.sesion.nombre,
-        emailObservado: items.map(({ sesion }) => sesion.email).find((e): e is string => !!e) ?? null,
+        emailObservado:
+          items.map(({ sesion }) => sesion.email).find((e): e is string => !!e) ?? null,
         minutos: redondear2(ms / MS_MINUTO),
         porcentaje: total > 0 ? Math.min(100, redondear2((ms / total) * 100)) : 0,
         sesiones: items.length,
@@ -163,23 +173,23 @@ function consolidar(
         ultimaSalidaAt: salidas.length ? new Date(Math.max(...salidas)) : null,
         esHostOCohost: items.some(({ sesion }) => sesion.rol === "HOST" || sesion.rol === "COHOST"),
         claveSesiones: items.map(({ sesion }) => sesion.claveSesion),
-        estadoConciliacion: "SIN_CONCILIAR"
+        estadoConciliacion: "SIN_CONCILIAR",
       };
-    }
+    },
   );
   return ordenar(
     consolidadas,
     (a, b) =>
       (a.primeraEntradaAt?.getTime() ?? Infinity) - (b.primeraEntradaAt?.getTime() ?? Infinity) ||
       a.nombre.localeCompare(b.nombre) ||
-      a.claveParticipante.localeCompare(b.claveParticipante)
+      a.claveParticipante.localeCompare(b.claveParticipante),
   );
 }
 
 /** Consolida las sesiones de una ocurrencia sobre su horario programado. */
 export function consolidarAsistenciaZoom(
   sesiones: readonly SesionObservadaZoom[],
-  ventana: VentanaAsistenciaZoom
+  ventana: VentanaAsistenciaZoom,
 ): readonly AsistenciaZoomConsolidada[] {
   return consolidar([{ sesiones, ventana }]);
 }
@@ -188,7 +198,7 @@ export function consolidarAsistenciaZoom(
 export function consolidarAsistenciaOcurrenciasZoom(
   ocurrencias: ReadonlyArray<
     Readonly<{ sesiones: readonly SesionObservadaZoom[]; ventana: VentanaAsistenciaZoom }>
-  >
+  >,
 ): readonly AsistenciaZoomConsolidada[] {
   return consolidar(ocurrencias);
 }
@@ -201,17 +211,24 @@ export type ResumenAsistenciaZoom = Readonly<{
 
 /** Conteo sin veredicto: los hosts/cohosts con rol comprobado no cuentan como estudiantes. */
 export function resumirAsistenciaZoom(
-  asistencia: readonly AsistenciaZoomConsolidada[]
+  asistencia: readonly AsistenciaZoomConsolidada[],
 ): ResumenAsistenciaZoom {
   const anfitriones = asistencia.filter((a) => a.esHostOCohost).length;
-  return { participantes: asistencia.length, estudiantes: asistencia.length - anfitriones, anfitriones };
+  return {
+    participantes: asistencia.length,
+    estudiantes: asistencia.length - anfitriones,
+    anfitriones,
+  };
 }
 
 /** Clave estable de una sesión por ocurrencia: idempotente ante reintentos del mismo reporte. */
 export function claveSesionZoom(
   hash: HashZoom,
   ocurrenciaUuid: string,
-  sesion: Pick<SesionObservadaZoom, "participanteId" | "userId" | "nombre" | "entradaAt" | "salidaAt">
+  sesion: Pick<
+    SesionObservadaZoom,
+    "participanteId" | "userId" | "nombre" | "entradaAt" | "salidaAt"
+  >,
 ): string {
   return hash(
     [
@@ -221,7 +238,7 @@ export function claveSesionZoom(
       sesion.userId ?? "",
       sesion.nombre,
       esFecha(sesion.entradaAt) ? sesion.entradaAt.toISOString() : "?",
-      esFecha(sesion.salidaAt) ? sesion.salidaAt.toISOString() : "?"
-    ].join("|")
+      esFecha(sesion.salidaAt) ? sesion.salidaAt.toISOString() : "?",
+    ].join("|"),
   );
 }

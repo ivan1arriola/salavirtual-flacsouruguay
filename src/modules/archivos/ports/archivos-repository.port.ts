@@ -3,7 +3,7 @@ import type {
   GoogleArtifact,
   MovedDriveFile,
   RolUsuario,
-  TipoArtefactoMeet
+  TipoArtefactoMeet,
 } from "../domain";
 
 export type SessionActor = Readonly<{
@@ -88,7 +88,9 @@ export type ArchivoMeetVisibleModel = Readonly<{
         titulo: string;
         docentePrograma: Readonly<{
           programa: Readonly<{ nombre: string }>;
-          docente: Readonly<{ usuario: Readonly<{ nombres: string | null; apellidos: string | null }> }>;
+          docente: Readonly<{
+            usuario: Readonly<{ nombres: string | null; apellidos: string | null }>;
+          }>;
         }>;
       }>;
     }>;
@@ -148,20 +150,26 @@ export type ListarGrabacionesDbInput = Readonly<{
 export type ArchivosRepositoryPort = Readonly<{
   obtenerConfiguracionWorkspacePrincipal(): Promise<ConfiguracionWorkspaceArchivos | null>;
   obtenerEventosParaSincronizar(
-    eventoProveedorIds: readonly string[]
+    eventoProveedorIds: readonly string[],
   ): Promise<readonly EventoParaSincronizarArchivos[]>;
   listarPlanillasAsistenciaCandidatas?(): Promise<readonly PlanillaAsistenciaCandidata[]>;
   registrarArchivoSincronizado(
     eventoProveedorId: string,
     tipo: TipoArtefactoMeet,
     artifact: GoogleArtifact,
-    drive: MovedDriveFile
+    drive: MovedDriveFile,
   ): Promise<void>;
-  actualizarEstadoSincronizacion(eventoProveedorId: string, datos: EstadoSincronizacionInput): Promise<void>;
+  actualizarEstadoSincronizacion(
+    eventoProveedorId: string,
+    datos: EstadoSincronizacionInput,
+  ): Promise<void>;
   registrarErrorSincronizacion(eventoProveedorId: string, error: string): Promise<void>;
   obtenerDatosInstanciaParaParticipantes(
-    instanciaId: string
+    instanciaId: string,
   ): Promise<DatosInstanciaParaParticipantes | null>;
   listarArchivosVisibles(actor: SessionActor): Promise<readonly ArchivoMeetVisibleModel[]>;
-  listarGrabacionesDb?(actor: SessionActor, input: ListarGrabacionesDbInput): Promise<GrabacionesDbPage>;
+  listarGrabacionesDb?(
+    actor: SessionActor,
+    input: ListarGrabacionesDbInput,
+  ): Promise<GrabacionesDbPage>;
 }>;

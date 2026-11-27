@@ -35,7 +35,7 @@ export function eventoCoberturaZoom(instancia: InstanciaZoom, baseUrl: string) {
     description: `Abrir la cobertura en Sala Virtual FLACSO: ${href}`,
     start: { dateTime: inicio.toISOString() },
     end: { dateTime: fin.toISOString() },
-    transparency: "opaque"
+    transparency: "opaque",
   };
   return {
     id,
@@ -45,9 +45,9 @@ export function eventoCoberturaZoom(instancia: InstanciaZoom, baseUrl: string) {
         private: {
           flacsoCoberturaZoom: "1",
           flacsoClave: id,
-          flacsoHuella: sha256(JSON.stringify(contenido))
-        }
-      }
-    }
+          flacsoHuella: sha256(JSON.stringify(contenido)),
+        },
+      },
+    },
   };
 }

@@ -8,7 +8,7 @@ import { db } from "@/src/lib/db";
 import { invitarUsuario } from "@/src/modules/usuarios/invitaciones.service";
 import {
   aprobarSolicitudAccesoGoogle as aprobarSolicitud,
-  rechazarSolicitudAccesoGoogle as rechazarSolicitud
+  rechazarSolicitudAccesoGoogle as rechazarSolicitud,
 } from "@/src/modules/usuarios/solicitudes-acceso-google.service";
 import { esRolUsuario } from "@/src/modules/usuarios/roles";
 
@@ -29,7 +29,7 @@ export async function enviarInvitacion(formData: FormData): Promise<void> {
       email: formData.get("email"),
       rol: formData.get("rol"),
       programaId: formData.get("programaId"),
-      programaNuevo: formData.get("programaNuevo")
+      programaNuevo: formData.get("programaNuevo"),
     });
     estado = result.correoEnviado ? "invitacion-enviada" : "invitacion-creada";
   } catch (error) {

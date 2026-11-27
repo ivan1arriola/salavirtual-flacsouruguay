@@ -7,7 +7,7 @@ export type ConsultarTarifaVigenteDeps = Readonly<{
 
 export async function consultarTarifaVigenteUseCase(
   deps: ConsultarTarifaVigenteDeps,
-  modalidad: ModalidadAsistencia
+  modalidad: ModalidadAsistencia,
 ): Promise<TarifaVigente> {
   return deps.tarifasRepo.obtenerTarifaVigente(modalidad);
 }

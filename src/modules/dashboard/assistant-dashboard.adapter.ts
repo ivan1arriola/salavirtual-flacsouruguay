@@ -3,7 +3,7 @@ import { obtenerDashboardAsistente } from "../asistencia/dashboard-asistente.ada
 import {
   cohostsConfirmados,
   extraerCohostEmailsDeInstancia,
-  extraerCohostsUnificadosDeInstancia
+  extraerCohostsUnificadosDeInstancia,
 } from "@/src/modules/conferencias/api";
 import { seleccionarEventoProveedorActivo } from "../reuniones/evento-proveedor-activo.domain";
 import { determinarEstadoTemporal } from "./dashboard.domain";
@@ -11,17 +11,17 @@ import type {
   AssistantDashboardData,
   AssistantOpportunityDTO,
   HeroMeetingDTO,
-  UpcomingMeetingSummaryDTO
+  UpcomingMeetingSummaryDTO,
 } from "./types";
 
 export async function obtenerDashboardAsistenteOptimizado(
   db: PrismaClient,
   usuarioId: string,
-  ahora: Date
+  ahora: Date,
 ): Promise<AssistantDashboardData | null> {
   const assistantRecord = await db.asistenteTecnico.findUnique({
     where: { usuarioId },
-    select: { id: true }
+    select: { id: true },
   });
   if (!assistantRecord) {
     return null;
@@ -34,7 +34,7 @@ export async function obtenerDashboardAsistenteOptimizado(
         requiereAsistenciaTecnica: true,
         inicioProgramadoAt: { gte: ahora },
         estado: "PROGRAMADA",
-        asignaciones: { none: { estado: { in: ["ASIGNADO", "ACEPTADO"] } } }
+        asignaciones: { none: { estado: { in: ["ASIGNADO", "ACEPTADO"] } } },
       },
       orderBy: { inicioProgramadoAt: "asc" },
       take: 3,
@@ -42,20 +42,20 @@ export async function obtenerDashboardAsistenteOptimizado(
         solicitud: {
           include: {
             docentePrograma: {
-              include: { programa: true }
-            }
-          }
+              include: { programa: true },
+            },
+          },
         },
         postulaciones: {
           where: { asistenteTecnicoId: assistantRecord.id },
-          select: { estado: true }
-        }
-      }
+          select: { estado: true },
+        },
+      },
     }),
     db.cuentaGoogleFlacso.findMany({
       where: { userId: usuarioId },
-      select: { email: true }
-    })
+      select: { email: true },
+    }),
   ]);
 
   if (!baseDashboard) {
@@ -75,21 +75,21 @@ export async function obtenerDashboardAsistenteOptimizado(
             docentePrograma: {
               include: {
                 programa: true,
-                docente: { include: { usuario: true } }
-              }
-            }
-          }
+                docente: { include: { usuario: true } },
+              },
+            },
+          },
         },
         eventosProveedor: { include: { proveedor: true, cuentaProveedor: true } },
         cohosts: { include: { cuentaGoogle: { include: { user: true } } } },
-        cohostEmails: true
-      }
+        cohostEmails: true,
+      },
     });
 
     if (nextMeetingInstance) {
       // Cohosts se verifican solo contra Google Meet; enlace y sala siguen al proveedor activo.
       const meetCohosts = nextMeetingInstance.eventosProveedor.find(
-        ({ proveedor }) => proveedor.tipo === "GOOGLE_MEET"
+        ({ proveedor }) => proveedor.tipo === "GOOGLE_MEET",
       );
       const meet = seleccionarEventoProveedorActivo(nextMeetingInstance);
       const cohostEmails = extraerCohostEmailsDeInstancia(nextMeetingInstance);
@@ -100,8 +100,8 @@ export async function obtenerDashboardAsistenteOptimizado(
           meetCohosts?.payloadUltimo,
           meetCohosts?.codigoReunion,
           meetCohosts?.cuentaProveedor?.emailOrganizador,
-          cohostEmails
-        )
+          cohostEmails,
+        ),
       );
 
       const assistantIsCohost = cohostEmails.some((e) => userEmails.includes(e.toLowerCase()));
@@ -121,11 +121,11 @@ export async function obtenerDashboardAsistenteOptimizado(
         cohostConfirmado: isVerified && assistantIsCohost,
         cohosts: extraerCohostsUnificadosDeInstancia(nextMeetingInstance).map((c) => ({
           name: c.name ?? "",
-          email: c.email
+          email: c.email,
         })),
         asistente: null,
         requiereAsistencia: true,
-        salaNombre: meet?.cuentaProveedor?.nombre ?? null
+        salaNombre: meet?.cuentaProveedor?.nombre ?? null,
       };
     }
   }
@@ -146,7 +146,7 @@ export async function obtenerDashboardAsistenteOptimizado(
       estadoTemporal: determinarEstadoTemporal(m.inicioEncuentroAt, m.finEncuentroAt, ahora),
       asistenteNombre: null,
       requiereAsistencia: true,
-      cohostsVerificados: true
+      cohostsVerificados: true,
     }));
 
   const openOpportunities: AssistantOpportunityDTO[] = openOpportunityInstances.map((opp) => ({
@@ -159,10 +159,11 @@ export async function obtenerDashboardAsistenteOptimizado(
     finProgramadoAt: opp.finProgramadoAt.toISOString(),
     inicioAsistenciaAt: opp.inicioAsistenciaTecnicaAt?.toISOString() ?? null,
     finAsistenciaAt: opp.finAsistenciaTecnicaAt?.toISOString() ?? null,
-    yaPostulado: opp.postulaciones.some((p) => p.estado === "ME_INTERESA")
+    yaPostulado: opp.postulaciones.some((p) => p.estado === "ME_INTERESA"),
   }));
 
-  const currentMinutes = baseDashboard.mesActual.minutosVirtuales + baseDashboard.mesActual.minutosHibridos;
+  const currentMinutes =
+    baseDashboard.mesActual.minutosVirtuales + baseDashboard.mesActual.minutosHibridos;
   const previousMinutes =
     baseDashboard.mesAnterior.minutosVirtuales + baseDashboard.mesAnterior.minutosHibridos;
 
@@ -180,7 +181,7 @@ export async function obtenerDashboardAsistenteOptimizado(
       postulacionesCount: baseDashboard.postulaciones,
       pendientesRespuesta: baseDashboard.pendientesRespuesta,
       respondidas: baseDashboard.respondidas,
-      reunionesDisponibles: baseDashboard.reunionesDisponibles
-    }
+      reunionesDisponibles: baseDashboard.reunionesDisponibles,
+    },
   };
 }

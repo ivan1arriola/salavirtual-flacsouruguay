@@ -3,7 +3,7 @@ import {
   buscarPlanillaAsistenciaDrive,
   crearPlanillaAsistenciaGoogle,
   planillaAsistenciaGoogleVacia,
-  type MeetSheetInput
+  type MeetSheetInput,
 } from "../src/modules/archivos/infrastructure/google/google-meet-attendance-sheets.client";
 const input: MeetSheetInput = {
   titulo: "Encuentro",
@@ -21,8 +21,8 @@ const input: MeetSheetInput = {
       fin: "2026-05-01T10:10:00Z",
       conferencia: "conferenceRecords/meet-1",
       participanteId: "conferenceRecords/meet-1/participants/p1",
-      sesionId: "conferenceRecords/meet-1/participants/p1/participantSessions/s1"
-    }
+      sesionId: "conferenceRecords/meet-1/participants/p1/participantSessions/s1",
+    },
   ],
   eventosAuditoria: [
     {
@@ -34,8 +34,8 @@ const input: MeetSheetInput = {
       displayName: "Anonymous",
       timestamp: "2026-05-01T10:10:00Z",
       durationSeconds: 600,
-      parameters: [{ name: "identifier_type", value: "device" }]
-    }
+      parameters: [{ name: "identifier_type", value: "device" }],
+    },
   ],
   correosAuditados: [
     {
@@ -48,11 +48,11 @@ const input: MeetSheetInput = {
           fin: "2026-05-01T10:50:00Z",
           duracionSegundos: 3000,
           nombre: "Student",
-          identificador: "student@example.com"
-        }
-      ]
-    }
-  ]
+          identificador: "student@example.com",
+        },
+      ],
+    },
+  ],
 };
 describe("Sheets de asistencia", () => {
   it("detecta una planilla vacía aunque tenga encabezados y host configurado", async () => {
@@ -60,11 +60,13 @@ describe("Sheets de asistencia", () => {
       data: {
         valueRanges: [
           { range: "Asistencia!A2:Z", values: [] },
-          { range: "Datos brutos!A2:N", values: [] }
-        ]
-      }
+          { range: "Datos brutos!A2:N", values: [] },
+        ],
+      },
     });
-    await expect(planillaAsistenciaGoogleVacia({ request } as never, "sheet-empty")).resolves.toBe(true);
+    await expect(planillaAsistenciaGoogleVacia({ request } as never, "sheet-empty")).resolves.toBe(
+      true,
+    );
     const url: string = request.mock.calls[0]![0].url;
     expect(url).toContain("/spreadsheets/sheet-empty/values:batchGet");
     expect(decodeURIComponent(url)).toContain("A2");
@@ -76,11 +78,13 @@ describe("Sheets de asistencia", () => {
       data: {
         valueRanges: [
           { range: "Asistencia!A2:Z", values: [["Estudiante", "student@example.com"]] },
-          { range: "Datos brutos!A2:N", values: [] }
-        ]
-      }
+          { range: "Datos brutos!A2:N", values: [] },
+        ],
+      },
     });
-    await expect(planillaAsistenciaGoogleVacia({ request } as never, "sheet-filled")).resolves.toBe(false);
+    await expect(planillaAsistenciaGoogleVacia({ request } as never, "sheet-filled")).resolves.toBe(
+      false,
+    );
   });
 
   it("conserva planillas con sesiones en Datos brutos, incluso sin correos", async () => {
@@ -88,11 +92,13 @@ describe("Sheets de asistencia", () => {
       data: {
         valueRanges: [
           { range: "Asistencia!A2:Z", values: [] },
-          { range: "Datos brutos!A2:N", values: [["MEET", "Participante"]] }
-        ]
-      }
+          { range: "Datos brutos!A2:N", values: [["MEET", "Participante"]] },
+        ],
+      },
     });
-    await expect(planillaAsistenciaGoogleVacia({ request } as never, "sheet-raw")).resolves.toBe(false);
+    await expect(planillaAsistenciaGoogleVacia({ request } as never, "sheet-raw")).resolves.toBe(
+      false,
+    );
   });
 
   it("crea tres pestañas, formato porcentual e identificadores brutos sin bloquear la escritura", async () => {
@@ -105,11 +111,9 @@ describe("Sheets de asistencia", () => {
       .mockResolvedValueOnce({ data: { id: "sheet", name: "Encuentro" } });
     await crearPlanillaAsistenciaGoogle({ request } as never, input);
     const createPayload = request.mock.calls[0]![0].data;
-    expect(createPayload.sheets.map((s: { properties: { title: string } }) => s.properties.title)).toEqual([
-      "Asistencia",
-      "Host y cohosts",
-      "Datos brutos"
-    ]);
+    expect(
+      createPayload.sheets.map((s: { properties: { title: string } }) => s.properties.title),
+    ).toEqual(["Asistencia", "Host y cohosts", "Datos brutos"]);
     const markerPatch = request.mock.calls[1]![0];
     expect(markerPatch.data.appProperties.meetAttendanceOperation).toBe("stable-operation-marker");
     const body = request.mock.calls[2]![0].data;
@@ -121,14 +125,15 @@ describe("Sheets de asistencia", () => {
           addConditionalFormatRule?: {
             rule: { booleanRule: { condition: { values: Array<{ userEnteredValue: string }> } } };
           };
-        }) => request.addConditionalFormatRule
+        }) => request.addConditionalFormatRule,
       )
       .map(
         (request: {
           addConditionalFormatRule: {
             rule: { booleanRule: { condition: { values: Array<{ userEnteredValue: string }> } } };
           };
-        }) => request.addConditionalFormatRule.rule.booleanRule.condition.values[0]!.userEnteredValue
+        }) =>
+          request.addConditionalFormatRule.rule.booleanRule.condition.values[0]!.userEnteredValue,
       );
     expect(formulas).toEqual(["=$F2>=5/6", "=($F2>=3/4)*($F2<5/6)>0", "=$F2<3/4"]);
     expect(JSON.stringify(body)).toContain("PERCENT");
@@ -145,8 +150,8 @@ describe("Sheets de asistencia", () => {
     expect(request.mock.calls.some(([call]) => call.url.includes("/same:batchUpdate"))).toBe(true);
     expect(
       request.mock.calls.some(([call]) =>
-        call.data?.requests?.some((r: { repeatCell?: unknown }) => r.repeatCell)
-      )
+        call.data?.requests?.some((r: { repeatCell?: unknown }) => r.repeatCell),
+      ),
     ).toBe(true);
   });
   it("conserva una planilla ya escrita si Drive no permite moverla a la carpeta", async () => {
@@ -158,12 +163,16 @@ describe("Sheets de asistencia", () => {
       .mockResolvedValueOnce({ data: {} })
       .mockResolvedValueOnce({ data: { parents: [] } })
       .mockRejectedValueOnce({ response: { status: 404 }, message: "File not found: folder" });
-    await expect(crearPlanillaAsistenciaGoogle({ request } as never, input, "same")).resolves.toMatchObject({
+    await expect(
+      crearPlanillaAsistenciaGoogle({ request } as never, input, "same"),
+    ).resolves.toMatchObject({
       id: "same",
-      mimeType: "application/vnd.google-apps.spreadsheet"
+      mimeType: "application/vnd.google-apps.spreadsheet",
     });
     expect(
-      request.mock.calls[3]![0].data.requests.some((item: { updateCells?: unknown }) => item.updateCells)
+      request.mock.calls[3]![0].data.requests.some(
+        (item: { updateCells?: unknown }) => item.updateCells,
+      ),
     ).toBe(true);
   });
 });
@@ -182,11 +191,11 @@ it("separa host y cohost configurados y escapa texto de fórmulas", async () => 
             fin: "2026-05-01T10:50:00Z",
             duracionSegundos: 3000,
             nombre: "Student",
-            identificador: "student@example.com"
-          }
-        ]
-      }
-    ]
+            identificador: "student@example.com",
+          },
+        ],
+      },
+    ],
   };
   const request = vi
     .fn()
@@ -204,7 +213,9 @@ it("separa host y cohost configurados y escapa texto de fórmulas", async () => 
 });
 
 it("recupera planillas solo mediante la marca de operación privada de Drive", async () => {
-  const request = vi.fn().mockResolvedValue({ data: { files: [{ id: "sheet", name: "editable title" }] } });
+  const request = vi
+    .fn()
+    .mockResolvedValue({ data: { files: [{ id: "sheet", name: "editable title" }] } });
   const result = await buscarPlanillaAsistenciaDrive({ request } as never, "stable-marker");
   expect(result?.id).toBe("sheet");
   expect(request.mock.calls[0]![0].url).toContain("appProperties");
@@ -225,9 +236,9 @@ it("puebla pestaña Asistencia desde sesionesMeet cuando correosAuditados está 
         fin: "2026-05-01T10:55:00Z",
         conferencia: "conferenceRecords/meet-1",
         participanteId: "participants/p1",
-        sesionId: "participantSessions/s1"
-      }
-    ]
+        sesionId: "participantSessions/s1",
+      },
+    ],
   };
   const request = vi
     .fn()
@@ -241,7 +252,8 @@ it("puebla pestaña Asistencia desde sesionesMeet cuando correosAuditados está 
   const updateCalls = request.mock.calls[2]![0].data.requests;
   const updateCells = updateCalls.filter((r: any) => r.updateCells);
   // La pestaña 0 (Asistencia) tiene encabezado + fila de Alumno Directo
-  const resumenRows = updateCells.find((r: any) => r.updateCells.start.sheetId === 0)?.updateCells.rows;
+  const resumenRows = updateCells.find((r: any) => r.updateCells.start.sheetId === 0)?.updateCells
+    .rows;
   expect(resumenRows).toHaveLength(2);
   expect(resumenRows[1].values[0].userEnteredValue.stringValue).toBe("Alumno Directo");
   expect(resumenRows[1].values[1].userEnteredValue.stringValue).toBe("No informado por auditoría");
@@ -263,7 +275,8 @@ it("Meet sigue siendo la fuente principal de Asistencia aunque Reports tenga cor
     .mockResolvedValueOnce({ data: { id: "sheet-primary", name: "Encuentro" } });
   await crearPlanillaAsistenciaGoogle({ request } as never, input);
   const updateCells = request.mock.calls[2]![0].data.requests.filter((r: any) => r.updateCells);
-  const asistencia = updateCells.find((r: any) => r.updateCells.start.sheetId === 0)?.updateCells.rows;
+  const asistencia = updateCells.find((r: any) => r.updateCells.start.sheetId === 0)?.updateCells
+    .rows;
   const brutos = updateCells.find((r: any) => r.updateCells.start.sheetId === 2)?.updateCells.rows;
 
   expect(asistencia).toHaveLength(2);
@@ -284,7 +297,7 @@ it("separa host y cohosts de la pestaña Asistencia usando el correo atribuido y
     conferencia: "conferenceRecords/c",
     participanteId: id,
     sesionId: `${id}/s1`,
-    ...(correo ? { correoVerificado: correo } : {})
+    ...(correo ? { correoVerificado: correo } : {}),
   });
   const conRoles: MeetSheetInput = {
     ...input,
@@ -295,8 +308,8 @@ it("separa host y cohosts de la pestaña Asistencia usando el correo atribuido y
       sesion("Apoyo", "pC", "co@example.com", "2026-05-01T11:00:00Z"),
       sesion("Alumna Cumple", "pA", "a@x.com", "2026-05-01T10:55:00Z"),
       sesion("Alumno Justo", "pB", "b@x.com", "2026-05-01T10:48:00Z"),
-      sesion("Sin Correo", "pD", undefined, "2026-05-01T10:20:00Z")
-    ]
+      sesion("Sin Correo", "pD", undefined, "2026-05-01T10:20:00Z"),
+    ],
   };
   const request = vi
     .fn()
@@ -308,7 +321,9 @@ it("separa host y cohosts de la pestaña Asistencia usando el correo atribuido y
   await crearPlanillaAsistenciaGoogle({ request } as never, conRoles);
   const cells = request.mock.calls[2]![0].data.requests.filter((r: any) => r.updateCells);
   const texto = (sheetId: number) =>
-    JSON.stringify(cells.find((r: any) => r.updateCells.start.sheetId === sheetId)?.updateCells.rows);
+    JSON.stringify(
+      cells.find((r: any) => r.updateCells.start.sheetId === sheetId)?.updateCells.rows,
+    );
   expect(texto(0)).not.toContain("Sala 01");
   expect(texto(0)).not.toContain("co@example.com");
   expect(texto(0)).toContain("Alumna Cumple");

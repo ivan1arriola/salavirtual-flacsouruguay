@@ -4,7 +4,7 @@ import type {
   LimitesCupoZoom,
   PrioridadTransferenciaZoom,
   ReferenciaOcurrenciaZoom,
-  ResultadoInventarioZoom
+  ResultadoInventarioZoom,
 } from "../domain";
 
 /** Ocurrencia observada en Zoom junto con los datos del inventario que la acompaña. */
@@ -107,12 +107,12 @@ export type ResultadoDesvinculo =
 export type ZoomArchivoRepositoryPort = Readonly<{
   guardarInventario(
     ocurrencia: OcurrenciaInventariadaZoom,
-    inventario: ResultadoInventarioZoom
+    inventario: ResultadoInventarioZoom,
   ): Promise<ResumenInventarioGuardado>;
   /** Ocurrencias cuyo próximo inventario ya venció (proximoInventarioAt <= ahora), las más atrasadas primero. */
   listarOcurrenciasPorInventariar(
     ahora: Date,
-    limite: number
+    limite: number,
   ): Promise<readonly { referencia: ReferenciaOcurrenciaZoom; cuentaProveedorId: string | null }[]>;
   /** Fija la carpeta de Drive de la ocurrencia solo si aún no tenía una (la primera resolución gana). */
   guardarCarpetaOcurrencia(ocurrenciaId: string, driveFolderId: string): Promise<boolean>;
@@ -124,22 +124,22 @@ export type ZoomArchivoRepositoryPort = Readonly<{
   /** Reserva atómica (entre workers) del cupo de transferencia de la ventana móvil. */
   reservarTransferencia(
     lease: LeaseArchivoZoom,
-    solicitud: SolicitudReservaTransferenciaZoom
+    solicitud: SolicitudReservaTransferenciaZoom,
   ): Promise<ResultadoReservaTransferenciaZoom>;
   /** Ajusta la reserva a los bytes realmente transferidos; solo una vez por reserva. */
   liberarReserva(reservaId: string, bytesTransferidos: bigint, ahora: Date): Promise<boolean>;
   vincularOcurrencia(
     ocurrenciaId: string,
     eventoId: string,
-    actor: ActorVinculoZoom | null
+    actor: ActorVinculoZoom | null,
   ): Promise<ResultadoVinculo>;
   desvincularOcurrencia(
     ocurrenciaId: string,
     eventoId: string,
-    actor: ActorVinculoZoom | null
+    actor: ActorVinculoZoom | null,
   ): Promise<ResultadoDesvinculo>;
   reintentarArchivo(
     archivoId: string,
-    actor: ActorVinculoZoom | null
+    actor: ActorVinculoZoom | null,
   ): Promise<{ tipo: "OK" | "NO_ENCONTRADO" | "ESTADO_NO_REINTENTABLE" }>;
 }>;

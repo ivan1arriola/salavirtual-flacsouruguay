@@ -36,23 +36,27 @@ export function huellaRevisionDuplicado({ izquierda, derecha }: PosibleReunionDu
       meeting.programaId,
       meeting.docenteId,
       meeting.inicio.toISOString(),
-      meeting.fin.toISOString()
-    ])
+      meeting.fin.toISOString(),
+    ]),
   );
 }
 
 export function esDecisionRevisionDuplicado(value: unknown): value is DecisionRevisionDuplicado {
-  return typeof value === "string" && DECISIONES_REVISION_DUPLICADO.some((decision) => decision === value);
+  return (
+    typeof value === "string" &&
+    DECISIONES_REVISION_DUPLICADO.some((decision) => decision === value)
+  );
 }
 
 export function detectarPosiblesReunionesDuplicadas(
-  meetings: readonly CandidataReunionDuplicada[]
+  meetings: readonly CandidataReunionDuplicada[],
 ): readonly PosibleReunionDuplicada[] {
   const ordered = meetings.reduce<readonly CandidataReunionDuplicada[]>((result, meeting) => {
     const position = result.findIndex(
       (current) =>
         meeting.inicio.getTime() < current.inicio.getTime() ||
-        (meeting.inicio.getTime() === current.inicio.getTime() && meeting.id.localeCompare(current.id) < 0)
+        (meeting.inicio.getTime() === current.inicio.getTime() &&
+          meeting.id.localeCompare(current.id) < 0),
     );
     return position < 0
       ? [...result, meeting]
@@ -62,7 +66,8 @@ export function detectarPosiblesReunionesDuplicadas(
     ordered
       .slice(leftIndex + 1)
       .filter(
-        (right) => right.inicio < left.fin && left.docenteId === right.docenteId && right.fin > left.inicio
+        (right) =>
+          right.inicio < left.fin && left.docenteId === right.docenteId && right.fin > left.inicio,
       )
       .map((right): PosibleReunionDuplicada => {
         const exact =
@@ -73,9 +78,9 @@ export function detectarPosiblesReunionesDuplicadas(
         return {
           izquierda: left,
           derecha: right,
-          motivo: exact ? "COINCIDENCIA_EXACTA" : "HORARIO_SUPERPUESTO"
+          motivo: exact ? "COINCIDENCIA_EXACTA" : "HORARIO_SUPERPUESTO",
         };
-      })
+      }),
   );
 }
 
