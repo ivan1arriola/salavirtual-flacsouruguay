@@ -8,7 +8,7 @@ permissions:
 
 concurrency:
   group: quality-remediation-strict-debt
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   mechanical:
@@ -70,7 +70,7 @@ jobs:
       - name: Aplicar reglas autofijables de ESLint
         run: |
           status=0
-          npm run lint:fix || status=$?
+          npm run lint:fix -- --prune-suppressions || status=$?
           if [ "$status" -gt 1 ]; then
             echo "ESLint no pudo completar el análisis; código $status"
             exit "$status"
