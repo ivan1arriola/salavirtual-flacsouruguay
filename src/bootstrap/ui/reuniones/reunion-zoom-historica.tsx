@@ -41,8 +41,8 @@ import {
 import { formatDate, formatTime } from "@/src/lib/ui/format";
 import styles from "./reunion-zoom-operativa.module.css";
 
-export const SECCIONES_FICHA_ZOOM =
-  ["resumen", "inscripciones", "asistencia", "grabaciones", "actividad"] as const;
+const secciones = ["resumen", "inscripciones", "asistencia", "grabaciones", "actividad"] as const;
+export const SECCIONES_FICHA_ZOOM = secciones;
 export type SeccionFichaZoom = (typeof SECCIONES_FICHA_ZOOM)[number];
 const NOMBRE_SECCION: Record<SeccionFichaZoom, string> = {
   resumen: "Resumen",
@@ -282,6 +282,9 @@ export function ReunionZoomHistorica({
     }))
   });
   const estadoAsistencia = etiquetaAsistencia(hayReporte, asistencia.estadoReporte);
+  const etiquetaOcurrencias = ocurrencias.length
+    ? `${ocurrencias.length} vinculada(s)`
+    : "Sin ejecución de Zoom vinculada";
 
   return (
     <main className={styles.page}>
@@ -415,7 +418,7 @@ export function ReunionZoomHistorica({
         </div>
         {seccion === "actividad" ? (
           <aside className={styles.historicalSidebar} aria-label="Detalles y acciones de Zoom">
-              <section className={styles.card} aria-labelledby="zoom-identificacion">
+            <section className={styles.card} aria-labelledby="zoom-identificacion">
                 <h2 id="zoom-identificacion" className={styles.sectionTitle}>
                   <Info size={20} aria-hidden="true" />
                   Detalles de la reunión
@@ -448,11 +451,7 @@ export function ReunionZoomHistorica({
                   <dt>
                     <Repeat2 size={17} aria-hidden="true" /> Ejecución
                   </dt>
-                  <dd>
-                    {ocurrencias.length
-                      ? `${ocurrencias.length} vinculada(s)`
-                      : "Sin ejecución de Zoom vinculada"}
-                  </dd>
+                  <dd>{etiquetaOcurrencias}</dd>
                 </div>
               </dl>
             </section>
