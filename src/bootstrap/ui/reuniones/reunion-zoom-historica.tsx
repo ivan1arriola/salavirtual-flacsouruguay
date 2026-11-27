@@ -419,20 +419,20 @@ export function ReunionZoomHistorica({
         {seccion === "actividad" ? (
           <aside className={styles.historicalSidebar} aria-label="Detalles y acciones de Zoom">
             <section className={styles.card} aria-labelledby="zoom-identificacion">
-                <h2 id="zoom-identificacion" className={styles.sectionTitle}>
-                  <Info size={20} aria-hidden="true" />
-                  Detalles de la reunión
-                </h2>
-                <dl className={styles.facts}>
-                  <div>
-                    <dt>
-                      <Video size={17} aria-hidden="true" /> Meeting ID (compartido por la serie)
-                    </dt>
-                    <dd className={styles.mono}>
-                      {reunion.zoom.id ?? "No disponible"}
-                      {reunion.zoom.id ? (
-                        <ZoomCopyIdButton meetingId={reunion.zoom.id} contexto={reunion.titulo} />
-                      ) : null}
+              <h2 id="zoom-identificacion" className={styles.sectionTitle}>
+                <Info size={20} aria-hidden="true" />
+                Detalles de la reunión
+              </h2>
+              <dl className={styles.facts}>
+                <div>
+                  <dt>
+                    <Video size={17} aria-hidden="true" /> Meeting ID (compartido por la serie)
+                  </dt>
+                  <dd className={styles.mono}>
+                    {reunion.zoom.id ?? "No disponible"}
+                    {reunion.zoom.id ? (
+                      <ZoomCopyIdButton meetingId={reunion.zoom.id} contexto={reunion.titulo} />
+                    ) : null}
                   </dd>
                 </div>
                 <div>
