@@ -173,7 +173,7 @@ function crearEscenario(opciones: Opciones = {}) {
 
   // Calendar: una cita por encuentro; `fallar` es el conjunto de citas cuyo parche lanza error.
   const calendarios = new Map(
-    instancias.map((i, indice) => [
+    instancias.map((_i, indice) => [
       `cal-${indice + 1}`,
       {
         description: `Clase\nUnirse: ${MEET}`,
