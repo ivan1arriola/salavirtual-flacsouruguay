@@ -13,8 +13,8 @@ export default async function ConfiguracionHistoricoPage({
   await requireAdminPage();
   const query = await searchParams;
   const registrosZoom = await consultarRegistrosZoomImportados(db, {
-    busqueda: query.busqueda,
-    pagina: query.pagina,
+    ...(query.busqueda !== undefined ? { busqueda: query.busqueda } : {}),
+    ...(query.pagina !== undefined ? { pagina: query.pagina } : {}),
   });
 
   return (
