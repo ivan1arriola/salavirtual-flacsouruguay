@@ -120,15 +120,19 @@ export function agruparPorFecha<T extends { inicioProgramadoAt: Date }>(
 }> {
   const claves = [...new Set(items.map((item) => dateKey(item.inicioProgramadoAt, timezone)))];
 
-  return claves.map((claveFecha) => {
+  return claves.flatMap((claveFecha) => {
     const groupItems = items.filter((item) => dateKey(item.inicioProgramadoAt, timezone) === claveFecha);
-    const primeraFecha = groupItems[0].inicioProgramadoAt;
-    return {
+    const primero = groupItems[0];
+    if (!primero) {
+      return [];
+    }
+    const primeraFecha = primero.inicioProgramadoAt;
+    return [{
       claveFecha,
       etiquetaFecha: formatFechaGrupo(primeraFecha, timezone),
       etiquetaRelativa: formatearDiasRestantes(primeraFecha, ahora, timezone),
-      items: groupItems
-    };
+      items: groupItems,
+    }];
   });
 }
 
