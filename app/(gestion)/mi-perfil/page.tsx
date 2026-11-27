@@ -262,7 +262,7 @@ export default async function MiPerfilPage({
         />
       ),
     },
-  ];
+  ] as const;
   const active = sections.find(({ id }) => id === seccion) ?? sections[0];
   const panel = user.debeCambiarPassword ? <AccessPanel user={user} /> : active.panel;
 
