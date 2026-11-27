@@ -90,14 +90,19 @@ export function construirVistaAsistencia(
     (row) => texto(row[0]).toUpperCase() === "REPORTS" || texto(row[0]).toUpperCase() === "REPORTS_IDENTIDAD"
   );
   const reconciled = conciliarMeetReports(
-    meetRows.map((row) => ({
-      nombre: texto(row[1]) || "Sin identificar",
-      inicio: texto(row[5]),
-      fin: texto(row[6]),
-      participanteId: texto(row[3]) || undefined,
-      sesionId: texto(row[9]) || undefined,
-      correoVerificado: emailVerificado(row[2]) ?? undefined
-    })),
+    meetRows.map((row) => {
+      const participanteId = texto(row[3]);
+      const sesionId = texto(row[9]);
+      const correoVerificado = emailVerificado(row[2]);
+      return {
+        nombre: texto(row[1]) || "Sin identificar",
+        inicio: texto(row[5]),
+        fin: texto(row[6]),
+        ...(participanteId ? { participanteId } : {}),
+        ...(sesionId ? { sesionId } : {}),
+        ...(correoVerificado ? { correoVerificado } : {}),
+      };
+    }),
     auditRows.map((row) => ({
       nombre: texto(row[1]),
       identificador: texto(row[3]),
