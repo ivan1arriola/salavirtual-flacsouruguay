@@ -27,10 +27,10 @@ jobs:
           node-version: 24
       - name: Preparar informes
         run: mkdir -p "$RUNNER_TEMP/quality"
-      - name: Duplicación (diagnóstico)
+      - name: Duplicación (umbral 3%)
         run: |
-          npx --yes jscpd@4.0.5 app src --min-lines 8 --min-tokens 70 --reporters json --output "$RUNNER_TEMP/quality/duplication"
-      - name: ShellCheck (diagnóstico)
+          npx --yes jscpd@4.0.5 app src --min-lines 5 --min-tokens 50 --threshold 3 --reporters json --output "$RUNNER_TEMP/quality/duplication"
+      - name: ShellCheck (bloqueante en auditoría)
         if: always()
         run: |
           set -euo pipefail
@@ -38,7 +38,7 @@ jobs:
           test "${#files[@]}" -gt 0
           status=0
           shellcheck -f json "${files[@]}" > "$RUNNER_TEMP/quality/shellcheck.json" || status=$?
-          test "$status" -le 1
+          test "$status" -eq 0
       - name: Migraciones SQL (diagnóstico)
         if: always()
         env:
