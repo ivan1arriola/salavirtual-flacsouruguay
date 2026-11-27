@@ -29,10 +29,10 @@ export default defineConfig({
         "src/lib/config/encryption.ts"
       ],
       thresholds: {
-        lines: 80,
-        statements: 80,
-        functions: 80,
-        branches: 80
+        lines: 95,
+        statements: 95,
+        functions: 95,
+        branches: 90
       }
     }
   }
