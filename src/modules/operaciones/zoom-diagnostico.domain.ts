@@ -28,7 +28,8 @@ export function auditarSeriesZoom(
     {}
   );
   return Object.entries(series).flatMap(([solicitudId, encuentros]) => {
-    if (encuentros.length < 2) {
+    const primero = encuentros[0];
+    if (!primero || encuentros.length < 2) {
       return [];
     }
     const ids = new Set(encuentros.map(({ meetingId }) => meetingId).filter(Boolean));
@@ -44,8 +45,8 @@ export function auditarSeriesZoom(
       ? [
           {
             solicitudId,
-            titulo: encuentros[0].titulo,
-            inicio: encuentros[0].inicio,
+            titulo: primero.titulo,
+            inicio: primero.inicio,
             motivos,
             encuentros: encuentros.length
           }
