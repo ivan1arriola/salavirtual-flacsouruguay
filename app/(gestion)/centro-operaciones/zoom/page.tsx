@@ -306,7 +306,9 @@ export default async function DiagnosticoZoomPage({
               <AccionesPasada
                 ocurrenciaId={pasada.id}
                 eventoId={pasada.eventoProveedorId}
-                instanciaId={pasada.eventoProveedor?.instanciaSalaId}
+                {...(pasada.eventoProveedor
+                  ? { instanciaId: pasada.eventoProveedor.instanciaSalaId }
+                  : {})}
               />
               {pasadaSeleccionada?.id === pasada.id && detallePasado ? (
                 <div className={styles["result"]} role="status">

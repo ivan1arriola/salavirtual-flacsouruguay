@@ -184,9 +184,9 @@ async function notificarReunionCreada(solicitudId: string) {
     return {
       inicio,
       fin,
-      sala: meet?.cuentaProveedor?.emailOrganizador ?? meet?.cuentaProveedor?.nombre,
-      meet: meet?.codigoReunion,
-      joinUrl: meet?.joinUrl,
+      sala: meet?.cuentaProveedor?.emailOrganizador ?? meet?.cuentaProveedor?.nombre ?? null,
+      meet: meet?.codigoReunion ?? null,
+      joinUrl: meet?.joinUrl ?? null,
       proveedor: meet?.proveedor.tipo === "ZOOM" ? ("ZOOM" as const) : ("GOOGLE_MEET" as const),
     };
   });
@@ -306,5 +306,5 @@ async function notificarReunionCreada(solicitudId: string) {
 }
 
 function capitalizar(value: string): string {
-  return value.length > 0 ? value[0].toUpperCase() + value.slice(1) : value;
+  return value.charAt(0).toUpperCase() + value.slice(1);
 }

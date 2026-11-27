@@ -168,7 +168,7 @@ export default async function ReunionesDocentePage({
                       <td>
                         <small>
                           <MeetIntegrationStatus
-                            status={meet?.estadoIntegracion}
+                            {...(meet ? { status: meet.estadoIntegracion } : {})}
                             hasMeet={Boolean(meet?.joinUrl)}
                           />
                         </small>

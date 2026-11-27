@@ -81,8 +81,8 @@ export default async function GestionLayout({ children }: Readonly<{ children: R
         id: actor.id,
         role: actor.rol,
         name: [user.nombres, user.apellidos].filter(Boolean).join(" "),
-        email: user.emailPrincipal ?? session.user.email,
-        image: user.imagenUrl ?? session.user.image,
+        email: user.emailPrincipal ?? session.user.email ?? null,
+        image: user.imagenUrl ?? session.user.image ?? null,
       }}
     >
       <Suspense fallback={null}>
