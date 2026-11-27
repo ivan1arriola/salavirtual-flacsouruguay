@@ -13,7 +13,9 @@ const seleccion = {
   driveFolderId: true,
   inicioRealAt: true,
   titulo: true,
-  eventoProveedor: { select: { instancia: { select: { solicitud: { select: { titulo: true } } } } } }
+  eventoProveedor: {
+    select: { instancia: { select: { solicitud: { select: { titulo: true } } } } },
+  },
 } as const;
 
 type Fila = {
@@ -31,15 +33,15 @@ function aOcurrencia(f: Fila): OcurrenciaCarpetaZoom[] {
           ocurrenciaId: f.id,
           driveFolderId: f.driveFolderId,
           inicioRealAt: f.inicioRealAt,
-          titulo: f.eventoProveedor?.instancia?.solicitud?.titulo ?? f.titulo
-        }
+          titulo: f.eventoProveedor?.instancia?.solicitud?.titulo ?? f.titulo,
+        },
       ]
     : [];
 }
 
 /** Ocurrencias con encuentro y carpeta de Drive cuya carpeta aún no se ordenó con el formato vigente. */
 export function crearPrismaZoomCarpetasRepositoryAdapter(
-  deps: Readonly<{ db: PrismaClient }>
+  deps: Readonly<{ db: PrismaClient }>,
 ): RepoOrdenarCarpetasZoom {
   return {
     async listarPendientes(limite) {
@@ -47,11 +49,14 @@ export function crearPrismaZoomCarpetasRepositoryAdapter(
         where: {
           eventoProveedorId: { not: null },
           driveFolderId: { not: null },
-          OR: [{ carpetaVinculadaAt: null }, { carpetaVinculadaAt: { lt: CORTE_FORMATO_CARPETAS_ZOOM } }]
+          OR: [
+            { carpetaVinculadaAt: null },
+            { carpetaVinculadaAt: { lt: CORTE_FORMATO_CARPETAS_ZOOM } },
+          ],
         },
         orderBy: [{ vinculadaAt: "asc" }, { id: "asc" }],
         take: Math.max(1, Math.trunc(limite)),
-        select: seleccion
+        select: seleccion,
       });
       return filas.flatMap(aOcurrencia);
     },
@@ -63,11 +68,11 @@ export function crearPrismaZoomCarpetasRepositoryAdapter(
           driveFolderId: { not: null },
           inicioRealAt: {
             gte: new Date(referencia.getTime() - VENTANA_CERCANA_MS),
-            lte: new Date(referencia.getTime() + VENTANA_CERCANA_MS)
-          }
+            lte: new Date(referencia.getTime() + VENTANA_CERCANA_MS),
+          },
         },
         orderBy: [{ inicioRealAt: "asc" }, { id: "asc" }],
-        select: seleccion
+        select: seleccion,
       });
       return filas.flatMap(aOcurrencia);
     },
@@ -76,9 +81,9 @@ export function crearPrismaZoomCarpetasRepositoryAdapter(
       // Solo si sigue vinculada: una desvinculación concurrente no debe quedar marcada como resuelta.
       const { count } = await deps.db.ocurrenciaArchivoZoom.updateMany({
         where: { id: ocurrenciaId, eventoProveedorId: { not: null } },
-        data: { carpetaVinculadaAt: ahora }
+        data: { carpetaVinculadaAt: ahora },
       });
       return count === 1;
-    }
+    },
   };
 }

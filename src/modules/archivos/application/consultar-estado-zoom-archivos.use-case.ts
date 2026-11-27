@@ -19,7 +19,7 @@ const segundos = (desde: Date | null, ahora: Date): number | null =>
 /** Estado operativo de la conservación de archivos de Zoom: solo lectura de base de datos, sin llamar a Zoom ni a Drive. */
 export async function consultarEstadoZoomArchivosUseCase(
   repo: ZoomEstadoLecturaPort,
-  ahora: Date
+  ahora: Date,
 ): Promise<EstadoZoomArchivos> {
   const e = await repo.leerEstado();
   const n = (clave: string) => e.porEstado[clave] ?? 0;
@@ -31,6 +31,6 @@ export async function consultarEstadoZoomArchivosUseCase(
     antiguedadPendienteSegundos: segundos(e.pendienteMasViejoAt, ahora),
     segundosDesdeUltimaActividad: segundos(e.ultimaActividadAt, ahora),
     fallosCapacidad: e.fallosCapacidad,
-    barridosActivos: e.barridosActivos
+    barridosActivos: e.barridosActivos,
   };
 }

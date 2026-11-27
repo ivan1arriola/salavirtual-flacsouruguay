@@ -15,7 +15,7 @@ type CoverageData = Readonly<{
 const platformClasses = {
   Zoom: "is-zoom",
   "Google Meet": "is-meet",
-  "Sin plataforma": "is-none"
+  "Sin plataforma": "is-none",
 } as const;
 
 export function ManagementCoverageRow({ data }: Readonly<{ data: CoverageData }>) {
@@ -27,7 +27,9 @@ export function ManagementCoverageRow({ data }: Readonly<{ data: CoverageData }>
         <span>
           <Clock3 size={16} aria-hidden="true" /> {data.schedule}
         </span>
-        <span className={"monitoring-platform " + platformClasses[data.platform]}>{data.platform}</span>
+        <span className={"monitoring-platform " + platformClasses[data.platform]}>
+          {data.platform}
+        </span>
         {data.modality === "HIBRIDA" ? <span>Híbrida</span> : null}
       </div>
       <h3>{data.title}</h3>

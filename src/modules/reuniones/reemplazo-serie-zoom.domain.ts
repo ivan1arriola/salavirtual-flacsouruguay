@@ -25,14 +25,14 @@ export type PlanReemplazoSerie = Readonly<{
 
 export function planificarReemplazoSerieZoom(
   encuentros: readonly EncuentroParaReemplazo[],
-  ahora: Date
+  ahora: Date,
 ): PlanReemplazoSerie {
   const ids = encuentros.map(({ id }) => id);
   const erroresIniciales = [
     ...(new Set(ids).size !== ids.length
       ? ["La serie contiene identificadores de encuentros duplicados."]
       : []),
-    ...(!Number.isFinite(ahora.getTime()) ? ["La fecha de referencia es inválida."] : [])
+    ...(!Number.isFinite(ahora.getTime()) ? ["La fecha de referencia es inválida."] : []),
   ];
 
   const evaluados = encuentros.reduce<{
@@ -48,7 +48,7 @@ export function planificarReemplazoSerieZoom(
       ) {
         return {
           ...acc,
-          errores: [...acc.errores, `El encuentro ${encuentro.id} tiene un horario inválido.`]
+          errores: [...acc.errores, `El encuentro ${encuentro.id} tiene un horario inválido.`],
         };
       }
       if (
@@ -60,7 +60,10 @@ export function planificarReemplazoSerieZoom(
       if (encuentro.estado !== "PROGRAMADA") {
         return {
           ...acc,
-          errores: [...acc.errores, `El estado del encuentro ${encuentro.id} requiere revisión manual.`]
+          errores: [
+            ...acc.errores,
+            `El estado del encuentro ${encuentro.id} requiere revisión manual.`,
+          ],
         };
       }
       if (encuentro.tieneLiquidacion) {
@@ -68,35 +71,38 @@ export function planificarReemplazoSerieZoom(
           ...acc,
           errores: [
             ...acc.errores,
-            `El encuentro ${encuentro.id} tiene liquidaciones que no pueden trasladarse automáticamente.`
-          ]
+            `El encuentro ${encuentro.id} tiene liquidaciones que no pueden trasladarse automáticamente.`,
+          ],
         };
       }
       return { ...acc, copiar: [...acc.copiar, encuentro] };
     },
-    { errores: erroresIniciales, conservar: [], copiar: [] }
+    { errores: erroresIniciales, conservar: [], copiar: [] },
   );
 
   const ordenados = evaluados.copiar.reduce<readonly EncuentroParaReemplazo[]>((orden, actual) => {
     const indice = orden.findIndex(
       (item) =>
         actual.inicio.getTime() < item.inicio.getTime() ||
-        (actual.inicio.getTime() === item.inicio.getTime() && actual.id.localeCompare(item.id) < 0)
+        (actual.inicio.getTime() === item.inicio.getTime() && actual.id.localeCompare(item.id) < 0),
     );
-    return indice < 0 ? [...orden, actual] : [...orden.slice(0, indice), actual, ...orden.slice(indice)];
+    return indice < 0
+      ? [...orden, actual]
+      : [...orden.slice(0, indice), actual, ...orden.slice(indice)];
   }, []);
-  const superpuestos = ordenados.some(
-    (actual, indice) => indice > 0 && actual.inicio < ordenados[indice - 1].fin
-  );
+  const superpuestos = ordenados.some((actual, indice) => {
+    const anterior = ordenados[indice - 1];
+    return anterior !== undefined && actual.inicio < anterior.fin;
+  });
   const errores = [
     ...evaluados.errores,
-    ...(superpuestos ? ["Hay encuentros futuros superpuestos dentro de la serie."] : [])
+    ...(superpuestos ? ["Hay encuentros futuros superpuestos dentro de la serie."] : []),
   ];
   return {
     estado: errores.length > 0 ? "REVISAR" : ordenados.length === 0 ? "NO_FUTUROS" : "PREPARABLE",
     copiar: errores.length > 0 ? [] : ordenados,
     cancelarDespuesDeVerificar: errores.length > 0 ? [] : ordenados.map(({ id }) => id),
     conservar: evaluados.conservar,
-    errores
+    errores,
   };
 }

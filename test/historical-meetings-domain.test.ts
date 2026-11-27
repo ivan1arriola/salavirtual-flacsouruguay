@@ -2,8 +2,13 @@ import { describe, expect, it } from "vitest";
 import { filterHistoricalMeetings } from "../src/components/historical-meetings.domain";
 
 const meetings = [
-  { id: "1", title: "Seminario de Educación", program: "Maestría", account: "zoom01@flacso.edu.uy" },
-  { id: "2", title: "Defensa final", program: "Doctorado", account: "Sala histórica" }
+  {
+    id: "1",
+    title: "Seminario de Educación",
+    program: "Maestría",
+    account: "zoom01@flacso.edu.uy",
+  },
+  { id: "2", title: "Defensa final", program: "Doctorado", account: "Sala histórica" },
 ];
 
 describe("filtro del histórico", () => {

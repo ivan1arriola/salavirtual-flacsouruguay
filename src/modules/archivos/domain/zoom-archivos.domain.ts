@@ -17,7 +17,7 @@ export const TIPOS_ARCHIVO_ZOOM_CONOCIDOS = Object.freeze([
   "THUMBNAIL",
   "MP3",
   "AUDIO_TRANSCRIPT",
-  "TB"
+  "TB",
 ] as const);
 
 export type TipoArchivoZoom = (typeof TIPOS_ARCHIVO_ZOOM_CONOCIDOS)[number] | "OTRO";
@@ -25,7 +25,12 @@ export type TipoArchivoZoom = (typeof TIPOS_ARCHIVO_ZOOM_CONOCIDOS)[number] | "O
 export type ObservacionInventarioZoom =
   | Readonly<{ tipo: "ELEMENTO_INVALIDO"; coleccion: string; indice: number }>
   | Readonly<{ tipo: "METADATO_INVALIDO"; coleccion: string; indice: number; campo: string }>
-  | Readonly<{ tipo: "IDENTIDAD_AMBIGUA"; coleccion: string; claveOrigen: string; multiplicidad: number }>;
+  | Readonly<{
+      tipo: "IDENTIDAD_AMBIGUA";
+      coleccion: string;
+      claveOrigen: string;
+      multiplicidad: number;
+    }>;
 
 export type ResultadoInventarioZoom = Readonly<{
   recursos: readonly ArchivoOrigenZoom[];
@@ -88,30 +93,30 @@ function construirCandidato(
   coleccion: string,
   indice: number,
   elemento: Registro,
-  hash: HashZoom
+  hash: HashZoom,
 ): Candidato {
-  const archivoZoomId = textoONulo(elemento.id);
-  const tipoOriginal = textoONulo(elemento.file_type) ?? "OTRO";
-  const variante = textoONulo(elemento.recording_type) ?? textoONulo(elemento.file_name);
-  const extensionBruta = textoONulo(elemento.file_extension);
+  const archivoZoomId = textoONulo(elemento["id"]);
+  const tipoOriginal = textoONulo(elemento["file_type"]) ?? "OTRO";
+  const variante = textoONulo(elemento["recording_type"]) ?? textoONulo(elemento["file_name"]);
+  const extensionBruta = textoONulo(elemento["file_extension"]);
   const extension = extensionBruta ? extensionBruta.toLowerCase() : null;
-  const estadoBruto = textoONulo(elemento.status);
+  const estadoBruto = textoONulo(elemento["status"]);
   const estadoOrigen = estadoBruto ? estadoBruto.toLowerCase() : null;
-  const inicioAt = fechaONula(elemento.recording_start);
-  const finAt = fechaONula(elemento.recording_end);
-  const tamanoBytes = bytesONulo(elemento.file_size);
+  const inicioAt = fechaONula(elemento["recording_start"]);
+  const finAt = fechaONula(elemento["recording_end"]);
+  const tamanoBytes = bytesONulo(elemento["file_size"]);
 
   const invalidos = [
-    ["recording_start", inicioAt, elemento.recording_start],
-    ["recording_end", finAt, elemento.recording_end],
-    ["file_size", tamanoBytes, elemento.file_size]
+    ["recording_start", inicioAt, elemento["recording_start"]],
+    ["recording_end", finAt, elemento["recording_end"]],
+    ["file_size", tamanoBytes, elemento["file_size"]],
   ]
     .filter(([, convertido, original]) => convertido === null && textoONulo(original) !== null)
     .map(([campo]): ObservacionInventarioZoom => ({
       tipo: "METADATO_INVALIDO",
       coleccion,
       indice,
-      campo: String(campo)
+      campo: String(campo),
     }));
 
   const alcance = `${ocurrencia.cuentaZoomId}|${ocurrencia.uuid}`;
@@ -127,11 +132,11 @@ function construirCandidato(
           tipoOriginal.toUpperCase(),
           variante,
           inicioAt?.toISOString() ?? null,
-          extension
+          extension,
         ]);
 
   const procesando = estadoOrigen === "processing";
-  const urlDisponible = textoONulo(elemento.download_url) !== null;
+  const urlDisponible = textoONulo(elemento["download_url"]) !== null;
 
   return {
     recurso: {
@@ -145,10 +150,11 @@ function construirCandidato(
       finAt,
       tamanoBytes,
       estadoOrigen,
-      descargable: urlDisponible && !procesando && (estadoOrigen === null || estadoOrigen === "completed")
+      descargable:
+        urlDisponible && !procesando && (estadoOrigen === null || estadoOrigen === "completed"),
     },
     observaciones: invalidos,
-    pendienteSinId: archivoZoomId === null && procesando
+    pendienteSinId: archivoZoomId === null && procesando,
   };
 }
 
@@ -160,14 +166,14 @@ function construirCandidato(
 export function normalizarInventarioZoom(
   ocurrencia: ReferenciaOcurrenciaZoom,
   respuesta: unknown,
-  hash: HashZoom
+  hash: HashZoom,
 ): ResultadoInventarioZoom {
   const colecciones = esRegistro(respuesta)
     ? Object.entries(respuesta).filter((par): par is [string, unknown[]] => Array.isArray(par[1]))
     : [];
 
   const entradas = colecciones.flatMap(([coleccion, elementos]) =>
-    elementos.map((elemento, indice) => ({ coleccion, indice, elemento }))
+    elementos.map((elemento, indice) => ({ coleccion, indice, elemento })),
   );
 
   const invalidos = entradas
@@ -175,11 +181,11 @@ export function normalizarInventarioZoom(
     .map(({ coleccion, indice }): ObservacionInventarioZoom => ({
       tipo: "ELEMENTO_INVALIDO",
       coleccion,
-      indice
+      indice,
     }));
 
   const candidatos = entradas.flatMap(({ coleccion, indice, elemento }) =>
-    esRegistro(elemento) ? [construirCandidato(ocurrencia, coleccion, indice, elemento, hash)] : []
+    esRegistro(elemento) ? [construirCandidato(ocurrencia, coleccion, indice, elemento, hash)] : [],
   );
 
   const pendientes = candidatos.filter((c) => c.pendienteSinId);
@@ -189,25 +195,33 @@ export function normalizarInventarioZoom(
     (acumulado, candidato) =>
       new Map([
         ...acumulado,
-        [candidato.recurso.claveOrigen, [...(acumulado.get(candidato.recurso.claveOrigen) ?? []), candidato]]
+        [
+          candidato.recurso.claveOrigen,
+          [...(acumulado.get(candidato.recurso.claveOrigen) ?? []), candidato],
+        ],
       ]),
-    new Map()
+    new Map(),
   );
 
-  const grupos = [...porClave.values()];
+  const grupos = [...porClave.values()].flatMap((grupo) => {
+    const primero = grupo[0];
+    return primero ? [{ primero, multiplicidad: grupo.length }] : [];
+  });
   const ambiguos = grupos
-    .filter((grupo) => grupo[0].recurso.archivoZoomId === null && grupo.length > 1)
-    .map((grupo): ObservacionInventarioZoom => ({
+    .filter(
+      ({ primero, multiplicidad }) => primero.recurso.archivoZoomId === null && multiplicidad > 1,
+    )
+    .map(({ primero, multiplicidad }): ObservacionInventarioZoom => ({
       tipo: "IDENTIDAD_AMBIGUA",
-      coleccion: grupo[0].recurso.coleccion,
-      claveOrigen: grupo[0].recurso.claveOrigen,
-      multiplicidad: grupo.length
+      coleccion: primero.recurso.coleccion,
+      claveOrigen: primero.recurso.claveOrigen,
+      multiplicidad,
     }));
 
   return {
-    recursos: grupos.map((grupo) => grupo[0].recurso),
+    recursos: grupos.map(({ primero }) => primero.recurso),
     observaciones: [...invalidos, ...candidatos.flatMap((c) => c.observaciones), ...ambiguos],
-    procesamientoPendiente: pendientes.length > 0
+    procesamientoPendiente: pendientes.length > 0,
   };
 }
 
@@ -231,13 +245,16 @@ function sanearSegmento(valor: string, largoMaximo: number): string {
 export function nombreArchivoZoom(
   ocurrencia: ReferenciaOcurrenciaZoom,
   archivo: ArchivoOrigenZoom,
-  sufijo?: string
+  sufijo?: string,
 ): string {
   const fecha = ocurrencia.inicioRealAt.toISOString().slice(0, 10);
   const tipo = sanearSegmento(archivo.tipoOriginal, 30) || "OTRO";
   const variante = archivo.variante ? sanearSegmento(archivo.variante, 60) : "";
-  const identificador = sanearSegmento(archivo.archivoZoomId ?? archivo.claveOrigen, 60) || "sin-id";
-  const extension = archivo.extension ? sanearSegmento(archivo.extension.replace(/^\./, ""), 10) : "";
+  const identificador =
+    sanearSegmento(archivo.archivoZoomId ?? archivo.claveOrigen, 60) || "sin-id";
+  const extension = archivo.extension
+    ? sanearSegmento(archivo.extension.replace(/^\./, ""), 10)
+    : "";
   const desambiguador = sufijo ? sanearSegmento(sufijo, 80) : "";
   const cuerpo = [fecha, tipo, variante, identificador, desambiguador]
     .filter((parte) => parte !== "")

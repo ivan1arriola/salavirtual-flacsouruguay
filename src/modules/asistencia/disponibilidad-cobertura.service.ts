@@ -24,16 +24,18 @@ function formatTime(date: Date): string {
   return date.toLocaleString("es-UY", {
     timeZone: "America/Montevideo",
     dateStyle: "short",
-    timeStyle: "short"
+    timeStyle: "short",
   });
 }
 
 export async function consultarDisponibilidadCobertura(
   db: PrismaClient,
   meeting: Meeting,
-  assistants: readonly Assistant[]
+  assistants: readonly Assistant[],
 ): Promise<Map<string, string | null>> {
-  const result = new Map(assistants.map((assistant) => [assistant.id, motivoInhabilitacion(assistant)]));
+  const result = new Map(
+    assistants.map((assistant) => [assistant.id, motivoInhabilitacion(assistant)]),
+  );
   let window: ReturnType<typeof assistantWindow>;
   try {
     window = assistantWindow(meeting);
@@ -48,7 +50,9 @@ export async function consultarDisponibilidadCobertura(
     }
     return result;
   }
-  const eligibleIds = assistants.filter((assistant) => !result.get(assistant.id)).map(({ id }) => id);
+  const eligibleIds = assistants
+    .filter((assistant) => !result.get(assistant.id))
+    .map(({ id }) => id);
   if (!eligibleIds.length) {
     return result;
   }
@@ -57,7 +61,7 @@ export async function consultarDisponibilidadCobertura(
       asistenteTecnicoId: { in: eligibleIds },
       estado: { in: ["ASIGNADO", "ACEPTADO"] },
       instanciaSalaId: { not: meeting.id },
-      instancia: { estado: "PROGRAMADA" }
+      instancia: { estado: "PROGRAMADA" },
     },
     select: {
       asistenteTecnicoId: true,
@@ -67,10 +71,10 @@ export async function consultarDisponibilidadCobertura(
           finProgramadoAt: true,
           inicioAsistenciaTecnicaAt: true,
           finAsistenciaTecnicaAt: true,
-          solicitud: { select: { titulo: true } }
-        }
-      }
-    }
+          solicitud: { select: { titulo: true } },
+        },
+      },
+    },
   });
   const byAssistant = new Map<string, typeof assignments>();
   for (const assignment of assignments) {
@@ -82,7 +86,7 @@ export async function consultarDisponibilidadCobertura(
     const existing = (byAssistant.get(id) ?? []).map(({ instancia }) => ({
       inicio: instancia.inicioAsistenciaTecnicaAt ?? instancia.inicioProgramadoAt,
       fin: instancia.finAsistenciaTecnicaAt ?? instancia.finProgramadoAt,
-      title: instancia.solicitud.titulo
+      title: instancia.solicitud.titulo,
     }));
     const conflict = buscarConflictoAsistencia([...existing, { ...window, title: null }]);
     if (conflict) {
@@ -92,7 +96,7 @@ export async function consultarDisponibilidadCobertura(
         .join("; ");
       result.set(
         id,
-        `Conflicto de agenda: ${details}. Se requieren ${SEPARACION_MINIMA_ASISTENCIAS_MINUTOS} minutos de separación entre monitoreos.`
+        `Conflicto de agenda: ${details}. Se requieren ${SEPARACION_MINIMA_ASISTENCIAS_MINUTOS} minutos de separación entre monitoreos.`,
       );
     }
   }

@@ -46,23 +46,35 @@ export type ResumenActividadEncuentroZoom = Readonly<{
 const PLURALES: Record<string, readonly [string, string]> = {
   "meeting.participant_joined": ["entrada de participante", "entradas de participantes"],
   "meeting.participant_left": ["salida de participante", "salidas de participantes"],
-  "meeting.participant_joined_waiting_room": ["ingreso a la sala de espera", "ingresos a la sala de espera"],
-  "meeting.participant_left_waiting_room": ["salida de la sala de espera", "salidas de la sala de espera"],
+  "meeting.participant_joined_waiting_room": [
+    "ingreso a la sala de espera",
+    "ingresos a la sala de espera",
+  ],
+  "meeting.participant_left_waiting_room": [
+    "salida de la sala de espera",
+    "salidas de la sala de espera",
+  ],
   "meeting.participant_admitted": ["participante admitido", "participantes admitidos"],
   "meeting.participant_put_in_waiting_room": [
     "participante enviado a la sala de espera",
-    "participantes enviados a la sala de espera"
+    "participantes enviados a la sala de espera",
   ],
   "meeting.participant_jbh_waiting": [
     "participante esperando al anfitrión",
-    "participantes esperando al anfitrión"
+    "participantes esperando al anfitrión",
   ],
   "meeting.participant_jbh_waiting_left": [
     "participante abandonó la espera del anfitrión",
-    "participantes abandonaron la espera del anfitrión"
+    "participantes abandonaron la espera del anfitrión",
   ],
-  "meeting.participant_joined_breakout_room": ["entrada a grupo pequeño", "entradas a grupos pequeños"],
-  "meeting.participant_left_breakout_room": ["salida de grupo pequeño", "salidas de grupos pequeños"]
+  "meeting.participant_joined_breakout_room": [
+    "entrada a grupo pequeño",
+    "entradas a grupos pequeños",
+  ],
+  "meeting.participant_left_breakout_room": [
+    "salida de grupo pequeño",
+    "salidas de grupos pequeños",
+  ],
 };
 
 /** Eventos que se resumen cuando son consecutivos del mismo tipo y participante. */
@@ -74,7 +86,7 @@ const TIPOS_GRABACION = new Set([
   "recording.paused",
   "recording.resumed",
   "recording.completed",
-  "recording.transcript_completed"
+  "recording.transcript_completed",
 ]);
 
 /**
@@ -82,7 +94,9 @@ const TIPOS_GRABACION = new Set([
  * duplicados exactos y resume eventos repetidos. Los ids solo sirven para correlacionar eventos; no
  * se presentan como identidad de una persona.
  */
-export function construirActividadEncuentroZoom(hechos: readonly HechoZoom[]): EntradaActividadZoom[] {
+export function construirActividadEncuentroZoom(
+  hechos: readonly HechoZoom[],
+): EntradaActividadZoom[] {
   const vistos = new Set<string>();
   const ordenados = [...hechos]
     .sort((a, b) => a.ocurridoAt.getTime() - b.ocurridoAt.getTime())
@@ -117,7 +131,7 @@ export function construirActividadEncuentroZoom(hechos: readonly HechoZoom[]): E
     registranteId,
     motivoSalida,
     detalle,
-    huella
+    huella,
   } of ordenados) {
     const ultima = entradas.at(-1);
     const mismoParticipante =
@@ -148,7 +162,7 @@ export function construirActividadEncuentroZoom(hechos: readonly HechoZoom[]): E
         registranteId,
         motivoSalida,
         detalle,
-        huella
+        huella,
       });
     }
   }
@@ -169,13 +183,13 @@ export function esActividadOperativaZoom(tipo: string): boolean {
 }
 
 export function resumirActividadEncuentroZoom(
-  actividad: readonly EntradaActividadZoom[]
+  actividad: readonly EntradaActividadZoom[],
 ): ResumenActividadEncuentroZoom {
   const contar = (tipos: readonly string[]) => {
     const conjunto = new Set(tipos);
     return actividad.reduce(
       (total, entrada) => total + (conjunto.has(entrada.tipo) ? entrada.cantidad : 0),
-      0
+      0,
     );
   };
 
@@ -184,18 +198,21 @@ export function resumirActividadEncuentroZoom(
     salidas: contar([
       "meeting.participant_left",
       "meeting.participant_left_waiting_room",
-      "meeting.participant_jbh_waiting_left"
+      "meeting.participant_jbh_waiting_left",
     ]),
     admisiones: contar(["meeting.participant_admitted"]),
-    esperaAnfitrion: contar(["meeting.participant_jbh_waiting", "meeting.participant_joined_waiting_room"]),
+    esperaAnfitrion: contar([
+      "meeting.participant_jbh_waiting",
+      "meeting.participant_joined_waiting_room",
+    ]),
     cambiosRol: contar(["meeting.participant_role_changed"]),
     movimientosGrupos: contar([
       "meeting.participant_joined_breakout_room",
-      "meeting.participant_left_breakout_room"
+      "meeting.participant_left_breakout_room",
     ]),
     alertasCalidad: contar(["meeting.alert"]),
     eventosGrabacion: contar([...TIPOS_GRABACION]),
-    comparticiones: contar(["meeting.sharing_started", "meeting.sharing_ended"])
+    comparticiones: contar(["meeting.sharing_started", "meeting.sharing_ended"]),
   };
 }
 
@@ -220,7 +237,7 @@ export function traducirDetalleActividadZoom(detalle: string | null | undefined)
     "Contenido: desktop": "Compartió el escritorio",
     "Contenido: airplay": "Compartió mediante AirPlay",
     "Contenido: camera": "Compartió una cámara",
-    "Contenido: unknown": "Compartió contenido no identificado"
+    "Contenido: unknown": "Compartió contenido no identificado",
   };
   return detalle
     .split(",")
@@ -279,6 +296,6 @@ export function resumirPresenciaObservadaZoom(actividad: readonly EntradaActivid
     enSala: estados.filter((e) => e === "SALA").length,
     enEspera: estados.filter((e) => e === "ESPERA").length,
     sinIdentificador,
-    ultimoAviso
+    ultimoAviso,
   };
 }

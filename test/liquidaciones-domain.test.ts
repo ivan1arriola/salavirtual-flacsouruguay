@@ -18,14 +18,20 @@ import {
   type AsignacionResumenAdministracion,
   type AsistenteResumenBase,
   type RegistroAsistenciaLiquidacion,
-  type ResumenAsistencia
+  type ResumenAsistencia,
 } from "@/src/modules/liquidaciones/domain";
 
 describe("liquidaciones domain", () => {
   describe("calculo de horas y montos", () => {
     it("calcula minutos usando la prioridad: confirmado > reportado > real > programado", () => {
-      const programado = { inicio: new Date("2026-05-10T10:00:00Z"), fin: new Date("2026-05-10T11:00:00Z") };
-      const real = { inicio: new Date("2026-05-10T10:00:00Z"), fin: new Date("2026-05-10T11:30:00Z") };
+      const programado = {
+        inicio: new Date("2026-05-10T10:00:00Z"),
+        fin: new Date("2026-05-10T11:00:00Z"),
+      };
+      const real = {
+        inicio: new Date("2026-05-10T10:00:00Z"),
+        fin: new Date("2026-05-10T11:30:00Z"),
+      };
 
       expect(calcularMinutos(programado, 45, 90, real)).toBe(45);
       expect(calcularMinutos(programado, null, 90, real)).toBe(90);
@@ -75,12 +81,24 @@ describe("liquidaciones domain", () => {
           slug: "juan",
           nombre: "Juan Perez",
           email: "juan@flacso.edu.uy",
-          activo: true
-        }
+          activo: true,
+        },
       ];
       const asignaciones: readonly AsignacionResumenAdministracion[] = [
-        { asistenteTecnicoId: "asist-1", modalidad: "VIRTUAL", minutos: 60, monto: 500, moneda: "UYU" },
-        { asistenteTecnicoId: "asist-1", modalidad: "HIBRIDA", minutos: 120, monto: 1200, moneda: "UYU" }
+        {
+          asistenteTecnicoId: "asist-1",
+          modalidad: "VIRTUAL",
+          minutos: 60,
+          monto: 500,
+          moneda: "UYU",
+        },
+        {
+          asistenteTecnicoId: "asist-1",
+          modalidad: "HIBRIDA",
+          minutos: 120,
+          monto: 1200,
+          moneda: "UYU",
+        },
       ];
 
       const filas = resumirAsignacionesPorAsistente(asistentes, asignaciones);
@@ -102,7 +120,7 @@ describe("liquidaciones domain", () => {
     it("resume asistencias personales correctamente", () => {
       const asistencias: readonly RegistroAsistenciaLiquidacion[] = [
         { modalidad: "VIRTUAL", minutos: 60, monto: 500 },
-        { modalidad: "HIBRIDA", minutos: 120, monto: 1200 }
+        { modalidad: "HIBRIDA", minutos: 120, monto: 1200 },
       ];
       const resumen = resumirAsistencias(asistencias);
       expect(resumen.reuniones).toBe(2);
@@ -118,12 +136,12 @@ describe("liquidaciones domain", () => {
       const items = [
         { monto: 100, moneda: "UYU" },
         { monto: 200, moneda: "UYU" },
-        { monto: 50, moneda: "USD" }
+        { monto: 50, moneda: "USD" },
       ];
       const res = resumirMontos(items);
       expect(res).toEqual([
         { moneda: "UYU", monto: 300 },
-        { moneda: "USD", monto: 50 }
+        { moneda: "USD", monto: 50 },
       ]);
     });
   });
@@ -136,12 +154,12 @@ describe("liquidaciones domain", () => {
         minutosHibridos: 60,
         montoVirtual: 1000,
         montoHibrido: 600,
-        monto: 1600
+        monto: 1600,
       };
       const correo = construirCorreoReporteMensual({
         nombre: "María & Co.",
         periodo: "2026-05",
-        resumen
+        resumen,
       });
 
       expect(correo.subject).toContain("Mayo de 2026");

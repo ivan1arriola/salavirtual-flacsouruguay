@@ -7,7 +7,7 @@ import { useState, useTransition } from "react";
 export function AssistantInterestButton({
   meetingId,
   interested,
-  disabledReason
+  disabledReason,
 }: Readonly<{
   meetingId: string;
   interested: boolean;
@@ -29,8 +29,8 @@ export function AssistantInterestButton({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           instanciaSalaId: meetingId,
-          accion: interested ? "RETIRAR" : "POSTULAR"
-        })
+          accion: interested ? "RETIRAR" : "POSTULAR",
+        }),
       });
       const result = await response.json().catch(() => ({}));
       if (!response.ok) {
@@ -51,7 +51,13 @@ export function AssistantInterestButton({
         type="button"
       >
         {interested ? <X size={16} /> : <Hand size={16} />}
-        {pending ? "Actualizando…" : interested ? "Retirar" : blocked ? "Conflicto horario" : "Postularme"}
+        {pending
+          ? "Actualizando…"
+          : interested
+            ? "Retirar"
+            : blocked
+              ? "Conflicto horario"
+              : "Postularme"}
       </button>
       {blocked && disabledReason ? <small className="muted-text">{disabledReason}</small> : null}
       {message ? (

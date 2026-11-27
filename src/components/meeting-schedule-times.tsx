@@ -13,12 +13,12 @@ export function MeetingScheduleTimes({
   modality = "VIRTUAL",
   viewerIsAssistant = false,
   compact = false,
-  showDetails = true
+  showDetails = true,
 }: Readonly<{
   startsAt: Instant;
   endsAt: Instant;
-  assistanceStartsAt?: Instant | null;
-  assistanceEndsAt?: Instant | null;
+  assistanceStartsAt?: Instant | null | undefined;
+  assistanceEndsAt?: Instant | null | undefined;
   requiresAssistance?: boolean;
   modality?: "VIRTUAL" | "HIBRIDA";
   viewerIsAssistant?: boolean;
@@ -56,8 +56,8 @@ export function MeetingScheduleTimes({
                 <strong>Horario técnico por confirmar</strong>
                 {showDetails ? (
                   <small>
-                    Administración debe definir la llegada y salida del asistente antes de esta cobertura
-                    híbrida.
+                    Administración debe definir la llegada y salida del asistente antes de esta
+                    cobertura híbrida.
                   </small>
                 ) : null}
               </>
@@ -67,7 +67,8 @@ export function MeetingScheduleTimes({
                 {showDetails ? (
                   <small>
                     {viewerIsAssistant ? "Tenés que estar desde las" : "Llegada del asistente:"}{" "}
-                    {formatTime(assistanceStart)} · {viewerIsAssistant ? "Tu cobertura termina" : "Salida"}:{" "}
+                    {formatTime(assistanceStart)} ·{" "}
+                    {viewerIsAssistant ? "Tu cobertura termina" : "Salida"}:{" "}
                     {formatTime(assistanceEnd)}
                   </small>
                 ) : null}

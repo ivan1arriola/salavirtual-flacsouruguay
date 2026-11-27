@@ -2,25 +2,26 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   gestionarCoberturaSchema,
-  validarIntervaloRetroactivo
+  validarIntervaloRetroactivo,
 } from "@/src/modules/asistencia/domain/gestion-cobertura.domain";
 
-const read = (relativePath: string) => readFileSync(new URL(`../${relativePath}`, import.meta.url), "utf8");
+const read = (relativePath: string) =>
+  readFileSync(new URL(`../${relativePath}`, import.meta.url), "utf8");
 
 describe("gestión de cobertura y retroactividad", () => {
   it("distingue convocatoria, asignación directa, carga y revisión retroactiva", () => {
     expect(
       gestionarCoberturaSchema.parse({
         accion: "CONVOCAR",
-        instanciaSalaId: "inst-1"
-      }).accion
+        instanciaSalaId: "inst-1",
+      }).accion,
     ).toBe("CONVOCAR");
     expect(
       gestionarCoberturaSchema.parse({
         accion: "ASIGNAR_DIRECTO",
         instanciaSalaId: "inst-1",
-        asistenteTecnicoId: "asis-1"
-      }).accion
+        asistenteTecnicoId: "asis-1",
+      }).accion,
     ).toBe("ASIGNAR_DIRECTO");
     expect(
       gestionarCoberturaSchema.parse({
@@ -29,28 +30,28 @@ describe("gestión de cobertura y retroactividad", () => {
         asistenteTecnicoId: "asis-1",
         inicioRealAt: "2026-10-18T11:00:00-03:00",
         finRealAt: "2026-10-18T13:00:00-03:00",
-        motivo: "Cobertura realizada sin asignación previa"
-      }).accion
+        motivo: "Cobertura realizada sin asignación previa",
+      }).accion,
     ).toBe("REGISTRAR_RETROACTIVO");
     expect(
       gestionarCoberturaSchema.parse({
         accion: "APROBAR_RETROACTIVO",
-        registroId: "retro-1"
-      }).accion
+        registroId: "retro-1",
+      }).accion,
     ).toBe("APROBAR_RETROACTIVO");
     expect(
       gestionarCoberturaSchema.parse({
         accion: "RECHAZAR_RETROACTIVO",
         registroId: "retro-1",
-        motivo: "Horas incorrectas"
-      }).accion
+        motivo: "Horas incorrectas",
+      }).accion,
     ).toBe("RECHAZAR_RETROACTIVO");
   });
 
   it("rechaza horario retroactivo invertido, excesivo y futuro", () => {
     const encuentro = {
       inicio: new Date("2026-10-18T11:00:00-03:00"),
-      fin: new Date("2026-10-18T13:00:00-03:00")
+      fin: new Date("2026-10-18T13:00:00-03:00"),
     };
     const ahora = new Date("2026-10-19T11:00:00-03:00");
     expect(
@@ -58,20 +59,27 @@ describe("gestión de cobertura y retroactividad", () => {
         new Date("2026-10-18T10:45:00-03:00"),
         new Date("2026-10-18T13:15:00-03:00"),
         encuentro,
-        ahora
-      )
+        ahora,
+      ),
     ).toBe(150);
-    expect(() => validarIntervaloRetroactivo(encuentro.fin, encuentro.inicio, encuentro, ahora)).toThrow();
+    expect(() =>
+      validarIntervaloRetroactivo(encuentro.fin, encuentro.inicio, encuentro, ahora),
+    ).toThrow();
     expect(() =>
       validarIntervaloRetroactivo(
         new Date("2026-10-17T10:00:00-03:00"),
         new Date("2026-10-18T12:00:00-03:00"),
         encuentro,
-        ahora
-      )
+        ahora,
+      ),
     ).toThrow();
     expect(() =>
-      validarIntervaloRetroactivo(encuentro.inicio, new Date("2026-10-20T12:00:00-03:00"), encuentro, ahora)
+      validarIntervaloRetroactivo(
+        encuentro.inicio,
+        new Date("2026-10-20T12:00:00-03:00"),
+        encuentro,
+        ahora,
+      ),
     ).toThrow();
   });
 
@@ -79,7 +87,7 @@ describe("gestión de cobertura y retroactividad", () => {
     const service = read("src/modules/asistencia/gestion-cobertura.service.ts");
     const schema = read("prisma/schema.prisma");
     const report = read(
-      "src/modules/liquidaciones/infrastructure/prisma/prisma-liquidaciones-repository.adapter.ts"
+      "src/modules/liquidaciones/infrastructure/prisma/prisma-liquidaciones-repository.adapter.ts",
     );
     expect(service).toContain('actor.rol !== "ADMINISTRACION"');
     expect(service).toContain('estado: "PENDIENTE"');
@@ -100,8 +108,12 @@ describe("gestión de cobertura y retroactividad", () => {
   });
 
   it("incluye acceso desde cada encuentro, pasado o futuro, y pantalla de revisión", () => {
-    const meeting = read("src/modules/reuniones/presentation/components/meeting-detail-manager.tsx");
-    const panel = read("src/modules/asistencia/presentation/components/gestion-cobertura-panel.tsx");
+    const meeting = read(
+      "src/modules/reuniones/presentation/components/meeting-detail-manager.tsx",
+    );
+    const panel = read(
+      "src/modules/asistencia/presentation/components/gestion-cobertura-panel.tsx",
+    );
     const page = read("app/(gestion)/monitoreo/gestionar/[instanciaId]/page.tsx");
     expect(meeting).toContain("/monitoreo/gestionar/${meeting.id}");
     expect(panel).toContain("ASIGNAR_DIRECTO");
@@ -114,7 +126,9 @@ describe("gestión de cobertura y retroactividad", () => {
 
   it("muestra postulaciones activas y permite seleccionarlas para asignación", () => {
     const page = read("app/(gestion)/monitoreo/gestionar/[instanciaId]/page.tsx");
-    const panel = read("src/modules/asistencia/presentation/components/gestion-cobertura-panel.tsx");
+    const panel = read(
+      "src/modules/asistencia/presentation/components/gestion-cobertura-panel.tsx",
+    );
     expect(page).toContain('where: { estado: "ME_INTERESA" }');
     expect(page).toContain("applicants={meeting.postulaciones.map");
     expect(panel).toContain("Personas postuladas");
@@ -123,9 +137,13 @@ describe("gestión de cobertura y retroactividad", () => {
   });
 
   it("desasigna desde la cobertura sin quitar el requisito ni convocar", () => {
-    const panel = read("src/modules/asistencia/presentation/components/gestion-cobertura-panel.tsx");
+    const panel = read(
+      "src/modules/asistencia/presentation/components/gestion-cobertura-panel.tsx",
+    );
     const page = read("app/(gestion)/monitoreo/gestionar/[instanciaId]/page.tsx");
-    const dialog = read("src/modules/asistencia/presentation/components/confirmacion-cobertura.tsx");
+    const dialog = read(
+      "src/modules/asistencia/presentation/components/confirmacion-cobertura.tsx",
+    );
     expect(page).toContain("assignmentId={current?.id ?? null}");
     expect(panel).toContain("Desasignar asistente");
     expect(panel).toContain("/api/v1/asistencia/asignaciones/desvincular");
@@ -139,7 +157,9 @@ describe("gestión de cobertura y retroactividad", () => {
 
   it("expone disponibilidad anticipada en postulaciones y asignación directa", () => {
     const page = read("app/(gestion)/monitoreo/gestionar/[instanciaId]/page.tsx");
-    const panel = read("src/modules/asistencia/presentation/components/gestion-cobertura-panel.tsx");
+    const panel = read(
+      "src/modules/asistencia/presentation/components/gestion-cobertura-panel.tsx",
+    );
     const reserve = read("src/modules/asistencia/reserva-asistencia.service.ts");
     expect(page).toContain("consultarDisponibilidadCobertura(db, meeting, assistants)");
     expect(panel).toContain("ApplicantAvailability");

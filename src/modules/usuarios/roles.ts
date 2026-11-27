@@ -4,5 +4,5 @@ export {
   buscarRolAnterior,
   mapearRolAnterior,
   puedeAdministrar,
-  esRolUsuario
+  esRolUsuario,
 } from "@/src/modules/identity/api";

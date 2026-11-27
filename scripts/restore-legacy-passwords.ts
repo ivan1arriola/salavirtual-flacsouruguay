@@ -7,22 +7,22 @@ type LegacyPrismaClientType = Readonly<{
 }>;
 
 const legacyRequire = createRequire(
-  new URL("../../flacso-zoom-plataforma-web/package.json", import.meta.url)
+  new URL("../../flacso-zoom-plataforma-web/package.json", import.meta.url),
 );
 const { PrismaClient: LegacyPrismaClient } = legacyRequire("@prisma/client") as {
   PrismaClient: new (options: { datasourceUrl: string }) => LegacyPrismaClientType;
 };
 const applyChanges = process.argv.includes("--apply");
 
-if (!process.env.DATABASE_URL || !process.env.LEGACY_DATABASE_URL) {
+if (!process.env["DATABASE_URL"] || !process.env["LEGACY_DATABASE_URL"]) {
   throw new Error("DATABASE_URL y LEGACY_DATABASE_URL son obligatorias.");
 }
-if (!process.env.MIGRATION_DEFAULT_PASSWORD) {
+if (!process.env["MIGRATION_DEFAULT_PASSWORD"]) {
   throw new Error("MIGRATION_DEFAULT_PASSWORD es obligatoria.");
 }
 
-const source = new LegacyPrismaClient({ datasourceUrl: process.env.LEGACY_DATABASE_URL });
-const target = new PrismaClient({ datasourceUrl: process.env.DATABASE_URL });
+const source = new LegacyPrismaClient({ datasourceUrl: process.env["LEGACY_DATABASE_URL"] });
+const target = new PrismaClient({ datasourceUrl: process.env["DATABASE_URL"] });
 
 type RestorePlan = Readonly<{
   usuarioId: string;
@@ -34,7 +34,7 @@ async function main(): Promise<void> {
   try {
     const legacyUsers = await source.user.findMany({
       where: { passwordHash: { not: null } },
-      select: { id: true, passwordHash: true }
+      select: { id: true, passwordHash: true },
     });
     const targetUsers = await target.usuario.findMany({
       where: { legacyZoomUserId: { in: legacyUsers.map(({ id }) => id) } },
@@ -42,10 +42,12 @@ async function main(): Promise<void> {
         id: true,
         legacyZoomUserId: true,
         passwordHash: true,
-        fusionadoEnId: true
-      }
+        fusionadoEnId: true,
+      },
     });
-    const targetsByLegacyId = new Map(targetUsers.map((user) => [user.legacyZoomUserId, user] as const));
+    const targetsByLegacyId = new Map(
+      targetUsers.map((user) => [user.legacyZoomUserId, user] as const),
+    );
     const candidates = legacyUsers.flatMap<RestorePlan>((legacy) => {
       const current = targetsByLegacyId.get(legacy.id);
       return current && legacy.passwordHash && !current.fusionadoEnId
@@ -53,8 +55,8 @@ async function main(): Promise<void> {
             {
               usuarioId: current.id,
               legacyZoomUserId: legacy.id,
-              legacyPasswordHash: legacy.passwordHash
-            }
+              legacyPasswordHash: legacy.passwordHash,
+            },
           ]
         : [];
     });
@@ -68,9 +70,9 @@ async function main(): Promise<void> {
         return {
           candidate,
           alreadyRestored,
-          restore: !alreadyRestored && hasTemporaryPassword
+          restore: !alreadyRestored && hasTemporaryPassword,
         };
-      })
+      }),
     );
     const plans = decisions.filter(({ restore }) => restore).map(({ candidate }) => candidate);
 
@@ -83,13 +85,13 @@ async function main(): Promise<void> {
           passwordsToRestore: plans.length,
           alreadyRestored: decisions.filter(({ alreadyRestored }) => alreadyRestored).length,
           currentPasswordsPreserved: decisions.filter(
-            ({ restore, alreadyRestored }) => !restore && !alreadyRestored
+            ({ restore, alreadyRestored }) => !restore && !alreadyRestored,
           ).length,
-          missingOrMergedUsers: legacyUsers.length - candidates.length
+          missingOrMergedUsers: legacyUsers.length - candidates.length,
         },
         null,
-        2
-      )
+        2,
+      ),
     );
 
     if (!applyChanges || plans.length === 0) {
@@ -102,8 +104,8 @@ async function main(): Promise<void> {
           data: {
             passwordHash: plan.legacyPasswordHash,
             passwordInicialCifrada: null,
-            debeCambiarPassword: false
-          }
+            debeCambiarPassword: false,
+          },
         }),
         target.auditoria.create({
           data: {
@@ -112,11 +114,11 @@ async function main(): Promise<void> {
             entidadId: plan.usuarioId,
             valorNuevo: {
               legacyZoomUserId: plan.legacyZoomUserId,
-              hashCopiadoSinExponer: true
-            }
-          }
-        })
-      ])
+              hashCopiadoSinExponer: true,
+            },
+          },
+        }),
+      ]),
     );
     console.log(JSON.stringify({ restored: plans.length }, null, 2));
   } finally {
@@ -126,7 +128,7 @@ async function main(): Promise<void> {
 
 async function passwordMatchesDefault(passwordHash: string): Promise<boolean> {
   try {
-    return await compare(process.env.MIGRATION_DEFAULT_PASSWORD as string, passwordHash);
+    return await compare(process.env["MIGRATION_DEFAULT_PASSWORD"] as string, passwordHash);
   } catch {
     return false;
   }

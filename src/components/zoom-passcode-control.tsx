@@ -26,8 +26,8 @@ export function ZoomPasscodeControl({ instanciaId }: { instanciaId: string }) {
           cache: "no-store",
           ...(method === "PATCH"
             ? { headers: { "Content-Type": "application/json" }, body: JSON.stringify({ enabled }) }
-            : {})
-        }
+            : {}),
+        },
       );
       const result = await response.json();
       if (!response.ok) {
@@ -43,7 +43,7 @@ export function ZoomPasscodeControl({ instanciaId }: { instanciaId: string }) {
         // El código nuevo se consulta por separado; no se conserva en el cliente.
         const updated = await fetch(
           `/api/v1/reuniones/instancias/${encodeURIComponent(instanciaId)}/codigo-zoom`,
-          { cache: "no-store" }
+          { cache: "no-store" },
         );
         if (!updated.ok) {
           throw new Error("Cambio aplicado, pero no se pudo actualizar el código.");
@@ -69,7 +69,11 @@ export function ZoomPasscodeControl({ instanciaId }: { instanciaId: string }) {
       ) : (
         <>
           <span aria-live="polite">
-            {data.enabled === null ? "Sin verificar" : data.enabled ? "Habilitado" : "Deshabilitado"}
+            {data.enabled === null
+              ? "Sin verificar"
+              : data.enabled
+                ? "Habilitado"
+                : "Deshabilitado"}
           </span>
           {data.enabled && data.code ? (
             <div>
@@ -83,8 +87,8 @@ export function ZoomPasscodeControl({ instanciaId }: { instanciaId: string }) {
           ) : null}
           {locked ? (
             <span role="status" style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-              <LockKeyhole size={16} aria-hidden="true" /> Cambio bloqueado por Zoom. Revisá la política de
-              seguridad de la cuenta.
+              <LockKeyhole size={16} aria-hidden="true" /> Cambio bloqueado por Zoom. Revisá la
+              política de seguridad de la cuenta.
             </span>
           ) : null}
           {data.enabled !== null ? (
@@ -95,7 +99,7 @@ export function ZoomPasscodeControl({ instanciaId }: { instanciaId: string }) {
                 const next = !data.enabled;
                 if (
                   window.confirm(
-                    `¿${next ? "Activar" : "Desactivar"} el código de acceso? Si esta reunión pertenece a una serie, el cambio afectará a todos sus encuentros.`
+                    `¿${next ? "Activar" : "Desactivar"} el código de acceso? Si esta reunión pertenece a una serie, el cambio afectará a todos sus encuentros.`,
                   )
                 ) {
                   void call("PATCH", next);
@@ -111,8 +115,8 @@ export function ZoomPasscodeControl({ instanciaId }: { instanciaId: string }) {
         </>
       )}
       <small>
-        Solo administración. Zoom puede exigir un código por política de la cuenta. Los cambios en reuniones
-        compartidas afectan a toda la serie.
+        Solo administración. Zoom puede exigir un código por política de la cuenta. Los cambios en
+        reuniones compartidas afectan a toda la serie.
       </small>
       {loading ? <span aria-live="polite">Consultando Zoom…</span> : null}
       {error ? <p role="alert">{error}</p> : null}

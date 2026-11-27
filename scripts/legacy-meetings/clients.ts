@@ -3,7 +3,7 @@ import { Prisma, PrismaClient } from "@prisma/client";
 import type { PrismaClient as LegacyPrismaClientType } from "../../../flacso-zoom-plataforma-web/node_modules/@prisma/client";
 
 const legacyRequire = createRequire(
-  new URL("../../../flacso-zoom-plataforma-web/package.json", import.meta.url)
+  new URL("../../../flacso-zoom-plataforma-web/package.json", import.meta.url),
 );
 const { PrismaClient: LegacyPrismaClient } = legacyRequire("@prisma/client") as {
   PrismaClient: new (options: { datasourceUrl: string }) => LegacyPrismaClientType;
@@ -14,10 +14,10 @@ if (!process.env.DATABASE_URL || !process.env.LEGACY_DATABASE_URL) {
 }
 
 export const source = new LegacyPrismaClient({
-  datasourceUrl: process.env.LEGACY_DATABASE_URL
+  datasourceUrl: process.env.LEGACY_DATABASE_URL,
 });
 export const target = new PrismaClient({
-  datasourceUrl: process.env.DATABASE_URL
+  datasourceUrl: process.env.DATABASE_URL,
 });
 
 export const jsonValue = (value: unknown): Prisma.InputJsonValue | undefined =>

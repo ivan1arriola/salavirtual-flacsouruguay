@@ -4,7 +4,7 @@ import { obtenerZoomAccessToken } from "@/src/integrations/zoom/zoom-client";
 import {
   listarGruposZoomHttp,
   listarMiembrosGrupoZoomHttp,
-  type GrupoZoom
+  type GrupoZoom,
 } from "@/src/integrations/zoom/zoom-grupos-client";
 import { filtroProveedorActivo } from "../reuniones/proveedor-reunion.domain";
 import { bloquearReservaSalas } from "../reuniones/reserva-salas.adapter";
@@ -14,7 +14,7 @@ import {
   evaluarRiesgoSincronizacion,
   planificarSincronizacionGrupoZoom,
   type MiembroGrupoZoom,
-  type PlanSincronizacionZoom
+  type PlanSincronizacionZoom,
 } from "./zoom-grupo-sincronizacion.domain";
 
 const CONFIGURACION_ID = "principal";
@@ -79,7 +79,7 @@ async function obtenerTokenZoom(db: PrismaClient, descifrar: Descifrar): Promise
 
 export async function listarGruposZoom(
   db: PrismaClient,
-  descifrar: Descifrar
+  descifrar: Descifrar,
 ): Promise<readonly GrupoZoom[]> {
   return listarGruposZoomHttp(await obtenerTokenZoom(db, descifrar));
 }
@@ -90,12 +90,12 @@ export async function listarGruposZoom(
  */
 export async function elegirGrupoZoom(
   db: PrismaClient,
-  input: { grupoId: string; grupoNombre: string; actorId: string }
+  input: { grupoId: string; grupoNombre: string; actorId: string },
 ): Promise<void> {
   const { grupoId, grupoNombre, actorId } = input;
   const actual = await db.configuracionZoom.findUnique({
     where: { id: CONFIGURACION_ID },
-    select: { grupoId: true }
+    select: { grupoId: true },
   });
   const sinResultadoAnterior =
     actual && actual.grupoId !== grupoId
@@ -104,7 +104,7 @@ export async function elegirGrupoZoom(
   await db.configuracionZoom.upsert({
     where: { id: CONFIGURACION_ID },
     create: { id: CONFIGURACION_ID, grupoId, grupoNombre, actualizadaPorId: actorId },
-    update: { grupoId, grupoNombre, actualizadaPorId: actorId, ...sinResultadoAnterior }
+    update: { grupoId, grupoNombre, actualizadaPorId: actorId, ...sinResultadoAnterior },
   });
 
   await db.auditoria.create({
@@ -113,8 +113,8 @@ export async function elegirGrupoZoom(
       accion: "GRUPO_ZOOM_ELEGIDO",
       entidadTipo: "ConfiguracionZoom",
       entidadId: CONFIGURACION_ID,
-      valorNuevo: { grupoId, grupoNombre }
-    }
+      valorNuevo: { grupoId, grupoNombre },
+    },
   });
 }
 
@@ -126,7 +126,7 @@ export async function elegirGrupoZoom(
 export async function previsualizarSincronizacionConGrupo(
   db: PrismaClient,
   descifrar: Descifrar,
-  ahora: Date
+  ahora: Date,
 ): Promise<VistaPreviaSincronizacionZoom> {
   const grupo = await leerGrupoElegido(db);
   if (!grupo) {
@@ -137,7 +137,11 @@ export async function previsualizarSincronizacionConGrupo(
     const miembros = await leerMiembrosDelGrupo(db, descifrar, grupo.id);
     const lectura = await buscarProveedorZoom(db)
       .then((proveedorId) => planificarConLaBase(db, proveedorId, miembros, ahora))
-      .catch(protegerErrorDeBase("[zoom] Falló la vista previa de la sincronización con el grupo de Zoom"));
+      .catch(
+        protegerErrorDeBase(
+          "[zoom] Falló la vista previa de la sincronización con el grupo de Zoom",
+        ),
+      );
     return describirPlan(lectura, grupo.id);
   } catch (error) {
     return vistaPreviaFallida(mensajeDeError(error));
@@ -154,7 +158,7 @@ export async function sincronizarCuentasZoomConGrupo(
   db: PrismaClient,
   descifrar: Descifrar,
   ahora: Date,
-  opciones: OpcionesSincronizacionZoom = {}
+  opciones: OpcionesSincronizacionZoom = {},
 ): Promise<ResultadoSincronizacionZoom> {
   const grupo = await leerGrupoElegido(db);
   if (!grupo) {
@@ -166,10 +170,10 @@ export async function sincronizarCuentasZoomConGrupo(
       id: CONFIGURACION_ID,
       OR: [
         { sincronizandoDesdeAt: null },
-        { sincronizandoDesdeAt: { lt: new Date(ahora.getTime() - CANDADO_VENCE_MS) } }
-      ]
+        { sincronizandoDesdeAt: { lt: new Date(ahora.getTime() - CANDADO_VENCE_MS) } },
+      ],
     },
-    data: { sincronizandoDesdeAt: ahora }
+    data: { sincronizandoDesdeAt: ahora },
   });
   if (candado.count === 0) {
     return { ok: false, resumen: AVISO_EN_CURSO };
@@ -178,20 +182,20 @@ export async function sincronizarCuentasZoomConGrupo(
   try {
     const miembros = await leerMiembrosDelGrupo(db, descifrar, grupo.id);
     return await aplicarSincronizacion(db, grupo, miembros, ahora, opciones).catch(
-      protegerErrorDeBase("[zoom] Falló la sincronización de cuentas con el grupo de Zoom")
+      protegerErrorDeBase("[zoom] Falló la sincronización de cuentas con el grupo de Zoom"),
     );
   } catch (error) {
     const resumen = mensajeDeError(error);
     await db.configuracionZoom.update({
       where: { id: CONFIGURACION_ID },
-      data: { ultimaSincronizacionAt: ahora, ultimaSincronizacionResultado: resumen }
+      data: { ultimaSincronizacionAt: ahora, ultimaSincronizacionResultado: resumen },
     });
     return { ok: false, resumen };
   } finally {
     // Solo libera su propio candado: si venció y lo tomó otra sincronización, no se lo quita.
     await db.configuracionZoom.updateMany({
       where: { id: CONFIGURACION_ID, sincronizandoDesdeAt: ahora },
-      data: { sincronizandoDesdeAt: null }
+      data: { sincronizandoDesdeAt: null },
     });
   }
 }
@@ -199,7 +203,7 @@ export async function sincronizarCuentasZoomConGrupo(
 async function leerGrupoElegido(db: PrismaClient): Promise<GrupoElegido | null> {
   const config = await db.configuracionZoom.findUnique({
     where: { id: CONFIGURACION_ID },
-    select: { grupoId: true, grupoNombre: true }
+    select: { grupoId: true, grupoNombre: true },
   });
   return config?.grupoId ? { id: config.grupoId, nombre: config.grupoNombre } : null;
 }
@@ -212,9 +216,12 @@ async function leerGrupoElegido(db: PrismaClient): Promise<GrupoElegido | null> 
 async function leerMiembrosDelGrupo(
   db: PrismaClient,
   descifrar: Descifrar,
-  grupoId: string
+  grupoId: string,
 ): Promise<readonly MiembroGrupoZoom[]> {
-  const miembros = await listarMiembrosGrupoZoomHttp(await obtenerTokenZoom(db, descifrar), grupoId);
+  const miembros = await listarMiembrosGrupoZoomHttp(
+    await obtenerTokenZoom(db, descifrar),
+    grupoId,
+  );
   if (miembros.length === 0) {
     throw new GrupoZoomVacioError();
   }
@@ -248,7 +255,7 @@ function vistaPreviaFallida(resumen: string): VistaPreviaSincronizacionZoom {
     desactivar: [],
     marcarFuera: [],
     sinLicencia: [],
-    pierdenLicencia: []
+    pierdenLicencia: [],
   };
 }
 
@@ -262,7 +269,7 @@ function datosDelMiembro(miembro: MiembroGrupoZoom) {
     emailOrganizador: normalizarEmail(miembro.email),
     externalAccountId: miembro.id,
     tieneLicencia: miembro.licenciado,
-    origenGrupoZoom: true
+    origenGrupoZoom: true,
   };
 }
 
@@ -274,7 +281,7 @@ function datosDelMiembro(miembro: MiembroGrupoZoom) {
 export async function contarReunionesFuturasZoom(
   db: Pick<Prisma.TransactionClient, "eventoProveedor">,
   ahora: Date,
-  proveedorId?: string
+  proveedorId?: string,
 ): Promise<Record<string, number>> {
   const grupos = await db.eventoProveedor.groupBy({
     by: ["cuentaProveedorId"],
@@ -283,24 +290,24 @@ export async function contarReunionesFuturasZoom(
       cuentaProveedorId: { not: null },
       instancia: {
         OR: [{ estado: "PROGRAMADA", finProgramadoAt: { gt: ahora } }, { estado: "EN_CURSO" }],
-        AND: [filtroProveedorActivo("ZOOM") as Prisma.InstanciaSalaWhereInput]
-      }
+        AND: [filtroProveedorActivo("ZOOM") as Prisma.InstanciaSalaWhereInput],
+      },
     },
-    _count: { _all: true }
+    _count: { _all: true },
   });
   return Object.fromEntries(
     grupos.flatMap(({ cuentaProveedorId, _count }) =>
-      cuentaProveedorId ? [[cuentaProveedorId, _count._all]] : []
-    )
+      cuentaProveedorId ? [[cuentaProveedorId, _count._all]] : [],
+    ),
   );
 }
 
 async function buscarProveedorZoom(
-  cliente: Pick<Prisma.TransactionClient, "proveedorReunion">
+  cliente: Pick<Prisma.TransactionClient, "proveedorReunion">,
 ): Promise<string> {
   const proveedor = await cliente.proveedorReunion.findUnique({
     where: { tipo: "ZOOM" },
-    select: { id: true }
+    select: { id: true },
   });
   if (!proveedor) {
     throw new SincronizacionZoomError("El proveedor Zoom no está configurado.");
@@ -313,7 +320,7 @@ async function planificarConLaBase(
   cliente: Pick<Prisma.TransactionClient, "cuentaProveedor" | "eventoProveedor">,
   proveedorId: string,
   miembros: readonly MiembroGrupoZoom[],
-  ahora: Date
+  ahora: Date,
 ) {
   const cuentas = await cliente.cuentaProveedor.findMany({
     where: { proveedorId },
@@ -326,8 +333,8 @@ async function planificarConLaBase(
       activa: true,
       tieneLicencia: true,
       fueraDelGrupoAt: true,
-      prioridad: true
-    }
+      prioridad: true,
+    },
   });
   const reunionesFuturas = await contarReunionesFuturasZoom(cliente, ahora, proveedorId);
   const plan = planificarSincronizacionGrupoZoom(miembros, cuentas, reunionesFuturas);
@@ -343,19 +350,21 @@ function revisionDelPlan(grupoId: string, plan: PlanSincronizacionZoom): string 
     desactivar: [...plan.desactivar].sort(),
     marcarFuera: ordenar(plan.marcarFuera),
     sinLicencia: ordenar(plan.sinLicencia),
-    pierdenLicencia: ordenar(plan.pierdenLicencia)
+    pierdenLicencia: ordenar(plan.pierdenLicencia),
   });
   return createHash("sha256").update(contenido).digest("hex");
 }
 
 function describirPlan(
   { cuentas, plan, riesgo }: Awaited<ReturnType<typeof planificarConLaBase>>,
-  grupoId: string
+  grupoId: string,
 ): VistaPreviaSincronizacionZoom {
   const cuentaPorId = new Map(cuentas.map((cuenta) => [cuenta.id, cuenta]));
   const identificar = (cuentaId: string) => {
     const cuenta = cuentaPorId.get(cuentaId);
-    return cuenta?.emailOrganizador ? normalizarEmail(cuenta.emailOrganizador) : (cuenta?.nombre ?? cuentaId);
+    return cuenta?.emailOrganizador
+      ? normalizarEmail(cuenta.emailOrganizador)
+      : (cuenta?.nombre ?? cuentaId);
   };
   return {
     ok: true,
@@ -370,10 +379,10 @@ function describirPlan(
     desactivar: plan.desactivar.map(identificar),
     marcarFuera: plan.marcarFuera.map(({ cuentaId, reunionesFuturas }) => ({
       email: identificar(cuentaId),
-      reunionesFuturas
+      reunionesFuturas,
     })),
     sinLicencia: plan.sinLicencia.map(({ email }) => normalizarEmail(email)),
-    pierdenLicencia: plan.pierdenLicencia.map(({ miembro }) => normalizarEmail(miembro.email))
+    pierdenLicencia: plan.pierdenLicencia.map(({ miembro }) => normalizarEmail(miembro.email)),
   };
 }
 
@@ -382,7 +391,7 @@ async function aplicarSincronizacion(
   grupo: GrupoElegido,
   miembros: readonly MiembroGrupoZoom[],
   ahora: Date,
-  opciones: OpcionesSincronizacionZoom
+  opciones: OpcionesSincronizacionZoom,
 ): Promise<ResultadoSincronizacionZoom> {
   return db.$transaction(
     async (tx) => {
@@ -396,20 +405,23 @@ async function aplicarSincronizacion(
         const cantidad = plan.crear.length;
         return {
           ok: false,
-          resumen: `Hay ${cantidad} ${cantidad === 1 ? "cuenta nueva" : "cuentas nuevas"} de Zoom. Revisá la vista previa y confirmá desde Configuración.`
+          resumen: `Hay ${cantidad} ${cantidad === 1 ? "cuenta nueva" : "cuentas nuevas"} de Zoom. Revisá la vista previa y confirmá desde Configuración.`,
         };
       }
       if (opciones.actorId === null && plan.pierdenLicencia.length > 0) {
         const cantidad = plan.pierdenLicencia.length;
         return {
           ok: false,
-          resumen: `Hay ${cantidad} ${cantidad === 1 ? "sala que perdería" : "salas que perderían"} su licencia en Zoom. Revisá la vista previa y confirmá desde Configuración.`
+          resumen: `Hay ${cantidad} ${cantidad === 1 ? "sala que perdería" : "salas que perderían"} su licencia en Zoom. Revisá la vista previa y confirmá desde Configuración.`,
         };
       }
       // Antes de escribir nada: una sincronización masiva solo se aplica confirmada después de la
       // vista previa. La tarea periódica nunca confirma, así que la rechaza.
       if (riesgo.masivo && opciones.confirmar !== true) {
-        return { ok: false, resumen: `${avisoSincronizacionMasiva(riesgo)} ${PEDIDO_CONFIRMACION}` };
+        return {
+          ok: false,
+          resumen: `${avisoSincronizacionMasiva(riesgo)} ${PEDIDO_CONFIRMACION}`,
+        };
       }
       if (
         (opciones.revision !== undefined || riesgo.masivo) &&
@@ -417,34 +429,50 @@ async function aplicarSincronizacion(
       ) {
         return {
           ok: false,
-          resumen: "El grupo de Zoom cambió desde la vista previa. Revisá los cambios de nuevo."
+          resumen: "El grupo de Zoom cambió desde la vista previa. Revisá los cambios de nuevo.",
         };
       }
       const cuentaPorId = new Map(cuentas.map((cuenta) => [cuenta.id, cuenta]));
 
       for (const { miembro, prioridad } of plan.crear) {
         await tx.cuentaProveedor.create({
-          data: { ...datosDelMiembro(miembro), proveedorId, prioridad, limiteConcurrente: 1, activa: true }
+          data: {
+            ...datosDelMiembro(miembro),
+            proveedorId,
+            prioridad,
+            limiteConcurrente: 1,
+            activa: true,
+          },
         });
       }
       for (const { cuentaId, miembro, reactivar } of plan.actualizar) {
         await tx.cuentaProveedor.update({
           where: { id: cuentaId },
-          data: { ...datosDelMiembro(miembro), fueraDelGrupoAt: null, ...(reactivar ? { activa: true } : {}) }
+          data: {
+            ...datosDelMiembro(miembro),
+            fueraDelGrupoAt: null,
+            ...(reactivar ? { activa: true } : {}),
+          },
         });
       }
       // Una cuenta que ya estaba fuera del grupo conserva la fecha en que salió.
       for (const cuentaId of plan.desactivar) {
         await tx.cuentaProveedor.update({
           where: { id: cuentaId },
-          data: { activa: false, fueraDelGrupoAt: cuentaPorId.get(cuentaId)?.fueraDelGrupoAt ?? ahora }
+          data: {
+            activa: false,
+            fueraDelGrupoAt: cuentaPorId.get(cuentaId)?.fueraDelGrupoAt ?? ahora,
+          },
         });
       }
       for (const { cuentaId } of plan.marcarFuera) {
         if (cuentaPorId.get(cuentaId)?.fueraDelGrupoAt) {
           continue;
         }
-        await tx.cuentaProveedor.update({ where: { id: cuentaId }, data: { fueraDelGrupoAt: ahora } });
+        await tx.cuentaProveedor.update({
+          where: { id: cuentaId },
+          data: { fueraDelGrupoAt: ahora },
+        });
       }
 
       await tx.auditoria.create({
@@ -458,23 +486,26 @@ async function aplicarSincronizacion(
             grupoNombre: grupo.nombre,
             resumen: plan.resumen,
             creadas: plan.crear.map(({ miembro }) => normalizarEmail(miembro.email)),
-            actualizadas: plan.actualizar.map(({ cuentaId, reactivar }) => ({ cuentaId, reactivar })),
+            actualizadas: plan.actualizar.map(({ cuentaId, reactivar }) => ({
+              cuentaId,
+              reactivar,
+            })),
             desactivadas: [...plan.desactivar],
             fueraDelGrupo: plan.marcarFuera.map(({ cuentaId, reunionesFuturas }) => ({
               cuentaId,
-              reunionesFuturas
+              reunionesFuturas,
             })),
             sinLicencia: plan.sinLicencia.map(({ email }) => normalizarEmail(email)),
-            pasanASinLicencia: plan.pierdenLicencia.map(({ cuentaId }) => cuentaId)
-          }
-        }
+            pasanASinLicencia: plan.pierdenLicencia.map(({ cuentaId }) => cuentaId),
+          },
+        },
       });
       await tx.configuracionZoom.update({
         where: { id: CONFIGURACION_ID },
-        data: { ultimaSincronizacionAt: ahora, ultimaSincronizacionResultado: plan.resumen }
+        data: { ultimaSincronizacionAt: ahora, ultimaSincronizacionResultado: plan.resumen },
       });
       return { ok: true, resumen: plan.resumen };
     },
-    { maxWait: 10_000, timeout: 30_000 }
+    { maxWait: 10_000, timeout: 30_000 },
   );
 }

@@ -1,7 +1,11 @@
-import type { EventoAuditoria, ResultadoValidacion, ValidarEventoAuditoriaInput } from "./auditoria.types";
+import type {
+  EventoAuditoria,
+  ResultadoValidacion,
+  ValidarEventoAuditoriaInput,
+} from "./auditoria.types";
 
 export function validarEventoAuditoria(
-  input: ValidarEventoAuditoriaInput
+  input: ValidarEventoAuditoriaInput,
 ): ResultadoValidacion<EventoAuditoria> {
   const accion = input.accion?.trim();
   const entidadTipo = input.entidadTipo?.trim();
@@ -33,7 +37,7 @@ export function validarEventoAuditoria(
       valorAnterior: input.valorAnterior ?? null,
       valorNuevo: input.valorNuevo ?? null,
       correlacionId: input.correlacionId ?? null,
-      timestamp: input.timestamp
-    }
+      timestamp: input.timestamp,
+    },
   };
 }

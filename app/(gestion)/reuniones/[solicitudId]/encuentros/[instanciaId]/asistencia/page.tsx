@@ -1,4 +1,11 @@
-import { ArrowLeft, Clock3, ExternalLink, ShieldCheck, UsersRound, GitCompareArrows } from "lucide-react";
+import {
+  ArrowLeft,
+  Clock3,
+  ExternalLink,
+  ShieldCheck,
+  UsersRound,
+  GitCompareArrows,
+} from "lucide-react";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
@@ -13,7 +20,7 @@ import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { crearGoogleAuthJwt } from "@/src/integrations/google";
 import {
   construirVistaAsistencia,
-  type FilaVistaAsistencia
+  type FilaVistaAsistencia,
 } from "@/src/modules/archivos/domain/attendance-view.domain";
 import { leerPlanillaAsistenciaGoogle } from "@/src/modules/archivos/infrastructure/google/google-attendance-sheet-reader.client";
 import { puedeGestionarPrograma } from "@/src/modules/reuniones/permisos-programa.service";
@@ -24,7 +31,7 @@ export const runtime = "nodejs";
 function fechaUY(date: Date): string {
   return new Intl.DateTimeFormat("es-UY", {
     timeZone: "America/Montevideo",
-    dateStyle: "full"
+    dateStyle: "full",
   }).format(date);
 }
 
@@ -33,7 +40,7 @@ function horaUY(date: Date): string {
     timeZone: "America/Montevideo",
     hour: "2-digit",
     minute: "2-digit",
-    hour12: false
+    hour12: false,
   }).format(date);
 }
 
@@ -51,17 +58,22 @@ function fechaHoraUY(value: string | null): string {
 
 function ListaAsistencia({
   filas,
-  incluirPorcentaje = true
+  incluirPorcentaje = true,
 }: Readonly<{ filas: readonly FilaVistaAsistencia[]; incluirPorcentaje?: boolean }>) {
   if (filas.length === 0) {
     return (
       <p className="attendance-empty">
-        No hay registros disponibles en esta sección. Esto no demuestra que no hubiera participantes.
+        No hay registros disponibles en esta sección. Esto no demuestra que no hubiera
+        participantes.
       </p>
     );
   }
   return (
-    <div className="attendance-table-scroll" tabIndex={0} aria-label="Desplazar tabla de participantes">
+    <div
+      className="attendance-table-scroll"
+      tabIndex={0}
+      aria-label="Desplazar tabla de participantes"
+    >
       <table className="attendance-table">
         <thead>
           <tr>
@@ -95,7 +107,8 @@ function ListaAsistencia({
                   fila.diferenciaMinutos !== null &&
                   fila.diferenciaMinutos !== undefined ? (
                     <small className="attendance-delta">
-                      Diferencia de minutos Meet − Reports: {fila.diferenciaMinutos.toLocaleString("es-UY")}
+                      Diferencia de minutos Meet − Reports:{" "}
+                      {fila.diferenciaMinutos.toLocaleString("es-UY")}
                     </small>
                   ) : null}
                 </div>
@@ -105,7 +118,9 @@ function ListaAsistencia({
               <td className="attendance-number">{fila.minutos.toLocaleString("es-UY")}</td>
               {incluirPorcentaje ? (
                 <td className="attendance-percent">
-                  <strong>{fila.porcentaje.toLocaleString("es-UY", { maximumFractionDigits: 2 })} %</strong>
+                  <strong>
+                    {fila.porcentaje.toLocaleString("es-UY", { maximumFractionDigits: 2 })} %
+                  </strong>
                   <span className="attendance-meter" aria-hidden="true">
                     <span style={{ width: `${fila.porcentaje}%` }} />
                   </span>
@@ -128,7 +143,7 @@ function ListaAsistencia({
 }
 
 export default async function EncuentroAsistenciaPage({
-  params
+  params,
 }: Readonly<{ params: Promise<{ solicitudId: string; instanciaId: string }> }>) {
   const session = await auth();
   if (!session?.user) {
@@ -148,7 +163,9 @@ export default async function EncuentroAsistenciaPage({
       proveedorActivoTipo: true,
       inicioProgramadoAt: true,
       finProgramadoAt: true,
-      solicitud: { select: { id: true, titulo: true, docentePrograma: { select: { programaId: true } } } },
+      solicitud: {
+        select: { id: true, titulo: true, docentePrograma: { select: { programaId: true } } },
+      },
       eventosProveedor: {
         where: { proveedor: { tipo: "GOOGLE_MEET" } },
         take: 1,
@@ -158,11 +175,11 @@ export default async function EncuentroAsistenciaPage({
           archivos: {
             where: { tipo: "LISTA_ASISTENCIA" },
             take: 1,
-            select: { driveFileId: true, webViewUrl: true, mimeType: true }
-          }
-        }
-      }
-    }
+            select: { driveFileId: true, webViewUrl: true, mimeType: true },
+          },
+        },
+      },
+    },
   });
 
   if (!encuentro || encuentro.solicitud.id !== solicitudId) {
@@ -175,7 +192,7 @@ export default async function EncuentroAsistenciaPage({
   if (encuentro.proveedorActivoTipo === "ZOOM" || encuentro.eventosProveedor.length === 0) {
     const eventoZoom = await db.eventoProveedor.findFirst({
       where: { instanciaSalaId: instanciaId, proveedor: { tipo: "ZOOM" } },
-      select: { id: true }
+      select: { id: true },
     });
     if (eventoZoom) {
       // Zoom: lectura de lo persistido, sin Workspace; Sala Virtual sirve la vista y la exportación tras validar el alcance.
@@ -233,12 +250,16 @@ export default async function EncuentroAsistenciaPage({
           {
             serviceAccountEmail: config.serviceAccountEmail,
             privateKey: descifrarConfiguracion(config.privateKeyCifrada),
-            subject
+            subject,
           },
-          ["https://www.googleapis.com/auth/spreadsheets"]
+          ["https://www.googleapis.com/auth/spreadsheets"],
         );
         const datos = await leerPlanillaAsistenciaGoogle(jwt, archivo.driveFileId);
-        vista = construirVistaAsistencia(datos, encuentro.inicioProgramadoAt, encuentro.finProgramadoAt);
+        vista = construirVistaAsistencia(
+          datos,
+          encuentro.inicioProgramadoAt,
+          encuentro.finProgramadoAt,
+        );
       }
     } catch {
       errorLectura =
@@ -285,7 +306,12 @@ export default async function EncuentroAsistenciaPage({
         </div>
         <div className="attendance-view-actions">
           {planillaUrl ? (
-            <a className="secondary-action" href={planillaUrl} target="_blank" rel="noopener noreferrer">
+            <a
+              className="secondary-action"
+              href={planillaUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               <ExternalLink size={16} />
               Abrir planilla
             </a>
@@ -304,8 +330,8 @@ export default async function EncuentroAsistenciaPage({
         <section className="attendance-state" role="status">
           <h2>Encuentro pendiente o en curso</h2>
           <p>
-            La asistencia definitiva se obtiene después de finalizar la conferencia y de que Google publique
-            los registros. La información aún no es concluyente.
+            La asistencia definitiva se obtiene después de finalizar la conferencia y de que Google
+            publique los registros. La información aún no es concluyente.
           </p>
         </section>
       ) : cancelada ? (
@@ -338,7 +364,8 @@ export default async function EncuentroAsistenciaPage({
                   Conciliación Meet y Reports
                 </h2>
                 <p>
-                  Recuentos de ambas fuentes por separado. Nunca se suman como si fueran personas distintas.
+                  Recuentos de ambas fuentes por separado. Nunca se suman como si fueran personas
+                  distintas.
                 </p>
               </div>
               <span
@@ -375,43 +402,48 @@ export default async function EncuentroAsistenciaPage({
             </div>
             <div className="attendance-reconciliation-details">
               <span>
-                <strong>{conciliacion?.personasVinculadas ?? 0}</strong> identidades vinculadas con evidencia
+                <strong>{conciliacion?.personasVinculadas ?? 0}</strong> identidades vinculadas con
+                evidencia
               </span>
               <span>
-                <strong>{conciliacion?.meetSinVincular ?? 0}</strong> participantes Meet sin vincular
+                <strong>{conciliacion?.meetSinVincular ?? 0}</strong> participantes Meet sin
+                vincular
               </span>
               <span>
-                <strong>{conciliacion?.correosSinVincular ?? 0}</strong> correos Reports sin vincular
+                <strong>{conciliacion?.correosSinVincular ?? 0}</strong> correos Reports sin
+                vincular
               </span>
               <span>
-                <strong>{conciliacion?.registrosReportsSinCorreo ?? 0}</strong> registros Reports sin correo
+                <strong>{conciliacion?.registrosReportsSinCorreo ?? 0}</strong> registros Reports
+                sin correo
               </span>
             </div>
             <p className="attendance-reconciliation-diff">
               Diferencia entre fuentes (Meet − Reports):{" "}
-              <strong>{conciliacion?.diferenciaPersonas ?? 0}</strong> registros de personas/correos y{" "}
-              <strong>{conciliacion?.diferenciaSesiones ?? 0}</strong> conexiones/eventos.{" "}
+              <strong>{conciliacion?.diferenciaPersonas ?? 0}</strong> registros de personas/correos
+              y <strong>{conciliacion?.diferenciaSesiones ?? 0}</strong> conexiones/eventos.{" "}
               {conciliacion?.sesionesReportsSinSolapamiento ?? 0} eventos Reports no se superponen
               temporalmente con ninguna sesión Meet observada.
             </p>
             {conciliacion?.estado === "CONFERENCIA_AMBIGUA" ? (
               <p className="attendance-reconciliation-warning" role="status">
-                Los registros de Reports incluyen {conciliacion.conferenciasReports} identificadores de
-                conferencia. No es seguro atribuir sus correos a este encuentro. Revisá la auditoría antes de
-                utilizarlos.
+                Los registros de Reports incluyen {conciliacion.conferenciasReports} identificadores
+                de conferencia. No es seguro atribuir sus correos a este encuentro. Revisá la
+                auditoría antes de utilizarlos.
               </p>
             ) : null}
             {conciliacion?.estado === "SIN_REPORTS" && conciliacion.personasMeet > 0 ? (
               <p className="attendance-reconciliation-warning" role="status">
-                Asistencia preliminar según Google Meet. Workspace Reports todavía no aportó registros; los
-                datos pueden actualizarse cuando Google los publique. Administración puede volver a
-                sincronizar la asistencia.
+                Asistencia preliminar según Google Meet. Workspace Reports todavía no aportó
+                registros; los datos pueden actualizarse cuando Google los publique. Administración
+                puede volver a sincronizar la asistencia.
               </p>
             ) : null}
             <p className="attendance-reconciliation-note">
-              Las APIs no comparten necesariamente una clave de identidad. Los mismos nombres u horarios no
-              prueban que dos registros sean de la misma persona. Los números distintos señalan una diferencia
-              de cobertura, no participantes adicionales ni ausencias confirmadas.
+              Las APIs no comparten necesariamente una clave de identidad. Los mismos nombres u
+              horarios no prueban que dos registros sean de la misma persona. Los números distintos
+              señalan una diferencia de cobertura, no participantes adicionales ni ausencias
+              confirmadas.
             </p>
           </section>
 
@@ -426,9 +458,9 @@ export default async function EncuentroAsistenciaPage({
           <section className="attendance-data">
             <h2>Participantes y cumplimiento</h2>
             <p>
-              Fuente principal: sesiones de Meet dentro del horario programado. El umbral de 5/6 equivale a
-              83,33 % del encuentro. Los correos de Reports se vinculan solo cuando existe correspondencia
-              inequívoca; no se asocian por nombre.
+              Fuente principal: sesiones de Meet dentro del horario programado. El umbral de 5/6
+              equivale a 83,33 % del encuentro. Los correos de Reports se vinculan solo cuando
+              existe correspondencia inequívoca; no se asocian por nombre.
             </p>
             <ListaAsistencia filas={vista.participantes} />
           </section>
@@ -436,9 +468,9 @@ export default async function EncuentroAsistenciaPage({
           <section className="attendance-data">
             <h2>Identidades observadas en Reports</h2>
             <p>
-              Correos identificados en la auditoría, con sus propios tiempos y cantidad de eventos. No son
-              personas adicionales al listado de Meet: pueden corresponder a los mismos asistentes, pero no se
-              asignan sin una clave comprobable.
+              Correos identificados en la auditoría, con sus propios tiempos y cantidad de eventos.
+              No son personas adicionales al listado de Meet: pueden corresponder a los mismos
+              asistentes, pero no se asignan sin una clave comprobable.
             </p>
             <ListaAsistencia filas={vista.reportes} incluirPorcentaje={false} />
           </section>
@@ -446,8 +478,8 @@ export default async function EncuentroAsistenciaPage({
           <details className="attendance-data attendance-raw-details">
             <summary>Organizador y cohosts configurados ({vista.responsables.length})</summary>
             <p>
-              Estos correos se muestran por separado. Una cuenta configurada no implica que su conexión haya
-              sido identificada en Meet.
+              Estos correos se muestran por separado. Una cuenta configurada no implica que su
+              conexión haya sido identificada en Meet.
             </p>
             <ListaAsistencia filas={vista.responsables} incluirPorcentaje={false} />
           </details>
@@ -458,17 +490,17 @@ export default async function EncuentroAsistenciaPage({
                 Filas de planilla anterior sin trazabilidad Meet ({vista.registrosHeredados.length})
               </summary>
               <p>
-                La planilla anterior no conserva sesiones brutas de Meet. Estas filas son históricas y no se
-                cuentan como participantes Meet; regenerá la planilla desde las APIs para obtener una
-                conciliación actualizada.
+                La planilla anterior no conserva sesiones brutas de Meet. Estas filas son históricas
+                y no se cuentan como participantes Meet; regenerá la planilla desde las APIs para
+                obtener una conciliación actualizada.
               </p>
               <ListaAsistencia filas={vista.registrosHeredados} />
             </details>
           ) : null}
           <p className="attendance-source-note">
-            Fuente: última planilla sincronizada desde Meet y Workspace Reports. La diferencia entre eventos
-            Reports y sesiones Meet no demuestra ausencia ni identidad. Los datos pueden publicarse con
-            retraso.
+            Fuente: última planilla sincronizada desde Meet y Workspace Reports. La diferencia entre
+            eventos Reports y sesiones Meet no demuestra ausencia ni identidad. Los datos pueden
+            publicarse con retraso.
           </p>
         </>
       ) : null}

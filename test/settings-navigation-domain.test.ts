@@ -5,7 +5,7 @@ import {
   settingsNeedsAttention,
   settingsHref,
   legacySettingsRedirect,
-  workspaceReadiness
+  workspaceReadiness,
 } from "../src/modules/configuracion/settings-navigation.domain";
 
 describe("navegación de configuración", () => {
@@ -21,7 +21,9 @@ describe("navegación de configuración", () => {
     expect(settingsHref("resumen")).toBe("/configuracion");
     expect(settingsHref("google")).toBe("/configuracion/google");
     expect(settingsHref("historico")).toBe("/configuracion/historico");
-    expect(SETTINGS_SECTIONS.find(({ id }) => id === "historico")?.label).toBe("Registros Zoom importados");
+    expect(SETTINGS_SECTIONS.find(({ id }) => id === "historico")?.label).toBe(
+      "Registros Zoom importados",
+    );
   });
 
   it("redirige los enlaces antiguos ?seccion= a su ruta nueva", () => {
@@ -33,7 +35,7 @@ describe("navegación de configuración", () => {
     expect(legacySettingsRedirect("programas")).toBe("/usuarios?vista=programas");
     expect(legacySettingsRedirect("historico")).toBe("/configuracion/historico");
     expect(legacySettingsRedirect("historico", { busqueda: "ana", pagina: "2" })).toBe(
-      "/configuracion/historico?busqueda=ana&pagina=2"
+      "/configuracion/historico?busqueda=ana&pagina=2",
     );
     expect(legacySettingsRedirect("otra")).toBeNull();
     for (const heredada of ["constructor", "toString", "__proto__"]) {
@@ -50,9 +52,12 @@ describe("navegación de configuración", () => {
       "google",
       "salas",
       "correo",
-      "notificaciones"
+      "notificaciones",
     ]);
-    expect(SETTINGS_SECTIONS.map(({ id }) => id)).toEqual([...menu.map(({ id }) => id), "historico"]);
+    expect(SETTINGS_SECTIONS.map(({ id }) => id)).toEqual([
+      ...menu.map(({ id }) => id),
+      "historico",
+    ]);
   });
 
   it("agrupa las secciones por tipo de tarea y deja el resumen sin grupo", () => {
@@ -63,7 +68,7 @@ describe("navegación de configuración", () => {
       ["salas", "Operación"],
       ["correo", "Comunicación"],
       ["notificaciones", "Comunicación"],
-      ["historico", undefined]
+      ["historico", undefined],
     ]);
   });
 
@@ -74,8 +79,8 @@ describe("navegación de configuración", () => {
         privateKeyConfigurada: true,
         serviceAccountSubject: "sala@example.com",
         driveDestinationId: "folder",
-        activa: true
-      })
+        activa: true,
+      }),
     ).toEqual({ readyCount: 4, totalCount: 4, ready: true });
 
     expect(
@@ -84,8 +89,8 @@ describe("navegación de configuración", () => {
         privateKeyConfigurada: false,
         serviceAccountSubject: "",
         driveDestinationId: null,
-        activa: false
-      })
+        activa: false,
+      }),
     ).toEqual({ readyCount: 0, totalCount: 4, ready: false });
   });
 
@@ -93,10 +98,14 @@ describe("navegación de configuración", () => {
     expect(
       settingsNeedsAttention({
         zoomAvailableHosts: 1,
-        zoomCredentialsAvailable: true
-      })
+        zoomCredentialsAvailable: true,
+      }),
     ).toBe(false);
-    expect(settingsNeedsAttention({ zoomAvailableHosts: 0, zoomCredentialsAvailable: true })).toBe(true);
-    expect(settingsNeedsAttention({ zoomAvailableHosts: 1, zoomCredentialsAvailable: false })).toBe(true);
+    expect(settingsNeedsAttention({ zoomAvailableHosts: 0, zoomCredentialsAvailable: true })).toBe(
+      true,
+    );
+    expect(settingsNeedsAttention({ zoomAvailableHosts: 1, zoomCredentialsAvailable: false })).toBe(
+      true,
+    );
   });
 });

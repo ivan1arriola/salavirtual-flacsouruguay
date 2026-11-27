@@ -7,7 +7,7 @@ export function ChoicePanel({
   noDetail,
   yesLabel,
   yesDetail,
-  onChange
+  onChange,
 }: Readonly<{
   title: string;
   detail: string;
@@ -48,7 +48,7 @@ export function FormSection({
   icon,
   title,
   detail,
-  children
+  children,
 }: Readonly<{
   id: string;
   icon: React.ReactNode;
@@ -73,7 +73,7 @@ export function FormSection({
 export function Field({
   label,
   wide = false,
-  children
+  children,
 }: Readonly<{ label: string; wide?: boolean; children: React.ReactNode }>) {
   return (
     <label className={wide ? "field field-wide" : "field"}>

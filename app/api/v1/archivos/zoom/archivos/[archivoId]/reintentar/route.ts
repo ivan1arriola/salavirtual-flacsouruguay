@@ -28,7 +28,7 @@ export async function POST(_request: Request, context: { params: Promise<{ archi
     if (r.tipo === "ESTADO_NO_REINTENTABLE") {
       return NextResponse.json(
         { error: "El archivo no se puede reintentar en su estado actual." },
-        { status: 409 }
+        { status: 409 },
       );
     }
     return NextResponse.json({ tipo: "OK" });

@@ -83,7 +83,9 @@
     applicantsCount: number;
     cuenta: string; // valor de data-cuenta ("sin" si no hay)
   };
-  export function MonitoringMeetingRow(props: Readonly<{ data: MonitoringMeetingRowData }>): JSX.Element;
+  export function MonitoringMeetingRow(
+    props: Readonly<{ data: MonitoringMeetingRowData }>,
+  ): JSX.Element;
   ```
 - Consumes: `MeetLinkActions` de `@/src/components/copy-meet-link-button` (props `url`, `provider`).
 

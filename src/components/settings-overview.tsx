@@ -7,19 +7,22 @@ import {
   History,
   KeyRound,
   MailCheck,
-  Video
+  Video,
 } from "lucide-react";
 import Link from "next/link";
-import { settingsHref, settingsNeedsAttention } from "@/src/modules/configuracion/settings-navigation.domain";
+import {
+  settingsHref,
+  settingsNeedsAttention,
+} from "@/src/modules/configuracion/settings-navigation.domain";
 
 const TEXTO_VALOR_CREDENCIALES: Readonly<Record<string, string>> = {
   AUSENTES: "Sin credenciales activas y completas",
-  ERROR_COMPROBACION: "No se pudieron comprobar las credenciales"
+  ERROR_COMPROBACION: "No se pudieron comprobar las credenciales",
 };
 
 const TEXTO_AVISO_CREDENCIALES: Readonly<Record<string, string>> = {
   AUSENTES: "No hay credenciales Zoom activas y completas disponibles.",
-  ERROR_COMPROBACION: "No se pudieron comprobar las credenciales."
+  ERROR_COMPROBACION: "No se pudieron comprobar las credenciales.",
 };
 
 export type SettingsOverviewData = Readonly<{
@@ -116,7 +119,7 @@ export function SettingsOverview({ data }: Readonly<{ data: SettingsOverviewData
 function Attention({
   tone,
   label,
-  children
+  children,
 }: Readonly<{ tone: "ok" | "warning"; label: string; children: React.ReactNode }>) {
   const Icon = tone === "ok" ? CheckCircle2 : CircleAlert;
   return (
@@ -131,13 +134,15 @@ function Attention({
 
 function SettingsAttentionBanner({
   data,
-  needsAttention
+  needsAttention,
 }: Readonly<{ data: SettingsOverviewData; needsAttention: boolean }>) {
   if (!needsAttention) {
     return (
       <Attention tone="ok" label="Estado general">
         <strong>Configuración local de Zoom disponible</strong>
-        <p>Hay credenciales y cuentas Zoom habilitadas. La conexión con Zoom no se verificó aquí.</p>
+        <p>
+          Hay credenciales y cuentas Zoom habilitadas. La conexión con Zoom no se verificó aquí.
+        </p>
       </Attention>
     );
   }
@@ -193,7 +198,7 @@ function OverviewCard({
   icon,
   label,
   state,
-  value
+  value,
 }: Readonly<{
   description: string;
   href: string;

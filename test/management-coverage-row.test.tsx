@@ -1,4 +1,3 @@
-import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { ManagementCoverageRow } from "../src/modules/asistencia/presentation/components/management-coverage-row";
@@ -10,12 +9,14 @@ const base = {
   modality: "VIRTUAL" as const,
   schedule: "10:00–12:00",
   classSchedule: "10:00–12:00",
-  applicantsCount: 1
+  applicantsCount: 1,
 };
 
 describe("fila de gestión de monitoreo", () => {
   it("prioriza visualmente el estado pendiente y ofrece asignar", () => {
-    const html = renderToStaticMarkup(<ManagementCoverageRow data={{ ...base, assistantName: null }} />);
+    const html = renderToStaticMarkup(
+      <ManagementCoverageRow data={{ ...base, assistantName: null }} />,
+    );
     expect(html).toContain("is-pending");
     expect(html).toContain("Pendiente de monitoreo");
     expect(html).toContain("1 postulación");
@@ -26,7 +27,7 @@ describe("fila de gestión de monitoreo", () => {
 
   it("identifica al responsable de una cobertura asignada", () => {
     const html = renderToStaticMarkup(
-      <ManagementCoverageRow data={{ ...base, assistantName: "Ana Pérez", applicantsCount: 2 }} />
+      <ManagementCoverageRow data={{ ...base, assistantName: "Ana Pérez", applicantsCount: 2 }} />,
     );
     expect(html).toContain("is-covered");
     expect(html).toContain("Ana Pérez");
@@ -38,7 +39,7 @@ describe("fila de gestión de monitoreo", () => {
     const html = renderToStaticMarkup(
       <ManagementCoverageRow
         data={{ ...base, assistantName: null, modality: "HIBRIDA", schedule: "09:45–12:15" }}
-      />
+      />,
     );
     expect(html).toContain("Híbrida");
     expect(html).toContain("09:45–12:15");

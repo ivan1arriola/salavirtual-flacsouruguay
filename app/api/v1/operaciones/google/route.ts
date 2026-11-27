@@ -14,7 +14,7 @@ export async function GET() {
   }
   const actor = await resolveSessionActor(db, {
     id: session.user.id,
-    email: session.user.email
+    email: session.user.email,
   });
   if (!actor?.activo || actor.rol !== "ADMINISTRACION") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -35,16 +35,16 @@ export async function GET() {
       iniciadaAt: true,
       createdAt: true,
       updatedAt: true,
-      errorCodigo: true
-    }
+      errorCodigo: true,
+    },
   });
   return NextResponse.json(
     {
       operacion: "RECONCILIACION_MANUAL",
       elementos: rows,
       totalEnPagina: rows.length,
-      nota: "Los resultados inciertos no deben reenviarse sin comprobar el estado remoto. Hasta 100 operaciones por página."
+      nota: "Los resultados inciertos no deben reenviarse sin comprobar el estado remoto. Hasta 100 operaciones por página.",
     },
-    { headers: { "Cache-Control": "no-store" } }
+    { headers: { "Cache-Control": "no-store" } },
   );
 }

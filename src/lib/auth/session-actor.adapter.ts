@@ -15,13 +15,13 @@ export type SessionActor = Readonly<{
  */
 export async function resolveSessionActor(
   db: PrismaClient,
-  identity: Readonly<{ id: string; email?: string | null }>
+  identity: Readonly<{ id: string; email?: string | null | undefined }>,
 ): Promise<SessionActor | null> {
   if (!identity.id?.trim()) {
     return null;
   }
   return db.usuario.findUnique({
     where: { id: identity.id },
-    select: { id: true, rol: true, activo: true }
+    select: { id: true, rol: true, activo: true },
   });
 }

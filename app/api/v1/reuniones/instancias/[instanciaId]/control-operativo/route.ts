@@ -3,7 +3,7 @@ import { auth } from "@/auth";
 import {
   actualizarControlOperativoReunion,
   guardarRegistroAsistenciaOperativo,
-  obtenerReunionOperativa
+  obtenerReunionOperativa,
 } from "@/src/bootstrap/reunion-operativa.server";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
@@ -20,7 +20,7 @@ export async function GET(_request: Request, context: RouteContext) {
   try {
     const actor = await resolveSessionActor(db, {
       id: session.user.id,
-      email: session.user.email
+      email: session.user.email,
     });
     if (!actor?.activo) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -32,7 +32,10 @@ export async function GET(_request: Request, context: RouteContext) {
       return NextResponse.json({ error: "La reunión no existe." }, { status: 404 });
     }
     if (result.estado === "PROHIBIDA") {
-      return NextResponse.json({ error: "No tenés permisos para consultar esta reunión." }, { status: 403 });
+      return NextResponse.json(
+        { error: "No tenés permisos para consultar esta reunión." },
+        { status: 403 },
+      );
     }
 
     return NextResponse.json({ reunion: result.reunion });
@@ -51,7 +54,7 @@ export async function PATCH(request: Request, context: RouteContext) {
   try {
     const actor = await resolveSessionActor(db, {
       id: session.user.id,
-      email: session.user.email
+      email: session.user.email,
     });
     if (!actor?.activo) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -61,7 +64,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     const resultado = await actualizarControlOperativoReunion(
       { id: actor.id, rol: actor.rol },
       instanciaId,
-      await request.json().catch(() => null)
+      await request.json().catch(() => null),
     );
 
     return NextResponse.json(resultado);
@@ -80,7 +83,7 @@ export async function POST(request: Request, context: RouteContext) {
   try {
     const actor = await resolveSessionActor(db, {
       id: session.user.id,
-      email: session.user.email
+      email: session.user.email,
     });
     if (!actor?.activo) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -90,7 +93,7 @@ export async function POST(request: Request, context: RouteContext) {
     const registro = await guardarRegistroAsistenciaOperativo(
       { id: actor.id, rol: actor.rol },
       instanciaId,
-      await request.json().catch(() => null)
+      await request.json().catch(() => null),
     );
 
     return NextResponse.json({ registro }, { status: 201 });

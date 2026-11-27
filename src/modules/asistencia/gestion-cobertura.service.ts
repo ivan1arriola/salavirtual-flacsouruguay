@@ -1,15 +1,19 @@
-import { Prisma, type PrismaClient } from "@prisma/client";
+import type { Prisma } from "@prisma/client";
+import { type PrismaClient } from "@prisma/client";
 import type { SessionActor } from "@/src/lib/auth/session-actor.adapter";
 import {
   ConflictApiError,
   ForbiddenApiError,
   NotFoundApiError,
-  ValidationApiError
+  ValidationApiError,
 } from "@/src/lib/http/api-error";
 import { notificarUsuario } from "@/src/modules/notificaciones/notificaciones.service";
 import { assistantWindow, reservarAsistenteDisponible } from "./reserva-asistencia.service";
 import { renotificarAsistentesDisponibles } from "./asistencia.service";
-import { gestionarCoberturaSchema, validarIntervaloRetroactivo } from "./domain/gestion-cobertura.domain";
+import {
+  gestionarCoberturaSchema,
+  validarIntervaloRetroactivo,
+} from "./domain/gestion-cobertura.domain";
 
 type Tx = Prisma.TransactionClient;
 const ACTIVE = ["ASIGNADO", "ACEPTADO"] as const;
@@ -29,11 +33,11 @@ async function meetingById(tx: Tx, id: string) {
         where: { estado: { in: [...ACTIVE] } },
         include: {
           asistenteTecnico: {
-            include: { usuario: { select: { id: true, emailPrincipal: true } } }
-          }
-        }
-      }
-    }
+            include: { usuario: { select: { id: true, emailPrincipal: true } } },
+          },
+        },
+      },
+    },
   });
   if (!meeting) {
     throw new NotFoundApiError("El encuentro no existe.");
@@ -43,13 +47,17 @@ async function meetingById(tx: Tx, id: string) {
 
 function requireFuture(meeting: Readonly<{ estado: string; finProgramadoAt: Date }>, now: Date) {
   if (meeting.estado !== "PROGRAMADA" || meeting.finProgramadoAt <= now) {
-    throw new ConflictApiError("El encuentro ya finalizó o no está programado. Usá el registro retroactivo.");
+    throw new ConflictApiError(
+      "El encuentro ya finalizó o no está programado. Usá el registro retroactivo.",
+    );
   }
 }
 
 function requirePast(meeting: Readonly<{ estado: string; finProgramadoAt: Date }>, now: Date) {
   if (HISTORICAL_LIMIT.some((state) => state === meeting.estado) || meeting.finProgramadoAt > now) {
-    throw new ConflictApiError("El registro retroactivo solo admite encuentros realizados y finalizados.");
+    throw new ConflictApiError(
+      "El registro retroactivo solo admite encuentros realizados y finalizados.",
+    );
   }
 }
 
@@ -58,14 +66,24 @@ async function audit(
   actorId: string,
   accion: string,
   entityId: string,
-  valorNuevo: Record<string, string | number | boolean | null>
+  valorNuevo: Record<string, string | number | boolean | null>,
 ) {
   await tx.auditoria.create({
-    data: { actorUsuarioId: actorId, accion, entidadTipo: "InstanciaSala", entidadId: entityId, valorNuevo }
+    data: {
+      actorUsuarioId: actorId,
+      accion,
+      entidadTipo: "InstanciaSala",
+      entidadId: entityId,
+      valorNuevo,
+    },
   });
 }
 
-export async function gestionarCoberturaMonitoreo(db: PrismaClient, actor: SessionActor, rawInput: unknown) {
+export async function gestionarCoberturaMonitoreo(
+  db: PrismaClient,
+  actor: SessionActor,
+  rawInput: unknown,
+) {
   if (!actor.activo || actor.rol !== "ADMINISTRACION") {
     throw new ForbiddenApiError("Solo Administración puede gestionar o aprobar estos monitoreos.");
   }
@@ -86,24 +104,26 @@ export async function gestionarCoberturaMonitoreo(db: PrismaClient, actor: Sessi
         data: {
           requiereAsistenciaTecnica: true,
           inicioAsistenciaTecnicaAt: window.inicio,
-          finAsistenciaTecnicaAt: window.fin
-        }
+          finAsistenciaTecnicaAt: window.fin,
+        },
       });
       await audit(tx, actor.id, "MONITOREO_CONVOCATORIA_ABIERTA", meeting.id, {
-        requiereAsistenciaTecnica: true
+        requiereAsistenciaTecnica: true,
       });
       return { instanciaSalaId: meeting.id, accion: input.accion };
     });
     // Solamente este flujo envía notificaciones al conjunto de asistentes disponibles.
     try {
-      await renotificarAsistentesDisponibles(db, actor, { instanciaSalaId: result.instanciaSalaId });
+      await renotificarAsistentesDisponibles(db, actor, {
+        instanciaSalaId: result.instanciaSalaId,
+      });
       return { ...result, message: "Convocatoria abierta y asistentes disponibles notificados." };
     } catch (error) {
       console.error("No se completó la convocatoria general de monitoreo.", error);
       return {
         ...result,
         warning:
-          "El requisito de monitoreo quedó activado, pero las notificaciones generales están pendientes."
+          "El requisito de monitoreo quedó activado, pero las notificaciones generales están pendientes.",
       };
     }
   }
@@ -123,32 +143,35 @@ export async function gestionarCoberturaMonitoreo(db: PrismaClient, actor: Sessi
         input.asistenteTecnicoId,
         window.modalidad,
         [{ inicio: window.inicio, fin: window.fin }],
-        meeting.id
+        meeting.id,
       );
       const accounts = await tx.cuentaGoogleFlacso.findMany({
         where: { userId: assistant.usuarioId },
-        select: { id: true }
+        select: { id: true },
       });
       if (previous) {
         await tx.asignacionAsistenciaTecnica.update({
           where: { id: previous.id },
-          data: { estado: "CANCELADO" }
+          data: { estado: "CANCELADO" },
         });
         const oldAccounts = await tx.cuentaGoogleFlacso.findMany({
           where: { userId: previous.asistenteTecnico.usuarioId },
-          select: { id: true }
+          select: { id: true },
         });
         if (oldAccounts.length) {
           await tx.cohostReunion.deleteMany({
-            where: { instanciaSalaId: meeting.id, cuentaGoogleId: { in: oldAccounts.map(({ id }) => id) } }
+            where: {
+              instanciaSalaId: meeting.id,
+              cuentaGoogleId: { in: oldAccounts.map(({ id }) => id) },
+            },
           });
         }
         if (previous.asistenteTecnico.usuario.emailPrincipal) {
           await tx.cohostEmailReunion.deleteMany({
             where: {
               instanciaSalaId: meeting.id,
-              email: previous.asistenteTecnico.usuario.emailPrincipal.toLowerCase()
-            }
+              email: previous.asistenteTecnico.usuario.emailPrincipal.toLowerCase(),
+            },
           });
         }
       }
@@ -157,15 +180,15 @@ export async function gestionarCoberturaMonitoreo(db: PrismaClient, actor: Sessi
         data: {
           requiereAsistenciaTecnica: true,
           inicioAsistenciaTecnicaAt: window.inicio,
-          finAsistenciaTecnicaAt: window.fin
-        }
+          finAsistenciaTecnicaAt: window.fin,
+        },
       });
       const assignment = await tx.asignacionAsistenciaTecnica.upsert({
         where: {
           instanciaSalaId_asistenteTecnicoId: {
             instanciaSalaId: meeting.id,
-            asistenteTecnicoId: assistant.id
-          }
+            asistenteTecnicoId: assistant.id,
+          },
         },
         create: {
           instanciaSalaId: meeting.id,
@@ -173,7 +196,7 @@ export async function gestionarCoberturaMonitoreo(db: PrismaClient, actor: Sessi
           estado: "ASIGNADO",
           tarifaAsistenciaTecnicaId: tarifa.id,
           tarifaHoraAplicada: tarifa.valorHora,
-          moneda: tarifa.moneda
+          moneda: tarifa.moneda,
         },
         update: {
           estado: "ASIGNADO",
@@ -181,25 +204,27 @@ export async function gestionarCoberturaMonitoreo(db: PrismaClient, actor: Sessi
           tarifaHoraAplicada: tarifa.valorHora,
           moneda: tarifa.moneda,
           minutosConfirmados: null,
-          montoConfirmado: null
+          montoConfirmado: null,
         },
-        select: { id: true }
+        select: { id: true },
       });
       if (accounts.length) {
         await tx.cohostReunion.createMany({
           data: accounts.map(({ id }) => ({ instanciaSalaId: meeting.id, cuentaGoogleId: id })),
-          skipDuplicates: true
+          skipDuplicates: true,
         });
       } else if (assistant.usuario.emailPrincipal) {
         await tx.cohostEmailReunion.createMany({
-          data: [{ instanciaSalaId: meeting.id, email: assistant.usuario.emailPrincipal.toLowerCase() }],
-          skipDuplicates: true
+          data: [
+            { instanciaSalaId: meeting.id, email: assistant.usuario.emailPrincipal.toLowerCase() },
+          ],
+          skipDuplicates: true,
         });
       }
       await audit(tx, actor.id, "MONITOREO_ASIGNADO_DIRECTAMENTE", meeting.id, {
         asistenteTecnicoId: assistant.id,
         asignacionId: assignment.id,
-        asistenteAnteriorId: previous?.asistenteTecnicoId ?? null
+        asistenteAnteriorId: previous?.asistenteTecnicoId ?? null,
       });
       return {
         accion: input.accion,
@@ -209,9 +234,9 @@ export async function gestionarCoberturaMonitoreo(db: PrismaClient, actor: Sessi
         previous: previous
           ? {
               usuarioId: previous.asistenteTecnico.usuarioId,
-              email: previous.asistenteTecnico.usuario.emailPrincipal
+              email: previous.asistenteTecnico.usuario.emailPrincipal,
             }
-          : null
+          : null,
       };
     });
     const warning: string[] = [];
@@ -221,7 +246,7 @@ export async function gestionarCoberturaMonitoreo(db: PrismaClient, actor: Sessi
           tipo: "ASISTENCIA_ASIGNACION",
           titulo: "Monitoreo reasignado",
           cuerpo: `Ya no estás asignado al monitoreo de ${result.title}.`,
-          href: "/mi-agenda"
+          href: "/mi-agenda",
         });
       } catch (error) {
         console.error("No se notificó a la persona anteriormente asignada.", error);
@@ -236,7 +261,7 @@ export async function gestionarCoberturaMonitoreo(db: PrismaClient, actor: Sessi
         href: "/mi-agenda",
         metadata: { instanciaSalaId: result.instanciaSalaId },
         emailSubject: `Monitoreo asignado: ${result.title}`,
-        emailText: `Se te asignó el monitoreo de ${result.title}. Consultá el horario y los enlaces en Sala Virtual. Los permisos de Meet se están sincronizando.`
+        emailText: `Se te asignó el monitoreo de ${result.title}. Consultá el horario y los enlaces en Sala Virtual. Los permisos de Meet se están sincronizando.`,
       });
     } catch (error) {
       console.error("No se notificó a la persona asignada.", error);
@@ -245,7 +270,7 @@ export async function gestionarCoberturaMonitoreo(db: PrismaClient, actor: Sessi
     return {
       accion: result.accion,
       instanciaSalaId: result.instanciaSalaId,
-      warning: warning.join(" ") || null
+      warning: warning.join(" ") || null,
     };
   }
 
@@ -258,14 +283,16 @@ export async function gestionarCoberturaMonitoreo(db: PrismaClient, actor: Sessi
         throw new ConflictApiError("El encuentro ya tiene una cobertura activa.");
       }
       const existing = await tx.registroMonitoreoRetroactivo.findFirst({
-        where: { instanciaSalaId: meeting.id, estado: { in: ["PENDIENTE", "APROBADO"] } }
+        where: { instanciaSalaId: meeting.id, estado: { in: ["PENDIENTE", "APROBADO"] } },
       });
       if (existing) {
-        throw new ConflictApiError("Ya existe un registro pendiente o aprobado para este encuentro.");
+        throw new ConflictApiError(
+          "Ya existe un registro pendiente o aprobado para este encuentro.",
+        );
       }
       const person = await tx.asistenteTecnico.findUnique({
         where: { id: input.asistenteTecnicoId },
-        select: { id: true }
+        select: { id: true },
       });
       if (!person) {
         throw new NotFoundApiError("El asistente seleccionado no existe.");
@@ -277,9 +304,9 @@ export async function gestionarCoberturaMonitoreo(db: PrismaClient, actor: Sessi
           input.finRealAt,
           {
             inicio: meeting.inicioProgramadoAt,
-            fin: meeting.finProgramadoAt
+            fin: meeting.finProgramadoAt,
           },
-          now
+          now,
         );
       } catch (error) {
         throw new ValidationApiError(error instanceof Error ? error.message : "Horario no válido.");
@@ -287,11 +314,11 @@ export async function gestionarCoberturaMonitoreo(db: PrismaClient, actor: Sessi
       const modalidad = meeting.modalidadOverride ?? meeting.solicitud.modalidad;
       const tarifa = await tx.tarifaAsistenciaTecnica.findFirst({
         where: { modalidad, createdAt: { lte: meeting.inicioProgramadoAt } },
-        orderBy: [{ createdAt: "desc" }, { id: "desc" }]
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       });
       if (!tarifa) {
         throw new ConflictApiError(
-          "No hay una tarifa histórica vigente para esa fecha. Configurala antes de continuar."
+          "No hay una tarifa histórica vigente para esa fecha. Configurala antes de continuar.",
         );
       }
       const monto = tarifa.valorHora.mul(minutos).div(60).toDecimalPlaces(2);
@@ -307,32 +334,36 @@ export async function gestionarCoberturaMonitoreo(db: PrismaClient, actor: Sessi
           moneda: tarifa.moneda,
           montoEstimado: monto,
           motivo: input.motivo,
-          creadoPorUsuarioId: actor.id
+          creadoPorUsuarioId: actor.id,
         },
-        select: { id: true }
+        select: { id: true },
       });
       await audit(tx, actor.id, "MONITOREO_RETROACTIVO_REGISTRADO", meeting.id, {
         registroId: registro.id,
         asistenteTecnicoId: person.id,
-        minutos
+        minutos,
       });
       return {
         accion: input.accion,
         instanciaSalaId: meeting.id,
         registroId: registro.id,
-        estado: "PENDIENTE"
+        estado: "PENDIENTE",
       };
     });
   }
 
   return db.$transaction(async (tx) => {
-    const reference = await tx.registroMonitoreoRetroactivo.findUnique({ where: { id: input.registroId } });
+    const reference = await tx.registroMonitoreoRetroactivo.findUnique({
+      where: { id: input.registroId },
+    });
     if (!reference) {
       throw new NotFoundApiError("El registro retroactivo no existe.");
     }
     await lockMeeting(tx, reference.instanciaSalaId);
     // Releer bajo el bloqueo: nunca se puede rechazar un registro recién aprobado.
-    const record = await tx.registroMonitoreoRetroactivo.findUnique({ where: { id: reference.id } });
+    const record = await tx.registroMonitoreoRetroactivo.findUnique({
+      where: { id: reference.id },
+    });
     if (!record || record.estado !== "PENDIENTE") {
       throw new ConflictApiError("El registro ya fue revisado.");
     }
@@ -345,10 +376,12 @@ export async function gestionarCoberturaMonitoreo(db: PrismaClient, actor: Sessi
           estado: "RECHAZADO",
           motivoRechazo: input.motivo,
           revisadoPorUsuarioId: actor.id,
-          revisadoAt: now
-        }
+          revisadoAt: now,
+        },
       });
-      await audit(tx, actor.id, "MONITOREO_RETROACTIVO_RECHAZADO", meeting.id, { registroId: record.id });
+      await audit(tx, actor.id, "MONITOREO_RETROACTIVO_RECHAZADO", meeting.id, {
+        registroId: record.id,
+      });
       return { accion: input.accion, instanciaSalaId: meeting.id, estado: "RECHAZADO" };
     }
     if (meeting.asignaciones.length) {
@@ -359,21 +392,21 @@ export async function gestionarCoberturaMonitoreo(db: PrismaClient, actor: Sessi
         asistenteTecnicoId: record.asistenteTecnicoId,
         periodoDesde: { lte: meeting.inicioProgramadoAt },
         periodoHasta: { gt: meeting.inicioProgramadoAt },
-        estado: { not: "ANULADA" }
+        estado: { not: "ANULADA" },
       },
-      select: { id: true }
+      select: { id: true },
     });
     if (liquidacion) {
       throw new ConflictApiError(
-        "Ya existe una liquidación para este período. Revisala antes de aprobar el registro."
+        "Ya existe una liquidación para este período. Revisala antes de aprobar el registro.",
       );
     }
     await tx.asignacionAsistenciaTecnica.upsert({
       where: {
         instanciaSalaId_asistenteTecnicoId: {
           instanciaSalaId: meeting.id,
-          asistenteTecnicoId: record.asistenteTecnicoId
-        }
+          asistenteTecnicoId: record.asistenteTecnicoId,
+        },
       },
       create: {
         instanciaSalaId: meeting.id,
@@ -383,7 +416,7 @@ export async function gestionarCoberturaMonitoreo(db: PrismaClient, actor: Sessi
         moneda: record.moneda,
         minutosConfirmados: record.minutos,
         montoConfirmado: record.montoEstimado,
-        estado: "ACEPTADO"
+        estado: "ACEPTADO",
       },
       update: {
         tarifaAsistenciaTecnicaId: record.tarifaAsistenciaTecnicaId,
@@ -391,22 +424,22 @@ export async function gestionarCoberturaMonitoreo(db: PrismaClient, actor: Sessi
         moneda: record.moneda,
         minutosConfirmados: record.minutos,
         montoConfirmado: record.montoEstimado,
-        estado: "ACEPTADO"
-      }
+        estado: "ACEPTADO",
+      },
     });
     await tx.instanciaSala.update({
       where: { id: meeting.id },
-      data: { requiereAsistenciaTecnica: true }
+      data: { requiereAsistenciaTecnica: true },
     });
     await tx.registroMonitoreoRetroactivo.update({
       where: { id: record.id },
-      data: { estado: "APROBADO", revisadoPorUsuarioId: actor.id, revisadoAt: now }
+      data: { estado: "APROBADO", revisadoPorUsuarioId: actor.id, revisadoAt: now },
     });
     await audit(tx, actor.id, "MONITOREO_RETROACTIVO_APROBADO", meeting.id, {
       registroId: record.id,
       asistenteTecnicoId: record.asistenteTecnicoId,
       minutos: record.minutos,
-      montoEstimado: record.montoEstimado.toNumber()
+      montoEstimado: record.montoEstimado.toNumber(),
     });
     // Deliberadamente no se actualizan horarios académicos ni se sincroniza Meet/Calendar pasado.
     return { accion: input.accion, instanciaSalaId: meeting.id, estado: "APROBADO" };

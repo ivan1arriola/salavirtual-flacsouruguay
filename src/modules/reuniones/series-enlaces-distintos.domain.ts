@@ -37,9 +37,11 @@ const distintos = (valores: readonly (string | null)[]): number =>
  */
 export function evaluarEnlacesDeSerie(
   encuentros: readonly EncuentroEnlaceSerie[],
-  ahora: Date
+  ahora: Date,
 ): EvaluacionEnlacesSerie {
-  const futuros = encuentros.filter(({ estado, inicio }) => estado === "PROGRAMADA" && inicio > ahora);
+  const futuros = encuentros.filter(
+    ({ estado, inicio }) => estado === "PROGRAMADA" && inicio > ahora,
+  );
   const enZoom = futuros.filter(({ proveedor }) => proveedor === "ZOOM");
   const mixta = enZoom.length > 0 && enZoom.length < futuros.length;
   const reuniones = distintos(enZoom.map(({ reunionProveedorId }) => reunionProveedorId));
@@ -57,6 +59,6 @@ export function evaluarEnlacesDeSerie(
     encuentrosZoom: enZoom.length,
     necesitaCorreccion:
       !mixta && !unificada && enZoom.length > 1 && (enlacesDistintos > 1 || cuentasDistintas > 1),
-    mixtaSinUnificar: mixta && !unificada
+    mixtaSinUnificar: mixta && !unificada,
   };
 }

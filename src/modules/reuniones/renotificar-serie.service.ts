@@ -16,8 +16,10 @@ export async function renotificarSerieAlPrograma(
   dependencies: RenotificarSerieDependencies,
   actor: SessionActor,
   solicitudId: string,
-  options: Readonly<{ soloVistaPrevia?: boolean }> = {}
-): Promise<Readonly<{ destinatarios: number; encuentros: number; asunto?: string; texto?: string }>> {
+  options: Readonly<{ soloVistaPrevia?: boolean }> = {},
+): Promise<
+  Readonly<{ destinatarios: number; encuentros: number; asunto?: string; texto?: string }>
+> {
   const request = await dependencies.db.solicitudSala.findUnique({
     where: { id: solicitudId },
     select: {
@@ -35,12 +37,12 @@ export async function renotificarSerieAlPrograma(
           programa: { select: { nombre: true } },
           docente: {
             select: {
-              usuario: { select: { nombres: true, apellidos: true } }
-            }
-          }
-        }
-      }
-    }
+              usuario: { select: { nombres: true, apellidos: true } },
+            },
+          },
+        },
+      },
+    },
   });
   if (!request) {
     throw new NotFoundApiError("La reunión no existe.");
@@ -49,7 +51,10 @@ export async function renotificarSerieAlPrograma(
     throw new ForbiddenApiError("No tiene permisos para notificar esta serie.");
   }
 
-  const recipients = await destinatariosDocentesPrograma(dependencies.db, request.docentePrograma.programaId);
+  const recipients = await destinatariosDocentesPrograma(
+    dependencies.db,
+    request.docentePrograma.programaId,
+  );
   if (recipients.length === 0) {
     throw new ConflictApiError("El programa no tiene docentes activos para notificar.");
   }
@@ -60,7 +65,7 @@ export async function renotificarSerieAlPrograma(
       instancias: {
         where: {
           estado: "PROGRAMADA",
-          finProgramadoAt: { gt: new Date() }
+          finProgramadoAt: { gt: new Date() },
         },
         orderBy: { inicioProgramadoAt: "asc" },
         select: {
@@ -72,10 +77,10 @@ export async function renotificarSerieAlPrograma(
             select: {
               asistenteTecnico: {
                 select: {
-                  usuario: { select: { nombres: true, apellidos: true } }
-                }
-              }
-            }
+                  usuario: { select: { nombres: true, apellidos: true } },
+                },
+              },
+            },
           },
           eventosProveedor: {
             select: {
@@ -86,14 +91,14 @@ export async function renotificarSerieAlPrograma(
                 select: {
                   nombre: true,
                   emailOrganizador: true,
-                  secretRef: true
-                }
-              }
-            }
-          }
-        }
-      }
-    }
+                  secretRef: true,
+                },
+              },
+            },
+          },
+        },
+      },
+    },
   });
   const meetings = seriesRequests
     .flatMap(({ instancias }) => instancias)
@@ -132,9 +137,9 @@ export async function renotificarSerieAlPrograma(
         sala: meet?.cuentaProveedor?.emailOrganizador ?? meet?.cuentaProveedor?.nombre,
         meet: meet?.codigoReunion,
         joinUrl: meet?.joinUrl,
-        proveedor: meet?.proveedor.tipo === "ZOOM" ? "ZOOM" : "GOOGLE_MEET"
+        proveedor: meet?.proveedor.tipo === "ZOOM" ? "ZOOM" : "GOOGLE_MEET",
       };
-    })
+    }),
   });
 
   const asunto = `Serie de reuniones: ${request.titulo}`;
@@ -151,7 +156,7 @@ export async function renotificarSerieAlPrograma(
     metadata: { solicitudId: request.id, renotificacion: true },
     emailSubject: asunto,
     emailText: texto,
-    emailActionLabel: "Ver reunión"
+    emailActionLabel: "Ver reunión",
   });
 
   await dependencies.db.auditoria.create({
@@ -162,9 +167,9 @@ export async function renotificarSerieAlPrograma(
       entidadId: request.id,
       valorNuevo: {
         destinatarios: recipients.length,
-        encuentros: meetings.length
-      }
-    }
+        encuentros: meetings.length,
+      },
+    },
   });
 
   return { destinatarios: recipients.length, encuentros: meetings.length };

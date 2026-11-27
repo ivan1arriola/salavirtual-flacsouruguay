@@ -5,7 +5,7 @@ import { formatDate } from "@/src/lib/ui/format";
 import type { AssistantOpportunityDTO } from "@/src/modules/dashboard/types";
 
 export function AssistantOpenOpportunities({
-  opportunities
+  opportunities,
 }: Readonly<{
   opportunities: readonly AssistantOpportunityDTO[];
 }>) {
@@ -49,7 +49,9 @@ export function AssistantOpenOpportunities({
                     viewerIsAssistant
                     compact
                   />
-                  <span className="badge-tag">{opp.modalidad === "HIBRIDA" ? "Híbrida" : "Virtual"}</span>
+                  <span className="badge-tag">
+                    {opp.modalidad === "HIBRIDA" ? "Híbrida" : "Virtual"}
+                  </span>
                 </div>
 
                 <div className="assistant-opportunity-content">

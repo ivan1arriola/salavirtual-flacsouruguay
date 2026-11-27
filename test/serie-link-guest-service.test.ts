@@ -11,7 +11,7 @@ const event = {
   proveedor: { tipo: "GOOGLE_MEET" },
   joinUrl: "https://meet.google.com/old-aaaa-bbb",
   codigoReunion: "old-aaaa-bbb",
-  cuentaProveedor: { emailOrganizador: "sala02@flacso.edu.uy" }
+  cuentaProveedor: { emailOrganizador: "sala02@flacso.edu.uy" },
 };
 const meeting = {
   id: "inst-1",
@@ -21,7 +21,7 @@ const meeting = {
   cohosts: [{ cuentaGoogle: { email: "cohost@flacso.edu.uy" } }],
   cohostEmails: [{ email: "otro@flacso.edu.uy" }],
   asignaciones: [],
-  eventosProveedor: [event]
+  eventosProveedor: [event],
 };
 const request = {
   id: "request1",
@@ -29,7 +29,7 @@ const request = {
   serieReunionId: "serie1",
   docenteProgramaId: "dp",
   createdAt: new Date("2030-01-01T00:00:00Z"),
-  docentePrograma: { programaId: "programa" }
+  docentePrograma: { programaId: "programa" },
 };
 
 function setup() {
@@ -40,7 +40,7 @@ function setup() {
     eventoProveedor: { update: vi.fn() },
     auditoria: { create: vi.fn() },
     $executeRaw: vi.fn(),
-    $transaction: vi.fn(async (fn: (tx: any) => Promise<unknown>) => fn(db))
+    $transaction: vi.fn(async (fn: (tx: any) => Promise<unknown>) => fn(db)),
   };
   return db;
 }
@@ -51,30 +51,36 @@ describe("gestión real de serie", () => {
     const enviado = vi.fn().mockResolvedValue(true);
     const patch = vi.fn().mockResolvedValue({
       location: "https://meet.google.com/abc-defg-hij",
-      description: "Acceso Google Meet: https://meet.google.com/abc-defg-hij"
+      description: "Acceso Google Meet: https://meet.google.com/abc-defg-hij",
     });
     const result = await recuperarEnlaceSerie(
       {
         db,
         comprobarMeet: vi.fn().mockResolvedValue(undefined),
-        leerCalendario: vi.fn().mockResolvedValue({ location: event.joinUrl, description: "Viejo" }),
+        leerCalendario: vi
+          .fn()
+          .mockResolvedValue({ location: event.joinUrl, description: "Viejo" }),
         reemplazarEnCalendar: patch,
         restaurarEnCalendar: vi.fn(),
-        enviarCorreo: enviado
+        enviarCorreo: enviado,
       },
       admin,
       request.id,
-      "https://meet.google.com/abc-defg-hij"
+      "https://meet.google.com/abc-defg-hij",
     );
     expect(result).toMatchObject({
       encuentros: 1,
       cohostsNotificados: 2,
       invitadosNotificados: 1,
-      erroresCorreo: 0
+      erroresCorreo: 0,
     });
     const recipients = enviado.mock.calls.map(([email]) => email);
     expect(recipients).toEqual(
-      expect.arrayContaining(["cohost@flacso.edu.uy", "otro@flacso.edu.uy", "invitado@ejemplo.com"])
+      expect.arrayContaining([
+        "cohost@flacso.edu.uy",
+        "otro@flacso.edu.uy",
+        "invitado@ejemplo.com",
+      ]),
     );
     for (const [, mail] of enviado.mock.calls) {
       expect(mail.text).toContain("https://meet.google.com/abc-defg-hij");
@@ -84,7 +90,7 @@ describe("gestión real de serie", () => {
     expect(update.data.payloadUltimo.salaVirtual.cohostVerification).toBeNull();
     expect(db.instanciaSala.findMany.mock.calls[0][0].where).toMatchObject({
       estado: "PROGRAMADA",
-      inicioProgramadoAt: { gt: expect.any(Date) }
+      inicioProgramadoAt: { gt: expect.any(Date) },
     });
   });
 
@@ -99,12 +105,12 @@ describe("gestión real de serie", () => {
           leerCalendario: vi.fn().mockResolvedValue({}),
           reemplazarEnCalendar: vi.fn().mockRejectedValue(new Error("Calendar falló")),
           restaurarEnCalendar: vi.fn(),
-          enviarCorreo: send
+          enviarCorreo: send,
         },
         admin,
         request.id,
-        "https://meet.google.com/abc-defg-hij"
-      )
+        "https://meet.google.com/abc-defg-hij",
+      ),
     ).rejects.toThrow("Calendar falló");
     expect(send).not.toHaveBeenCalled();
     expect(db.eventoProveedor.update).not.toHaveBeenCalled();
@@ -118,14 +124,14 @@ describe("gestión real de serie", () => {
       {
         db,
         leerCalendario: vi.fn().mockResolvedValue({
-          attendees: [{ email: "cohost@flacso.edu.uy" }, { email: "invitado@ejemplo.com" }]
+          attendees: [{ email: "cohost@flacso.edu.uy" }, { email: "invitado@ejemplo.com" }],
         }),
         actualizarCalendario: update,
-        enviarCorreo: send
+        enviarCorreo: send,
       },
       admin,
       request.id,
-      { emails: ["invitado@ejemplo.com", "nuevo@ejemplo.com"] }
+      { emails: ["invitado@ejemplo.com", "nuevo@ejemplo.com"] },
     );
     expect(result).toMatchObject({ invitados: 2, correosEnviados: 1 });
     expect(send).toHaveBeenCalledTimes(1);
@@ -133,7 +139,7 @@ describe("gestión real de serie", () => {
     expect(update.mock.calls[0][2].map((item: { email: string }) => item.email)).toEqual([
       "cohost@flacso.edu.uy",
       "invitado@ejemplo.com",
-      "nuevo@ejemplo.com"
+      "nuevo@ejemplo.com",
     ]);
     expect(db.invitadoReunion.createMany).toHaveBeenCalled();
   });

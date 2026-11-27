@@ -1,7 +1,7 @@
 import "server-only";
 import {
   estadoArchivoGrabacionZoom,
-  type EstadoArchivoGrabacionZoom
+  type EstadoArchivoGrabacionZoom,
 } from "../modules/reuniones/estado-grabacion-zoom.domain";
 import { db } from "../lib/db";
 import {
@@ -11,7 +11,7 @@ import {
   enlaceArchivoZoom,
   puedeConciliarAsistenciaZoom,
   type ActorConciliacionZoom,
-  type SesionObservadaZoom
+  type SesionObservadaZoom,
 } from "../modules/archivos/domain";
 
 export type RegistroAsistenciaZoomFicha = Readonly<{
@@ -33,7 +33,8 @@ export type RegistroAsistenciaZoomFicha = Readonly<{
 
 export type AsistenciaZoomFicha = Readonly<{
   /** Estado del reporte de Zoom (no de ninguna planilla). */
-  estadoReporte: "SIN_OCURRENCIAS" | "PENDIENTE" | "NO_DISPONIBLE" | "VACIO" | "DISPONIBLE" | "ERROR";
+  estadoReporte:
+    "SIN_OCURRENCIAS" | "PENDIENTE" | "NO_DISPONIBLE" | "VACIO" | "DISPONIBLE" | "ERROR";
   registros: readonly RegistroAsistenciaZoomFicha[];
   ocurrencias: readonly OcurrenciaAsistenciaZoomFicha[];
   invitados: ReadonlyArray<Readonly<{ id: string; email: string; nombre: string | null }>>;
@@ -88,7 +89,7 @@ function asistenciaPorOcurrencia(ocurrencia: {
   const sesiones: SesionObservadaZoom[] = ocurrencia.sesionesAsistencia.map((s) => ({
     ...s,
     status: s.status === "in_waiting_room" || s.status === "in_meeting" ? s.status : null,
-    rol: s.rol === "HOST" || s.rol === "COHOST" ? s.rol : null
+    rol: s.rol === "HOST" || s.rol === "COHOST" ? s.rol : null,
   }));
   const validas = sesiones.filter((s) => s.salidaAt.getTime() > s.entradaAt.getTime());
   const inicio = validas.length ? Math.min(...validas.map((s) => s.entradaAt.getTime())) : null;
@@ -104,14 +105,14 @@ function asistenciaPorOcurrencia(ocurrencia: {
             minutos: r.minutos,
             conexiones: r.sesiones,
             primeraEntradaAt: r.primeraEntradaAt,
-            ultimaSalidaAt: r.ultimaSalidaAt
+            ultimaSalidaAt: r.ultimaSalidaAt,
           }))
       : [];
   const grabaciones = ocurrencia.archivos.map((archivo) => ({
     id: archivo.id,
     tipo: categoriaArchivoZoom(archivo.tipoOriginal),
     estado: estadoArchivoGrabacionZoom(archivo.estado),
-    url: enlaceArchivoZoom(archivo)
+    url: enlaceArchivoZoom(archivo),
   }));
   return {
     id: ocurrencia.id,
@@ -120,7 +121,7 @@ function asistenciaPorOcurrencia(ocurrencia: {
     hayGrabacionPendiente: ocurrencia.procesamientoPendiente,
     inicioRealAt: ocurrencia.inicioRealAt,
     estadoReporte: ocurrencia.estadoAsistencia,
-    registros
+    registros,
   };
 }
 
@@ -132,16 +133,21 @@ const PRIORIDAD = ["ERROR", "PENDIENTE", "NO_DISPONIBLE", "VACIO", "DISPONIBLE"]
  */
 export async function leerAsistenciaZoomFicha(
   instanciaId: string,
-  actor: ActorConciliacionZoom
+  actor: ActorConciliacionZoom,
 ): Promise<AsistenciaZoomFicha> {
   const evento = await db.eventoProveedor.findFirst({
-    where: { instanciaSalaId: instanciaId, proveedor: { tipo: { in: ["ZOOM", "ZOOM_HISTORICO"] } } },
+    where: {
+      instanciaSalaId: instanciaId,
+      proveedor: { tipo: { in: ["ZOOM", "ZOOM_HISTORICO"] } },
+    },
     select: {
       id: true,
       instancia: {
         select: {
-          solicitud: { select: { docentePrograma: { select: { docente: { select: { usuarioId: true } } } } } }
-        }
+          solicitud: {
+            select: { docentePrograma: { select: { docente: { select: { usuarioId: true } } } } },
+          },
+        },
       },
       ocurrenciasArchivoZoom: {
         orderBy: { inicioRealAt: "asc" },
@@ -153,7 +159,7 @@ export async function leerAsistenciaZoomFicha(
           procesamientoPendiente: true,
           archivos: {
             orderBy: { id: "asc" },
-            select: { id: true, tipoOriginal: true, estado: true, webViewUrl: true }
+            select: { id: true, tipoOriginal: true, estado: true, webViewUrl: true },
           },
           sesionesAsistencia: {
             select: {
@@ -165,12 +171,12 @@ export async function leerAsistenciaZoomFicha(
               entradaAt: true,
               salidaAt: true,
               status: true,
-              rol: true
-            }
-          }
-        }
-      }
-    }
+              rol: true,
+            },
+          },
+        },
+      },
+    },
   });
   if (!evento) {
     return {
@@ -178,20 +184,20 @@ export async function leerAsistenciaZoomFicha(
       registros: [],
       ocurrencias: [],
       invitados: [],
-      puedeConciliar: false
+      puedeConciliar: false,
     };
   }
 
   const [registros, invitados] = await Promise.all([
     db.registroAsistenciaZoom.findMany({
       where: { eventoProveedorId: evento.id },
-      orderBy: [{ primeraEntradaAt: "asc" }, { nombre: "asc" }]
+      orderBy: [{ primeraEntradaAt: "asc" }, { nombre: "asc" }],
     }),
     db.invitadoReunion.findMany({
       where: { instanciaSalaId: instanciaId },
       orderBy: { email: "asc" },
-      select: { id: true, email: true, nombre: true }
-    })
+      select: { id: true, email: true, nombre: true },
+    }),
   ]);
   // Misma regla que la consolidación: el id de Zoom identifica a la persona; sin él cada sesión es aparte.
   const conexionesPorClave = new Map<string, RegistroAsistenciaZoomFicha["conexiones"][number][]>();
@@ -205,8 +211,8 @@ export async function leerAsistenciaZoomFicha(
         entradaAt: sesion.entradaAt.toISOString(),
         salidaAt: sesion.salidaAt.toISOString(),
         email: sesion.email,
-        status: sesion.status
-      }
+        status: sesion.status,
+      },
     ]);
   }
   const estados = evento.ocurrenciasArchivoZoom.map((o) => o.estadoAsistencia);
@@ -229,11 +235,11 @@ export async function leerAsistenciaZoomFicha(
       esHostOCohost: r.esHostOCohost,
       estadoConciliacion: r.estadoConciliacion,
       invitadoReunionId: r.invitadoReunionId,
-      conexiones: conexionesPorClave.get(r.claveParticipante) ?? []
+      conexiones: conexionesPorClave.get(r.claveParticipante) ?? [],
     })),
     invitados,
     puedeConciliar: puedeConciliarAsistenciaZoom(actor, {
-      titularUsuarioId: evento.instancia.solicitud.docentePrograma.docente.usuarioId
-    })
+      titularUsuarioId: evento.instancia.solicitud.docentePrograma.docente.usuarioId,
+    }),
   };
 }

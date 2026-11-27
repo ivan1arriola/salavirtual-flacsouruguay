@@ -2,14 +2,17 @@
 import { describe, expect, it, vi } from "vitest";
 import type { PrismaClient } from "@prisma/client";
 import { crearPrismaAsistenciaZoomRepositoryAdapter } from "../src/modules/archivos/infrastructure/prisma/prisma-asistencia-zoom-repository.adapter";
-import type { AsistenciaZoomConsolidada, SesionObservadaZoom } from "../src/modules/archivos/domain";
+import type {
+  AsistenciaZoomConsolidada,
+  SesionObservadaZoom,
+} from "../src/modules/archivos/domain";
 
 const t = (hhmm: string) => new Date(`2026-11-09T${hhmm}:00Z`);
 const VERSION = {
   uuid: "u1",
   eventoProveedorId: "e1",
   inicioProgramadoAt: t("10:00"),
-  finProgramadoAt: t("11:00")
+  finProgramadoAt: t("11:00"),
 };
 
 const sesion = (clave: string): SesionObservadaZoom => ({
@@ -21,7 +24,7 @@ const sesion = (clave: string): SesionObservadaZoom => ({
   entradaAt: t("10:00"),
   salidaAt: t("10:30"),
   status: "in_meeting",
-  rol: null
+  rol: null,
 });
 const resumen = (clave: string): AsistenciaZoomConsolidada => ({
   claveParticipante: clave,
@@ -34,7 +37,7 @@ const resumen = (clave: string): AsistenciaZoomConsolidada => ({
   ultimaSalidaAt: t("10:30"),
   esHostOCohost: false,
   claveSesiones: ["s1"],
-  estadoConciliacion: "SIN_CONCILIAR"
+  estadoConciliacion: "SIN_CONCILIAR",
 });
 
 function crear(opciones: { ocurrencia?: any; existentes?: string[] } = {}) {
@@ -44,7 +47,9 @@ function crear(opciones: { ocurrencia?: any; existentes?: string[] } = {}) {
           id: "o1",
           uuid: "u1",
           eventoProveedorId: "e1",
-          eventoProveedor: { instancia: { inicioProgramadoAt: t("10:00"), finProgramadoAt: t("11:00") } }
+          eventoProveedor: {
+            instancia: { inicioProgramadoAt: t("10:00"), finProgramadoAt: t("11:00") },
+          },
         }
       : opciones.ocurrencia;
   const existentes = new Set(opciones.existentes ?? []);
@@ -53,14 +58,16 @@ function crear(opciones: { ocurrencia?: any; existentes?: string[] } = {}) {
     ocurrenciaArchivoZoom: {
       findUnique: vi.fn(async () => ocurrencia),
       // Ámbito para consolidar: la propia ocurrencia, sin sesiones previas persistidas en el doble.
-      findMany: vi.fn(async () => (ocurrencia ? [{ id: ocurrencia.id, sesionesAsistencia: [] }] : []))
+      findMany: vi.fn(async () =>
+        ocurrencia ? [{ id: ocurrencia.id, sesionesAsistencia: [] }] : [],
+      ),
     },
     sesionAsistenciaZoom: {
       createMany: vi.fn(async ({ data }: any) => ({
-        count: data.filter((d: any) => !existentes.has(d.claveSesion)).length
+        count: data.filter((d: any) => !existentes.has(d.claveSesion)).length,
       })),
       deleteMany: vi.fn(),
-      delete: vi.fn()
+      delete: vi.fn(),
     },
     registroAsistenciaZoom: {
       findMany: vi.fn(async () => [...existentes].map((c) => ({ claveParticipante: c }))),
@@ -68,8 +75,8 @@ function crear(opciones: { ocurrencia?: any; existentes?: string[] } = {}) {
       update: vi.fn(async () => ({})),
       updateMany: vi.fn(async (..._a: any[]) => ({ count: 1 })),
       deleteMany: vi.fn(),
-      delete: vi.fn()
-    }
+      delete: vi.fn(),
+    },
   };
   const db = { $transaction: async (fn: any) => fn(tx) } as unknown as PrismaClient;
   return { tx, repo: crearPrismaAsistenciaZoomRepositoryAdapter({ db }) };
@@ -85,10 +92,13 @@ describe("repositorio de asistencia Zoom (unidad)", () => {
     });
     expect(r).toMatchObject({ tipo: "GUARDADO" });
     expect(recibido).toEqual([{ ocurrenciaId: "o1", sesiones: [] }]);
-    const orden = (m: { mock: { invocationCallOrder: number[] } }) => m.mock.invocationCallOrder[0]!;
-    expect(orden(tx.$executeRaw as never)).toBeLessThan(orden(tx.sesionAsistenciaZoom.createMany as never));
+    const orden = (m: { mock: { invocationCallOrder: number[] } }) =>
+      m.mock.invocationCallOrder[0]!;
+    expect(orden(tx.$executeRaw as never)).toBeLessThan(
+      orden(tx.sesionAsistenciaZoom.createMany as never),
+    );
     expect(orden(tx.sesionAsistenciaZoom.createMany as never)).toBeLessThan(
-      orden(tx.ocurrenciaArchivoZoom.findMany as never)
+      orden(tx.ocurrenciaArchivoZoom.findMany),
     );
   });
 
@@ -106,43 +116,49 @@ describe("repositorio de asistencia Zoom (unidad)", () => {
       "o1",
       VERSION,
       [sesion("s1"), sesion("s2")],
-      [resumen("id:p1")]
+      [resumen("id:p1")],
     );
     expect(r).toMatchObject({
       tipo: "GUARDADO",
       sesionesNuevas: 2,
       registrosCreados: 1,
-      registrosActualizados: 0
+      registrosActualizados: 0,
     });
-    expect(tx.sesionAsistenciaZoom.createMany.mock.calls[0]![0]).toMatchObject({ skipDuplicates: true });
-    const filas = (tx.registroAsistenciaZoom.createMany.mock.calls[0]![0] as any).data;
+    expect(tx.sesionAsistenciaZoom.createMany.mock.calls[0]![0]).toMatchObject({
+      skipDuplicates: true,
+    });
+    const filas = tx.registroAsistenciaZoom.createMany.mock.calls[0]![0].data;
     expect(filas[0]).toMatchObject({
       claveAmbito: "evento:e1",
       eventoProveedorId: "e1",
       ocurrenciaId: "o1",
-      claveParticipante: "id:p1"
+      claveParticipante: "id:p1",
     });
   });
 
   it("sin encuentro el ámbito es la ocurrencia", async () => {
     const { tx, repo } = crear({
-      ocurrencia: { id: "o1", uuid: "u1", eventoProveedorId: null, eventoProveedor: null }
+      ocurrencia: { id: "o1", uuid: "u1", eventoProveedorId: null, eventoProveedor: null },
     });
     await repo.guardarSesionesYResumen(
       "o1",
       { ...VERSION, eventoProveedorId: null, inicioProgramadoAt: null, finProgramadoAt: null },
       [],
-      [resumen("id:p1")]
+      [resumen("id:p1")],
     );
-    const fila = (tx.registroAsistenciaZoom.createMany.mock.calls[0]![0] as any).data[0];
-    expect(fila).toMatchObject({ claveAmbito: "ocurrencia:o1", eventoProveedorId: null, ocurrenciaId: "o1" });
+    const fila = tx.registroAsistenciaZoom.createMany.mock.calls[0]![0].data[0];
+    expect(fila).toMatchObject({
+      claveAmbito: "ocurrencia:o1",
+      eventoProveedorId: null,
+      ocurrenciaId: "o1",
+    });
   });
 
   it("al actualizar un registro existente solo toca campos calculados: conciliación, invitado, externo, notas y versión sobreviven", async () => {
     const { tx, repo } = crear({ existentes: ["id:p1"] });
     const r = await repo.guardarSesionesYResumen("o1", VERSION, [], [resumen("id:p1")]);
     expect(r).toMatchObject({ registrosCreados: 0, registrosActualizados: 1 });
-    const data = (tx.registroAsistenciaZoom.updateMany.mock.calls[0]![0] as any).data;
+    const data = tx.registroAsistenciaZoom.updateMany.mock.calls[0]![0].data;
     for (const campo of [
       "estadoConciliacion",
       "invitadoReunionId",
@@ -150,7 +166,7 @@ describe("repositorio de asistencia Zoom (unidad)", () => {
       "notasOperador",
       "version",
       "claveAmbito",
-      "claveParticipante"
+      "claveParticipante",
     ]) {
       expect(data).not.toHaveProperty(campo);
     }
@@ -163,29 +179,42 @@ describe("repositorio de asistencia Zoom (unidad)", () => {
         id: "o1",
         uuid: "OTRO",
         eventoProveedorId: "e1",
-        eventoProveedor: { instancia: { inicioProgramadoAt: t("10:00"), finProgramadoAt: t("11:00") } }
+        eventoProveedor: {
+          instancia: { inicioProgramadoAt: t("10:00"), finProgramadoAt: t("11:00") },
+        },
       },
       {
         id: "o1",
         uuid: "u1",
         eventoProveedorId: "e2",
-        eventoProveedor: { instancia: { inicioProgramadoAt: t("10:00"), finProgramadoAt: t("11:00") } }
+        eventoProveedor: {
+          instancia: { inicioProgramadoAt: t("10:00"), finProgramadoAt: t("11:00") },
+        },
       },
       {
         id: "o1",
         uuid: "u1",
         eventoProveedorId: "e1",
-        eventoProveedor: { instancia: { inicioProgramadoAt: t("10:30"), finProgramadoAt: t("11:00") } }
+        eventoProveedor: {
+          instancia: { inicioProgramadoAt: t("10:30"), finProgramadoAt: t("11:00") },
+        },
       },
       {
         id: "o1",
         uuid: "u1",
         eventoProveedorId: "e1",
-        eventoProveedor: { instancia: { inicioProgramadoAt: t("10:00"), finProgramadoAt: t("11:30") } }
-      }
+        eventoProveedor: {
+          instancia: { inicioProgramadoAt: t("10:00"), finProgramadoAt: t("11:30") },
+        },
+      },
     ]) {
       const { tx, repo } = crear({ ocurrencia });
-      const r = await repo.guardarSesionesYResumen("o1", VERSION, [sesion("s1")], [resumen("id:p1")]);
+      const r = await repo.guardarSesionesYResumen(
+        "o1",
+        VERSION,
+        [sesion("s1")],
+        [resumen("id:p1")],
+      );
       expect(r).toEqual({ tipo: "REPROGRAMADO" });
       expect(tx.sesionAsistenciaZoom.createMany).not.toHaveBeenCalled();
       expect(tx.registroAsistenciaZoom.createMany).not.toHaveBeenCalled();
@@ -195,7 +224,7 @@ describe("repositorio de asistencia Zoom (unidad)", () => {
   it("ocurrencia inexistente no escribe", async () => {
     const { tx, repo } = crear({ ocurrencia: null });
     expect(await repo.guardarSesionesYResumen("x", VERSION, [], [])).toEqual({
-      tipo: "OCURRENCIA_NO_ENCONTRADA"
+      tipo: "OCURRENCIA_NO_ENCONTRADA",
     });
     expect(tx.sesionAsistenciaZoom.createMany).not.toHaveBeenCalled();
   });
@@ -218,8 +247,8 @@ describe("repositorio de asistencia Zoom (unidad)", () => {
         estadoConciliacion: "SIN_CONCILIAR",
         invitadoReunionId: null,
         esExterno: null,
-        notasOperador: null
-      }
+        notasOperador: null,
+      },
     });
   });
 
@@ -228,10 +257,10 @@ describe("repositorio de asistencia Zoom (unidad)", () => {
     await repo.guardarSesionesYResumen(
       "o1",
       VERSION,
-      [{ ...sesion("s1"), ...({ download_url: "https://x", token: "t" } as object) } as any],
-      []
+      [{ ...sesion("s1"), ...({ download_url: "https://x", token: "t" } as object) }],
+      [],
     );
-    const fila = (tx.sesionAsistenciaZoom.createMany.mock.calls[0]![0] as any).data[0];
+    const fila = tx.sesionAsistenciaZoom.createMany.mock.calls[0]![0].data[0];
     expect(Object.keys(fila).sort()).toEqual(
       [
         "claveSesion",
@@ -243,8 +272,8 @@ describe("repositorio de asistencia Zoom (unidad)", () => {
         "rol",
         "salidaAt",
         "status",
-        "userId"
-      ].sort()
+        "userId",
+      ].sort(),
     );
   });
 });

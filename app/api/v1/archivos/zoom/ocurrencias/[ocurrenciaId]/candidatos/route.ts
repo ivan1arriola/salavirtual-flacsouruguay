@@ -4,7 +4,10 @@ import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
 export const runtime = "nodejs";
 import { listarEncuentrosCandidatosZoomAdmin } from "@/src/bootstrap/zoom-historico.server";
-export async function GET(_request: Request, context: { params: Promise<{ ocurrenciaId: string }> }) {
+export async function GET(
+  _request: Request,
+  context: { params: Promise<{ ocurrenciaId: string }> },
+) {
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: "Sin sesión." }, { status: 401 });
@@ -18,7 +21,10 @@ export async function GET(_request: Request, context: { params: Promise<{ ocurre
   }
   try {
     const { ocurrenciaId } = await context.params;
-    const r = await listarEncuentrosCandidatosZoomAdmin({ id: actor.id, rol: actor.rol }, ocurrenciaId);
+    const r = await listarEncuentrosCandidatosZoomAdmin(
+      { id: actor.id, rol: actor.rol },
+      ocurrenciaId,
+    );
     if (r.tipo === "PROHIBIDO") {
       return NextResponse.json({ error: "Acceso denegado." }, { status: 403 });
     }

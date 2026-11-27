@@ -7,19 +7,22 @@ export function normalizeMeetLink(input: unknown): MeetLink | null {
   }
   const value = input.replace(/\s/g, "").toLowerCase();
   const match = value.match(
-    /^(?:(?:https?:\/\/)?meet\.google\.com\/(?:lookup\/)?)?([a-z]{3}-[a-z]{4}-[a-z]{3})(?:\/?(?:[?#][^\s]*)?)?$/
+    /^(?:(?:https?:\/\/)?meet\.google\.com\/(?:lookup\/)?)?([a-z]{3}-[a-z]{4}-[a-z]{3})(?:\/?(?:[?#][^\s]*)?)?$/,
   );
-  if (!match) {
+  const code = match?.[1];
+  if (!code) {
     return null;
   }
   // Parameters are meaningful only on URLs, never on bare codes.
-  if (!value.includes("meet.google.com/") && value !== match[1]) {
+  if (!value.includes("meet.google.com/") && value !== code) {
     return null;
   }
-  return { code: match[1], url: `https://meet.google.com/${match[1]}` };
+  return { code: code, url: `https://meet.google.com/${code}` };
 }
 
 export function meetLinks(code: unknown, url: unknown): readonly MeetLink[] {
-  const links = [normalizeMeetLink(code), normalizeMeetLink(url)].filter((x): x is MeetLink => x !== null);
+  const links = [normalizeMeetLink(code), normalizeMeetLink(url)].filter(
+    (x): x is MeetLink => x !== null,
+  );
   return [...new Map(links.map((link) => [link.code, link])).values()];
 }

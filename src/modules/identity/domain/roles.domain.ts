@@ -5,7 +5,7 @@ const MAPEO_ROLES_ANTERIORES: Readonly<Record<string, RolUsuario>> = Object.free
   CONTADURIA: "ADMINISTRACION",
   SOPORTE_ZOOM: "ASISTENTE_TECNICO",
   ASISTENTE_ZOOM: "ASISTENTE_TECNICO",
-  DOCENTE: "DOCENTE"
+  DOCENTE: "DOCENTE",
 });
 
 export function buscarRolAnterior(rol: string): RolUsuario | null {

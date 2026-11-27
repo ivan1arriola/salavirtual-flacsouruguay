@@ -10,9 +10,14 @@ const OCURRENCIA = {
   anfitrionZoomId: "host-1",
   eventoProveedorId: "e1",
   inicioProgramadoAt: t("10:00"),
-  finProgramadoAt: t("11:00")
+  finProgramadoAt: t("11:00"),
 };
-const ses = (clave: string, entra: string, sale: string, participanteId = "p1"): SesionObservadaZoom => ({
+const ses = (
+  clave: string,
+  entra: string,
+  sale: string,
+  participanteId = "p1",
+): SesionObservadaZoom => ({
   claveSesion: clave,
   participanteId,
   userId: "u",
@@ -21,19 +26,26 @@ const ses = (clave: string, entra: string, sale: string, participanteId = "p1"):
   entradaAt: t(entra),
   salidaAt: t(sale),
   status: "in_meeting",
-  rol: null
+  rol: null,
 });
 
 function crear(
-  opciones: { ocurrencia?: any; reporte?: any; error?: Error; guardado?: any; persistidas?: any[] } = {}
+  opciones: {
+    ocurrencia?: any;
+    reporte?: any;
+    error?: Error;
+    guardado?: any;
+    persistidas?: any[];
+  } = {},
 ) {
   const ocurrencia = opciones.ocurrencia === undefined ? OCURRENCIA : opciones.ocurrencia;
   const sync = {
     cargarOcurrencia: vi.fn(async () => ocurrencia),
     listarSesionesDelAmbito: vi.fn(
-      async () => opciones.persistidas ?? [{ ocurrenciaId: "o1", sesiones: [ses("c1", "10:00", "10:30")] }]
+      async () =>
+        opciones.persistidas ?? [{ ocurrenciaId: "o1", sesiones: [ses("c1", "10:00", "10:30")] }],
     ),
-    marcarEstadoReporte: vi.fn(async () => undefined)
+    marcarEstadoReporte: vi.fn(async () => undefined),
   };
   // El repositorio real calcula el resumen DENTRO de su transacción, con las sesiones del ámbito ya bloqueadas.
   const capturado: { resumen: any[] | null } = { resumen: null };
@@ -41,7 +53,7 @@ function crear(
     guardarSesionesYConsolidar: vi.fn(
       async (_id: string, _v: unknown, _s: unknown, consolidar: (a: any[]) => any[] | null) => {
         capturado.resumen = consolidar(
-          opciones.persistidas ?? [{ ocurrenciaId: "o1", sesiones: [ses("c1", "10:00", "10:30")] }]
+          opciones.persistidas ?? [{ ocurrenciaId: "o1", sesiones: [ses("c1", "10:00", "10:30")] }],
         );
         if (capturado.resumen === null) {
           return { tipo: "SIN_VENTANA" };
@@ -51,11 +63,11 @@ function crear(
             tipo: "GUARDADO",
             sesionesNuevas: 1,
             registrosCreados: 1,
-            registrosActualizados: 0
+            registrosActualizados: 0,
           }
         );
-      }
-    )
+      },
+    ),
   };
   const provider = {
     obtenerSesiones: vi.fn(async () => {
@@ -63,14 +75,14 @@ function crear(
         throw opciones.error;
       }
       return opciones.reporte ?? { estado: "DISPONIBLE", sesiones: [ses("c1", "10:00", "10:30")] };
-    })
+    }),
   };
   return {
     sync,
     repo,
     provider,
     capturado,
-    ejecutar: () => sincronizarAsistenciaZoomUseCase({ sync, repo, provider } as any, "o1")
+    ejecutar: () => sincronizarAsistenciaZoomUseCase({ sync, repo, provider } as any, "o1"),
   };
 }
 
@@ -87,7 +99,7 @@ describe("sincronizarAsistenciaZoomUseCase", () => {
       uuid: "u1",
       eventoProveedorId: "e1",
       inicioProgramadoAt: t("10:00"),
-      finProgramadoAt: t("11:00")
+      finProgramadoAt: t("11:00"),
     });
     expect(sesiones).toHaveLength(1);
     expect(resumen[0]).toMatchObject({ claveParticipante: "id:p1", minutos: 30, porcentaje: 50 });
@@ -108,13 +120,17 @@ describe("sincronizarAsistenciaZoomUseCase", () => {
   });
 
   it("reporte parcial o error de Zoom: ERROR saneado, estado ERROR y nada escrito", async () => {
-    const { repo, sync, ejecutar } = crear({ error: new Error("https://api.zoom.us/x?token=SECRETO") });
+    const { repo, sync, ejecutar } = crear({
+      error: new Error("https://api.zoom.us/x?token=SECRETO"),
+    });
     const r = await ejecutar();
     expect(r).toMatchObject({ tipo: "ERROR" });
     expect(JSON.stringify(r)).not.toMatch(/SECRETO|https?:/);
     expect(repo.guardarSesionesYConsolidar).not.toHaveBeenCalled();
     expect(sync.marcarEstadoReporte).toHaveBeenCalledWith("o1", "ERROR", expect.any(String));
-    expect(String((sync.marcarEstadoReporte.mock.calls[0] as any[])[2])).not.toMatch(/SECRETO|https?:/);
+    expect(String((sync.marcarEstadoReporte.mock.calls[0] as any[])[2])).not.toMatch(
+      /SECRETO|https?:/,
+    );
   });
 
   it("reprogramación concurrente: CONFLICTO y no se marca como disponible", async () => {
@@ -125,10 +141,18 @@ describe("sincronizarAsistenciaZoomUseCase", () => {
 
   it("ocurrencia sin encuentro vinculado: calcula sobre el horario real observado, sin ventana programada", async () => {
     const { capturado, ejecutar } = crear({
-      ocurrencia: { ...OCURRENCIA, eventoProveedorId: null, inicioProgramadoAt: null, finProgramadoAt: null },
+      ocurrencia: {
+        ...OCURRENCIA,
+        eventoProveedorId: null,
+        inicioProgramadoAt: null,
+        finProgramadoAt: null,
+      },
       persistidas: [
-        { ocurrenciaId: "o1", sesiones: [ses("c1", "10:00", "10:30"), ses("c2", "10:20", "11:00")] }
-      ]
+        {
+          ocurrenciaId: "o1",
+          sesiones: [ses("c1", "10:00", "10:30"), ses("c2", "10:20", "11:00")],
+        },
+      ],
     });
     await ejecutar();
     const resumen = capturado.resumen!;
@@ -139,8 +163,8 @@ describe("sincronizarAsistenciaZoomUseCase", () => {
     const { capturado, ejecutar } = crear({
       persistidas: [
         { ocurrenciaId: "o1", sesiones: [ses("c1", "10:00", "10:40")] },
-        { ocurrenciaId: "o2", sesiones: [ses("c2", "10:30", "11:00")] }
-      ]
+        { ocurrenciaId: "o2", sesiones: [ses("c2", "10:30", "11:00")] },
+      ],
     });
     await ejecutar();
     const resumen = capturado.resumen!;
@@ -153,8 +177,8 @@ describe("sincronizarAsistenciaZoomUseCase", () => {
       // Simula la sincronización concurrente de otra ocurrencia del mismo encuentro ya confirmada.
       persistidas: [
         { ocurrenciaId: "o1", sesiones: [ses("c1", "10:00", "10:20")] },
-        { ocurrenciaId: "o2", sesiones: [ses("c9", "10:30", "10:50")] }
-      ]
+        { ocurrenciaId: "o2", sesiones: [ses("c9", "10:30", "10:50")] },
+      ],
     });
     await ejecutar();
     expect(sync.listarSesionesDelAmbito).not.toHaveBeenCalled();
@@ -164,9 +188,14 @@ describe("sincronizarAsistenciaZoomUseCase", () => {
 
   it("sin ventana programada ni sesiones válidas: VACIO y no se guarda nada", async () => {
     const { sync, ejecutar } = crear({
-      ocurrencia: { ...OCURRENCIA, eventoProveedorId: null, inicioProgramadoAt: null, finProgramadoAt: null },
+      ocurrencia: {
+        ...OCURRENCIA,
+        eventoProveedorId: null,
+        inicioProgramadoAt: null,
+        finProgramadoAt: null,
+      },
       persistidas: [{ ocurrenciaId: "o1", sesiones: [] }],
-      reporte: { estado: "DISPONIBLE", sesiones: [] }
+      reporte: { estado: "DISPONIBLE", sesiones: [] },
     });
     expect(await ejecutar()).toEqual({ tipo: "OK", estadoReporte: "VACIO" });
     expect(sync.marcarEstadoReporte).toHaveBeenCalledWith("o1", "VACIO", null);
@@ -177,23 +206,37 @@ describe("sincronizarAsistenciaZoomUseCase", () => {
     const otra = { ...ses("c2", "10:05", "10:25", "p2"), userId: "otro-usuario" };
     const anonima = { ...ses("c3", "10:10", "10:20", "p3"), userId: null };
     const { repo, ejecutar } = crear({
-      reporte: { estado: "DISPONIBLE", sesiones: [delAnfitrion, otra, anonima] }
+      reporte: { estado: "DISPONIBLE", sesiones: [delAnfitrion, otra, anonima] },
     });
     await ejecutar();
-    const guardadas = (repo.guardarSesionesYConsolidar.mock.calls[0] as any[])[2] as SesionObservadaZoom[];
+    const guardadas = (
+      repo.guardarSesionesYConsolidar.mock.calls[0] as any[]
+    )[2] as SesionObservadaZoom[];
     expect(guardadas.map((x) => [x.claveSesion, x.rol])).toEqual([
       ["c1", "HOST"],
       ["c2", null],
-      ["c3", null]
+      ["c3", null],
     ]);
   });
 
   it("el anfitrión también se reconoce cuando Zoom lo informa en el id de participante", async () => {
-    const porId = { ...ses("c1", "10:00", "10:30", "p1"), userId: "efimero", participanteId: "host-1" };
-    const otra = { ...ses("c2", "10:05", "10:25", "p2"), userId: "efimero-2", participanteId: "p-otro" };
-    const { repo, ejecutar } = crear({ reporte: { estado: "DISPONIBLE", sesiones: [porId, otra] } });
+    const porId = {
+      ...ses("c1", "10:00", "10:30", "p1"),
+      userId: "efimero",
+      participanteId: "host-1",
+    };
+    const otra = {
+      ...ses("c2", "10:05", "10:25", "p2"),
+      userId: "efimero-2",
+      participanteId: "p-otro",
+    };
+    const { repo, ejecutar } = crear({
+      reporte: { estado: "DISPONIBLE", sesiones: [porId, otra] },
+    });
     await ejecutar();
-    const guardadas = (repo.guardarSesionesYConsolidar.mock.calls[0] as any[])[2] as SesionObservadaZoom[];
+    const guardadas = (
+      repo.guardarSesionesYConsolidar.mock.calls[0] as any[]
+    )[2] as SesionObservadaZoom[];
     expect(guardadas.map((x) => x.rol)).toEqual(["HOST", null]);
   });
 

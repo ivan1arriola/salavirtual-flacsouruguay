@@ -5,7 +5,7 @@ export const MEET_HISTORY_ACTIONS = [
   "MEET_MIGRADO_A_ESPACIO_PREVIEW",
   "MEET_GRUPO_MIGRADO_A_ESPACIO_PREVIEW",
   "ENLACE_MEET_ASIGNADO_A_SERIE",
-  "ENLACE_MEET_UNIFICADO_EN_SERIE"
+  "ENLACE_MEET_UNIFICADO_EN_SERIE",
 ] as const;
 
 export type MeetAudit = Readonly<{
@@ -46,14 +46,15 @@ function strings(value: unknown): string[] {
 function codes(value: Record<string, unknown>): string[] {
   return [
     ...new Set([
-      ...meetLinks(value.codigoReunion ?? value.codigoMeet, value.joinUrl ?? value.meetUrl).map(
-        (x) => x.code
-      ),
-      ...strings(value.codigosMeet).flatMap((x) => {
+      ...meetLinks(
+        value["codigoReunion"] ?? value["codigoMeet"],
+        value["joinUrl"] ?? value["meetUrl"],
+      ).map((x) => x.code),
+      ...strings(value["codigosMeet"]).flatMap((x) => {
         const link = normalizeMeetLink(x);
         return link ? [link.code] : [];
-      })
-    ])
+      }),
+    ]),
   ];
 }
 
@@ -72,17 +73,17 @@ export function readMeetEvidence(audit: MeetAudit): MeetEvidence | null {
     at: audit.createdAt,
     before: codes(before),
     after: codes(after),
-    origin: typeof after.origen === "string" ? after.origen : audit.accion,
+    origin: typeof after["origen"] === "string" ? after["origen"] : audit.accion,
     reason:
-      typeof after.motivo === "string"
-        ? after.motivo
+      typeof after["motivo"] === "string"
+        ? after["motivo"]
         : audit.accion.includes("MIGRADO")
           ? "Migración a un espacio Meet Preview"
           : audit.accion === "ENLACE_MEET_ASIGNADO_A_SERIE"
             ? "Asignación de enlace a la serie"
             : audit.accion === "ENLACE_MEET_UNIFICADO_EN_SERIE"
               ? "Unificación de enlaces de la serie"
-              : null
+              : null,
   };
   if (!change.before.length && !change.after.length) {
     return null;
@@ -90,7 +91,7 @@ export function readMeetEvidence(audit: MeetAudit): MeetEvidence | null {
   return {
     meetingIds: [...new Set(target.meetingIds)],
     seriesId: target.seriesId,
-    change
+    change,
   };
 }
 
@@ -101,26 +102,33 @@ export function evidenceMatches(change: MeetChange, code: string): boolean {
 function evidenceTarget(
   audit: MeetAudit,
   before: Record<string, unknown>,
-  after: Record<string, unknown>
+  after: Record<string, unknown>,
 ): Readonly<{ meetingIds: readonly string[]; seriesId: string | null }> | null {
   switch (audit.accion) {
     case "ENLACE_MEET_REGISTRADO":
       return audit.entidadTipo === "EventoProveedor"
         ? {
-            meetingIds: typeof after.instanciaSalaId === "string" ? [after.instanciaSalaId] : [],
-            seriesId: null
+            meetingIds:
+              typeof after["instanciaSalaId"] === "string" ? [after["instanciaSalaId"]] : [],
+            seriesId: null,
           }
         : null;
     case "MEET_MIGRADO_A_ESPACIO_PREVIEW":
-      return audit.entidadTipo === "InstanciaSala" ? { meetingIds: [audit.entidadId], seriesId: null } : null;
+      return audit.entidadTipo === "InstanciaSala"
+        ? { meetingIds: [audit.entidadId], seriesId: null }
+        : null;
     case "MEET_GRUPO_MIGRADO_A_ESPACIO_PREVIEW":
       return audit.entidadTipo === "InstanciaSala"
         ? {
-            meetingIds: strings(before.encuentros).filter((id) => strings(after.encuentros).includes(id)),
-            seriesId: null
+            meetingIds: strings(before["encuentros"]).filter((id) =>
+              strings(after["encuentros"]).includes(id),
+            ),
+            seriesId: null,
           }
         : null;
     default:
-      return audit.entidadTipo === "SolicitudSala" ? { meetingIds: [], seriesId: audit.entidadId } : null;
+      return audit.entidadTipo === "SolicitudSala"
+        ? { meetingIds: [], seriesId: audit.entidadId }
+        : null;
   }
 }

@@ -14,24 +14,29 @@ export type WorkspaceConfigVisible = Readonly<{
   activa: boolean;
 }>;
 
-export function WorkspaceConfigForm({ initial }: Readonly<{ initial: WorkspaceConfigVisible | null }>) {
+export function WorkspaceConfigForm({
+  initial,
+}: Readonly<{ initial: WorkspaceConfigVisible | null }>) {
   const checks = [
     ["Cuenta de servicio", Boolean(initial?.serviceAccountEmail && initial?.privateKeyConfigurada)],
     ["Delegación", Boolean(initial?.serviceAccountSubject)],
     ["Destino Drive", Boolean(initial?.driveDestinationId)],
-    ["Integración", Boolean(initial?.activa)]
+    ["Integración", Boolean(initial?.activa)],
   ] as const;
   const readiness = workspaceReadiness({
     serviceAccountEmail: initial?.serviceAccountEmail ?? null,
     privateKeyConfigurada: initial?.privateKeyConfigurada ?? false,
     serviceAccountSubject: initial?.serviceAccountSubject ?? null,
     driveDestinationId: initial?.driveDestinationId ?? null,
-    activa: initial?.activa ?? false
+    activa: initial?.activa ?? false,
   });
 
   return (
     <div className="settings-workspace-groups">
-      <section className="workspace-overview settings-wide" aria-label="Resumen de Google Workspace">
+      <section
+        className="workspace-overview settings-wide"
+        aria-label="Resumen de Google Workspace"
+      >
         <div className="workspace-overview-heading">
           <KeyRound size={21} aria-hidden="true" />
           <div>
@@ -68,7 +73,10 @@ export function WorkspaceConfigForm({ initial }: Readonly<{ initial: WorkspaceCo
 
       <WorkspaceScopesValidator />
 
-      <details className="settings-disclosure settings-disclosure--advanced" open={!initial?.activa}>
+      <details
+        className="settings-disclosure settings-disclosure--advanced"
+        open={!initial?.activa}
+      >
         <summary>
           <span className="settings-disclosure__icon">
             <SlidersHorizontal size={19} />

@@ -13,7 +13,7 @@ type Evento = Readonly<{ tipo: string; ocurridoAt: string }>;
 const fecha = new Intl.DateTimeFormat("es-UY", {
   dateStyle: "medium",
   timeStyle: "short",
-  timeZone: "America/Montevideo"
+  timeZone: "America/Montevideo",
 });
 
 function Contenido({ encuentro }: Readonly<{ encuentro: ActividadEncuentroZoom }>) {
@@ -39,7 +39,9 @@ function Contenido({ encuentro }: Readonly<{ encuentro: ActividadEncuentroZoom }
 }
 
 /** Actividad de Zoom de un solo encuentro: va dentro de su tarjeta, no a nivel de serie. */
-export function ZoomActividadEncuentro({ actividad }: Readonly<{ actividad: ActividadEncuentroZoom }>) {
+export function ZoomActividadEncuentro({
+  actividad,
+}: Readonly<{ actividad: ActividadEncuentroZoom }>) {
   return (
     <details className="zoom-series-card__activity" aria-label="Actividad de Zoom">
       <summary>

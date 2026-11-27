@@ -14,8 +14,8 @@ export async function GET(request: Request) {
         nombres: true,
         apellidos: true,
         emailPrincipal: true,
-        rol: true
-      }
+        rol: true,
+      },
     });
 
     if (!user) {
@@ -27,8 +27,8 @@ export async function GET(request: Request) {
         id: user.id,
         name: [user.nombres, user.apellidos].filter(Boolean).join(" ") || null,
         email: user.emailPrincipal,
-        role: user.rol
-      }
+        role: user.rol,
+      },
     });
   } catch (error) {
     if (error instanceof MobileActorError) {

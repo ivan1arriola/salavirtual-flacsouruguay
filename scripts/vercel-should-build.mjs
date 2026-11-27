@@ -6,7 +6,7 @@ function latestCommitMessage() {
   try {
     return execFileSync("git", ["log", "-1", "--pretty=%B"], {
       encoding: "utf8",
-      stdio: ["ignore", "pipe", "pipe"]
+      stdio: ["ignore", "pipe", "pipe"],
     }).trim();
   } catch (error) {
     console.log("No se pudo leer el commit actual; se omite el build de Vercel por seguridad.");

@@ -6,7 +6,7 @@ const roots = [
   join(process.cwd(), "app"),
   join(process.cwd(), "src/bootstrap"),
   join(process.cwd(), "src/components"),
-  join(process.cwd(), "src/modules")
+  join(process.cwd(), "src/modules"),
 ];
 
 function sourceFiles(root: string): string[] {
@@ -43,10 +43,12 @@ describe("frontera de compatibilidad del módulo meet", () => {
 
     it(`${rel} no depende de src/modules/meet`, () => {
       const hasLegacyImport =
-        source.includes("@/src/modules/meet/") || source.includes("../meet/") || source.includes("./meet/");
+        source.includes("@/src/modules/meet/") ||
+        source.includes("../meet/") ||
+        source.includes("./meet/");
       expect(
         hasLegacyImport,
-        "El código runtime debe usar conferencias, archivos o bootstrap; meet es solo compatibilidad."
+        "El código runtime debe usar conferencias, archivos o bootstrap; meet es solo compatibilidad.",
       ).toBe(false);
     });
   }

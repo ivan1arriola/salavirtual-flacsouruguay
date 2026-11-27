@@ -5,7 +5,7 @@ export type PasswordVerifier = (password: string, hash: string) => Promise<boole
 
 export function crearAutenticarCredencialesUseCase(
   repository: IdentityRepository,
-  verificarPassword: PasswordVerifier
+  verificarPassword: PasswordVerifier,
 ) {
   return async function autenticarCredenciales(input: unknown): Promise<UsuarioAutenticado | null> {
     const parsed = credencialesLoginSchema.safeParse(input);

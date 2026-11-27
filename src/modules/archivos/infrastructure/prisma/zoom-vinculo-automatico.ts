@@ -31,7 +31,7 @@ export async function vincularAutomaticamenteSiInequivoco(
     inicioRealAt: Date;
     eventoProveedorId: string | null;
     ahora: Date;
-  }>
+  }>,
 ): Promise<ResultadoVinculoAutomaticoZoom> {
   if (entrada.eventoProveedorId !== null) {
     return { tipo: "YA_VINCULADA" };
@@ -40,7 +40,7 @@ export async function vincularAutomaticamenteSiInequivoco(
   const porUuid = await tx.eventoProveedor.findMany({
     where: { zoomMeetingUuid: entrada.uuid, proveedor: { tipo: { in: TIPOS_ZOOM } } },
     select: { id: true },
-    take: 2
+    take: 2,
   });
   if (porUuid.length > 1) {
     return { tipo: "AMBIGUA" };
@@ -56,11 +56,11 @@ export async function vincularAutomaticamenteSiInequivoco(
   const contienen = await tx.eventoProveedor.findMany({
     where: {
       ...base,
-      instancia: { inicioProgramadoAt: { lte: real }, finProgramadoAt: { gte: real } }
+      instancia: { inicioProgramadoAt: { lte: real }, finProgramadoAt: { gte: real } },
     },
     select: seleccion,
     orderBy: { id: "asc" },
-    take: 2
+    take: 2,
   });
   // Solo si ninguno lo contiene se admite un inicio anticipado (hasta 45 min antes del horario).
   const elegidos =
@@ -72,14 +72,14 @@ export async function vincularAutomaticamenteSiInequivoco(
             instancia: {
               inicioProgramadoAt: {
                 gt: real,
-                lte: new Date(real.getTime() + TOLERANCIA_INICIO_ANTICIPADO_MS)
+                lte: new Date(real.getTime() + TOLERANCIA_INICIO_ANTICIPADO_MS),
               },
-              finProgramadoAt: { gte: real }
-            }
+              finProgramadoAt: { gte: real },
+            },
           },
           select: seleccion,
           orderBy: { id: "asc" },
-          take: 2
+          take: 2,
         });
   if (elegidos.length === 0) {
     return { tipo: "SIN_COINCIDENCIA" };
@@ -94,12 +94,12 @@ async function vincular(
   tx: Prisma.TransactionClient,
   entrada: Readonly<{ ocurrenciaId: string; ahora: Date }>,
   eventoProveedorId: string,
-  criterio: CriterioVinculo
+  criterio: CriterioVinculo,
 ): Promise<ResultadoVinculoAutomaticoZoom> {
   // Condicional: si otra operación la vinculó entre medias no se pisa ni se audita.
   const { count } = await tx.ocurrenciaArchivoZoom.updateMany({
     where: { id: entrada.ocurrenciaId, eventoProveedorId: null },
-    data: { eventoProveedorId, vinculadaAt: entrada.ahora, vinculadaPorId: null }
+    data: { eventoProveedorId, vinculadaAt: entrada.ahora, vinculadaPorId: null },
   });
   if (count === 0) {
     return { tipo: "YA_VINCULADA" };
@@ -111,8 +111,8 @@ async function vincular(
       entidadTipo: "OcurrenciaArchivoZoom",
       entidadId: entrada.ocurrenciaId,
       valorAnterior: { eventoProveedorId: null },
-      valorNuevo: { eventoProveedorId, criterio }
-    }
+      valorNuevo: { eventoProveedorId, criterio },
+    },
   });
   // La asistencia sincronizada antes del vínculo vivía bajo la ocurrencia: pasa al encuentro.
   await trasladarAsistenciaAlEncuentro(tx, entrada.ocurrenciaId, eventoProveedorId);

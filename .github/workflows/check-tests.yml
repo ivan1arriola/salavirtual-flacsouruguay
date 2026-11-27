@@ -33,12 +33,13 @@ jobs:
         shell: bash
         run: |
           if [[ -f coverage/coverage-summary.json ]]; then
-            node -e '
-              const t = JSON.parse(require("fs").readFileSync("coverage/coverage-summary.json", "utf8")).total;
+            node <<'NODE' >> "$GITHUB_STEP_SUMMARY"
+              const report = JSON.parse(require("fs").readFileSync("coverage/coverage-summary.json", "utf8"));
+              const t = report.total;
               const fila = (n, k) => `| ${n} | ${t[k].pct}% | ${t[k].covered}/${t[k].total} |`;
-              console.log(["## Cobertura (umbral 80%)", "", "| Métrica | Cobertura | Cubierto |", "| --- | --- | --- |",
+              console.log(["## Cobertura integral (95% líneas, sentencias y funciones; 90% ramas)", "", "| Métrica | Cobertura | Cubierto |", "| --- | --- | --- |",
                 fila("Líneas", "lines"), fila("Sentencias", "statements"), fila("Funciones", "functions"), fila("Ramas", "branches")].join("\n"));
-            ' >> "$GITHUB_STEP_SUMMARY"
+          NODE
           else
             echo "No se generó informe de cobertura." >> "$GITHUB_STEP_SUMMARY"
           fi

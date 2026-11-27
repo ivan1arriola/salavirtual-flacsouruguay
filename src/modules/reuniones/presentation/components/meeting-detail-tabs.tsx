@@ -14,7 +14,7 @@ const ICONS = {
   encuentros: CalendarDays,
   personas: UsersRound,
   archivos: FolderOpen,
-  actividad: Activity
+  actividad: Activity,
 } as const;
 
 /**

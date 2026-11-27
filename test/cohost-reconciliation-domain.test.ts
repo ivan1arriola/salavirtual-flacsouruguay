@@ -10,9 +10,9 @@ describe("reconciliación de cohosts administrados por Sala Virtual", () => {
         [
           { name: "members/old", email: "anterior@flacso.edu.uy", role: "COHOST" },
           { name: "members/teacher", email: "docente@flacso.edu.uy", role: "COHOST" },
-          { name: "members/manual", email: "manual@flacso.edu.uy", role: "COHOST" }
-        ]
-      )
+          { name: "members/manual", email: "manual@flacso.edu.uy", role: "COHOST" },
+        ],
+      ),
     ).toEqual(["members/old"]);
   });
 });

@@ -7,11 +7,11 @@ describe("slug persistente de asistentes", () => {
     await expect(
       crearSlugAsistenteDisponible(
         {
-          asistenteTecnico: { findUnique }
+          asistenteTecnico: { findUnique },
         } as never,
         "Iván Arriola",
-        "ivan.arriola.t"
-      )
+        "ivan.arriola.t",
+      ),
     ).resolves.toBe("ivan-arriola");
   });
 
@@ -20,11 +20,11 @@ describe("slug persistente de asistentes", () => {
     await expect(
       crearSlugAsistenteDisponible(
         {
-          asistenteTecnico: { findUnique }
+          asistenteTecnico: { findUnique },
         } as never,
         "Ana Pérez",
-        "ana.perez.2"
-      )
+        "ana.perez.2",
+      ),
     ).resolves.toBe("ana-perez--ana-perez-2");
   });
 });

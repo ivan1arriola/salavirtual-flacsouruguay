@@ -5,9 +5,11 @@ const TAMANO_PAGINA = 50;
 /** Consulta solo importaciones; no convierte sus enlaces en enlaces operativos. */
 export async function consultarRegistrosZoomImportados(
   db: PrismaClient,
-  parametros: Readonly<{ busqueda?: string | string[]; pagina?: string | string[] }>
+  parametros: Readonly<{ busqueda?: string | string[]; pagina?: string | string[] }>,
 ) {
-  const busqueda = (typeof parametros.busqueda === "string" ? parametros.busqueda : "").trim().slice(0, 120);
+  const busqueda = (typeof parametros.busqueda === "string" ? parametros.busqueda : "")
+    .trim()
+    .slice(0, 120);
   const valorPagina = typeof parametros.pagina === "string" ? parametros.pagina : "";
   const paginaSolicitada = /^\d+$/.test(valorPagina) ? Math.max(1, Number(valorPagina)) : 1;
   if (busqueda) {
@@ -33,7 +35,7 @@ export async function consultarRegistrosZoomImportados(
           OR strpos(regexp_replace(lower(normalize(coalesce(cuenta."emailOrganizador", ''), NFD)), '[̀-ͯ]', '', 'g'), ${termino}) > 0
         )`;
     const [{ total: cantidad }] = await db.$queryRaw<Array<{ total: bigint }>>(
-      Prisma.sql`SELECT count(*) AS total ${fuentes}`
+      Prisma.sql`SELECT count(*) AS total ${fuentes}`,
     );
     const total = Number(cantidad);
     const totalPaginas = Math.max(1, Math.ceil(total / TAMANO_PAGINA));
@@ -50,12 +52,14 @@ export async function consultarRegistrosZoomImportados(
           include: {
             solicitud: {
               include: {
-                docentePrograma: { include: { programa: true, docente: { include: { usuario: true } } } }
-              }
-            }
-          }
-        }
-      }
+                docentePrograma: {
+                  include: { programa: true, docente: { include: { usuario: true } } },
+                },
+              },
+            },
+          },
+        },
+      },
     });
     const porId = new Map(registrosSinOrden.map((registro) => [registro.id, registro]));
     const registros = ids.flatMap(({ id }) => {
@@ -79,12 +83,14 @@ export async function consultarRegistrosZoomImportados(
         include: {
           solicitud: {
             include: {
-              docentePrograma: { include: { programa: true, docente: { include: { usuario: true } } } }
-            }
-          }
-        }
-      }
-    }
+              docentePrograma: {
+                include: { programa: true, docente: { include: { usuario: true } } },
+              },
+            },
+          },
+        },
+      },
+    },
   });
   return { registros, pagina, totalPaginas, total, busqueda };
 }

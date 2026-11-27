@@ -13,5 +13,5 @@ const repo = crearPrismaIdentityAdapter(db);
 export const dependenciasLoginLocal: DependenciasLogin = Object.freeze({
   buscarUsuario: (identificador) => repo.buscarParaLoginLocal(identificador),
   verificarPassword: compare,
-  registrarAcceso: (usuarioId) => repo.registrarAcceso(usuarioId, "credentials")
+  registrarAcceso: (usuarioId) => repo.registrarAcceso(usuarioId, "credentials"),
 });

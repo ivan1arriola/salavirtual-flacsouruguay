@@ -9,7 +9,7 @@ import {
   type LiquidacionesRepositoryPort,
   type PlanillaPagosExporterPort,
   type ServicioLiquidaciones,
-  type TarifasRepositoryPort
+  type TarifasRepositoryPort,
 } from "@/src/modules/liquidaciones/api";
 
 export function crearTarifasRepository(): TarifasRepositoryPort {
@@ -29,7 +29,7 @@ export function obtenerServicioLiquidaciones(): ServicioLiquidaciones {
     liquidacionesRepo: crearLiquidacionesRepository(),
     tarifasRepo: crearTarifasRepository(),
     exporter: crearPlanillaPagosExporter(),
-    enviarCorreo: (input) => enviarCorreoConfigurado(db, input)
+    enviarCorreo: (input) => enviarCorreoConfigurado(db, input),
   });
 }
 

@@ -11,11 +11,14 @@ export type SaludWorkerZoom = Readonly<{
  */
 export async function comprobarSaludWorkerZoom(
   entrada: Readonly<{
-    workspace: Readonly<{ driveDestinationId?: string | null; serviceAccountSubject?: string | null }> | null;
+    workspace: Readonly<{
+      driveDestinationId?: string | null;
+      serviceAccountSubject?: string | null;
+    }> | null;
     zoomDisponible: boolean;
     driveHistoricoId: string | null;
     verificarEscritura: (carpetaId: string) => Promise<boolean>;
-  }>
+  }>,
 ): Promise<SaludWorkerZoom> {
   const motivos: string[] = [];
   const avisos: string[] = [];
@@ -30,7 +33,9 @@ export async function comprobarSaludWorkerZoom(
     }
     if (!entrada.workspace.driveDestinationId) {
       motivos.push("Falta la carpeta de destino de Drive (driveDestinationId).");
-    } else if (!(await comprobar(entrada.verificarEscritura, entrada.workspace.driveDestinationId))) {
+    } else if (
+      !(await comprobar(entrada.verificarEscritura, entrada.workspace.driveDestinationId))
+    ) {
       motivos.push("Sin permiso de escritura en la carpeta de destino de Drive.");
     }
   }
@@ -40,13 +45,16 @@ export async function comprobarSaludWorkerZoom(
     }
   } else {
     avisos.push(
-      "ZOOM_ARCHIVOS_DRIVE_HISTORICO_ID no está definido: los históricos sin vincular quedarán en espera."
+      "ZOOM_ARCHIVOS_DRIVE_HISTORICO_ID no está definido: los históricos sin vincular quedarán en espera.",
     );
   }
   return { ok: motivos.length === 0, motivos, avisos };
 }
 
-async function comprobar(verificar: (id: string) => Promise<boolean>, id: string): Promise<boolean> {
+async function comprobar(
+  verificar: (id: string) => Promise<boolean>,
+  id: string,
+): Promise<boolean> {
   try {
     return await verificar(id);
   } catch {

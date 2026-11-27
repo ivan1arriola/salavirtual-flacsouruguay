@@ -1,5 +1,9 @@
 import { ForbiddenApiError } from "@/src/lib/http/api-error";
-import { estadoInteresParaAccion, postulacionAsistenciaSchema, puedeGestionarPostulacion } from "../domain";
+import {
+  estadoInteresParaAccion,
+  postulacionAsistenciaSchema,
+  puedeGestionarPostulacion,
+} from "../domain";
 import type { AsistenciaRepositoryPort } from "../ports";
 
 export type SessionActor = Readonly<{
@@ -16,7 +20,7 @@ export type ActualizarPostulacionDeps = Readonly<{
 export async function actualizarPostulacionUseCase(
   deps: ActualizarPostulacionDeps,
   actor: SessionActor,
-  rawInput: unknown
+  rawInput: unknown,
 ) {
   if (!puedeGestionarPostulacion(actor.rol) || !actor.activo) {
     throw new ForbiddenApiError("Solo un asistente de monitoreo puede gestionar postulaciones.");
@@ -25,7 +29,9 @@ export async function actualizarPostulacionUseCase(
 
   const assistant = await deps.repo.obtenerPerfilAsistentePorUsuarioId(actor.id);
   if (!assistant?.activo || assistant.cesadoHastaProximoInicioSesion) {
-    throw new ForbiddenApiError("No existe un perfil de asistente de monitoreo activo para esta sesión.");
+    throw new ForbiddenApiError(
+      "No existe un perfil de asistente de monitoreo activo para esta sesión.",
+    );
   }
 
   const estado = estadoInteresParaAccion(input.accion);
@@ -33,7 +39,7 @@ export async function actualizarPostulacionUseCase(
     instanciaSalaId: input.instanciaSalaId,
     asistenteTecnicoId: assistant.id,
     estado,
-    comentario: input.comentario
+    comentario: input.comentario,
   });
 
   return { ok: true, accion: input.accion, estado };

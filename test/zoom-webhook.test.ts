@@ -4,7 +4,7 @@ import {
   interpretarAvisoZoom,
   interpretarAvisoAdicionalZoom,
   respuestaValidacionZoom,
-  verificarFirmaWebhookZoom
+  verificarFirmaWebhookZoom,
 } from "../src/integrations/zoom/zoom-webhook";
 
 const ahora = new Date("2026-11-13T12:00:00Z");
@@ -22,9 +22,9 @@ const cuerpo = JSON.stringify({
       topic: "Seminario",
       start_time: "2026-11-13T10:00:00Z",
       end_time: "2026-11-13T11:00:00Z",
-      recording_files: [{ download_url: "https://secret.example/archivo" }]
-    }
-  }
+      recording_files: [{ download_url: "https://secret.example/archivo" }],
+    },
+  },
 });
 const firma = (body: string, ts = timestamp) => {
   const mensaje = ["v0", ts, body].join(":");
@@ -34,13 +34,21 @@ const firma = (body: string, ts = timestamp) => {
 describe("webhook firmado de Zoom", () => {
   it("comprueba cuerpo crudo, sello de tiempo y firma sin aceptar variantes vencidas", () => {
     expect(verificarFirmaWebhookZoom(secreto, cuerpo, timestamp, firma(cuerpo), ahora)).toBe(true);
-    expect(verificarFirmaWebhookZoom(secreto, `${cuerpo} `, timestamp, firma(cuerpo), ahora)).toBe(false);
-    expect(verificarFirmaWebhookZoom(`${secreto}x`, cuerpo, timestamp, firma(cuerpo), ahora)).toBe(false);
+    expect(verificarFirmaWebhookZoom(secreto, `${cuerpo} `, timestamp, firma(cuerpo), ahora)).toBe(
+      false,
+    );
+    expect(verificarFirmaWebhookZoom(`${secreto}x`, cuerpo, timestamp, firma(cuerpo), ahora)).toBe(
+      false,
+    );
     expect(verificarFirmaWebhookZoom(secreto, cuerpo, timestamp, null, ahora)).toBe(false);
     const viejo = String(Number(timestamp) - 301);
-    expect(verificarFirmaWebhookZoom(secreto, cuerpo, viejo, firma(cuerpo, viejo), ahora)).toBe(false);
+    expect(verificarFirmaWebhookZoom(secreto, cuerpo, viejo, firma(cuerpo, viejo), ahora)).toBe(
+      false,
+    );
     const futuro = String(Number(timestamp) + 301);
-    expect(verificarFirmaWebhookZoom(secreto, cuerpo, futuro, firma(cuerpo, futuro), ahora)).toBe(false);
+    expect(verificarFirmaWebhookZoom(secreto, cuerpo, futuro, firma(cuerpo, futuro), ahora)).toBe(
+      false,
+    );
   });
 
   it("interpreta los identificadores de AI Companion y grabaciones en lote documentados por Zoom", () => {
@@ -50,8 +58,8 @@ describe("webhook firmado de Zoom", () => {
       event: "meeting.ai_companion_started",
       payload: {
         account_id: "cuenta",
-        object: { meeting_number: 123, meeting_uuid: "uuid-1", ai_companion: { summary: true } }
-      }
+        object: { meeting_number: 123, meeting_uuid: "uuid-1", ai_companion: { summary: true } },
+      },
     });
     expect(interpretarAvisoAdicionalZoom(ai)).toMatchObject({ recursoId: "123", uuid: "uuid-1" });
     const resumen = JSON.stringify({
@@ -59,19 +67,25 @@ describe("webhook firmado de Zoom", () => {
       event: "meeting.summary_completed",
       payload: {
         account_id: "cuenta",
-        object: { meeting_id: 456, meeting_uuid: "uuid-2" }
-      }
+        object: { meeting_id: 456, meeting_uuid: "uuid-2" },
+      },
     });
-    expect(interpretarAvisoAdicionalZoom(resumen)).toMatchObject({ recursoId: "456", uuid: "uuid-2" });
+    expect(interpretarAvisoAdicionalZoom(resumen)).toMatchObject({
+      recursoId: "456",
+      uuid: "uuid-2",
+    });
     const lote = JSON.stringify({
       ...base,
       event: "recording.batch_deleted",
       payload: {
         account_id: "cuenta",
         object: {
-          meetings: [{ meeting_uuid: "uuid-1", recording_file_ids: ["secreto"] }, { meeting_uuid: "uuid-2" }]
-        }
-      }
+          meetings: [
+            { meeting_uuid: "uuid-1", recording_file_ids: ["secreto"] },
+            { meeting_uuid: "uuid-2" },
+          ],
+        },
+      },
     });
     const resultado = interpretarAvisoAdicionalZoom(lote);
     expect(resultado).toMatchObject({ uuids: ["uuid-1", "uuid-2"] });
@@ -81,21 +95,23 @@ describe("webhook firmado de Zoom", () => {
       event: "recording.batch_trashed",
       payload: {
         account_id: "cuenta",
-        object: { meeting_uuids: ["uuid-1", "uuid-2"] }
-      }
+        object: { meeting_uuids: ["uuid-1", "uuid-2"] },
+      },
     });
     expect(interpretarAvisoAdicionalZoom(papelera)).toMatchObject({ uuids: ["uuid-1", "uuid-2"] });
   });
 
   it("responde al desafío y conserva solo metadatos mínimos del aviso", () => {
     expect(respuestaValidacionZoom(secreto, "desafio").encryptedToken).toBe(
-      createHmac("sha256", secreto).update("desafio").digest("hex")
+      createHmac("sha256", secreto).update("desafio").digest("hex"),
     );
     const aviso = interpretarAvisoZoom(cuerpo);
     expect(aviso).toMatchObject({ tipo: "meeting.ended", uuid: "a/b//c", meetingId: "123456789" });
     expect(JSON.stringify(aviso)).not.toContain("secret.example");
     expect(
-      interpretarAvisoZoom(JSON.stringify({ ...JSON.parse(cuerpo), event: "meeting.participant_joined" }))
+      interpretarAvisoZoom(
+        JSON.stringify({ ...JSON.parse(cuerpo), event: "meeting.participant_joined" }),
+      ),
     ).toBeNull();
   });
 
@@ -114,16 +130,16 @@ describe("webhook firmado de Zoom", () => {
             old_role: "attendee",
             new_role: "co-host",
             user_name: "Nombre privado",
-            email: "privado@example.org"
-          }
-        }
-      }
+            email: "privado@example.org",
+          },
+        },
+      },
     });
     const resultado = interpretarAvisoAdicionalZoom(cambioRol);
     expect(resultado).toMatchObject({
       tipo: "meeting.participant_role_changed",
       participanteId: "participante-opaco",
-      detalle: "Rol: participante → coanfitrión"
+      detalle: "Rol: participante → coanfitrión",
     });
     expect(resultado?.participanteNombre).toBe("Nombre privado");
     expect(resultado?.participanteEmail).toBe("privado@example.org");
@@ -136,13 +152,13 @@ describe("webhook firmado de Zoom", () => {
         object: {
           id: 123,
           uuid: "uuid-1",
-          participant: { participant_user_id: "id-participante" }
-        }
-      }
+          participant: { participant_user_id: "id-participante" },
+        },
+      },
     });
     expect(interpretarAvisoAdicionalZoom(espera)).toMatchObject({
       tipo: "meeting.participant_jbh_waiting_left",
-      participanteId: "id-participante"
+      participanteId: "id-participante",
     });
   });
 });
@@ -154,8 +170,8 @@ vi.mock("../src/lib/db", () => ({
   db: {
     eventoWebhookZoom: { createMany: crear },
     eventoWebhookZoomAdicional: { createMany: crearAdicional },
-    configuracionZoom: { findUnique: buscarConfiguracion }
-  }
+    configuracionZoom: { findUnique: buscarConfiguracion },
+  },
 }));
 vi.mock("../src/lib/config/encryption", () => ({ descifrarConfiguracion: () => secreto }));
 import { POST } from "../app/api/v1/webhooks/zoom/route";
@@ -165,9 +181,9 @@ function peticion(body: string, signed = true) {
     method: "POST",
     headers: {
       "x-zm-request-timestamp": String(Math.floor(Date.now() / 1000)),
-      ...(signed ? { "x-zm-signature": firma(body, String(Math.floor(Date.now() / 1000))) } : {})
+      ...(signed ? { "x-zm-signature": firma(body, String(Math.floor(Date.now() / 1000))) } : {}),
     },
-    body
+    body,
   });
 }
 
@@ -180,8 +196,13 @@ afterEach(() => {
 describe("recepción durable", () => {
   it("valida el desafío, rechaza firmas falsas y persiste avisos sin procesarlos en la ruta", async () => {
     buscarConfiguracion.mockResolvedValue({ webhookSecretCifrado: "cifrado" });
-    const desafio = JSON.stringify({ event: "endpoint.url_validation", payload: { plainToken: "abc" } });
-    expect(await (await POST(peticion(desafio))).json()).toEqual(respuestaValidacionZoom(secreto, "abc"));
+    const desafio = JSON.stringify({
+      event: "endpoint.url_validation",
+      payload: { plainToken: "abc" },
+    });
+    expect(await (await POST(peticion(desafio))).json()).toEqual(
+      respuestaValidacionZoom(secreto, "abc"),
+    );
     expect((await POST(peticion(cuerpo, false))).status).toBe(401);
     crear.mockResolvedValue({ count: 1 });
     expect((await POST(peticion(cuerpo))).status).toBe(204);
@@ -195,7 +216,11 @@ describe("recepción durable", () => {
     const grupo = JSON.stringify({
       event: "group.created",
       event_ts: Date.now(),
-      payload: { account_id: "cuenta-zoom", object: { id: "grupo-1", name: "privado" }, token: "secreto" }
+      payload: {
+        account_id: "cuenta-zoom",
+        object: { id: "grupo-1", name: "privado" },
+        token: "secreto",
+      },
     });
     expect((await POST(peticion(grupo))).status).toBe(204);
     expect(crearAdicional).toHaveBeenCalledWith(
@@ -204,11 +229,11 @@ describe("recepción durable", () => {
           expect.objectContaining({
             tipo: "group.created",
             cuentaZoomId: "cuenta-zoom",
-            recursoId: "grupo-1"
-          })
+            recursoId: "grupo-1",
+          }),
         ],
-        skipDuplicates: true
-      })
+        skipDuplicates: true,
+      }),
     );
     expect(JSON.stringify(crearAdicional.mock.calls)).not.toContain("secreto");
     expect(JSON.stringify(crearAdicional.mock.calls)).not.toContain("privado");
@@ -231,11 +256,11 @@ describe("recepción durable", () => {
               participant_uuid: "p-1",
               user_name: "Ana Pérez",
               email: "ana@x.uy",
-              public_ip: "ip-privada"
+              public_ip: "ip-privada",
             },
-            ...extra
-          }
-        }
+            ...extra,
+          },
+        },
       });
     // Serie: mismo Meeting ID, UUID distintos; llegan desordenados y uno repetido.
     const cuerpos = [
@@ -243,7 +268,7 @@ describe("recepción durable", () => {
       evento("meeting.participant_joined", "uuid-A", 1000),
       evento("meeting.participant_joined", "uuid-A", 1000),
       evento("meeting.alert", "uuid-A", 2000, { issues: ["Unstable audio quality"] }),
-      evento("recording.started", "uuid-B", 2500)
+      evento("recording.started", "uuid-B", 2500),
     ];
     for (const c of cuerpos) {
       expect((await POST(peticion(c))).status).toBe(204);
@@ -270,10 +295,13 @@ describe("recepción durable", () => {
     const huerfano = JSON.stringify({
       event: "meeting.sharing_started",
       event_ts: 5,
-      payload: { account_id: "cuenta", object: { id: 9 } }
+      payload: { account_id: "cuenta", object: { id: 9 } },
     });
     expect((await POST(peticion(huerfano))).status).toBe(204);
-    expect(crearAdicional.mock.calls[0][0].data[0]).toMatchObject({ uuid: null, participanteId: null });
+    expect(crearAdicional.mock.calls[0][0].data[0]).toMatchObject({
+      uuid: null,
+      participanteId: null,
+    });
     expect((await POST(peticion(huerfano, false))).status).toBe(401);
     expect(crearAdicional).toHaveBeenCalledTimes(1);
     crearAdicional.mockRejectedValue(new Error("DB caída"));
@@ -286,7 +314,7 @@ describe("recepción durable", () => {
     const evento = {
       event: "meeting.participant_joined",
       event_ts: Date.now(),
-      payload: { account_id: "cuenta", object: { id: 123 } }
+      payload: { account_id: "cuenta", object: { id: 123 } },
     };
     expect((await POST(peticion(JSON.stringify(evento)))).status).toBe(503);
     expect((await POST(peticion(JSON.stringify({ ...evento, payload: {} })))).status).toBe(503);

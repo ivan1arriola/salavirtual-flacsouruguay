@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { Prisma } from "@prisma/client";
+import type { Prisma } from "@prisma/client";
 import { JWT } from "google-auth-library";
 import { db } from "../src/lib/db";
 import { normalizeCohostEmails } from "../src/modules/meet/cohosts.domain";
@@ -115,10 +115,10 @@ async function main(): Promise<void> {
           creadaPor: {
             select: {
               emailPrincipal: true,
-              cuentasGoogle: { select: { email: true } }
-            }
-          }
-        }
+              cuentasGoogle: { select: { email: true } },
+            },
+          },
+        },
       },
       asignaciones: {
         where: { estado: { in: ["ASIGNADO", "ACEPTADO"] } },
@@ -128,12 +128,12 @@ async function main(): Promise<void> {
               usuario: {
                 select: {
                   emailPrincipal: true,
-                  cuentasGoogle: { select: { email: true } }
-                }
-              }
-            }
-          }
-        }
+                  cuentasGoogle: { select: { email: true } },
+                },
+              },
+            },
+          },
+        },
       },
       cohosts: { select: { cuentaGoogle: { select: { email: true } } } },
       cohostEmails: { select: { email: true } },
@@ -145,11 +145,11 @@ async function main(): Promise<void> {
           codigoReunion: true,
           joinUrl: true,
           payloadUltimo: true,
-          cuentaProveedor: { select: { emailOrganizador: true } }
+          cuentaProveedor: { select: { emailOrganizador: true } },
         },
-        take: 1
-      }
-    }
+        take: 1,
+      },
+    },
   });
 
   if (!meeting) {
@@ -171,31 +171,35 @@ async function main(): Promise<void> {
     ...meeting.cohosts.map(({ cuentaGoogle }) => cuentaGoogle.email),
     ...meeting.cohostEmails.map(({ email }) => email),
     ...requester.cuentasGoogle.map(({ email }) => email),
-    ...(requester.cuentasGoogle.length === 0 && requester.emailPrincipal ? [requester.emailPrincipal] : []),
+    ...(requester.cuentasGoogle.length === 0 && requester.emailPrincipal
+      ? [requester.emailPrincipal]
+      : []),
     ...assistants.flatMap((assistant) => assistant.cuentasGoogle.map(({ email }) => email)),
     ...assistants.flatMap((assistant) =>
-      assistant.cuentasGoogle.length === 0 && assistant.emailPrincipal ? [assistant.emailPrincipal] : []
-    )
+      assistant.cuentasGoogle.length === 0 && assistant.emailPrincipal
+        ? [assistant.emailPrincipal]
+        : [],
+    ),
   ]).filter((email) => email !== organizer);
 
   const calendarAuth = new JWT({
     email: serviceAccountEmail,
     key: privateKey,
     subject: organizer,
-    scopes: [CALENDAR_SCOPE]
+    scopes: [CALENDAR_SCOPE],
   });
   const meetAuth = new JWT({
     email: serviceAccountEmail,
     key: privateKey,
     subject: organizer,
-    scopes: [MEET_CREATED_SCOPE, MEET_SETTINGS_SCOPE, MEET_READ_SCOPE]
+    scopes: [MEET_CREATED_SCOPE, MEET_SETTINGS_SCOPE, MEET_READ_SCOPE],
   });
 
   const calendarUrl = `${CALENDAR_API}/calendars/${encodeURIComponent(organizer)}/events/${encodeURIComponent(event.externalEventId)}`;
   const currentCalendar = await calendarAuth.request<CalendarEvent>({
     url: `${calendarUrl}?conferenceDataVersion=1`,
     method: "GET",
-    timeout: TIMEOUT_MS
+    timeout: TIMEOUT_MS,
   });
 
   const previousConferenceData = currentCalendar.data.conferenceData;
@@ -222,11 +226,11 @@ async function main(): Promise<void> {
         willCreateNewMeetSpace: true,
         willKeepCalendarEvent: true,
         willReplaceConferenceData: true,
-        willUpdateDatabaseAfterCalendarVerification: true
+        willUpdateDatabaseAfterCalendarVerification: true,
       },
       null,
-      2
-    )
+      2,
+    ),
   );
 
   if (!apply) {
@@ -243,16 +247,18 @@ async function main(): Promise<void> {
         accessType: "TRUSTED",
         attendanceReportGenerationType: meeting.requiereAsistenciaTecnica
           ? "GENERATE_REPORT"
-          : "DO_NOT_GENERATE"
-      }
-    }
+          : "DO_NOT_GENERATE",
+      },
+    },
   });
 
   const newSpaceName = created.data.name;
   const newMeetingCode = created.data.meetingCode;
   const newJoinUrl = created.data.meetingUri;
   if (!newSpaceName || !newMeetingCode || !newJoinUrl) {
-    throw new Error("Google Meet no devolvió name, meetingCode y meetingUri para el nuevo espacio.");
+    throw new Error(
+      "Google Meet no devolvió name, meetingCode y meetingUri para el nuevo espacio.",
+    );
   }
 
   for (const cohost of desiredCohosts) {
@@ -260,19 +266,19 @@ async function main(): Promise<void> {
       url: `${MEET_API}/${newSpaceName}/members`,
       method: "POST",
       timeout: TIMEOUT_MS,
-      data: { email: cohost, role: "COHOST" }
+      data: { email: cohost, role: "COHOST" },
     });
   }
 
   const listed = await meetAuth.request<{ members?: Array<{ email?: string; role?: string }> }>({
     url: `${MEET_API}/${newSpaceName}/members?pageSize=100`,
     method: "GET",
-    timeout: TIMEOUT_MS
+    timeout: TIMEOUT_MS,
   });
   const actualCohosts = new Set(
     (listed.data.members ?? [])
       .filter(({ role }) => role === "COHOST")
-      .flatMap(({ email }) => (email ? [email.trim().toLowerCase()] : []))
+      .flatMap(({ email }) => (email ? [email.trim().toLowerCase()] : [])),
   );
   const missingCohosts = desiredCohosts.filter((email) => !actualCohosts.has(email));
   if (missingCohosts.length > 0) {
@@ -283,16 +289,16 @@ async function main(): Promise<void> {
     conferenceId: newMeetingCode,
     conferenceSolution: {
       key: { type: "hangoutsMeet" },
-      name: "Google Meet"
+      name: "Google Meet",
     },
     entryPoints: [
       {
         entryPointType: "video",
         uri: newJoinUrl,
         label: newJoinUrl.replace(/^https?:\/\//, ""),
-        meetingCode: newMeetingCode
-      }
-    ]
+        meetingCode: newMeetingCode,
+      },
+    ],
   };
 
   let calendarChanged = false;
@@ -301,18 +307,18 @@ async function main(): Promise<void> {
       url: `${calendarUrl}?conferenceDataVersion=1&sendUpdates=${encodeURIComponent(sendUpdates)}`,
       method: "PATCH",
       timeout: TIMEOUT_MS,
-      data: { conferenceData: newConferenceData }
+      data: { conferenceData: newConferenceData },
     });
     calendarChanged = true;
 
     const verified = await calendarAuth.request<CalendarEvent>({
       url: `${calendarUrl}?conferenceDataVersion=1`,
       method: "GET",
-      timeout: TIMEOUT_MS
+      timeout: TIMEOUT_MS,
     });
 
     const verifiedVideoUrl = verified.data.conferenceData?.entryPoints?.find(
-      ({ entryPointType }) => entryPointType === "video"
+      ({ entryPointType }) => entryPointType === "video",
     )?.uri;
     if (
       verified.data.hangoutLink !== newJoinUrl ||
@@ -336,8 +342,8 @@ async function main(): Promise<void> {
           errorIntegracion: null,
           conferenceRecordName: null,
           archivosSincronizadosAt: null,
-          errorArchivos: null
-        }
+          errorArchivos: null,
+        },
       });
 
       await tx.auditoria.create({
@@ -348,7 +354,7 @@ async function main(): Promise<void> {
           valorAnterior: toJson({
             codigoReunion: previousMeetingCode,
             joinUrl: previousJoinUrl,
-            calendarEventId: event.externalEventId
+            calendarEventId: event.externalEventId,
           }),
           valorNuevo: toJson({
             codigoReunion: newMeetingCode,
@@ -356,9 +362,9 @@ async function main(): Promise<void> {
             calendarEventId: event.externalEventId,
             spaceName: newSpaceName,
             cohosts: desiredCohosts,
-            sendUpdates
-          })
-        }
+            sendUpdates,
+          }),
+        },
       });
     });
 
@@ -375,11 +381,11 @@ async function main(): Promise<void> {
           newMeetingCode,
           newJoinUrl,
           cohostsVerified: desiredCohosts,
-          sendUpdates
+          sendUpdates,
         },
         null,
-        2
-      )
+        2,
+      ),
     );
   } catch (error) {
     if (calendarChanged && previousConferenceData) {
@@ -388,18 +394,18 @@ async function main(): Promise<void> {
           url: `${calendarUrl}?conferenceDataVersion=1&sendUpdates=none`,
           method: "PATCH",
           timeout: TIMEOUT_MS,
-          data: { conferenceData: previousConferenceData }
+          data: { conferenceData: previousConferenceData },
         });
         console.error(
           JSON.stringify(
             {
               rollbackCalendar: true,
               restoredMeetingCode: previousMeetingCode,
-              restoredJoinUrl: previousJoinUrl
+              restoredJoinUrl: previousJoinUrl,
             },
             null,
-            2
-          )
+            2,
+          ),
         );
       } catch (rollbackError) {
         console.error(
@@ -409,11 +415,12 @@ async function main(): Promise<void> {
               critical: true,
               previousMeetingCode,
               previousJoinUrl,
-              rollbackError: rollbackError instanceof Error ? rollbackError.message : String(rollbackError)
+              rollbackError:
+                rollbackError instanceof Error ? rollbackError.message : String(rollbackError),
             },
             null,
-            2
-          )
+            2,
+          ),
         );
       }
     }

@@ -4,7 +4,7 @@ import {
   resolverVinculacionSubjectGoogle,
   type CuentaGoogleVinculada,
   type PerfilGoogle,
-  type UsuarioCredenciales
+  type UsuarioCredenciales,
 } from "../domain";
 import type { IdentityRepository } from "../ports";
 
@@ -17,7 +17,7 @@ const loginSelect = {
   fusionadoEnId: true,
   emailPrincipal: true,
   nombres: true,
-  apellidos: true
+  apellidos: true,
 } as const;
 
 type PrismaIdentityDb = Pick<
@@ -39,7 +39,7 @@ export function crearPrismaIdentityAdapter(db: PrismaIdentityDb): IdentityReposi
 
       const usuarioPorId = await db.usuario.findUnique({
         where: { id: normalizado },
-        select: loginSelect
+        select: loginSelect,
       });
 
       const usuario =
@@ -49,11 +49,17 @@ export function crearPrismaIdentityAdapter(db: PrismaIdentityDb): IdentityReposi
               where: {
                 OR: [
                   { emailPrincipal: { equals: normalizado, mode: "insensitive" } },
-                  { emailAliases: { some: { email: { equals: normalizado, mode: "insensitive" } } } },
-                  { cuentasGoogle: { some: { email: { equals: normalizado, mode: "insensitive" } } } }
-                ]
+                  {
+                    emailAliases: { some: { email: { equals: normalizado, mode: "insensitive" } } },
+                  },
+                  {
+                    cuentasGoogle: {
+                      some: { email: { equals: normalizado, mode: "insensitive" } },
+                    },
+                  },
+                ],
               },
-              select: loginSelect
+              select: loginSelect,
             })
           : null);
 
@@ -71,27 +77,27 @@ export function crearPrismaIdentityAdapter(db: PrismaIdentityDb): IdentityReposi
         activo: usuario.activo,
         fusionadoEnId: usuario.fusionadoEnId,
         nombre: nombre || null,
-        email: usuario.emailPrincipal
+        email: usuario.emailPrincipal,
       };
     },
 
     async registrarAcceso(
       usuarioId: string,
       proveedor: "credentials" | "google",
-      fecha = new Date()
+      fecha = new Date(),
     ): Promise<void> {
       await db.$transaction(async (tx: any) => {
         await tx.usuario.update({
           where: { id: usuarioId },
-          data: { ultimoAccesoAt: fecha, ultimoProveedor: proveedor }
+          data: { ultimoAccesoAt: fecha, ultimoProveedor: proveedor },
         });
 
         const reactivados = await tx.asistenteTecnico.updateMany({
           where: {
             usuarioId,
-            cesadoHastaProximoInicioSesion: true
+            cesadoHastaProximoInicioSesion: true,
           },
-          data: { cesadoHastaProximoInicioSesion: false }
+          data: { cesadoHastaProximoInicioSesion: false },
         });
 
         if (reactivados.count === 0) {
@@ -105,38 +111,40 @@ export function crearPrismaIdentityAdapter(db: PrismaIdentityDb): IdentityReposi
             entidadTipo: "Usuario",
             entidadId: usuarioId,
             valorAnterior: { cesadoHastaProximoInicioSesion: true },
-            valorNuevo: { cesadoHastaProximoInicioSesion: false, proveedor }
-          }
+            valorNuevo: { cesadoHastaProximoInicioSesion: false, proveedor },
+          },
         });
       });
     },
 
     async resolverOCrearCuentaGoogle(
       perfil: PerfilGoogle,
-      fecha = new Date()
+      fecha = new Date(),
     ): Promise<CuentaGoogleVinculada | null> {
       const email = perfil.email.trim().toLowerCase();
 
       const cuenta = await db.$transaction(async (tx: any) => {
         const existingAccount = await tx.cuentaGoogleFlacso.findFirst({
           where: { email: { equals: email, mode: "insensitive" } },
-          include: { user: true }
+          include: { user: true },
         });
 
         if (existingAccount) {
           const subjectOwner = await tx.cuentaGoogleFlacso.findUnique({
             where: { providerAccountId: perfil.subject },
-            select: { id: true }
+            select: { id: true },
           });
 
           const decision = resolverVinculacionSubjectGoogle(
             existingAccount.providerAccountId,
             perfil.subject,
-            Boolean(subjectOwner && subjectOwner.id !== existingAccount.id)
+            Boolean(subjectOwner && subjectOwner.id !== existingAccount.id),
           );
 
           if (decision === "RECHAZAR") {
-            console.warn("Login Google rechazado: el identificador del proveedor pertenece a otra cuenta");
+            console.warn(
+              "Login Google rechazado: el identificador del proveedor pertenece a otra cuenta",
+            );
             return null;
           }
 
@@ -149,9 +157,9 @@ export function crearPrismaIdentityAdapter(db: PrismaIdentityDb): IdentityReposi
               where: { id: existingAccount.id },
               data: {
                 providerAccountId: perfil.subject,
-                emailVerificadoAt: fecha
+                emailVerificadoAt: fecha,
               },
-              include: { user: true }
+              include: { user: true },
             });
 
             await tx.auditoria.create({
@@ -161,8 +169,8 @@ export function crearPrismaIdentityAdapter(db: PrismaIdentityDb): IdentityReposi
                 entidadTipo: "CuentaGoogleFlacso",
                 entidadId: existingAccount.id,
                 valorAnterior: { providerAccountId: existingAccount.providerAccountId },
-                valorNuevo: { providerAccountId: perfil.subject }
-              }
+                valorNuevo: { providerAccountId: perfil.subject },
+              },
             });
 
             return updated;
@@ -179,7 +187,7 @@ export function crearPrismaIdentityAdapter(db: PrismaIdentityDb): IdentityReposi
               providerAccountId: perfil.subject,
               nombres: nombresGoogle(perfil, email),
               apellidos: apellidosGoogle(perfil),
-              imagenUrl: null
+              imagenUrl: null,
             },
             update: {
               providerAccountId: perfil.subject,
@@ -187,15 +195,15 @@ export function crearPrismaIdentityAdapter(db: PrismaIdentityDb): IdentityReposi
               apellidos: apellidosGoogle(perfil),
               estado: "PENDIENTE",
               aprobadaPorUsuarioId: null,
-              aprobadaAt: null
-            }
+              aprobadaAt: null,
+            },
           });
           return null;
         }
 
         const existingUser = await tx.usuario.findFirst({
           where: { emailPrincipal: { equals: email, mode: "insensitive" } },
-          include: { docente: { select: { id: true } } }
+          include: { docente: { select: { id: true } } },
         });
 
         if (existingUser && (!existingUser.activo || existingUser.fusionadoEnId)) {
@@ -213,9 +221,9 @@ export function crearPrismaIdentityAdapter(db: PrismaIdentityDb): IdentityReposi
               emailVerificadoAt: fecha,
               rol: "DOCENTE",
               activo: true,
-              docente: { create: {} }
+              docente: { create: {} },
             },
-            include: { docente: { select: { id: true } } }
+            include: { docente: { select: { id: true } } },
           }));
 
         if (user.rol === "DOCENTE" && !user.docente) {
@@ -229,9 +237,9 @@ export function crearPrismaIdentityAdapter(db: PrismaIdentityDb): IdentityReposi
             dominio: dominioEmail(email),
             providerAccountId: perfil.subject,
             emailVerificadoAt: fecha,
-            ultimoAccesoAt: fecha
+            ultimoAccesoAt: fecha,
           },
-          include: { user: true }
+          include: { user: true },
         });
 
         await tx.auditoria.create({
@@ -240,8 +248,8 @@ export function crearPrismaIdentityAdapter(db: PrismaIdentityDb): IdentityReposi
             accion: existingUser ? "CUENTA_GOOGLE_AUTOVINCULADA" : "USUARIO_GOOGLE_AUTOREGISTRADO",
             entidadTipo: "Usuario",
             entidadId: user.id,
-            valorNuevo: { email, proveedor: "google" }
-          }
+            valorNuevo: { email, proveedor: "google" },
+          },
         });
 
         return createdAccount;
@@ -262,20 +270,24 @@ export function crearPrismaIdentityAdapter(db: PrismaIdentityDb): IdentityReposi
           activo: cuenta.user.activo,
           fusionadoEnId: cuenta.user.fusionadoEnId,
           nombre: [cuenta.user.nombres, cuenta.user.apellidos].filter(Boolean).join(" "),
-          email: cuenta.user.emailPrincipal
-        }
+          email: cuenta.user.emailPrincipal,
+        },
       };
     },
 
-    async actualizarUltimoAccesoGoogle(cuentaId: string, subject: string, fecha = new Date()): Promise<void> {
+    async actualizarUltimoAccesoGoogle(
+      cuentaId: string,
+      subject: string,
+      fecha = new Date(),
+    ): Promise<void> {
       await db.cuentaGoogleFlacso.update({
         where: { id: cuentaId },
         data: {
           providerAccountId: subject,
-          ultimoAccesoAt: fecha
-        }
+          ultimoAccesoAt: fecha,
+        },
       });
-    }
+    },
   };
 }
 

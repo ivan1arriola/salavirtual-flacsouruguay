@@ -10,7 +10,7 @@ export type DesvincularAsistenteDeps = Readonly<{
 export async function desvincularAsistenteUseCase(
   deps: DesvincularAsistenteDeps,
   actor: SessionActor,
-  rawInput: unknown
+  rawInput: unknown,
 ) {
   const puedeDesvincular = puedeAsignarAsistencia(actor.rol) || actor.rol === "ASISTENTE_TECNICO";
   if (!puedeDesvincular || !actor.activo) {

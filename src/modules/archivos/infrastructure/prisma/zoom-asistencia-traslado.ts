@@ -21,7 +21,7 @@ const conDecisiones = (r: {
 export async function trasladarAsistenciaAlEncuentro(
   tx: Prisma.TransactionClient,
   ocurrenciaId: string,
-  eventoProveedorId: string
+  eventoProveedorId: string,
 ): Promise<void> {
   const destino = `evento:${eventoProveedorId}`;
   // Mismo bloqueo por ámbito que la sincronización de asistencia: si una sincronización está guardando bajo
@@ -33,14 +33,14 @@ export async function trasladarAsistenciaAlEncuentro(
   }
   const [origen, existentes] = await Promise.all([
     tx.registroAsistenciaZoom.findMany({ where: { claveAmbito: `ocurrencia:${ocurrenciaId}` } }),
-    tx.registroAsistenciaZoom.findMany({ where: { claveAmbito: destino } })
+    tx.registroAsistenciaZoom.findMany({ where: { claveAmbito: destino } }),
   ]);
   const porClave = new Map(existentes.map((e) => [e.claveParticipante, e]));
   const libres = origen.filter((r) => !porClave.has(r.claveParticipante)).map((r) => r.id);
   if (libres.length > 0) {
     await tx.registroAsistenciaZoom.updateMany({
       where: { id: { in: libres } },
-      data: { claveAmbito: destino, eventoProveedorId }
+      data: { claveAmbito: destino, eventoProveedorId },
     });
   }
   let fusionados = 0;
@@ -54,8 +54,8 @@ export async function trasladarAsistenciaAlEncuentro(
         data: {
           claveAmbito: destino,
           eventoProveedorId,
-          claveParticipante: `${previo.claveParticipante}#previo-${previo.id}`
-        }
+          claveParticipante: `${previo.claveParticipante}#previo-${previo.id}`,
+        },
       });
     if (!conDecisiones(previo)) {
       const { count } = await tx.registroAsistenciaZoom.deleteMany({
@@ -63,8 +63,8 @@ export async function trasladarAsistenciaAlEncuentro(
           id: previo.id,
           version: previo.version,
           estadoConciliacion: "SIN_CONCILIAR",
-          notasOperador: null
-        }
+          notasOperador: null,
+        },
       });
       if (count === 0) {
         await conservarPrevia();
@@ -77,11 +77,13 @@ export async function trasladarAsistenciaAlEncuentro(
           invitadoReunionId: previo.invitadoReunionId,
           esExterno: previo.esExterno,
           notasOperador: previo.notasOperador,
-          version: { increment: 1 }
-        }
+          version: { increment: 1 },
+        },
       });
       if (count === 1) {
-        await tx.registroAsistenciaZoom.deleteMany({ where: { id: previo.id, version: previo.version } });
+        await tx.registroAsistenciaZoom.deleteMany({
+          where: { id: previo.id, version: previo.version },
+        });
       } else {
         await conservarPrevia();
       }
@@ -94,7 +96,7 @@ export async function trasladarAsistenciaAlEncuentro(
   if (fusionados > 0) {
     await tx.ocurrenciaArchivoZoom.updateMany({
       where: { id: ocurrenciaId },
-      data: { estadoAsistencia: "PENDIENTE" }
+      data: { estadoAsistencia: "PENDIENTE" },
     });
   }
 }

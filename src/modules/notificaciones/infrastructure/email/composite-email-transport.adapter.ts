@@ -4,7 +4,7 @@ import type { EmailTransportPort } from "../../ports";
 export function crearCompositeEmailTransport(
   gmailTransport: EmailTransportPort,
   smtpTransport: EmailTransportPort,
-  sesTransport?: EmailTransportPort
+  sesTransport?: EmailTransportPort,
 ): EmailTransportPort {
   return {
     async enviarCorreo(input: MailInput): Promise<MailSendResult> {
@@ -19,7 +19,7 @@ export function crearCompositeEmailTransport(
       const normalizedInput: MailInput = {
         ...input,
         to: recipients,
-        cc: copies
+        cc: copies,
       };
 
       if (sesTransport) {
@@ -40,7 +40,7 @@ export function crearCompositeEmailTransport(
       }
       // Fallback only when NO Gmail request was attempted.
       return smtpTransport.enviarCorreo(normalizedInput);
-    }
+    },
   };
 }
 

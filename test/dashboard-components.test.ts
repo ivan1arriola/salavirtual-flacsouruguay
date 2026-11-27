@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   determinarEstadoTemporal,
-  formatearTiempoHastaReunion
+  formatearTiempoHastaReunion,
 } from "../src/modules/dashboard/dashboard.domain";
 
 describe("componentes compartidos de dashboard", () => {

@@ -14,7 +14,7 @@ export function WorkspaceDelegationForm({ subject }: Readonly<{ subject: string 
     setMessage("Guardando…");
     const result = await saveWorkspaceSection({
       seccion: "DELEGACION",
-      serviceAccountSubject: formData.get("serviceAccountSubject")
+      serviceAccountSubject: formData.get("serviceAccountSubject"),
     });
     setSuccess(result.ok);
     setMessage(result.message);

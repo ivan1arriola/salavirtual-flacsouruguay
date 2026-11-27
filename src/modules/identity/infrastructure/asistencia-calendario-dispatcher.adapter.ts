@@ -3,7 +3,7 @@ import type { CalendarioAsistenteDispatcher } from "../ports";
 
 export type SincronizarCalendariosAsistenteUsuarioFn = (
   dependencies: any,
-  usuarioId: string
+  usuarioId: string,
 ) => Promise<unknown>;
 
 export type AsistenciaCalendarioDependencies = Readonly<{
@@ -15,7 +15,7 @@ export type AsistenciaCalendarioDependencies = Readonly<{
 }>;
 
 export function crearAsistenciaCalendarioDispatcher(
-  deps: AsistenciaCalendarioDependencies
+  deps: AsistenciaCalendarioDependencies,
 ): CalendarioAsistenteDispatcher {
   return {
     async reconciliarCalendarioAsistente(usuarioId: string): Promise<void> {
@@ -25,13 +25,13 @@ export function crearAsistenciaCalendarioDispatcher(
             db: deps.db,
             descifrar: deps.descifrar,
             publicarEvento: deps.publicarEvento,
-            eliminarEvento: deps.eliminarEvento
+            eliminarEvento: deps.eliminarEvento,
           },
-          usuarioId
+          usuarioId,
         );
       } catch (error) {
         console.warn("No se pudo completar el backfill de Google Calendar del asistente", error);
       }
-    }
+    },
   };
 }

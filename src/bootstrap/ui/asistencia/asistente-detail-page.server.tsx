@@ -17,7 +17,7 @@ import { obtenerAsistenciasEnRango } from "@/src/modules/asistencia/resumen-pers
 
 export default async function AsistenteDetailPage({
   params,
-  searchParams
+  searchParams,
 }: Readonly<{
   params: Promise<{ usuarioId: string }>;
   searchParams: Promise<{ mes?: string }>;
@@ -30,13 +30,13 @@ export default async function AsistenteDetailPage({
   const period = resolverPeriodoMes(query.mes, new Date());
   const assistantBySlug = await db.asistenteTecnico.findUnique({
     where: { slug: pathSegment },
-    include: { usuario: { include: { cuentasGoogle: { select: { id: true } } } } }
+    include: { usuario: { include: { cuentasGoogle: { select: { id: true } } } } },
   });
   const assistant =
     assistantBySlug ??
     (await db.asistenteTecnico.findUnique({
       where: { usuarioId: userIdFromAssistantPath(pathSegment) },
-      include: { usuario: { include: { cuentasGoogle: { select: { id: true } } } } }
+      include: { usuario: { include: { cuentasGoogle: { select: { id: true } } } } },
     }));
   if (!assistant) {
     notFound();
@@ -52,10 +52,10 @@ export default async function AsistenteDetailPage({
         estado: { in: ["ASIGNADO", "ACEPTADO"] },
         instancia: {
           estado: "PROGRAMADA",
-          finProgramadoAt: { gte: new Date() }
-        }
-      }
-    })
+          finProgramadoAt: { gte: new Date() },
+        },
+      },
+    }),
   ]);
   const summary = resumirAsistencias(meetings);
   const missingRates = meetings.filter(({ monto }) => monto === null).length;

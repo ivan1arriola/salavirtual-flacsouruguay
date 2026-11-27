@@ -6,7 +6,7 @@ import {
   SEPARACION_MINIMA_ASISTENCIAS_MINUTOS,
   type ModalidadAsistencia,
   type RegistroAsistenciaPersonal,
-  type RegistroHistorialAsistenciaPersonal
+  type RegistroHistorialAsistenciaPersonal,
 } from "../../domain";
 import type {
   ActualizarPostulacionInput,
@@ -15,7 +15,7 @@ import type {
   AssistantProfile,
   DisponibilidadSemanalInput,
   MeetingCoverInfo,
-  ReportarDuracionInput
+  ReportarDuracionInput,
 } from "../../ports";
 
 const ACTIVE_ASSIGNMENTS = ["ASIGNADO", "ACEPTADO"] as const;
@@ -30,9 +30,15 @@ export function crearPrismaAsistenciaRepositoryAdapter(db: PrismaClient): Asiste
           usuarioId: true,
           cesadoHastaProximoInicioSesion: true,
           usuario: {
-            select: { activo: true, rol: true, nombres: true, apellidos: true, emailPrincipal: true }
-          }
-        }
+            select: {
+              activo: true,
+              rol: true,
+              nombres: true,
+              apellidos: true,
+              emailPrincipal: true,
+            },
+          },
+        },
       });
 
       if (!assistant || assistant.usuario.rol !== "ASISTENTE_TECNICO") {
@@ -46,7 +52,7 @@ export function crearPrismaAsistenciaRepositoryAdapter(db: PrismaClient): Asiste
         nombre: nombre || "Asistente de monitoreo",
         email: assistant.usuario.emailPrincipal,
         activo: assistant.usuario.activo,
-        cesadoHastaProximoInicioSesion: Boolean(assistant.cesadoHastaProximoInicioSesion)
+        cesadoHastaProximoInicioSesion: Boolean(assistant.cesadoHastaProximoInicioSesion),
       };
     },
 
@@ -63,9 +69,9 @@ export function crearPrismaAsistenciaRepositoryAdapter(db: PrismaClient): Asiste
             asignaciones: {
               where: { estado: { in: [...ACTIVE_ASSIGNMENTS] } },
               select: { id: true },
-              take: 1
-            }
-          }
+              take: 1,
+            },
+          },
         });
 
         if (
@@ -83,39 +89,40 @@ export function crearPrismaAsistenciaRepositoryAdapter(db: PrismaClient): Asiste
           where: {
             instanciaSalaId_asistenteTecnicoId: {
               instanciaSalaId: meeting.id,
-              asistenteTecnicoId: input.asistenteTecnicoId
-            }
+              asistenteTecnicoId: input.asistenteTecnicoId,
+            },
           },
           create: {
             instanciaSalaId: meeting.id,
             asistenteTecnicoId: input.asistenteTecnicoId,
             estado: input.estado,
-            comentario: input.comentario
+            comentario: input.comentario,
           },
           update: {
             estado: input.estado,
-            comentario: input.comentario
-          }
+            comentario: input.comentario,
+          },
         });
 
         const assistant = await tx.asistenteTecnico.findUnique({
           where: { id: input.asistenteTecnicoId },
-          select: { usuarioId: true }
+          select: { usuarioId: true },
         });
 
         if (assistant) {
           await tx.auditoria.create({
             data: {
               actorUsuarioId: assistant.usuarioId,
-              accion: input.estado === "ME_INTERESA" ? "POSTULACION_REGISTRADA" : "POSTULACION_RETIRADA",
+              accion:
+                input.estado === "ME_INTERESA" ? "POSTULACION_REGISTRADA" : "POSTULACION_RETIRADA",
               entidadTipo: "InstanciaSala",
               entidadId: meeting.id,
               valorNuevo: {
                 asistenteTecnicoId: input.asistenteTecnicoId,
                 estado: input.estado,
-                comentario: input.comentario ?? null
-              }
-            }
+                comentario: input.comentario ?? null,
+              },
+            },
           });
         }
       });
@@ -124,14 +131,14 @@ export function crearPrismaAsistenciaRepositoryAdapter(db: PrismaClient): Asiste
     async reservarYAsignarAsistente(
       instanciaSalaId: string,
       asistenteTecnicoId: string,
-      adminUsuarioId: string
+      adminUsuarioId: string,
     ): Promise<AsignacionRow> {
       return db.$transaction(async (tx) => {
         await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`flacso-meet:asistente:${asistenteTecnicoId}`}))`;
 
         const admin = await tx.usuario.findUnique({
           where: { id: adminUsuarioId },
-          select: { id: true, activo: true, rol: true }
+          select: { id: true, activo: true, rol: true },
         });
         if (!admin?.activo || admin.rol !== "ADMINISTRACION") {
           throw new ForbiddenApiError("La sesión de Administración ya no es válida.");
@@ -152,21 +159,23 @@ export function crearPrismaAsistenciaRepositoryAdapter(db: PrismaClient): Asiste
               select: {
                 id: true,
                 titulo: true,
-                modalidad: true
-              }
+                modalidad: true,
+              },
             },
             asignaciones: {
               where: { estado: { in: [...ACTIVE_ASSIGNMENTS] } },
-              select: { id: true, asistenteTecnicoId: true }
-            }
-          }
+              select: { id: true, asistenteTecnicoId: true },
+            },
+          },
         });
 
         if (!meeting?.requiereAsistenciaTecnica || meeting.estado !== "PROGRAMADA") {
           throw new ConflictApiError("La reunión no requiere cobertura o ya no está programada.");
         }
         if (meeting.finProgramadoAt <= new Date()) {
-          throw new ConflictApiError("No se puede asignar monitoreo a una reunión que ya finalizó.");
+          throw new ConflictApiError(
+            "No se puede asignar monitoreo a una reunión que ya finalizó.",
+          );
         }
 
         const currentActive = meeting.asignaciones[0];
@@ -185,10 +194,10 @@ export function crearPrismaAsistenciaRepositoryAdapter(db: PrismaClient): Asiste
                 activo: true,
                 rol: true,
                 emailPrincipal: true,
-                cuentasGoogle: { select: { id: true } }
-              }
-            }
-          }
+                cuentasGoogle: { select: { id: true } },
+              },
+            },
+          },
         });
 
         if (
@@ -205,7 +214,7 @@ export function crearPrismaAsistenciaRepositoryAdapter(db: PrismaClient): Asiste
           (!meeting.inicioAsistenciaTecnicaAt || !meeting.finAsistenciaTecnicaAt)
         ) {
           throw new ConflictApiError(
-            "Definí la hora exacta de llegada y salida del asistente antes de asignar una reunión híbrida."
+            "Definí la hora exacta de llegada y salida del asistente antes de asignar una reunión híbrida.",
           );
         }
         const inicioAsistencia = meeting.inicioAsistenciaTecnicaAt ?? meeting.inicioProgramadoAt;
@@ -216,7 +225,7 @@ export function crearPrismaAsistenciaRepositoryAdapter(db: PrismaClient): Asiste
             asistenteTecnicoId,
             estado: { in: [...ACTIVE_ASSIGNMENTS] },
             instanciaSalaId: { not: meeting.id },
-            instancia: { estado: "PROGRAMADA" }
+            instancia: { estado: "PROGRAMADA" },
           },
           select: {
             instancia: {
@@ -224,44 +233,48 @@ export function crearPrismaAsistenciaRepositoryAdapter(db: PrismaClient): Asiste
                 inicioProgramadoAt: true,
                 finProgramadoAt: true,
                 inicioAsistenciaTecnicaAt: true,
-                finAsistenciaTecnicaAt: true
-              }
-            }
-          }
+                finAsistenciaTecnicaAt: true,
+              },
+            },
+          },
         });
 
         const periodos = [
           ...existing.map(({ instancia }) => ({
             inicio: instancia.inicioAsistenciaTecnicaAt ?? instancia.inicioProgramadoAt,
-            fin: instancia.finAsistenciaTecnicaAt ?? instancia.finProgramadoAt
+            fin: instancia.finAsistenciaTecnicaAt ?? instancia.finProgramadoAt,
           })),
-          { inicio: inicioAsistencia, fin: finAsistencia }
+          { inicio: inicioAsistencia, fin: finAsistencia },
         ];
 
         const conflict = periodos.some((periodo, index) =>
-          periodos.slice(0, index).some((other) => !cumpleSeparacionMinimaAsistencias(periodo, other))
+          periodos
+            .slice(0, index)
+            .some((other) => !cumpleSeparacionMinimaAsistencias(periodo, other)),
         );
 
         if (conflict) {
           throw new ConflictApiError(
-            `El asistente necesita al menos ${SEPARACION_MINIMA_ASISTENCIAS_MINUTOS} minutos entre reuniones.`
+            `El asistente necesita al menos ${SEPARACION_MINIMA_ASISTENCIAS_MINUTOS} minutos entre reuniones.`,
           );
         }
 
         const tarifa = await tx.tarifaAsistenciaTecnica.findFirst({
           where: { modalidad: modalidadEfectiva },
           orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-          select: { id: true, valorHora: true, moneda: true }
+          select: { id: true, valorHora: true, moneda: true },
         });
 
         if (!tarifa) {
-          throw new ConflictApiError("No hay una tarifa configurada para la modalidad de la reunión.");
+          throw new ConflictApiError(
+            "No hay una tarifa configurada para la modalidad de la reunión.",
+          );
         }
 
         if (currentActive) {
           await tx.asignacionAsistenciaTecnica.update({
             where: { id: currentActive.id },
-            data: { estado: "CANCELADO" }
+            data: { estado: "CANCELADO" },
           });
         }
 
@@ -270,8 +283,8 @@ export function crearPrismaAsistenciaRepositoryAdapter(db: PrismaClient): Asiste
           where: {
             instanciaSalaId_asistenteTecnicoId: {
               instanciaSalaId: meeting.id,
-              asistenteTecnicoId: assistant.id
-            }
+              asistenteTecnicoId: assistant.id,
+            },
           },
           create: {
             instanciaSalaId: meeting.id,
@@ -279,7 +292,7 @@ export function crearPrismaAsistenciaRepositoryAdapter(db: PrismaClient): Asiste
             estado: "ASIGNADO",
             tarifaAsistenciaTecnicaId: tarifa.id,
             tarifaHoraAplicada: tarifa.valorHora,
-            moneda: tarifa.moneda
+            moneda: tarifa.moneda,
           },
           update: {
             estado: "ASIGNADO",
@@ -287,9 +300,9 @@ export function crearPrismaAsistenciaRepositoryAdapter(db: PrismaClient): Asiste
             tarifaHoraAplicada: tarifa.valorHora,
             moneda: tarifa.moneda,
             minutosConfirmados: null,
-            montoConfirmado: null
+            montoConfirmado: null,
           },
-          select: { id: true, instanciaSalaId: true, asistenteTecnicoId: true, estado: true }
+          select: { id: true, instanciaSalaId: true, asistenteTecnicoId: true, estado: true },
         });
 
         await tx.auditoria.create({
@@ -304,9 +317,9 @@ export function crearPrismaAsistenciaRepositoryAdapter(db: PrismaClient): Asiste
             valorNuevo: {
               asistenteTecnicoId: assistant.id,
               asignacionId: created.id,
-              tarifaHora: tarifa.valorHora.toNumber()
-            }
-          }
+              tarifaHora: tarifa.valorHora.toNumber(),
+            },
+          },
         });
 
         return {
@@ -316,19 +329,24 @@ export function crearPrismaAsistenciaRepositoryAdapter(db: PrismaClient): Asiste
           estado: created.estado,
           asistenteUsuarioId: assistant.usuarioId,
           asistenteEmail: assistant.usuario.emailPrincipal,
-          googleAccountIds: assistant.usuario.cuentasGoogle.map(({ id }) => id)
+          googleAccountIds: assistant.usuario.cuentasGoogle.map(({ id }) => id),
         };
       });
     },
 
-    async desvincularAsistente(asignacionId: string, actorUsuarioId: string): Promise<AsignacionRow> {
+    async desvincularAsistente(
+      asignacionId: string,
+      actorUsuarioId: string,
+    ): Promise<AsignacionRow> {
       return db.$transaction(async (tx) => {
         const actor = await tx.usuario.findUnique({
           where: { id: actorUsuarioId },
-          select: { id: true, activo: true, rol: true }
+          select: { id: true, activo: true, rol: true },
         });
         if (!actor?.activo || !["ADMINISTRACION", "ASISTENTE_TECNICO"].includes(actor.rol)) {
-          throw new ForbiddenApiError("La sesión ya no tiene permisos para modificar esta asignación.");
+          throw new ForbiddenApiError(
+            "La sesión ya no tiene permisos para modificar esta asignación.",
+          );
         }
 
         const assignment = await tx.asignacionAsistenciaTecnica.findUnique({
@@ -342,8 +360,8 @@ export function crearPrismaAsistenciaRepositoryAdapter(db: PrismaClient): Asiste
             instancia: {
               select: {
                 inicioProgramadoAt: true,
-                inicioAsistenciaTecnicaAt: true
-              }
+                inicioAsistenciaTecnicaAt: true,
+              },
             },
             asistenteTecnico: {
               select: {
@@ -351,12 +369,12 @@ export function crearPrismaAsistenciaRepositoryAdapter(db: PrismaClient): Asiste
                 usuario: {
                   select: {
                     emailPrincipal: true,
-                    cuentasGoogle: { select: { id: true } }
-                  }
-                }
-              }
-            }
-          }
+                    cuentasGoogle: { select: { id: true } },
+                  },
+                },
+              },
+            },
+          },
         });
 
         if (!assignment || !ACTIVE_ASSIGNMENTS.includes(assignment.estado as any)) {
@@ -373,13 +391,15 @@ export function crearPrismaAsistenciaRepositoryAdapter(db: PrismaClient): Asiste
           throw new ConflictApiError("No podés darte de baja una vez iniciado el monitoreo.");
         }
         if (assignment.detallesLiquidacion.length > 0) {
-          throw new ConflictApiError("No se puede desvincular una asignación incluida en una liquidación.");
+          throw new ConflictApiError(
+            "No se puede desvincular una asignación incluida en una liquidación.",
+          );
         }
 
         const updated = await tx.asignacionAsistenciaTecnica.update({
           where: { id: assignment.id },
           data: { estado: "CANCELADO" },
-          select: { id: true, instanciaSalaId: true, estado: true, asistenteTecnicoId: true }
+          select: { id: true, instanciaSalaId: true, estado: true, asistenteTecnicoId: true },
         });
 
         if (esBajaPropia) {
@@ -387,9 +407,9 @@ export function crearPrismaAsistenciaRepositoryAdapter(db: PrismaClient): Asiste
             where: {
               instanciaSalaId: assignment.instanciaSalaId,
               asistenteTecnicoId: assignment.asistenteTecnicoId,
-              estado: "ME_INTERESA"
+              estado: "ME_INTERESA",
             },
-            data: { estado: "RETIRADO" }
+            data: { estado: "RETIRADO" },
           });
         }
 
@@ -398,16 +418,16 @@ export function crearPrismaAsistenciaRepositoryAdapter(db: PrismaClient): Asiste
           await tx.cohostReunion.deleteMany({
             where: {
               instanciaSalaId: assignment.instanciaSalaId,
-              cuentaGoogleId: { in: googleIds }
-            }
+              cuentaGoogleId: { in: googleIds },
+            },
           });
         }
         if (assignment.asistenteTecnico.usuario.emailPrincipal) {
           await tx.cohostEmailReunion.deleteMany({
             where: {
               instanciaSalaId: assignment.instanciaSalaId,
-              email: assignment.asistenteTecnico.usuario.emailPrincipal.toLowerCase()
-            }
+              email: assignment.asistenteTecnico.usuario.emailPrincipal.toLowerCase(),
+            },
           });
         }
 
@@ -419,14 +439,14 @@ export function crearPrismaAsistenciaRepositoryAdapter(db: PrismaClient): Asiste
             entidadId: assignment.instanciaSalaId,
             valorAnterior: {
               asistenteTecnicoId: assignment.asistenteTecnicoId,
-              estado: assignment.estado
+              estado: assignment.estado,
             },
             valorNuevo: {
               asistenteTecnicoId: assignment.asistenteTecnicoId,
               estado: "CANCELADO",
-              origen: esBajaPropia ? "BAJA_VOLUNTARIA" : "ADMINISTRACION"
-            }
-          }
+              origen: esBajaPropia ? "BAJA_VOLUNTARIA" : "ADMINISTRACION",
+            },
+          },
         });
 
         return {
@@ -436,7 +456,7 @@ export function crearPrismaAsistenciaRepositoryAdapter(db: PrismaClient): Asiste
           estado: updated.estado,
           asistenteUsuarioId: assignment.asistenteTecnico.usuarioId,
           asistenteEmail: assignment.asistenteTecnico.usuario.emailPrincipal,
-          googleAccountIds: googleIds
+          googleAccountIds: googleIds,
         };
       });
     },
@@ -455,10 +475,10 @@ export function crearPrismaAsistenciaRepositoryAdapter(db: PrismaClient): Asiste
             instancia: {
               select: {
                 estado: true,
-                finProgramadoAt: true
-              }
-            }
-          }
+                finProgramadoAt: true,
+              },
+            },
+          },
         });
 
         if (
@@ -468,7 +488,10 @@ export function crearPrismaAsistenciaRepositoryAdapter(db: PrismaClient): Asiste
         ) {
           throw new ForbiddenApiError("La reunión no está asignada a este usuario.");
         }
-        if (asignacion.instancia.estado !== "FINALIZADA" && asignacion.instancia.finProgramadoAt > ahora) {
+        if (
+          asignacion.instancia.estado !== "FINALIZADA" &&
+          asignacion.instancia.finProgramadoAt > ahora
+        ) {
           throw new ConflictApiError("La duración solo se puede informar al finalizar la reunión.");
         }
         if (["CANCELADA", "NO_REALIZADA"].includes(asignacion.instancia.estado)) {
@@ -484,16 +507,16 @@ export function crearPrismaAsistenciaRepositoryAdapter(db: PrismaClient): Asiste
             inicioRealAt: input.inicioReal,
             finRealAt: input.finReal,
             minutosReportados: minutos,
-            comentariosReporte: input.comentario
-          }
+            comentariosReporte: input.comentario,
+          },
         });
 
         await tx.asignacionAsistenciaTecnica.update({
           where: { id: asignacion.id },
           data: {
             minutosConfirmados: minutos,
-            montoConfirmado: monto
-          }
+            montoConfirmado: monto,
+          },
         });
 
         if (input.incidencia) {
@@ -502,8 +525,8 @@ export function crearPrismaAsistenciaRepositoryAdapter(db: PrismaClient): Asiste
               instanciaSalaId: asignacion.instanciaSalaId,
               tipo: input.incidencia.tipo,
               severidad: input.incidencia.severidad as any,
-              descripcion: input.incidencia.descripcion
-            }
+              descripcion: input.incidencia.descripcion,
+            },
           });
         }
 
@@ -516,14 +539,17 @@ export function crearPrismaAsistenciaRepositoryAdapter(db: PrismaClient): Asiste
             valorNuevo: {
               minutos,
               monto: monto.toNumber(),
-              tieneIncidencia: Boolean(input.incidencia)
-            }
-          }
+              tieneIncidencia: Boolean(input.incidencia),
+            },
+          },
         });
       });
     },
 
-    async actualizarDisponibilidad(usuarioId: string, input: DisponibilidadSemanalInput): Promise<void> {
+    async actualizarDisponibilidad(
+      usuarioId: string,
+      input: DisponibilidadSemanalInput,
+    ): Promise<void> {
       if (new Set(input.franjas.map(({ diaSemana }) => diaSemana)).size !== input.franjas.length) {
         throw new ValidationApiError("Solo puede definirse una franja habitual por día.");
       }
@@ -531,19 +557,21 @@ export function crearPrismaAsistenciaRepositoryAdapter(db: PrismaClient): Asiste
       await db.$transaction(async (tx) => {
         const assistant = await tx.asistenteTecnico.findUnique({
           where: { usuarioId },
-          select: { id: true }
+          select: { id: true },
         });
         if (!assistant) {
-          throw new ForbiddenApiError("No existe un perfil de asistente de monitoreo para esta sesión.");
+          throw new ForbiddenApiError(
+            "No existe un perfil de asistente de monitoreo para esta sesión.",
+          );
         }
 
         await tx.asistenteTecnico.update({
           where: { id: assistant.id },
-          data: { disponibleGeneral: input.disponibleGeneral }
+          data: { disponibleGeneral: input.disponibleGeneral },
         });
 
         await tx.disponibilidadAsistenteTecnico.deleteMany({
-          where: { asistenteTecnicoId: assistant.id, fecha: null }
+          where: { asistenteTecnicoId: assistant.id, fecha: null },
         });
 
         if (input.franjas.length > 0) {
@@ -552,8 +580,8 @@ export function crearPrismaAsistenciaRepositoryAdapter(db: PrismaClient): Asiste
               asistenteTecnicoId: assistant.id,
               ...franja,
               fecha: null,
-              timezone: "America/Montevideo"
-            }))
+              timezone: "America/Montevideo",
+            })),
           });
         }
 
@@ -565,9 +593,9 @@ export function crearPrismaAsistenciaRepositoryAdapter(db: PrismaClient): Asiste
             entidadId: assistant.id,
             valorNuevo: {
               disponibleGeneral: input.disponibleGeneral,
-              franjas: input.franjas
-            }
-          }
+              franjas: input.franjas,
+            },
+          },
         });
       });
     },
@@ -575,11 +603,11 @@ export function crearPrismaAsistenciaRepositoryAdapter(db: PrismaClient): Asiste
     async obtenerAsistenciasPersonales(
       usuarioId: string,
       periodo: "MES_ACTUAL" | "HISTORICO",
-      ahora = new Date()
+      ahora = new Date(),
     ): Promise<readonly RegistroAsistenciaPersonal[]> {
       const assistant = await db.asistenteTecnico.findUnique({
         where: { usuarioId },
-        select: { id: true }
+        select: { id: true },
       });
       if (!assistant) {
         return [];
@@ -588,7 +616,7 @@ export function crearPrismaAsistenciaRepositoryAdapter(db: PrismaClient): Asiste
       const parts = new Intl.DateTimeFormat("en-CA", {
         timeZone: "America/Montevideo",
         year: "numeric",
-        month: "2-digit"
+        month: "2-digit",
       }).formatToParts(ahora);
       const year = Number(parts.find((p) => p.type === "year")?.value);
       const month = Number(parts.find((p) => p.type === "month")?.value);
@@ -605,8 +633,8 @@ export function crearPrismaAsistenciaRepositoryAdapter(db: PrismaClient): Asiste
             requiereAsistenciaTecnica: true,
             estado: { notIn: ["CANCELADA", "NO_REALIZADA"] },
             inicioProgramadoAt: rango,
-            solicitud: { estado: { not: "CANCELADA" } }
-          }
+            solicitud: { estado: { not: "CANCELADA" } },
+          },
         },
         orderBy: { instancia: { inicioProgramadoAt: periodo === "MES_ACTUAL" ? "asc" : "desc" } },
         take: periodo === "MES_ACTUAL" ? 100 : 500,
@@ -618,24 +646,25 @@ export function crearPrismaAsistenciaRepositoryAdapter(db: PrismaClient): Asiste
                   docentePrograma: {
                     include: {
                       programa: true,
-                      docente: { include: { usuario: true } }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
+                      docente: { include: { usuario: true } },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
       });
 
       return asignaciones.map((asignacion) => {
         const instancia = asignacion.instancia;
         const asociacion = instancia.solicitud.docentePrograma;
-        const inicioAsistencia = instancia.inicioAsistenciaTecnicaAt ?? instancia.inicioProgramadoAt;
+        const inicioAsistencia =
+          instancia.inicioAsistenciaTecnicaAt ?? instancia.inicioProgramadoAt;
         const finAsistencia = instancia.finAsistenciaTecnicaAt ?? instancia.finProgramadoAt;
         const minProg = Math.max(
           0,
-          Math.round((finAsistencia.getTime() - inicioAsistencia.getTime()) / 60_000)
+          Math.round((finAsistencia.getTime() - inicioAsistencia.getTime()) / 60_000),
         );
         const minutos =
           asignacion.minutosConfirmados ??
@@ -645,8 +674,8 @@ export function crearPrismaAsistenciaRepositoryAdapter(db: PrismaClient): Asiste
             Math.round(
               ((instancia.finRealAt ?? finAsistencia).getTime() -
                 (instancia.inicioRealAt ?? inicioAsistencia).getTime()) /
-                60_000
-            )
+                60_000,
+            ),
           );
         const tarifaHora = asignacion.tarifaHoraAplicada?.toNumber() ?? null;
         const monto =
@@ -664,9 +693,10 @@ export function crearPrismaAsistenciaRepositoryAdapter(db: PrismaClient): Asiste
           finAt: finAsistencia,
           inicioRealAt: instancia.inicioRealAt,
           finRealAt: instancia.finRealAt,
-          modalidad: (instancia.modalidadOverride ?? instancia.solicitud.modalidad) as ModalidadAsistencia,
+          modalidad: instancia.modalidadOverride ?? instancia.solicitud.modalidad,
           estado: instancia.estado,
-          completada: instancia.estado === "FINALIZADA" || finAsistencia.getTime() <= ahora.getTime(),
+          completada:
+            instancia.estado === "FINALIZADA" || finAsistencia.getTime() <= ahora.getTime(),
           cierreConfirmado: asignacion.minutosConfirmados !== null,
           minutos,
           minutosProgramados: minProg,
@@ -674,7 +704,7 @@ export function crearPrismaAsistenciaRepositoryAdapter(db: PrismaClient): Asiste
           comentarioReporte: instancia.comentariosReporte,
           tarifaHora,
           monto,
-          moneda: asignacion.moneda ?? "UYU"
+          moneda: asignacion.moneda ?? "UYU",
         };
       });
     },
@@ -683,11 +713,11 @@ export function crearPrismaAsistenciaRepositoryAdapter(db: PrismaClient): Asiste
       usuarioId: string,
       desde: Date,
       hasta: Date,
-      limite = 500
+      limite = 500,
     ): Promise<readonly RegistroHistorialAsistenciaPersonal[]> {
       const assistant = await db.asistenteTecnico.findUnique({
         where: { usuarioId },
-        select: { id: true }
+        select: { id: true },
       });
       if (!assistant) {
         return [];
@@ -697,18 +727,18 @@ export function crearPrismaAsistenciaRepositoryAdapter(db: PrismaClient): Asiste
         where: {
           asistenteTecnicoId: assistant.id,
           instancia: {
-            inicioProgramadoAt: { gte: desde, lt: hasta }
-          }
+            inicioProgramadoAt: { gte: desde, lt: hasta },
+          },
         },
         select: {
           instanciaSalaId: true,
           instancia: {
             select: {
               inicioProgramadoAt: true,
-              solicitud: { select: { titulo: true } }
-            }
-          }
-        }
+              solicitud: { select: { titulo: true } },
+            },
+          },
+        },
       });
       if (assignments.length === 0) {
         return [];
@@ -719,9 +749,9 @@ export function crearPrismaAsistenciaRepositoryAdapter(db: PrismaClient): Asiste
           assignment.instanciaSalaId,
           {
             titulo: assignment.instancia.solicitud.titulo,
-            instanciaInicioAt: assignment.instancia.inicioProgramadoAt
-          }
-        ])
+            instanciaInicioAt: assignment.instancia.inicioProgramadoAt,
+          },
+        ]),
       );
 
       const audits = await db.auditoria.findMany({
@@ -729,24 +759,24 @@ export function crearPrismaAsistenciaRepositoryAdapter(db: PrismaClient): Asiste
           entidadTipo: "InstanciaSala",
           entidadId: { in: [...meetingById.keys()] },
           accion: {
-            in: ["ASISTENTE_ASIGNADO", "ASISTENTE_REASIGNADO", "ASISTENTE_DESVINCULADO"]
+            in: ["ASISTENTE_ASIGNADO", "ASISTENTE_REASIGNADO", "ASISTENTE_DESVINCULADO"],
           },
-          createdAt: { gte: desde, lt: hasta }
+          createdAt: { gte: desde, lt: hasta },
         },
         orderBy: { createdAt: "desc" },
         take: limite,
         include: {
           actor: {
-            select: { nombres: true, apellidos: true }
-          }
-        }
+            select: { nombres: true, apellidos: true },
+          },
+        },
       });
 
       const helperAsistenteId = (value: unknown): string | null => {
         if (!value || Array.isArray(value) || typeof value !== "object") {
           return null;
         }
-        const id = (value as Record<string, unknown>).asistenteTecnicoId;
+        const id = (value as Record<string, unknown>)["asistenteTecnicoId"];
         return typeof id === "string" ? id : null;
       };
 
@@ -760,7 +790,7 @@ export function crearPrismaAsistenciaRepositoryAdapter(db: PrismaClient): Asiste
           audit.accion,
           helperAsistenteId(audit.valorAnterior),
           helperAsistenteId(audit.valorNuevo),
-          assistant.id
+          assistant.id,
         );
         if (!accion) {
           return [];
@@ -777,8 +807,8 @@ export function crearPrismaAsistenciaRepositoryAdapter(db: PrismaClient): Asiste
             titulo: meeting.titulo,
             instanciaInicioAt: meeting.instanciaInicioAt,
             ocurrioAt: audit.createdAt,
-            actor: actor || "Sistema"
-          }
+            actor: actor || "Sistema",
+          },
         ];
       });
     },
@@ -786,7 +816,7 @@ export function crearPrismaAsistenciaRepositoryAdapter(db: PrismaClient): Asiste
     async obtenerSlugAsistente(usuarioId: string): Promise<string | null> {
       const assistant = await db.asistenteTecnico.findUnique({
         where: { usuarioId },
-        select: { slug: true }
+        select: { slug: true },
       });
       return assistant?.slug ?? null;
     },
@@ -813,15 +843,17 @@ export function crearPrismaAsistenciaRepositoryAdapter(db: PrismaClient): Asiste
               titulo: true,
               modalidad: true,
               docentePrograma: {
-                select: { docente: { select: { usuario: { select: { nombres: true, apellidos: true } } } } }
-              }
-            }
+                select: {
+                  docente: { select: { usuario: { select: { nombres: true, apellidos: true } } } },
+                },
+              },
+            },
           },
           asignaciones: {
             where: { estado: { in: [...ACTIVE_ASSIGNMENTS] } },
-            select: { id: true }
-          }
-        }
+            select: { id: true },
+          },
+        },
       });
 
       if (!meeting || !meeting.requiereAsistenciaTecnica || meeting.estado !== "PROGRAMADA") {
@@ -834,9 +866,9 @@ export function crearPrismaAsistenciaRepositoryAdapter(db: PrismaClient): Asiste
       const assistants = await db.asistenteTecnico.findMany({
         where: {
           usuario: { activo: true, rol: "ASISTENTE_TECNICO" },
-          cesadoHastaProximoInicioSesion: false
+          cesadoHastaProximoInicioSesion: false,
         },
-        select: { usuarioId: true }
+        select: { usuarioId: true },
       });
 
       const docente = meeting.solicitud.docentePrograma.docente.usuario;
@@ -848,11 +880,11 @@ export function crearPrismaAsistenciaRepositoryAdapter(db: PrismaClient): Asiste
           titulo: meeting.solicitud.titulo,
           inicio: meeting.inicioAsistenciaTecnicaAt ?? meeting.inicioProgramadoAt,
           fin: meeting.finAsistenciaTecnicaAt ?? meeting.finProgramadoAt,
-          modalidad: (meeting.modalidadOverride ?? meeting.solicitud.modalidad) as ModalidadAsistencia,
-          docenteNombre
+          modalidad: meeting.modalidadOverride ?? meeting.solicitud.modalidad,
+          docenteNombre,
         },
-        destinatarios: assistants.map(({ usuarioId }) => usuarioId)
+        destinatarios: assistants.map(({ usuarioId }) => usuarioId),
       };
-    }
+    },
   };
 }

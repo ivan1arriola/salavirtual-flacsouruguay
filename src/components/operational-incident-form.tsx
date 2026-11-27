@@ -21,9 +21,9 @@ export function OperationalIncidentForm({ instanciaId }: Readonly<{ instanciaId:
           body: JSON.stringify({
             tipo: formData.get("tipo"),
             severidad: formData.get("severidad"),
-            descripcion: formData.get("descripcion")
-          })
-        }
+            descripcion: formData.get("descripcion"),
+          }),
+        },
       );
       const result = await response.json().catch(() => ({}));
       if (!response.ok) {
@@ -79,7 +79,11 @@ export function OperationalIncidentForm({ instanciaId }: Readonly<{ instanciaId:
           />
         </label>
         <button className="primary-action" type="submit" disabled={pending}>
-          {pending ? <LoaderCircle className="button-spinner" size={16} /> : <AlertTriangle size={16} />}
+          {pending ? (
+            <LoaderCircle className="button-spinner" size={16} />
+          ) : (
+            <AlertTriangle size={16} />
+          )}
           {pending ? "Registrando…" : "Registrar incidencia"}
         </button>
         {message ? <p aria-live="polite">{message}</p> : null}

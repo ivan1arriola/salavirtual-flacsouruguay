@@ -10,7 +10,7 @@ import { formatDate, formatTime } from "@/src/lib/ui/format";
 import { seleccionarEventoProveedorActivo } from "@/src/modules/reuniones/evento-proveedor-activo.domain";
 
 export default async function ReunionesDocentePage({
-  params
+  params,
 }: Readonly<{ params: Promise<{ usuarioId: string }> }>) {
   const session = await auth();
   if (!session?.user) {
@@ -23,7 +23,7 @@ export default async function ReunionesDocentePage({
   const { usuarioId } = await params;
   const teacher = await db.usuario.findFirst({
     where: { id: usuarioId, rol: "DOCENTE" },
-    select: { id: true, nombres: true, apellidos: true, emailPrincipal: true, activo: true }
+    select: { id: true, nombres: true, apellidos: true, emailPrincipal: true, activo: true },
   });
   if (!teacher) {
     notFound();
@@ -38,16 +38,17 @@ export default async function ReunionesDocentePage({
       asignaciones: {
         where: { estado: { in: ["ASIGNADO", "ACEPTADO"] } },
         include: { asistenteTecnico: { include: { usuario: true } } },
-        take: 1
-      }
-    }
+        take: 1,
+      },
+    },
   });
   const now = new Date();
   const upcoming = meetings.filter(
-    ({ estado, finProgramadoAt }) => estado === "PROGRAMADA" && finProgramadoAt >= now
+    ({ estado, finProgramadoAt }) => estado === "PROGRAMADA" && finProgramadoAt >= now,
   ).length;
   const past = meetings.filter(({ finProgramadoAt }) => finProgramadoAt < now).length;
-  const programs = new Set(meetings.map(({ solicitud }) => solicitud.docentePrograma.programa.id)).size;
+  const programs = new Set(meetings.map(({ solicitud }) => solicitud.docentePrograma.programa.id))
+    .size;
   const teacherName = [teacher.nombres, teacher.apellidos].filter(Boolean).join(" ");
 
   return (
@@ -137,7 +138,10 @@ export default async function ReunionesDocentePage({
                       <td className="date-cell">{formatDate(meeting.inicioProgramadoAt)}</td>
                       <td className="time-cell">{formatTime(meeting.inicioProgramadoAt)}</td>
                       <td>
-                        <Link className="meeting-title-link" href={`/reuniones/${meeting.solicitud.id}`}>
+                        <Link
+                          className="meeting-title-link"
+                          href={`/reuniones/${meeting.solicitud.id}`}
+                        >
                           {meeting.solicitud.titulo}
                         </Link>
                         <small>
@@ -164,7 +168,7 @@ export default async function ReunionesDocentePage({
                       <td>
                         <small>
                           <MeetIntegrationStatus
-                            status={meet?.estadoIntegracion}
+                            {...(meet ? { status: meet.estadoIntegracion } : {})}
                             hasMeet={Boolean(meet?.joinUrl)}
                           />
                         </small>
@@ -199,7 +203,7 @@ function statusLabel(status: string): string {
     PROGRAMADA: "Programada",
     FINALIZADA: "Finalizada",
     CANCELADA: "Cancelada",
-    NO_REALIZADA: "No realizada"
+    NO_REALIZADA: "No realizada",
   };
   return labels[status] ?? status.toLowerCase().replaceAll("_", " ");
 }

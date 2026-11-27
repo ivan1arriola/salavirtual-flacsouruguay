@@ -5,12 +5,12 @@ import { useState } from "react";
 
 const MENSAJES = {
   copiado: "Enlace copiado",
-  error: "No se pudo copiar el enlace. Seleccionalo y copialo manualmente."
+  error: "No se pudo copiar el enlace. Seleccionalo y copialo manualmente.",
 } as const;
 
 export function ZoomJoinActions({
   url,
-  contexto
+  contexto,
 }: Readonly<{
   url: string;
   /** Identifica el encuentro (por ejemplo "martes 10 de noviembre, 10:00") para dar un nombre accesible a cada acción repetida. */

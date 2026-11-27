@@ -3,7 +3,7 @@ import type { Prisma } from "@prisma/client";
 import { crearProveedorTokenZoom } from "@/src/integrations/zoom/zoom-client";
 import {
   listarProximasReunionesCuentaZoom,
-  obtenerDetalleReunionPasadaZoom
+  obtenerDetalleReunionPasadaZoom,
 } from "@/src/integrations/zoom/zoom-operations.client";
 import { ZoomApiError } from "@/src/integrations/zoom/zoom-http";
 import { descifrarConfiguracion } from "@/src/lib/config/encryption";
@@ -13,7 +13,7 @@ import {
   auditarSeriesZoom,
   compararAgendaZoom,
   detectarSolapesCuentasZoom,
-  type ReunionZoomAuditable
+  type ReunionZoomAuditable,
 } from "@/src/modules/operaciones/zoom-diagnostico.domain";
 import { seleccionarEventoProveedorActivo } from "@/src/modules/reuniones/evento-proveedor-activo.domain";
 import { filtroProveedorActivo } from "@/src/modules/reuniones/proveedor-reunion.domain";
@@ -49,15 +49,15 @@ export async function leerDiagnosticoZoom(ahora = new Date()) {
         tieneLicencia: true,
         activa: true,
         origenGrupoZoom: true,
-        fueraDelGrupoAt: true
+        fueraDelGrupoAt: true,
       },
-      orderBy: [{ activa: "desc" }, { prioridad: "asc" }, { nombre: "asc" }]
+      orderBy: [{ activa: "desc" }, { prioridad: "asc" }, { nombre: "asc" }],
     }),
     db.instanciaSala.findMany({
       where: {
         estado: { not: "CANCELADA" },
         inicioProgramadoAt: { gte: ahora, lte: hasta },
-        ...(filtroProveedorActivo("ZOOM") as Prisma.InstanciaSalaWhereInput)
+        ...(filtroProveedorActivo("ZOOM") as Prisma.InstanciaSalaWhereInput),
       },
       select: {
         id: true,
@@ -70,12 +70,12 @@ export async function leerDiagnosticoZoom(ahora = new Date()) {
           select: {
             proveedor: { select: { tipo: true } },
             cuentaProveedorId: true,
-            codigoReunion: true
-          }
-        }
+            codigoReunion: true,
+          },
+        },
       },
       orderBy: { inicioProgramadoAt: "asc" },
-      take: LIMITE_ENCUENTROS + 1
+      take: LIMITE_ENCUENTROS + 1,
     }),
     db.ocurrenciaArchivoZoom.findMany({
       where: { inicioRealAt: { gte: desdeHistorico }, eventoProveedorId: { not: null } },
@@ -90,32 +90,36 @@ export async function leerDiagnosticoZoom(ahora = new Date()) {
         eventoProveedor: {
           select: {
             instanciaSalaId: true,
-            instancia: { select: { solicitudSalaId: true, solicitud: { select: { titulo: true } } } }
-          }
-        }
+            instancia: {
+              select: { solicitudSalaId: true, solicitud: { select: { titulo: true } } },
+            },
+          },
+        },
       },
       orderBy: { inicioRealAt: "desc" },
-      take: 30
+      take: 30,
     }),
     db.ocurrenciaArchivoZoom.findMany({
       where: { inicioRealAt: { gte: desdeHistorico }, eventoProveedorId: null },
       select: { id: true, inicioRealAt: true, meetingId: true },
       orderBy: { inicioRealAt: "desc" },
-      take: 100
-    })
+      take: 100,
+    }),
   ]);
-  const reuniones: ReunionZoomAuditable[] = instancias.slice(0, LIMITE_ENCUENTROS).map((instancia) => {
-    const evento = seleccionarEventoProveedorActivo(instancia);
-    return {
-      instanciaId: instancia.id,
-      solicitudId: instancia.solicitudSalaId,
-      titulo: instancia.solicitud.titulo,
-      inicio: instancia.inicioProgramadoAt,
-      fin: instancia.finProgramadoAt,
-      cuentaId: evento?.cuentaProveedorId ?? null,
-      meetingId: evento?.codigoReunion ?? null
-    };
-  });
+  const reuniones: ReunionZoomAuditable[] = instancias
+    .slice(0, LIMITE_ENCUENTROS)
+    .map((instancia) => {
+      const evento = seleccionarEventoProveedorActivo(instancia);
+      return {
+        instanciaId: instancia.id,
+        solicitudId: instancia.solicitudSalaId,
+        titulo: instancia.solicitud.titulo,
+        inicio: instancia.inicioProgramadoAt,
+        fin: instancia.finProgramadoAt,
+        cuentaId: evento?.cuentaProveedorId ?? null,
+        meetingId: evento?.codigoReunion ?? null,
+      };
+    });
   return {
     cuentas,
     reuniones,
@@ -125,21 +129,27 @@ export async function leerDiagnosticoZoom(ahora = new Date()) {
     pasadas: pasadas.filter(({ eventoProveedor }) => Boolean(eventoProveedor)),
     parcial: instancias.length > LIMITE_ENCUENTROS,
     desde: ahora,
-    hasta
+    hasta,
   };
 }
 
-export async function comprobarCuentaZoom(cuentaId: string, reuniones: readonly ReunionZoomAuditable[]) {
+export async function comprobarCuentaZoom(
+  cuentaId: string,
+  reuniones: readonly ReunionZoomAuditable[],
+) {
   const cuenta = await db.cuentaProveedor.findFirst({
     where: { id: cuentaId, proveedor: { tipo: "ZOOM" } },
-    select: { id: true, externalAccountId: true, emailOrganizador: true }
+    select: { id: true, externalAccountId: true, emailOrganizador: true },
   });
   if (!cuenta) {
     return { estado: "NO_DISPONIBLE" as const, mensaje: "Cuenta no encontrada." };
   }
   const usuarioId = cuenta.externalAccountId ?? cuenta.emailOrganizador;
   if (!usuarioId) {
-    return { estado: "NO_DISPONIBLE" as const, mensaje: "Falta la identidad o la configuración de Zoom." };
+    return {
+      estado: "NO_DISPONIBLE" as const,
+      mensaje: "Falta la identidad o la configuración de Zoom.",
+    };
   }
   try {
     const auth = await autenticacionZoom();
@@ -152,8 +162,8 @@ export async function comprobarCuentaZoom(cuentaId: string, reuniones: readonly 
       totalZoom: remotas.length,
       ...compararAgendaZoom(
         reuniones.filter(({ cuentaId: id }) => id === cuenta.id),
-        remotas
-      )
+        remotas,
+      ),
     };
   } catch (error) {
     return { estado: "NO_DISPONIBLE" as const, mensaje: mensajeZoom(error) };
@@ -163,7 +173,7 @@ export async function comprobarCuentaZoom(cuentaId: string, reuniones: readonly 
 export async function comprobarReunionPasadaZoom(ocurrenciaId: string) {
   const ocurrencia = await db.ocurrenciaArchivoZoom.findFirst({
     where: { id: ocurrenciaId, eventoProveedorId: { not: null } },
-    select: { uuid: true }
+    select: { uuid: true },
   });
   if (!ocurrencia) {
     return { estado: "NO_DISPONIBLE" as const, mensaje: "Ocurrencia vinculada no encontrada." };
@@ -178,7 +188,7 @@ export async function comprobarReunionPasadaZoom(ocurrenciaId: string) {
       ? { estado: "DISPONIBLE" as const, detalle }
       : {
           estado: "NO_DISPONIBLE" as const,
-          mensaje: "Zoom todavía no ofrece el detalle de esta ocurrencia."
+          mensaje: "Zoom todavía no ofrece el detalle de esta ocurrencia.",
         };
   } catch (error) {
     return { estado: "NO_DISPONIBLE" as const, mensaje: mensajeZoom(error) };

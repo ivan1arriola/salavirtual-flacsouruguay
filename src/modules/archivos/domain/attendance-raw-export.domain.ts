@@ -20,7 +20,7 @@ export const COLUMNAS_BRUTAS_ASISTENCIA = [
   "Código Meet original",
   "Tipo identificador",
   "Timestamp auditoría",
-  "Parámetros originales"
+  "Parámetros originales",
 ] as const;
 
 export type ExportacionBrutaAsistencia = Readonly<{
@@ -31,7 +31,7 @@ export type ExportacionBrutaAsistencia = Readonly<{
 
 export function seleccionarRegistrosBrutos(
   datosBrutos: readonly (readonly unknown[])[],
-  fuente: FuenteExportacionAsistencia
+  fuente: FuenteExportacionAsistencia,
 ): ExportacionBrutaAsistencia {
   const seleccionados = datosBrutos.slice(1).filter((fila) => {
     const tipo = String(fila[0] ?? "")
@@ -48,22 +48,23 @@ export function seleccionarRegistrosBrutos(
         return typeof valor === "string" || typeof valor === "number" || typeof valor === "boolean"
           ? valor
           : null;
-      })
-    )
+      }),
+    ),
   };
 }
 
 /** Escape estándar RFC 4180; mitiga fórmulas al abrir archivos CSV en Excel. */
 function campoCsv(valor: string | number | boolean | null): string {
   const original = valor == null ? "" : String(valor);
-  const texto = /^[\s\uFEFF]*[=+\-@]/.test(original) || /^[\t\r]/.test(original) ? `'${original}` : original;
+  const texto =
+    /^[\s\uFEFF]*[=+\-@]/.test(original) || /^[\t\r]/.test(original) ? `'${original}` : original;
   return `"${texto.replaceAll('"', '""')}"`;
 }
 
 export function serializarExportacionCsv(datos: ExportacionBrutaAsistencia): string {
   const filas: readonly (readonly (string | number | boolean | null)[])[] = [
     datos.columnas,
-    ...datos.registros
+    ...datos.registros,
   ];
   // BOM para caracteres en español con Excel. CRLF para compatibilidad.
   return "\uFEFF" + filas.map((fila) => fila.map(campoCsv).join(",")).join("\r\n") + "\r\n";
@@ -77,7 +78,7 @@ export function serializarExportacionJson(
     inicioProgramadoAt: string;
     finProgramadoAt: string;
     exportadoAt: string;
-  }>
+  }>,
 ): string {
   return JSON.stringify(
     {
@@ -86,9 +87,9 @@ export function serializarExportacionJson(
       origenDatos: "ultima_planilla_sincronizada",
       nota: "Incluye todos los registros de esta fuente preservados en Datos brutos, no una extracción completa de todos los endpoints/eventos de Google.",
       columnas: datos.columnas,
-      registros: datos.registros
+      registros: datos.registros,
     },
     null,
-    2
+    2,
   );
 }

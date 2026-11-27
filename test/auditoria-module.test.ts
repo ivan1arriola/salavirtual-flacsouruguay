@@ -3,7 +3,7 @@ import {
   validarEventoAuditoria,
   crearRegistrarAuditoriaUseCase,
   crearPrismaAuditoriaAdapter,
-  type AuditoriaRepository
+  type AuditoriaRepository,
 } from "@/src/modules/auditoria/api";
 
 describe("modulo auditoria", () => {
@@ -16,7 +16,7 @@ describe("modulo auditoria", () => {
         entidadId: "sol-123",
         actorUsuarioId: "usr-456",
         timestamp: fecha,
-        valorNuevo: { modo: "AUTOMATICO" }
+        valorNuevo: { modo: "AUTOMATICO" },
       });
 
       expect(resultado.ok).toBe(true);
@@ -34,7 +34,7 @@ describe("modulo auditoria", () => {
         accion: "",
         entidadTipo: "",
         entidadId: "",
-        timestamp: new Date()
+        timestamp: new Date(),
       });
 
       expect(resultado.ok).toBe(false);
@@ -45,7 +45,7 @@ describe("modulo auditoria", () => {
         accion: "ACTUALIZAR",
         entidadTipo: "Usuario",
         entidadId: "usr-1",
-        timestamp: new Date("fecha-invalida")
+        timestamp: new Date("fecha-invalida"),
       });
 
       expect(resultado.ok).toBe(false);
@@ -55,7 +55,7 @@ describe("modulo auditoria", () => {
   describe("aplicacion", () => {
     it("registra el evento a traves del repositorio cuando los datos son validos", async () => {
       const mockRepo: AuditoriaRepository = {
-        registrar: vi.fn().mockResolvedValue(undefined)
+        registrar: vi.fn().mockResolvedValue(undefined),
       };
 
       const useCase = crearRegistrarAuditoriaUseCase(mockRepo);
@@ -63,7 +63,7 @@ describe("modulo auditoria", () => {
         accion: "ASIGNAR_HOST",
         entidadTipo: "InstanciaSala",
         entidadId: "inst-789",
-        timestamp: new Date("2026-09-19T14:00:00Z")
+        timestamp: new Date("2026-09-19T14:00:00Z"),
       });
 
       expect(resultado.ok).toBe(true);
@@ -72,7 +72,7 @@ describe("modulo auditoria", () => {
 
     it("no invoca el repositorio si el evento no supera la validacion de dominio", async () => {
       const mockRepo: AuditoriaRepository = {
-        registrar: vi.fn().mockResolvedValue(undefined)
+        registrar: vi.fn().mockResolvedValue(undefined),
       };
 
       const useCase = crearRegistrarAuditoriaUseCase(mockRepo);
@@ -80,7 +80,7 @@ describe("modulo auditoria", () => {
         accion: "",
         entidadTipo: "InstanciaSala",
         entidadId: "inst-789",
-        timestamp: new Date()
+        timestamp: new Date(),
       });
 
       expect(resultado.ok).toBe(false);
@@ -93,8 +93,8 @@ describe("modulo auditoria", () => {
       const mockCreate = vi.fn().mockResolvedValue({ id: "aud-1" });
       const mockPrisma = {
         auditoria: {
-          create: mockCreate
-        }
+          create: mockCreate,
+        },
       } as any;
 
       const adapter = crearPrismaAuditoriaAdapter(mockPrisma);
@@ -108,7 +108,7 @@ describe("modulo auditoria", () => {
         timestamp: fecha,
         valorAnterior: { rol: "DOCENTE" },
         valorNuevo: { rol: "ADMINISTRACION" },
-        correlacionId: "corr-123"
+        correlacionId: "corr-123",
       });
 
       expect(mockCreate).toHaveBeenCalledWith({
@@ -120,8 +120,8 @@ describe("modulo auditoria", () => {
           valorAnterior: { rol: "DOCENTE" },
           valorNuevo: { rol: "ADMINISTRACION" },
           correlacionId: "corr-123",
-          createdAt: fecha
-        }
+          createdAt: fecha,
+        },
       });
     });
   });

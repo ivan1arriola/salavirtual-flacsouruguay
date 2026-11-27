@@ -35,6 +35,6 @@ export interface ConciliacionAsistenciaZoomRepositoryPort {
     registroId: string,
     versionEsperada: number,
     cambio: CambioConciliacionZoom,
-    actorUsuarioId: string
+    actorUsuarioId: string,
   ): Promise<ResultadoAplicarConciliacionZoom>;
 }

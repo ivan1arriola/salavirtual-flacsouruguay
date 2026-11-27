@@ -1,0 +1,29 @@
+name: "Robustez · Compatibilidad temporal"
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "23 6 * * 1"
+permissions:
+  contents: read
+concurrency:
+  group: temporal-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  timezone:
+    name: "Pruebas temporales (${{ matrix.timezone }})"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        timezone: [UTC, America/New_York]
+    env:
+      TZ: ${{ matrix.timezone }}
+      NODE_OPTIONS: --unhandled-rejections=strict
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/preparar-entorno
+      - name: Verificar suite con zona horaria alternativa
+        run: npm test

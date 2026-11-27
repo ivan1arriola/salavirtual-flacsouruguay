@@ -2,7 +2,7 @@ import { History } from "lucide-react";
 import { formatDateTime } from "@/src/lib/ui/format";
 import type {
   AccionHistorialAsistencia,
-  RegistroHistorialAsistenciaPersonal
+  RegistroHistorialAsistenciaPersonal,
 } from "@/src/modules/asistencia/resumen-personal.domain";
 
 function actionLabel(action: AccionHistorialAsistencia): string {
@@ -16,11 +16,13 @@ function actionLabel(action: AccionHistorialAsistencia): string {
 }
 
 function actionClass(action: AccionHistorialAsistencia): string {
-  return action === "DESVINCULADO" ? "assistant-history-status removed" : "assistant-history-status";
+  return action === "DESVINCULADO"
+    ? "assistant-history-status removed"
+    : "assistant-history-status";
 }
 
 export function AssistantHistory({
-  entries
+  entries,
 }: Readonly<{
   entries: readonly RegistroHistorialAsistenciaPersonal[];
 }>) {
@@ -60,7 +62,9 @@ export function AssistantHistory({
                   {entries.map((entry) => (
                     <tr key={entry.id}>
                       <td>
-                        <span className={actionClass(entry.accion)}>{actionLabel(entry.accion)}</span>
+                        <span className={actionClass(entry.accion)}>
+                          {actionLabel(entry.accion)}
+                        </span>
                       </td>
                       <td>
                         <strong>{entry.titulo}</strong>

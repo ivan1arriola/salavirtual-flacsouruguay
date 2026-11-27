@@ -18,39 +18,39 @@ describe("gestión administrativa de integrantes por programa", () => {
             activo: true,
             docente: {
               id: "docente",
-              programas: [{ programaId: "p-keep" }, { programaId: "p-remove" }]
-            }
-          })
+              programas: [{ programaId: "p-keep" }, { programaId: "p-remove" }],
+            },
+          }),
       },
       programa: { count: vi.fn().mockResolvedValue(2) },
       docente: { create: vi.fn() },
       docentePrograma: { updateMany, upsert },
-      auditoria: { create: createAudit }
+      auditoria: { create: createAudit },
     };
     const db = {
-      $transaction: (action: (client: typeof tx) => Promise<unknown>) => action(tx)
+      $transaction: (action: (client: typeof tx) => Promise<unknown>) => action(tx),
     } as unknown as PrismaClient;
 
     await actualizarProgramasDocente(
       db,
       { id: "admin", rol: "ADMINISTRACION", activo: true },
       "docente-user",
-      { programaIds: ["p-keep", "p-new"] }
+      { programaIds: ["p-keep", "p-new"] },
     );
 
     expect(updateMany).toHaveBeenCalledWith({
       where: {
         docenteId: "docente",
         activo: true,
-        programaId: { notIn: ["p-keep", "p-new"] }
+        programaId: { notIn: ["p-keep", "p-new"] },
       },
-      data: { activo: false }
+      data: { activo: false },
     });
     expect(upsert).toHaveBeenCalledTimes(2);
     expect(upsert).toHaveBeenCalledWith({
       where: { docenteId_programaId: { docenteId: "docente", programaId: "p-new" } },
       create: { docenteId: "docente", programaId: "p-new", activo: true },
-      update: { activo: true }
+      update: { activo: true },
     });
     expect(createAudit).toHaveBeenCalledOnce();
   });

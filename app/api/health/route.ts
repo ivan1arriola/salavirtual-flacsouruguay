@@ -9,6 +9,9 @@ export async function GET() {
     await db.$queryRaw`SELECT 1`;
     return NextResponse.json({ ok: true, app: "flacso-meet", database: "ok" });
   } catch {
-    return NextResponse.json({ ok: false, app: "flacso-meet", database: "unavailable" }, { status: 503 });
+    return NextResponse.json(
+      { ok: false, app: "flacso-meet", database: "unavailable" },
+      { status: 503 },
+    );
   }
 }

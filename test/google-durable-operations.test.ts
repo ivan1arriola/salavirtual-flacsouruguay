@@ -5,7 +5,7 @@ import {
   confirmarGoogleOperacionVerificada,
   ejecutarGooglePostUnaVez,
   GoogleOperacionInciertaError,
-  GoogleCuentaOcupadaError
+  GoogleCuentaOcupadaError,
 } from "../src/modules/operaciones/google-operaciones-externas.service";
 
 type Operation = {
@@ -35,7 +35,7 @@ function fixture() {
       updateMany: vi.fn(
         async ({
           where,
-          data
+          data,
         }: {
           where: { clave: string; estado: string };
           data: {
@@ -53,15 +53,15 @@ function fixture() {
           item.estado = data.estado;
           item.intentos += data.intentos?.increment ?? 0;
           if ("resultado" in data) {
-            item.resultado = data.resultado as Record<string, string>;
+            item.resultado = data.resultado;
           }
           return { count: 1 };
-        }
+        },
       ),
       update: vi.fn(
         async ({
           where,
-          data
+          data,
         }: {
           where: { clave: string };
           data: { estado: string; resultado: Record<string, string> };
@@ -72,8 +72,8 @@ function fixture() {
           }
           Object.assign(item, data);
           return { ...item };
-        }
-      )
+        },
+      ),
     },
     googleCuentaLease: {
       upsert: vi.fn(async ({ where, create }: { where: { clave: string }; create: Lease }) => {
@@ -84,7 +84,7 @@ function fixture() {
       updateMany: vi.fn(
         async ({
           where,
-          data
+          data,
         }: {
           where: { clave: string; venceAt?: { lte: Date }; token?: string };
           data: { token: string | null; venceAt: Date };
@@ -101,9 +101,9 @@ function fixture() {
           }
           Object.assign(lease, data);
           return { count: 1 };
-        }
-      )
-    }
+        },
+      ),
+    },
   };
   return { db: db as unknown as PrismaClient, operations, leases };
 }
@@ -112,39 +112,39 @@ const spec = {
   clave: claveOperacionGoogle("MEET_CREAR_ESPACIO", "host-1", "event-1"),
   proveedor: "MEET" as const,
   tipo: "MEET_CREAR_ESPACIO" as const,
-  cuenta: "host-1"
+  cuenta: "host-1",
 };
 const serialize = (data: { id: string }) => ({ id: data.id });
-const restore = (data: Record<string, string>) => ({ id: data.id! });
+const restore = (data: Record<string, string>) => ({ id: data["id"]! });
 
 describe("Google persistent POST boundary", () => {
   it("stores successful POST and returns the exact same remote ID on replay", async () => {
     const { db, operations } = fixture();
     const send = vi.fn().mockResolvedValue({ id: "spaces/google-1" });
     expect(await ejecutarGooglePostUnaVez(db, spec, send, serialize, restore)).toEqual({
-      id: "spaces/google-1"
+      id: "spaces/google-1",
     });
     expect(await ejecutarGooglePostUnaVez(db, spec, send, serialize, restore)).toEqual({
-      id: "spaces/google-1"
+      id: "spaces/google-1",
     });
     expect(send).toHaveBeenCalledOnce();
     expect(operations.get(spec.clave)).toMatchObject({
       estado: "CONFIRMADA",
       intentos: 1,
-      resultado: { id: "spaces/google-1" }
+      resultado: { id: "spaces/google-1" },
     });
   });
 
   it("marks ambiguous errors and refuses to repeat POST", async () => {
     const { db, operations } = fixture();
     const send = vi.fn().mockRejectedValue(new Error("socket hang up"));
-    await expect(ejecutarGooglePostUnaVez(db, spec, send, serialize, restore)).rejects.toBeInstanceOf(
-      GoogleOperacionInciertaError
-    );
+    await expect(
+      ejecutarGooglePostUnaVez(db, spec, send, serialize, restore),
+    ).rejects.toBeInstanceOf(GoogleOperacionInciertaError);
     expect(operations.get(spec.clave)?.estado).toBe("INCIERTA");
-    await expect(ejecutarGooglePostUnaVez(db, spec, send, serialize, restore)).rejects.toBeInstanceOf(
-      GoogleOperacionInciertaError
-    );
+    await expect(
+      ejecutarGooglePostUnaVez(db, spec, send, serialize, restore),
+    ).rejects.toBeInstanceOf(GoogleOperacionInciertaError);
     expect(send).toHaveBeenCalledOnce();
   });
 
@@ -152,9 +152,9 @@ describe("Google persistent POST boundary", () => {
     const { db, operations } = fixture();
     operations.set(spec.clave, { ...spec, estado: "ENVIANDO", intentos: 1 });
     const send = vi.fn();
-    await expect(ejecutarGooglePostUnaVez(db, spec, send, serialize, restore)).rejects.toBeInstanceOf(
-      GoogleOperacionInciertaError
-    );
+    await expect(
+      ejecutarGooglePostUnaVez(db, spec, send, serialize, restore),
+    ).rejects.toBeInstanceOf(GoogleOperacionInciertaError);
     expect(send).not.toHaveBeenCalled();
   });
 
@@ -173,10 +173,10 @@ describe("Google persistent POST boundary", () => {
     await vi.waitFor(() => expect(first).toHaveBeenCalledOnce());
     const secondSpec = {
       ...spec,
-      clave: claveOperacionGoogle("MEET_CREAR_ESPACIO", "host-1", "event-2")
+      clave: claveOperacionGoogle("MEET_CREAR_ESPACIO", "host-1", "event-2"),
     };
     await expect(
-      ejecutarGooglePostUnaVez(db, secondSpec, vi.fn(), serialize, restore)
+      ejecutarGooglePostUnaVez(db, secondSpec, vi.fn(), serialize, restore),
     ).rejects.toBeInstanceOf(GoogleCuentaOcupadaError);
     release();
     await expect(firstCall).resolves.toEqual({ id: "one" });
@@ -186,24 +186,28 @@ describe("Google persistent POST boundary", () => {
     const { db } = fixture();
     await ejecutarGooglePostUnaVez(db, spec, async () => ({ id: "one" }), serialize, restore);
     await expect(
-      ejecutarGooglePostUnaVez(db, { ...spec, cuenta: "host-2" }, vi.fn(), serialize, restore)
+      ejecutarGooglePostUnaVez(db, { ...spec, cuenta: "host-2" }, vi.fn(), serialize, restore),
     ).rejects.toBeInstanceOf(GoogleOperacionInciertaError);
   });
 
   it("permite confirmar una operación incierta solo con un ID remoto verificado", async () => {
     const { db, operations } = fixture();
     operations.set(spec.clave, { ...spec, estado: "INCIERTA", intentos: 1 });
-    expect(await confirmarGoogleOperacionVerificada(db, spec.clave, { id: "folder-confirmed" })).toBe(true);
+    expect(
+      await confirmarGoogleOperacionVerificada(db, spec.clave, { id: "folder-confirmed" }),
+    ).toBe(true);
     expect(operations.get(spec.clave)).toMatchObject({
       estado: "CONFIRMADA",
-      resultado: { id: "folder-confirmed" }
+      resultado: { id: "folder-confirmed" },
     });
     expect(await confirmarGoogleOperacionVerificada(db, spec.clave, { id: "other" })).toBe(false);
   });
 
   it("no acepta evidencia de conciliación sin ID remoto", async () => {
     const { db } = fixture();
-    await expect(confirmarGoogleOperacionVerificada(db, spec.clave, {})).rejects.toThrow("ID válido");
+    await expect(confirmarGoogleOperacionVerificada(db, spec.clave, {})).rejects.toThrow(
+      "ID válido",
+    );
   });
 
   it("does not persist credentials or raw request payloads", async () => {

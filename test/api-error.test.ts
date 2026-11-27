@@ -6,7 +6,7 @@ import {
   IntegrationApiError,
   NotFoundApiError,
   ValidationApiError,
-  toHttpError
+  toHttpError,
 } from "../src/lib/http/api-error";
 
 describe("errores HTTP", () => {
@@ -16,7 +16,7 @@ describe("errores HTTP", () => {
     [new NotFoundApiError("no existe"), 404, "NotFoundApiError"],
     [new ConflictApiError("conflicto"), 409, "ConflictApiError"],
     [new IntegrationApiError("google"), 502, "IntegrationApiError"],
-    [new IntegrationApiError("google caído", 503), 503, "IntegrationApiError"]
+    [new IntegrationApiError("google caído", 503), 503, "IntegrationApiError"],
   ] as const)("preserva el status de %s", (error, status, name) => {
     expect(error.name).toBe(name);
     expect(toHttpError(error)).toEqual({ status, message: error.message });
@@ -32,18 +32,18 @@ describe("errores HTTP", () => {
 
     expect(toHttpError(parsed.error)).toEqual({
       status: 400,
-      message: "Nombre demasiado corto"
+      message: "Nombre demasiado corto",
     });
   });
 
   it("mapea conflictos y ausencias conocidos de Prisma sin depender de Prisma", () => {
     expect(toHttpError({ code: "P2002" })).toEqual({
       status: 409,
-      message: "La operación entra en conflicto con datos existentes."
+      message: "La operación entra en conflicto con datos existentes.",
     });
     expect(toHttpError({ code: "P2025" })).toEqual({
       status: 404,
-      message: "El recurso solicitado no existe."
+      message: "El recurso solicitado no existe.",
     });
   });
 
@@ -51,7 +51,7 @@ describe("errores HTTP", () => {
     const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
     expect(toHttpError({ code: 2002 })).toEqual({
       status: 500,
-      message: "Ocurrió un error interno al procesar la solicitud."
+      message: "Ocurrió un error interno al procesar la solicitud.",
     });
     expect(consoleError).toHaveBeenCalledOnce();
     consoleError.mockRestore();
@@ -63,7 +63,7 @@ describe("errores HTTP", () => {
 
     expect(toHttpError(error)).toEqual({
       status: 500,
-      message: "Ocurrió un error interno al procesar la solicitud."
+      message: "Ocurrió un error interno al procesar la solicitud.",
     });
     expect(consoleError).toHaveBeenCalledWith("Unhandled API error", error);
     consoleError.mockRestore();

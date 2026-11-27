@@ -3,7 +3,7 @@ import {
   construirSolicitudReunion,
   localMontevideoToIso,
   resolverAsistenteTecnicoId,
-  type EntradaSolicitud
+  type EntradaSolicitud,
 } from "../src/modules/reuniones/presentation/components/nueva-reunion/solicitud-reunion";
 import { asistenciaLocalAIso } from "../src/modules/reuniones/horarios-asistencia.adapter";
 import { sugerirHorarioAsistencia } from "../src/modules/reuniones/horarios-asistencia.domain";
@@ -15,7 +15,7 @@ const fecha = {
   horaFin: "17:00",
   horaAsistenciaInicio: "09:30",
   horaAsistenciaFin: "17:30",
-  descripcion: ""
+  descripcion: "",
 };
 const entrada: EntradaSolicitud = {
   titulo: "Seminario",
@@ -24,7 +24,7 @@ const entrada: EntradaSolicitud = {
   requiereAsistencia: false,
   requiereGrabacion: true,
   modalidad: "HIBRIDA",
-  fechas: [fecha]
+  fechas: [fecha],
 };
 
 describe("construcción de la solicitud de reunión", () => {
@@ -44,7 +44,7 @@ describe("construcción de la solicitud de reunión", () => {
       requiereGrabacion: true,
       plataforma: "ZOOM",
       timezone: "America/Montevideo",
-      instancias: [{ inicio: "2026-11-10T13:00:00.000Z", fin: "2026-11-10T20:00:00.000Z" }]
+      instancias: [{ inicio: "2026-11-10T13:00:00.000Z", fin: "2026-11-10T20:00:00.000Z" }],
     });
   });
   it("sin asistencia fuerza modalidad virtual y omite la cobertura", () => {
@@ -57,18 +57,19 @@ describe("construcción de la solicitud de reunión", () => {
     const instancia = construirSolicitudReunion({
       ...entrada,
       requiereAsistencia: true,
-      modalidad: "VIRTUAL"
+      modalidad: "VIRTUAL",
     }).instancias[0];
     const horario = sugerirHorarioAsistencia(fecha.horaInicio, fecha.horaFin, "VIRTUAL");
     expect(instancia.asistenciaInicio).toBe(
-      asistenciaLocalAIso(fecha.fecha, fecha.horaInicio, horario.llegada, "LLEGADA")
+      asistenciaLocalAIso(fecha.fecha, fecha.horaInicio, horario.llegada, "LLEGADA"),
     );
     expect(instancia.asistenciaFin).toBe(
-      asistenciaLocalAIso(fecha.fecha, fecha.horaFin, fecha.horaFin, "SALIDA")
+      asistenciaLocalAIso(fecha.fecha, fecha.horaFin, fecha.horaFin, "SALIDA"),
     );
   });
   it("respeta los horarios editables de cobertura híbrida", () => {
-    const instancia = construirSolicitudReunion({ ...entrada, requiereAsistencia: true }).instancias[0];
+    const instancia = construirSolicitudReunion({ ...entrada, requiereAsistencia: true })
+      .instancias[0];
     expect(instancia.asistenciaInicio).toBe("2026-11-10T12:30:00.000Z");
     expect(instancia.asistenciaFin).toBe("2026-11-10T20:30:00.000Z");
   });
@@ -82,9 +83,9 @@ describe("construcción de la solicitud de reunión", () => {
           horaInicio: "22:00",
           horaFin: "23:45",
           horaAsistenciaInicio: "21:30",
-          horaAsistenciaFin: "00:30"
-        }
-      ]
+          horaAsistenciaFin: "00:30",
+        },
+      ],
     }).instancias[0];
     expect(instancia.asistenciaFin).toBe("2026-11-11T03:30:00.000Z");
   });
@@ -94,14 +95,14 @@ describe("construcción de la solicitud de reunión", () => {
     expect(instancia.descripcion).toBeUndefined();
     expect(JSON.parse(JSON.stringify(instancia))).not.toHaveProperty("descripcion");
     expect(
-      construirSolicitudReunion({ ...entrada, fechas: [{ ...fecha, descripcion: "Notas" }] }).instancias[0]
-        .descripcion
+      construirSolicitudReunion({ ...entrada, fechas: [{ ...fecha, descripcion: "Notas" }] })
+        .instancias[0].descripcion,
     ).toBe("Notas");
   });
   it("propaga el asistente solo cuando viene resuelto en la entrada", () => {
     expect(construirSolicitudReunion(entrada).asistenteTecnicoId).toBeUndefined();
     expect(
-      construirSolicitudReunion({ ...entrada, asistenteTecnicoId: "asistente" }).asistenteTecnicoId
+      construirSolicitudReunion({ ...entrada, asistenteTecnicoId: "asistente" }).asistenteTecnicoId,
     ).toBe("asistente");
   });
 });
@@ -111,7 +112,7 @@ describe("asignación directa de asistente", () => {
     puedeAsignar: true,
     requiereAsistencia: true,
     modoAsistencia: "ASSIGN",
-    valorSeleccionado: "asistente-1"
+    valorSeleccionado: "asistente-1",
   } as const;
 
   it("asigna solo con permiso, monitoreo solicitado y modo «Asignar ahora»", () => {
@@ -123,7 +124,7 @@ describe("asignación directa de asistente", () => {
     ["sin monitoreo solicitado", { requiereAsistencia: false }],
     ["en modo abierto a postulaciones", { modoAsistencia: "OPEN" }],
     ["con selección vacía", { valorSeleccionado: "" }],
-    ["sin campo en el formulario", { valorSeleccionado: null }]
+    ["sin campo en el formulario", { valorSeleccionado: null }],
   ] as const)("no asigna %s", (_nombre, cambio) => {
     expect(resolverAsistenteTecnicoId({ ...base, ...cambio })).toBeUndefined();
   });

@@ -7,7 +7,7 @@ import {
   firstName,
   formatRange,
   fullName,
-  passwordSala
+  passwordSala,
 } from "./email-message-helpers";
 
 const db = new PrismaClient();
@@ -22,9 +22,9 @@ async function main(): Promise<void> {
       instancias: {
         some: {
           inicioProgramadoAt: { gte: now },
-          estado: { in: ["PROGRAMADA", "EN_CURSO"] }
-        }
-      }
+          estado: { in: ["PROGRAMADA", "EN_CURSO"] },
+        },
+      },
     },
     orderBy: { fechaInicioSolicitada: "asc" },
     select: {
@@ -43,17 +43,17 @@ async function main(): Promise<void> {
                   id: true,
                   nombres: true,
                   apellidos: true,
-                  emailPrincipal: true
-                }
-              }
-            }
-          }
-        }
+                  emailPrincipal: true,
+                },
+              },
+            },
+          },
+        },
       },
       instancias: {
         where: {
           inicioProgramadoAt: { gte: now },
-          estado: { in: ["PROGRAMADA", "EN_CURSO"] }
+          estado: { in: ["PROGRAMADA", "EN_CURSO"] },
         },
         orderBy: [{ inicioProgramadoAt: "asc" }, { id: "asc" }],
         select: {
@@ -64,12 +64,14 @@ async function main(): Promise<void> {
             select: {
               joinUrl: true,
               codigoReunion: true,
-              cuentaProveedor: { select: { nombre: true, emailOrganizador: true, secretRef: true } }
-            }
-          }
-        }
-      }
-    }
+              cuentaProveedor: {
+                select: { nombre: true, emailOrganizador: true, secretRef: true },
+              },
+            },
+          },
+        },
+      },
+    },
   });
 
   const byTeacher = new Map<string, typeof requests>();
@@ -105,7 +107,7 @@ async function main(): Promise<void> {
       const cuenta = meet?.cuentaProveedor;
       const observaciones = [
         request.requiereAsistenciaTecnica ? "requiere asistencia" : null,
-        request.requiereGrabacion ? "requiere grabación" : null
+        request.requiereGrabacion ? "requiere grabación" : null,
       ].filter((item): item is string => Boolean(item));
 
       return {
@@ -113,13 +115,13 @@ async function main(): Promise<void> {
         programa: request.docentePrograma.programa.nombre,
         modalidad: request.modalidad,
         fechas: request.instancias.map((instancia) =>
-          formatRange(instancia.inicioProgramadoAt, instancia.finProgramadoAt)
+          formatRange(instancia.inicioProgramadoAt, instancia.finProgramadoAt),
         ),
         joinUrl: meet?.joinUrl,
         codigoReunion: meet?.codigoReunion,
         usuarioSala: cuenta?.emailOrganizador,
         passwordSala: passwordSala(cuenta, descifrarConfiguracion),
-        observaciones
+        observaciones,
       };
     });
 
@@ -128,7 +130,7 @@ async function main(): Promise<void> {
       greetingName: firstName(teacher),
       intro:
         "Te compartimos el detalle de tus próximas reuniones programadas. Cada bloque corresponde a una reunión; si tiene varias fechas, todas usan el mismo acceso Meet.",
-      cards
+      cards,
     });
     const name = fullName(teacher);
 
@@ -137,8 +139,8 @@ async function main(): Promise<void> {
         `PARA: ${name} <${teacher.emailPrincipal ?? "sin email"}>`,
         `ASUNTO: ${subject}`,
         "",
-        message.text
-      ].join("\n")
+        message.text,
+      ].join("\n"),
     );
 
     if (outDir && teacher.emailPrincipal) {
@@ -156,7 +158,7 @@ async function main(): Promise<void> {
         text_file: textFile,
         html_file: htmlFile,
         meetings: items.length,
-        instances: items.reduce((total, item) => total + item.instancias.length, 0)
+        instances: items.reduce((total, item) => total + item.instancias.length, 0),
       });
     }
   }

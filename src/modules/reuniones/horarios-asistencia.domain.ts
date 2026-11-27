@@ -15,7 +15,8 @@ function minutos(value: string): number | null {
   if (!/^\d{2}:\d{2}$/.test(value)) {
     return null;
   }
-  const [horas, minutos] = value.split(":").map(Number);
+  const horas = Number(value.slice(0, 2));
+  const minutos = Number(value.slice(3, 5));
   return horas >= 0 && horas < 24 && minutos >= 0 && minutos < 60 ? horas * 60 + minutos : null;
 }
 
@@ -28,7 +29,7 @@ function horaDesdeMinutos(value: number): string {
 export function sugerirHorarioAsistencia(
   horaInicio: string,
   horaFin: string,
-  modalidad: ModalidadHorarioAsistencia = "HIBRIDA"
+  modalidad: ModalidadHorarioAsistencia = "HIBRIDA",
 ) {
   const inicio = minutos(horaInicio);
   const fin = minutos(horaFin);
@@ -37,10 +38,13 @@ export function sugerirHorarioAsistencia(
       inicio === null
         ? ""
         : horaDesdeMinutos(
-            inicio - (modalidad === "VIRTUAL" ? ANTICIPACION_VIRTUAL_MINUTOS : MARGEN_ASISTENCIA_MINUTOS)
+            inicio -
+              (modalidad === "VIRTUAL" ? ANTICIPACION_VIRTUAL_MINUTOS : MARGEN_ASISTENCIA_MINUTOS),
           ),
     salida:
-      fin === null ? "" : horaDesdeMinutos(fin + (modalidad === "VIRTUAL" ? 0 : MARGEN_ASISTENCIA_MINUTOS))
+      fin === null
+        ? ""
+        : horaDesdeMinutos(fin + (modalidad === "VIRTUAL" ? 0 : MARGEN_ASISTENCIA_MINUTOS)),
   };
 }
 
@@ -48,12 +52,20 @@ export function sugerirHorarioAsistencia(
 export function sincronizarHorarioAsistencia<T extends HorarioConAsistencia>(
   anterior: T,
   nuevo: T,
-  modalidad: ModalidadHorarioAsistencia = "HIBRIDA"
+  modalidad: ModalidadHorarioAsistencia = "HIBRIDA",
 ): T {
-  const sugeridoAnterior = sugerirHorarioAsistencia(anterior.horaInicio, anterior.horaFin, modalidad);
+  const sugeridoAnterior = sugerirHorarioAsistencia(
+    anterior.horaInicio,
+    anterior.horaFin,
+    modalidad,
+  );
   const sugeridoNuevo = sugerirHorarioAsistencia(nuevo.horaInicio, nuevo.horaFin, modalidad);
   if (modalidad === "VIRTUAL") {
-    return { ...nuevo, horaAsistenciaInicio: sugeridoNuevo.llegada, horaAsistenciaFin: sugeridoNuevo.salida };
+    return {
+      ...nuevo,
+      horaAsistenciaInicio: sugeridoNuevo.llegada,
+      horaAsistenciaFin: sugeridoNuevo.salida,
+    };
   }
   return {
     ...nuevo,
@@ -64,7 +76,7 @@ export function sincronizarHorarioAsistencia<T extends HorarioConAsistencia>(
     horaAsistenciaFin:
       !anterior.horaAsistenciaFin || anterior.horaAsistenciaFin === sugeridoAnterior.salida
         ? sugeridoNuevo.salida
-        : anterior.horaAsistenciaFin
+        : anterior.horaAsistenciaFin,
   };
 }
 
@@ -72,7 +84,7 @@ export function sincronizarHorarioAsistencia<T extends HorarioConAsistencia>(
 export function desfaseDiaAsistencia(
   horaEvento: string,
   horaAsistencia: string,
-  extremo: "LLEGADA" | "SALIDA"
+  extremo: "LLEGADA" | "SALIDA",
 ): number {
   const evento = minutos(horaEvento);
   const asistencia = minutos(horaAsistencia);
@@ -90,7 +102,7 @@ export function desfaseDiaAsistencia(
 
 export function horarioAsistenciaCumpleMargen(
   horario: HorarioConAsistencia,
-  modalidad: ModalidadHorarioAsistencia = "HIBRIDA"
+  modalidad: ModalidadHorarioAsistencia = "HIBRIDA",
 ): boolean {
   const inicio = minutos(horario.horaInicio);
   const fin = minutos(horario.horaFin);
@@ -100,9 +112,11 @@ export function horarioAsistenciaCumpleMargen(
     return false;
   }
   const llegadaAbsoluta =
-    llegada + desfaseDiaAsistencia(horario.horaInicio, horario.horaAsistenciaInicio, "LLEGADA") * MINUTOS_DIA;
+    llegada +
+    desfaseDiaAsistencia(horario.horaInicio, horario.horaAsistenciaInicio, "LLEGADA") * MINUTOS_DIA;
   const salidaAbsoluta =
-    salida + desfaseDiaAsistencia(horario.horaFin, horario.horaAsistenciaFin, "SALIDA") * MINUTOS_DIA;
+    salida +
+    desfaseDiaAsistencia(horario.horaFin, horario.horaAsistenciaFin, "SALIDA") * MINUTOS_DIA;
   return modalidad === "VIRTUAL"
     ? inicio - llegadaAbsoluta === ANTICIPACION_VIRTUAL_MINUTOS && salidaAbsoluta === fin
     : inicio - llegadaAbsoluta >= MARGEN_ASISTENCIA_MINUTOS &&

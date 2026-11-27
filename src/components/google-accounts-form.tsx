@@ -8,7 +8,7 @@ export function GoogleAccountsForm({
   userId,
   initialEmails,
   initialEmailPrincipal,
-  hasPassword
+  hasPassword,
 }: Readonly<{
   userId: string;
   initialEmails: readonly string[];
@@ -16,12 +16,17 @@ export function GoogleAccountsForm({
   hasPassword: boolean;
 }>) {
   const router = useRouter();
-  const [emails, setEmails] = useState<readonly string[]>(initialEmails.length ? initialEmails : [""]);
+  const [emails, setEmails] = useState<readonly string[]>(
+    initialEmails.length ? initialEmails : [""],
+  );
   const [principalEmail, setPrincipalEmail] = useState(initialEmailPrincipal ?? "");
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
 
-  const firstGoogleEmail = useMemo(() => emails.map((email) => email.trim()).find(Boolean) ?? null, [emails]);
+  const firstGoogleEmail = useMemo(
+    () => emails.map((email) => email.trim()).find(Boolean) ?? null,
+    [emails],
+  );
   const effectivePrincipalEmail = firstGoogleEmail ?? principalEmail;
 
   async function save() {
@@ -32,8 +37,8 @@ export function GoogleAccountsForm({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         emails: emails.filter((email) => email.trim()),
-        emailPrincipal: firstGoogleEmail ? undefined : principalEmail.trim() || null
-      })
+        emailPrincipal: firstGoogleEmail ? undefined : principalEmail.trim() || null,
+      }),
     });
     const result = await response.json();
     if (response.ok) {
@@ -86,7 +91,9 @@ export function GoogleAccountsForm({
               placeholder="persona@gmail.com"
               onChange={(event) =>
                 setEmails(
-                  emails.map((current, position) => (position === index ? event.target.value : current))
+                  emails.map((current, position) =>
+                    position === index ? event.target.value : current,
+                  ),
                 )
               }
             />
@@ -103,7 +110,11 @@ export function GoogleAccountsForm({
         ))}
       </div>
       <footer className="form-actions">
-        <button className="secondary-action" type="button" onClick={() => setEmails([...emails, ""])}>
+        <button
+          className="secondary-action"
+          type="button"
+          onClick={() => setEmails([...emails, ""])}
+        >
           <Plus size={17} />
           Agregar cuenta
         </button>

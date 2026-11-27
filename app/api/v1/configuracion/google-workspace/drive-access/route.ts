@@ -6,7 +6,7 @@ import { db } from "@/src/lib/db";
 import {
   mensajeErrorGoogleWorkspace,
   obtenerCredencialPrincipalGoogleWorkspace,
-  prepararAccesoSalasDrive
+  prepararAccesoSalasDrive,
 } from "@/src/modules/configuracion/api";
 
 export const runtime = "nodejs";
@@ -22,12 +22,18 @@ export async function POST() {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
     const [configuration, hosts] = await Promise.all([
-      obtenerCredencialPrincipalGoogleWorkspace(db, descifrarConfiguracion, { requireActiva: true }),
+      obtenerCredencialPrincipalGoogleWorkspace(db, descifrarConfiguracion, {
+        requireActiva: true,
+      }),
       db.cuentaProveedor.findMany({
-        where: { proveedor: { tipo: "GOOGLE_MEET" }, activa: true, emailOrganizador: { not: null } },
+        where: {
+          proveedor: { tipo: "GOOGLE_MEET" },
+          activa: true,
+          emailOrganizador: { not: null },
+        },
         select: { emailOrganizador: true },
-        orderBy: { prioridad: "asc" }
-      })
+        orderBy: { prioridad: "asc" },
+      }),
     ]);
     if (!configuration?.serviceAccountSubject || !configuration?.driveDestinationId) {
       throw new Error("La configuración de Google Workspace está incompleta.");
@@ -36,10 +42,10 @@ export async function POST() {
       {
         serviceAccountEmail: configuration.serviceAccountEmail,
         privateKey: configuration.privateKey,
-        subject: configuration.serviceAccountSubject
+        subject: configuration.serviceAccountSubject,
       },
       configuration.driveDestinationId,
-      hosts.flatMap(({ emailOrganizador }) => (emailOrganizador ? [emailOrganizador] : []))
+      hosts.flatMap(({ emailOrganizador }) => (emailOrganizador ? [emailOrganizador] : [])),
     );
     return NextResponse.json({ message });
   } catch (error) {

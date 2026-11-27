@@ -12,7 +12,7 @@ export {
   resumirAsignacionesPorAsistente,
   resumirAsistencias,
   resumirMontos,
-  resumirTotales
+  resumirTotales,
 } from "./domain";
 
 export type {
@@ -28,5 +28,5 @@ export type {
   RegistroAsistenciaLiquidacion,
   ResumenAsistencia,
   TarifaVigente,
-  TotalesResumen
+  TotalesResumen,
 } from "./domain";

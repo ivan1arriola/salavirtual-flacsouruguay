@@ -37,17 +37,17 @@ function validPayload(value: unknown, nowSeconds: number): value is MobileTokenP
   }
   const payload = value as Record<string, unknown>;
   return (
-    (payload.v === MOBILE_TOKEN_VERSION ||
-      (payload.v === 2 && typeof payload.sid === "string" && payload.sid.length >= 24)) &&
-    typeof payload.sub === "string" &&
-    payload.sub.length > 0 &&
-    isMobileRole(payload.role) &&
-    typeof payload.iat === "number" &&
-    Number.isInteger(payload.iat) &&
-    payload.iat <= nowSeconds + 300 &&
-    typeof payload.exp === "number" &&
-    Number.isInteger(payload.exp) &&
-    payload.exp > nowSeconds
+    (payload["v"] === MOBILE_TOKEN_VERSION ||
+      (payload["v"] === 2 && typeof payload["sid"] === "string" && payload["sid"].length >= 24)) &&
+    typeof payload["sub"] === "string" &&
+    payload["sub"].length > 0 &&
+    isMobileRole(payload["role"]) &&
+    typeof payload["iat"] === "number" &&
+    Number.isInteger(payload["iat"]) &&
+    payload["iat"] <= nowSeconds + 300 &&
+    typeof payload["exp"] === "number" &&
+    Number.isInteger(payload["exp"]) &&
+    payload["exp"] > nowSeconds
   );
 }
 
@@ -57,7 +57,7 @@ export function signMobileToken(
   nowSeconds = Math.floor(Date.now() / 1000),
   ttlSeconds = MOBILE_TOKEN_TTL_SECONDS,
   role: MobileRole = "ASISTENTE_TECNICO",
-  sessionId?: string
+  sessionId?: string,
 ): TokenIssueResult {
   if (!userId) {
     throw new Error("No se puede emitir un token sin usuario.");
@@ -75,21 +75,21 @@ export function signMobileToken(
     iat: nowSeconds,
     exp: nowSeconds + ttlSeconds,
     v: sessionId ? 2 : MOBILE_TOKEN_VERSION,
-    ...(sessionId ? { sid: sessionId } : {})
+    ...(sessionId ? { sid: sessionId } : {}),
   };
   const encoded = encodePayload(payload);
   const signed = signature(encoded, secret).toString("base64url");
 
   return {
     accessToken: `${encoded}.${signed}`,
-    expiresAt: new Date(payload.exp * 1000).toISOString()
+    expiresAt: new Date(payload.exp * 1000).toISOString(),
   };
 }
 
 export function verifyMobileToken(
   token: string,
   secret: string,
-  nowSeconds = Math.floor(Date.now() / 1000)
+  nowSeconds = Math.floor(Date.now() / 1000),
 ): MobileTokenPayload | null {
   const parts = token.split(".");
   if (parts.length !== 2) {
@@ -122,7 +122,7 @@ export function verifyMobileToken(
 export function issueMobileToken(
   userId: string,
   secret: string,
-  role: MobileRole = "ASISTENTE_TECNICO"
+  role: MobileRole = "ASISTENTE_TECNICO",
 ): TokenIssueResult & { sessionId: string } {
   const sessionId = randomBytes(32).toString("base64url");
   return { ...signMobileToken(userId, secret, undefined, undefined, role, sessionId), sessionId };
@@ -136,7 +136,10 @@ export function mobileSessionHash(sessionId: string): string {
   return createHash("sha256").update(sessionId, "utf8").digest("hex");
 }
 
-export function mobileActorFromRequest(request: Request, secret: string): MobileTokenPayload | null {
+export function mobileActorFromRequest(
+  request: Request,
+  secret: string,
+): MobileTokenPayload | null {
   const authorization = request.headers.get("authorization")?.trim();
   if (!authorization) {
     return null;

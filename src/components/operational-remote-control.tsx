@@ -13,7 +13,7 @@ import {
   UserCheck,
   UserMinus,
   Users,
-  X
+  X,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -27,7 +27,7 @@ export function OperationalRemoteControlPanel({
   inicioAsistenciaIso,
   finAsistenciaIso,
   cohostEmails,
-  tieneMeet
+  tieneMeet,
 }: Readonly<{
   instanciaId: string;
   tipoAccesoActual: string | null;
@@ -40,25 +40,37 @@ export function OperationalRemoteControlPanel({
 }>) {
   const router = useRouter();
   const [tipoAcceso, setTipoAcceso] = useState<"OPEN" | "TRUSTED" | "RESTRICTED">(
-    tipoAccesoActual === "OPEN" || tipoAccesoActual === "RESTRICTED" ? tipoAccesoActual : "TRUSTED"
+    tipoAccesoActual === "OPEN" || tipoAccesoActual === "RESTRICTED" ? tipoAccesoActual : "TRUSTED",
   );
   const [requiereGrabacion, setRequiereGrabacion] = useState(requiereGrabacionActual);
   const [modalidad, setModalidad] = useState<"HIBRIDA" | "VIRTUAL">(modalidadActual);
-  const [inicioAsistencia, setInicioAsistencia] = useState(toLocalDateTimeInput(inicioAsistenciaIso));
+  const [inicioAsistencia, setInicioAsistencia] = useState(
+    toLocalDateTimeInput(inicioAsistenciaIso),
+  );
   const [finAsistencia, setFinAsistencia] = useState(toLocalDateTimeInput(finAsistenciaIso));
   const [nuevoCohost, setNuevoCohost] = useState("");
   const [pending, setPending] = useState(false);
-  const [feedback, setFeedback] = useState<{ kind: "ok" | "warn" | "error"; text: string } | null>(null);
+  const [feedback, setFeedback] = useState<{ kind: "ok" | "warn" | "error"; text: string } | null>(
+    null,
+  );
 
   useEffect(() => {
     setTipoAcceso(
-      tipoAccesoActual === "OPEN" || tipoAccesoActual === "RESTRICTED" ? tipoAccesoActual : "TRUSTED"
+      tipoAccesoActual === "OPEN" || tipoAccesoActual === "RESTRICTED"
+        ? tipoAccesoActual
+        : "TRUSTED",
     );
     setRequiereGrabacion(requiereGrabacionActual);
     setModalidad(modalidadActual);
     setInicioAsistencia(toLocalDateTimeInput(inicioAsistenciaIso));
     setFinAsistencia(toLocalDateTimeInput(finAsistenciaIso));
-  }, [tipoAccesoActual, requiereGrabacionActual, modalidadActual, inicioAsistenciaIso, finAsistenciaIso]);
+  }, [
+    tipoAccesoActual,
+    requiereGrabacionActual,
+    modalidadActual,
+    inicioAsistenciaIso,
+    finAsistenciaIso,
+  ]);
 
   async function enviarActualizacion(payload: Record<string, unknown>, mensajeExito: string) {
     setPending(true);
@@ -69,33 +81,33 @@ export function OperationalRemoteControlPanel({
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
-        }
+          body: JSON.stringify(payload),
+        },
       );
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
         setFeedback({
           kind: "error",
-          text: data.error ?? "No se pudieron aplicar los cambios operativos."
+          text: data.error ?? "No se pudieron aplicar los cambios operativos.",
         });
         return;
       }
       if (data.advertenciaGoogle) {
         setFeedback({
           kind: "warn",
-          text: `${mensajeExito} (Aviso Google Meet: ${data.advertenciaGoogle})`
+          text: `${mensajeExito} (Aviso Google Meet: ${data.advertenciaGoogle})`,
         });
       } else {
         setFeedback({
           kind: "ok",
-          text: mensajeExito
+          text: mensajeExito,
         });
       }
       router.refresh();
     } catch {
       setFeedback({
         kind: "error",
-        text: "No se pudo conectar con el servidor."
+        text: "No se pudo conectar con el servidor.",
       });
     } finally {
       setPending(false);
@@ -109,10 +121,12 @@ export function OperationalRemoteControlPanel({
         tipoAccesoMeet: tieneMeet ? tipoAcceso : undefined,
         requiereGrabacion,
         modalidad,
-        inicioAsistenciaTecnicaAt: inicioAsistencia ? new Date(inicioAsistencia).toISOString() : undefined,
-        finAsistenciaTecnicaAt: finAsistencia ? new Date(finAsistencia).toISOString() : undefined
+        inicioAsistenciaTecnicaAt: inicioAsistencia
+          ? new Date(inicioAsistencia).toISOString()
+          : undefined,
+        finAsistenciaTecnicaAt: finAsistencia ? new Date(finAsistencia).toISOString() : undefined,
       },
-      "Parámetros de la reunión actualizados en tiempo real."
+      "Parámetros de la reunión actualizados en tiempo real.",
     );
   }
 
@@ -122,7 +136,10 @@ export function OperationalRemoteControlPanel({
     if (!limpio) {
       return;
     }
-    await enviarActualizacion({ agregarCohostEmail: limpio }, `Cohost ${limpio} agregado y sincronizado.`);
+    await enviarActualizacion(
+      { agregarCohostEmail: limpio },
+      `Cohost ${limpio} agregado y sincronizado.`,
+    );
     setNuevoCohost("");
   }
 
@@ -136,8 +153,8 @@ export function OperationalRemoteControlPanel({
         <div>
           <h2>Control remoto en tiempo real</h2>
           <p>
-            Modificá política de acceso Meet, requisito de grabación, horarios y cohosts a distancia desde
-            Sala Virtual.
+            Modificá política de acceso Meet, requisito de grabación, horarios y cohosts a distancia
+            desde Sala Virtual.
           </p>
         </div>
         <span className="status status-ok">
@@ -159,7 +176,9 @@ export function OperationalRemoteControlPanel({
                 <option value="TRUSTED">
                   Institucional / Confianza (TRUSTED — FLACSO e invitados entran directo)
                 </option>
-                <option value="RESTRICTED">Restringido (RESTRICTED — solo invitados autorizados)</option>
+                <option value="RESTRICTED">
+                  Restringido (RESTRICTED — solo invitados autorizados)
+                </option>
               </select>
             </label>
 
@@ -174,8 +193,8 @@ export function OperationalRemoteControlPanel({
                 <option value="NO">Grabación no requerida (opcional)</option>
               </select>
               <small className="muted-text">
-                Indica si el encuentro debe grabarse. La grabación en vivo se inicia o detiene desde los
-                controles de Google Meet.
+                Indica si el encuentro debe grabarse. La grabación en vivo se inicia o detiene desde
+                los controles de Google Meet.
               </small>
             </label>
 
@@ -265,7 +284,11 @@ export function OperationalRemoteControlPanel({
                 disabled={pending}
               />
             </label>
-            <button type="submit" className="secondary-action" disabled={pending || !nuevoCohost.trim()}>
+            <button
+              type="submit"
+              className="secondary-action"
+              disabled={pending || !nuevoCohost.trim()}
+            >
               <Plus size={15} aria-hidden="true" />
               Agregar cohost
             </button>
@@ -275,7 +298,9 @@ export function OperationalRemoteControlPanel({
         {feedback ? (
           <p
             aria-live="polite"
-            className={feedback.kind === "error" ? "status-warning-text operational-warning" : "muted-text"}
+            className={
+              feedback.kind === "error" ? "status-warning-text operational-warning" : "muted-text"
+            }
             style={{ marginTop: "0.75rem" }}
           >
             {feedback.text}
@@ -293,7 +318,7 @@ export function OperationalAttendeeDatabaseManager({
   asistentes,
   enGruposPequenos,
   cantidadGruposPequenos,
-  ahoraIso
+  ahoraIso,
 }: Readonly<{
   instanciaId: string;
   asistentes: readonly RegistroAsistenciaOperativoView[];
@@ -337,7 +362,7 @@ export function OperationalAttendeeDatabaseManager({
         (item) =>
           item.nombre.toLowerCase().includes(termino) ||
           (item.email ?? "").toLowerCase().includes(termino) ||
-          (item.salaGrupoPequeno ?? "").toLowerCase().includes(termino)
+          (item.salaGrupoPequeno ?? "").toLowerCase().includes(termino),
       )
     : listaBase;
 
@@ -365,7 +390,11 @@ export function OperationalAttendeeDatabaseManager({
     setMessage(null);
   }
 
-  async function guardarAsistente(e: React.FormEvent, claveParticipante: string, conectado: boolean) {
+  async function guardarAsistente(
+    e: React.FormEvent,
+    claveParticipante: string,
+    conectado: boolean,
+  ) {
     e.preventDefault();
     setPending(true);
     setMessage(null);
@@ -383,9 +412,9 @@ export function OperationalAttendeeDatabaseManager({
             conectado,
             enGrupoPequeno: enGrupoEdit,
             salaGrupoPequeno: salaGrupoEdit.trim() || null,
-            notasOperador: notasEdit.trim() || null
-          })
-        }
+            notasOperador: notasEdit.trim() || null,
+          }),
+        },
       );
       const result = await response.json().catch(() => ({}));
       if (!response.ok) {
@@ -454,7 +483,11 @@ export function OperationalAttendeeDatabaseManager({
           </div>
 
           <div className="operational-attendee-time">
-            <Clock3 size={12} aria-hidden="true" style={{ marginRight: "4px", verticalAlign: "middle" }} />
+            <Clock3
+              size={12}
+              aria-hidden="true"
+              style={{ marginRight: "4px", verticalAlign: "middle" }}
+            />
             {item.conectado ? (
               <span>
                 Hace <strong>{minutosDesdeEntrada} min</strong>
@@ -483,7 +516,9 @@ export function OperationalAttendeeDatabaseManager({
         </div>
 
         {item.notasOperador && !isEditing ? (
-          <div style={{ marginTop: "4px", paddingLeft: "14px", fontSize: "0.73rem", color: "#64748b" }}>
+          <div
+            style={{ marginTop: "4px", paddingLeft: "14px", fontSize: "0.73rem", color: "#64748b" }}
+          >
             Nota: {item.notasOperador}
           </div>
         ) : null}
@@ -554,7 +589,11 @@ export function OperationalAttendeeDatabaseManager({
             </div>
             <div style={{ marginTop: "10px", display: "flex", gap: "8px" }}>
               <button type="submit" className="primary-action" disabled={pending}>
-                {pending ? <LoaderCircle className="button-spinner" size={15} /> : <Save size={15} />}
+                {pending ? (
+                  <LoaderCircle className="button-spinner" size={15} />
+                ) : (
+                  <Save size={15} />
+                )}
                 Guardar en base de datos
               </button>
               <button
@@ -577,7 +616,10 @@ export function OperationalAttendeeDatabaseManager({
       <div className="section-heading">
         <div>
           <h2>Asistentes de la reunión ({asistentes.length})</h2>
-          <p>Registro en vivo persistido en PostgreSQL con correos, tiempos de conexión y estado actual.</p>
+          <p>
+            Registro en vivo persistido en PostgreSQL con correos, tiempos de conexión y estado
+            actual.
+          </p>
         </div>
         <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", flexWrap: "wrap" }}>
           {enGruposPequenos ? (
@@ -654,7 +696,7 @@ export function OperationalAttendeeDatabaseManager({
             guardarAsistente(
               e,
               `manual:${(emailEdit || `${nombreEdit}-${Date.now()}`).trim().toLowerCase()}`,
-              true
+              true,
             )
           }
           className="operational-inline-editor"
@@ -714,7 +756,11 @@ export function OperationalAttendeeDatabaseManager({
             </label>
           </div>
           <div style={{ marginTop: "10px" }}>
-            <button type="submit" className="primary-action" disabled={pending || !nombreEdit.trim()}>
+            <button
+              type="submit"
+              className="primary-action"
+              disabled={pending || !nombreEdit.trim()}
+            >
               {pending ? <LoaderCircle className="button-spinner" size={15} /> : <Save size={15} />}
               Guardar asistente en DB
             </button>

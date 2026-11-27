@@ -11,7 +11,7 @@ const virtual = {
   inicioAsistenciaTecnicaAt: null,
   finAsistenciaTecnicaAt: null,
   modalidadOverride: null,
-  solicitud: { titulo: "Seminario", modalidad: "VIRTUAL" }
+  solicitud: { titulo: "Seminario", modalidad: "VIRTUAL" },
 };
 
 describe("evento de cobertura Zoom", () => {
@@ -21,14 +21,14 @@ describe("evento de cobertura Zoom", () => {
         ...virtual,
         modalidadOverride: "HIBRIDA",
         inicioAsistenciaTecnicaAt: new Date("2026-12-01T17:30:00Z"),
-        finAsistenciaTecnicaAt: new Date("2026-12-01T20:30:00Z")
+        finAsistenciaTecnicaAt: new Date("2026-12-01T20:30:00Z"),
       },
-      baseUrl
+      baseUrl,
     );
     expect(evento?.data).toMatchObject({
       description: `Abrir la cobertura en Sala Virtual FLACSO: ${baseUrl}/operacion/encuentro-1`,
       start: { dateTime: "2026-12-01T17:30:00.000Z" },
-      end: { dateTime: "2026-12-01T20:30:00.000Z" }
+      end: { dateTime: "2026-12-01T20:30:00.000Z" },
     });
   });
 
@@ -36,19 +36,21 @@ describe("evento de cobertura Zoom", () => {
     const original = eventoCoberturaZoom(virtual, baseUrl);
     const editado = eventoCoberturaZoom(
       { ...virtual, finProgramadoAt: new Date("2026-12-01T21:00:00Z") },
-      baseUrl
+      baseUrl,
     );
 
     expect(original?.id).toMatch(/^[a-f0-9]{64}$/);
     expect(editado?.id).toBe(original?.id);
     expect(editado?.data.extendedProperties.private.flacsoHuella).not.toBe(
-      original?.data.extendedProperties.private.flacsoHuella
+      original?.data.extendedProperties.private.flacsoHuella,
     );
   });
 
   it("omite coberturas híbridas con horario pendiente y reuniones con Meet activo", () => {
     expect(eventoCoberturaZoom({ ...virtual, modalidadOverride: "HIBRIDA" }, baseUrl)).toBeNull();
-    expect(eventoCoberturaZoom({ ...virtual, proveedorActivoTipo: "GOOGLE_MEET" }, baseUrl)).toBeNull();
+    expect(
+      eventoCoberturaZoom({ ...virtual, proveedorActivoTipo: "GOOGLE_MEET" }, baseUrl),
+    ).toBeNull();
     expect(eventoCoberturaZoom({ ...virtual, proveedorActivoTipo: null }, baseUrl)).toBeNull();
   });
 });

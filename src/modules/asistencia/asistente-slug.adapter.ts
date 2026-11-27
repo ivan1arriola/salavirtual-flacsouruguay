@@ -6,12 +6,12 @@ type AssistantSlugDb = PrismaClient | Prisma.TransactionClient;
 export async function crearSlugAsistenteDisponible(
   db: AssistantSlugDb,
   name: string,
-  userId: string
+  userId: string,
 ): Promise<string> {
   const base = assistantSlug(name);
   const existing = await db.asistenteTecnico.findUnique({
     where: { slug: base },
-    select: { usuarioId: true }
+    select: { usuarioId: true },
   });
   if (!existing || existing.usuarioId === userId) {
     return base;

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   resolverEstadoActualZoom,
-  type EjecucionZoomObservada
+  type EjecucionZoomObservada,
 } from "../src/modules/reuniones/presentation/estado-actual-zoom";
 
 const primera: EjecucionZoomObservada = {
@@ -9,13 +9,13 @@ const primera: EjecucionZoomObservada = {
   uuid: "primera",
   inicio: new Date("2026-11-25T21:07:00Z"),
   fin: new Date("2026-11-25T21:11:00Z"),
-  inicioConfirmado: true
+  inicioConfirmado: true,
 };
 const segunda: EjecucionZoomObservada = {
   ...primera,
   uuid: "segunda",
   inicio: new Date("2026-11-25T21:11:00Z"),
-  fin: null
+  fin: null,
 };
 
 describe("estado actual de Zoom", () => {
@@ -24,28 +24,36 @@ describe("estado actual de Zoom", () => {
       resolverEstadoActualZoom(
         [primera, segunda],
         { estado: "started", uuid: "segunda", salaEspera: true },
-        "cuenta"
-      )
+        "cuenta",
+      ),
     ).toMatchObject({ tipo: "ACTIVA", ejecucion: segunda, fuente: "API" });
   });
 
   it("no asigna una ejecución de la serie sin UUID vinculado", () => {
     expect(
-      resolverEstadoActualZoom([primera], { estado: "started", uuid: "otra", salaEspera: null }, "cuenta")
+      resolverEstadoActualZoom(
+        [primera],
+        { estado: "started", uuid: "otra", salaEspera: null },
+        "cuenta",
+      ),
     ).toMatchObject({ tipo: "OTRA_EJECUCION", ejecucion: null });
   });
 
   it("no mezcla cuentas y distingue API fallida de reunión cerrada", () => {
     const api = { estado: "started", uuid: "segunda", salaEspera: null } as const;
     expect(resolverEstadoActualZoom([segunda], api, "otra")).toMatchObject({
-      tipo: "OTRA_EJECUCION"
+      tipo: "OTRA_EJECUCION",
     });
     expect(resolverEstadoActualZoom([segunda, primera], null, null)).toMatchObject({
       tipo: "INICIO_SIN_VERIFICAR",
-      ejecucion: segunda
+      ejecucion: segunda,
     });
     expect(
-      resolverEstadoActualZoom([segunda], { estado: "waiting", uuid: "segunda", salaEspera: null }, "cuenta")
+      resolverEstadoActualZoom(
+        [segunda],
+        { estado: "waiting", uuid: "segunda", salaEspera: null },
+        "cuenta",
+      ),
     ).toMatchObject({ tipo: "SIN_ACTIVA" });
   });
 
@@ -54,11 +62,11 @@ describe("estado actual de Zoom", () => {
       resolverEstadoActualZoom(
         [
           { ...primera, fin: null },
-          { ...segunda, fin: primera.fin }
+          { ...segunda, fin: primera.fin },
         ],
         null,
-        null
-      )
+        null,
+      ),
     ).toMatchObject({ tipo: "SIN_VERIFICAR" });
   });
 });

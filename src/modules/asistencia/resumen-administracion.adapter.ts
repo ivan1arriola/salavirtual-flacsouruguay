@@ -5,7 +5,7 @@ import type { FilaResumenAsistente, PeriodoMes } from "@/src/modules/liquidacion
 /** Fachada temporal de compatibilidad para el resumen administrativo. */
 export function obtenerResumenAsistentes(
   db: PrismaClient,
-  periodo: PeriodoMes
+  periodo: PeriodoMes,
 ): Promise<readonly FilaResumenAsistente[]> {
   return crearPrismaLiquidacionesRepositoryAdapter(db).obtenerResumenAsistentes(periodo);
 }

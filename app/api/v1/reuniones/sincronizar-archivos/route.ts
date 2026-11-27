@@ -16,7 +16,7 @@ export async function POST() {
   }
   const actor = await resolveSessionActor(db, {
     id: session.user.id,
-    email: session.user.email
+    email: session.user.email,
   });
   if (!actor?.activo || !puedeSincronizarGrabaciones(actor.rol)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -27,7 +27,7 @@ export async function POST() {
 }
 
 export async function GET(request: Request) {
-  const cronSecret = process.env.CRON_SECRET;
+  const cronSecret = process.env["CRON_SECRET"];
   if (!cronSecret || request.headers.get("authorization") !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -39,7 +39,7 @@ async function executeSynchronization(incluirZoom: boolean) {
   // desde la base de datos; las copias de archivos las hace el worker, nunca esta petición.
   const [meet, zoomEstado] = await Promise.allSettled([
     sincronizarArtefactosOperativos(),
-    incluirZoom ? estadoZoomArchivos() : Promise.resolve(null)
+    incluirZoom ? estadoZoomArchivos() : Promise.resolve(null),
   ]);
   const zoom = !incluirZoom
     ? undefined
@@ -56,12 +56,14 @@ async function executeSynchronization(incluirZoom: boolean) {
     ventanas,
     procesadas: resultados.length,
     sincronizadas: resultados.filter(({ estado }) => estado === "SINCRONIZADO").length,
-    sinRegistroFinalizado: resultados.filter(({ estado }) => estado === "SIN_REGISTRO_FINALIZADO").length,
-    artefactosPendientes: resultados.filter(({ estado }) => estado === "ARTEFACTOS_PENDIENTES").length,
+    sinRegistroFinalizado: resultados.filter(({ estado }) => estado === "SIN_REGISTRO_FINALIZADO")
+      .length,
+    artefactosPendientes: resultados.filter(({ estado }) => estado === "ARTEFACTOS_PENDIENTES")
+      .length,
     grabacionesPendientes: resultados.filter(({ grabacion }) => grabacion === "PENDIENTE").length,
     noGrabadas: resultados.filter(({ grabacion }) => grabacion === "NO_REALIZADA").length,
     errores: resultados.filter(({ estado }) => estado === "ERROR").length,
     archivos: resultados.reduce((total, result) => total + result.archivos, 0),
-    zoom
+    zoom,
   });
 }

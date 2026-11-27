@@ -17,14 +17,14 @@ type RouteContext = Readonly<{ params: Promise<{ instanciaId: string }> }>;
 
 async function consultarParticipantes(
   codigoReunion: string,
-  authZoom: ReturnType<typeof crearProveedorTokenZoom>
+  authZoom: ReturnType<typeof crearProveedorTokenZoom>,
 ) {
   const participantes: { id: string; nombre: string; email: string | null }[] = [];
   const tokens = new Set<string>();
   let token = "";
   do {
     const url = new URL(
-      `https://api.zoom.us/v2/metrics/meetings/${encodeURIComponent(codigoReunion)}/participants`
+      `https://api.zoom.us/v2/metrics/meetings/${encodeURIComponent(codigoReunion)}/participants`,
     );
     url.searchParams.set("type", "live");
     url.searchParams.set("page_size", "300");
@@ -32,7 +32,7 @@ async function consultarParticipantes(
       url.searchParams.set("next_page_token", token);
     }
     const response = await pedirZoom(authZoom, "participantes-vivos", (accessToken) =>
-      fetch(url, { headers: { Authorization: `Bearer ${accessToken}` }, cache: "no-store" })
+      fetch(url, { headers: { Authorization: `Bearer ${accessToken}` }, cache: "no-store" }),
     );
     if (!response.ok) {
       throw await errorPorRespuesta("participantes-vivos", response);
@@ -45,7 +45,7 @@ async function consultarParticipantes(
       participantes.push({
         id: item.id ?? `${participantes.length}`,
         nombre: item.user_name ?? item.name ?? "Participante",
-        email: item.email ?? null
+        email: item.email ?? null,
       });
     }
     token = body.next_page_token ?? "";
@@ -80,8 +80,8 @@ export async function GET(_request: Request, context: RouteContext) {
       inicioProgramadoAt: true,
       finProgramadoAt: true,
       solicitud: { select: { docentePrograma: { select: { programaId: true } } } },
-      eventosProveedor: { select: { proveedor: { select: { tipo: true } }, codigoReunion: true } }
-    }
+      eventosProveedor: { select: { proveedor: { select: { tipo: true } }, codigoReunion: true } },
+    },
   });
   if (!instancia || instancia.estado === "CANCELADA") {
     return NextResponse.json({ error: "Clase no encontrada" }, { status: 404, headers });
@@ -93,7 +93,7 @@ export async function GET(_request: Request, context: RouteContext) {
   if (evento?.proveedor.tipo !== "ZOOM" || !evento.codigoReunion) {
     return NextResponse.json(
       { estado: "NO_DISPONIBLE", motivo: "Esta clase no tiene una reunión de Zoom activa." },
-      { headers }
+      { headers },
     );
   }
   const ahora = Date.now();
@@ -104,21 +104,24 @@ export async function GET(_request: Request, context: RouteContext) {
     return NextResponse.json(
       {
         estado: "NO_DISPONIBLE",
-        motivo: "La consulta en vivo está disponible durante el horario de la clase."
+        motivo: "La consulta en vivo está disponible durante el horario de la clase.",
       },
-      { headers }
+      { headers },
     );
   }
   const credenciales = await obtenerCredencialesZoom(db, descifrarConfiguracion);
   if (!credenciales.disponible) {
-    return NextResponse.json({ estado: "NO_DISPONIBLE", motivo: "Zoom no está configurado." }, { headers });
+    return NextResponse.json(
+      { estado: "NO_DISPONIBLE", motivo: "Zoom no está configurado." },
+      { headers },
+    );
   }
   const authZoom = crearProveedorTokenZoom(credenciales);
   try {
     const participantes = await consultarParticipantes(evento.codigoReunion, authZoom);
     return NextResponse.json(
       { estado: "DISPONIBLE", participantes, actualizadoAt: new Date().toISOString() },
-      { headers }
+      { headers },
     );
   } catch (error) {
     const motivo =

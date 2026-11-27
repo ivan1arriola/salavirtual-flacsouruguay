@@ -8,7 +8,7 @@ const fecha = (valor: Date) =>
   new Intl.DateTimeFormat("es-UY", {
     timeZone: "America/Montevideo",
     dateStyle: "medium",
-    timeStyle: "short"
+    timeStyle: "short",
   }).format(valor);
 
 /** Reintentar tiene sentido sin reporte, o con reporte "disponible" que quedó sin consolidar (se sincronizó antes de vincular). */
@@ -17,7 +17,9 @@ export function debeOfrecerReintentoAsistencia(entrada: {
   estadoReporte: string;
   registros: number;
 }): boolean {
-  return entrada.ocurrencias > 0 && (entrada.estadoReporte !== "DISPONIBLE" || entrada.registros === 0);
+  return (
+    entrada.ocurrencias > 0 && (entrada.estadoReporte !== "DISPONIBLE" || entrada.registros === 0)
+  );
 }
 
 /**
@@ -28,7 +30,7 @@ export function ZoomAsistenciaVista({
   instanciaId,
   asistencia,
   puedeDescargar,
-  puedeReintentar = false
+  puedeReintentar = false,
 }: Readonly<{
   instanciaId: string;
   asistencia: AsistenciaZoomFicha;
@@ -50,8 +52,8 @@ export function ZoomAsistenciaVista({
           <div className="attendance-raw-export-intro">
             <h2>Datos originales de Zoom</h2>
             <p>
-              Reporte de participantes tal como lo entrega Zoom, en JSON y sin transformar. Se consulta a Zoom
-              en el momento de la descarga.
+              Reporte de participantes tal como lo entrega Zoom, en JSON y sin transformar. Se
+              consulta a Zoom en el momento de la descarga.
             </p>
           </div>
           <div className="attendance-raw-export-buttons">
@@ -75,16 +77,16 @@ export function ZoomAsistenciaVista({
           <div className="attendance-raw-export-intro">
             <h2>Reporte procesado</h2>
             <p>
-              Cálculo de Sala Virtual, distinto del JSON original de Zoom: participantes consolidados (sin
-              duplicar reingresos ni solapes, sala de espera excluida) y cada conexión con su entrada y
-              salida. Estos son CSV de lo ya guardado.
+              Cálculo de Sala Virtual, distinto del JSON original de Zoom: participantes
+              consolidados (sin duplicar reingresos ni solapes, sala de espera excluida) y cada
+              conexión con su entrada y salida. Estos son CSV de lo ya guardado.
             </p>
           </div>
           <div className="attendance-raw-export-buttons">
             {(
               [
                 ["resumen", "CSV de participantes consolidados"],
-                ["sesiones", "CSV de conexiones (entradas y salidas)"]
+                ["sesiones", "CSV de conexiones (entradas y salidas)"],
               ] as const
             ).map(([conjunto, etiqueta]) => (
               <a
@@ -103,7 +105,7 @@ export function ZoomAsistenciaVista({
       debeOfrecerReintentoAsistencia({
         ocurrencias: ocurrencias.length,
         estadoReporte,
-        registros: registros.length
+        registros: registros.length,
       }) ? (
         <AttendanceRegenerateAction instanciaId={instanciaId} />
       ) : null}
@@ -118,9 +120,9 @@ export function ZoomAsistenciaVista({
       ) : (
         <>
           <p className="zoom-attendance-note">
-            {registros.length} participantes · {conexiones} conexiones. Minutos y porcentaje sobre el horario
-            programado, sin duplicar reingresos. Los correos son los informados por Zoom, no identidad
-            confirmada.
+            {registros.length} participantes · {conexiones} conexiones. Minutos y porcentaje sobre
+            el horario programado, sin duplicar reingresos. Los correos son los informados por Zoom,
+            no identidad confirmada.
           </p>
           <ZoomAsistenciaConciliacion
             instanciaId={instanciaId}

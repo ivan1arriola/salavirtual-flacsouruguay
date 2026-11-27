@@ -5,7 +5,7 @@ import type { ZoomEstadoLecturaPort } from "../../ports";
 const CODIGOS_CAPACIDAD = ["CAPACIDAD_PENDIENTE", "SOLICITUD_RECHAZADA"];
 
 export function crearPrismaZoomEstadoLecturaAdapter(
-  deps: Readonly<{ db: PrismaClient }>
+  deps: Readonly<{ db: PrismaClient }>,
 ): ZoomEstadoLecturaPort {
   const { db } = deps;
   return {
@@ -15,26 +15,26 @@ export function crearPrismaZoomEstadoLecturaAdapter(
         db.archivoOrigenZoom.findFirst({
           where: { estado: "PENDIENTE" },
           orderBy: { createdAt: "asc" },
-          select: { createdAt: true }
+          select: { createdAt: true },
         }),
         db.archivoOrigenZoom.aggregate({ _max: { updatedAt: true } }),
         db.archivoOrigenZoom.count({
           where: {
             estado: { in: ["ERROR_REINTENTABLE", "REQUIERE_REVISION"] },
-            errorCodigo: { in: CODIGOS_CAPACIDAD }
-          }
+            errorCodigo: { in: CODIGOS_CAPACIDAD },
+          },
         }),
         db.barridoArchivoZoom.count({
-          where: { estado: { in: ["PENDIENTE", "EN_CURSO", "ERROR_REINTENTABLE"] } }
-        })
+          where: { estado: { in: ["PENDIENTE", "EN_CURSO", "ERROR_REINTENTABLE"] } },
+        }),
       ]);
       return {
         porEstado: Object.fromEntries(grupos.map((g) => [g.estado, g._count._all])),
         pendienteMasViejoAt: viejo?.createdAt ?? null,
         fallosCapacidad: capacidad,
         ultimaActividadAt: actividad._max.updatedAt ?? null,
-        barridosActivos: barridos
+        barridosActivos: barridos,
       };
-    }
+    },
   };
 }

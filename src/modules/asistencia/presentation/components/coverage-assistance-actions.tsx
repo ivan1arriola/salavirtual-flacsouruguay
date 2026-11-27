@@ -9,7 +9,7 @@ export function CoverageAssistanceActions({
   requestId,
   covered,
   assignmentId,
-  assistantName
+  assistantName,
 }: Readonly<{
   meetingId: string;
   requestId: string;
@@ -29,7 +29,7 @@ export function CoverageAssistanceActions({
       const response = await fetch(`/api/v1/reuniones/${requestId}/encuentros/${meetingId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ accion: "CAMBIAR_ASISTENCIA", requiereAsistenciaTecnica: false })
+        body: JSON.stringify({ accion: "CAMBIAR_ASISTENCIA", requiereAsistenciaTecnica: false }),
       });
       return parseResponse(response, "El monitoreo fue cancelado.");
     });
@@ -41,7 +41,7 @@ export function CoverageAssistanceActions({
     }
     if (
       !window.confirm(
-        `¿Desasignar a ${assistantName ?? "la persona asignada"} de este monitoreo?\n\nLa reunión seguirá requiriendo monitoreo y quedará pendiente de cobertura. No se cancelará el encuentro.`
+        `¿Desasignar a ${assistantName ?? "la persona asignada"} de este monitoreo?\n\nLa reunión seguirá requiriendo monitoreo y quedará pendiente de cobertura. No se cancelará el encuentro.`,
       )
     ) {
       return;
@@ -50,11 +50,11 @@ export function CoverageAssistanceActions({
       const response = await fetch("/api/v1/asistencia/asignaciones/desvincular", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ asignacionId: assignmentId })
+        body: JSON.stringify({ asignacionId: assignmentId }),
       });
       return parseResponse(
         response,
-        "Se desasignó al asistente. El monitoreo continúa pendiente de cobertura."
+        "Se desasignó al asistente. El monitoreo continúa pendiente de cobertura.",
       );
     });
   }
@@ -64,7 +64,7 @@ export function CoverageAssistanceActions({
       const response = await fetch("/api/v1/asistencia/notificaciones", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ instanciaSalaId: meetingId })
+        body: JSON.stringify({ instanciaSalaId: meetingId }),
       });
       return parseResponse(response, "Los asistentes de monitoreo fueron notificados nuevamente.");
     });

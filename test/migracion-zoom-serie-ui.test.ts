@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 
 const control = readFileSync(
   new URL("../src/components/migracion-zoom-aplicar-control.tsx", import.meta.url),
-  "utf8"
+  "utf8",
 );
 
 describe("pantalla de migración con series bloqueadas", () => {
@@ -19,7 +19,9 @@ describe("pantalla de migración con series bloqueadas", () => {
   });
 
   it("permite marcar la excepción Conservar en Meet también en los encuentros de una serie bloqueada", () => {
-    expect(control).toMatch(/const editable = \[[^\]]*"SERIE"[^\]]*\]\.includes\(\s*fila\.estado\s*\);/);
+    expect(control).toMatch(
+      /const editable = \[[^\]]*"SERIE"[^\]]*\]\.includes\(\s*fila\.estado\s*,?\s*\);/,
+    );
     expect(control).toMatch(/\{editable &&\s*\(?\s*<ExcepcionMeetControl/);
   });
 });

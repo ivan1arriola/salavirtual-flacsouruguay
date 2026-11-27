@@ -3,12 +3,13 @@ import { guardarNuevaPassword } from "./actions";
 import "../acceso/acceso.css";
 
 const MENSAJES_ERROR: Readonly<Record<string, string>> = Object.freeze({
-  datos: "Revisá la contraseña: debe tener entre 8 y 72 caracteres y ambas entradas deben coincidir.",
-  token: "El enlace de recuperación no es válido, ya fue utilizado o venció. Solicitá uno nuevo."
+  datos:
+    "Revisá la contraseña: debe tener entre 8 y 72 caracteres y ambas entradas deben coincidir.",
+  token: "El enlace de recuperación no es válido, ya fue utilizado o venció. Solicitá uno nuevo.",
 });
 
 export default async function RestablecerContrasenaPage({
-  searchParams
+  searchParams,
 }: Readonly<{ searchParams: Promise<{ token?: string; error?: string }> }>) {
   const { token = "", error } = await searchParams;
   const mensaje = error ? MENSAJES_ERROR[error] : null;
@@ -17,7 +18,12 @@ export default async function RestablecerContrasenaPage({
     <main className="login-shell">
       <section className="login-experience" aria-labelledby="reset-title">
         <aside className="login-brand-panel">
-          <a className="login-logo-wrap" href="https://flacso.edu.uy/" target="_blank" rel="noreferrer">
+          <a
+            className="login-logo-wrap"
+            href="https://flacso.edu.uy/"
+            target="_blank"
+            rel="noreferrer"
+          >
             <img
               className="login-logo"
               src="https://flacso.edu.uy/wp-content/uploads/2026/04/cropped-flacso_20_anos_horizontal_azul.png"
@@ -29,7 +35,10 @@ export default async function RestablecerContrasenaPage({
           <div className="login-brand-copy">
             <p className="login-product-label">Seguridad de la cuenta</p>
             <h2>Elegí una nueva contraseña.</h2>
-            <p>El enlace recibido por correo es temporal y se invalida automáticamente después de usarlo.</p>
+            <p>
+              El enlace recibido por correo es temporal y se invalida automáticamente después de
+              usarlo.
+            </p>
           </div>
           <ul className="login-feature-list" aria-label="Características de seguridad">
             <li>
@@ -54,7 +63,9 @@ export default async function RestablecerContrasenaPage({
               </span>
             </li>
           </ul>
-          <p className="login-brand-footer">FLACSO Uruguay · Facultad Latinoamericana de Ciencias Sociales</p>
+          <p className="login-brand-footer">
+            FLACSO Uruguay · Facultad Latinoamericana de Ciencias Sociales
+          </p>
         </aside>
 
         <div className="login-panel">

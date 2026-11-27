@@ -12,7 +12,10 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 type Context = Readonly<{ params: Promise<{ instanciaId: string; ocurrenciaId: string }> }>;
-const NO_CACHE = { "Cache-Control": "private, no-store, max-age=0", "X-Content-Type-Options": "nosniff" };
+const NO_CACHE = {
+  "Cache-Control": "private, no-store, max-age=0",
+  "X-Content-Type-Options": "nosniff",
+};
 
 const errorJson = (mensaje: string, status: number) =>
   NextResponse.json({ error: mensaje }, { status, headers: NO_CACHE });
@@ -31,7 +34,7 @@ export async function GET(_request: Request, { params }: Context) {
   const ocurrencia = await db.ocurrenciaArchivoZoom.findFirst({
     where: {
       id: ocurrenciaId,
-      eventoProveedor: { instanciaSalaId: instanciaId, proveedor: { tipo: "ZOOM" } }
+      eventoProveedor: { instanciaSalaId: instanciaId, proveedor: { tipo: "ZOOM" } },
     },
     select: {
       uuid: true,
@@ -39,11 +42,13 @@ export async function GET(_request: Request, { params }: Context) {
       eventoProveedor: {
         select: {
           instancia: {
-            select: { solicitud: { select: { docentePrograma: { select: { programaId: true } } } } }
-          }
-        }
-      }
-    }
+            select: {
+              solicitud: { select: { docentePrograma: { select: { programaId: true } } } },
+            },
+          },
+        },
+      },
+    },
   });
   // Igual que las demás exportaciones: no revelar la existencia de reuniones ajenas.
   if (
@@ -51,7 +56,7 @@ export async function GET(_request: Request, { params }: Context) {
     !(await puedeGestionarPrograma(
       db,
       actor,
-      ocurrencia.eventoProveedor.instancia.solicitud.docentePrograma.programaId
+      ocurrencia.eventoProveedor.instancia.solicitud.docentePrograma.programaId,
     ))
   ) {
     return errorJson("Ocurrencia no encontrada", 404);
@@ -63,7 +68,7 @@ export async function GET(_request: Request, { params }: Context) {
     }
     const paginas = await descargarReporteParticipantesZoomOriginalHttp(
       await obtenerZoomAccessToken(credenciales),
-      ocurrencia.uuid
+      ocurrencia.uuid,
     );
     if (!paginas) {
       return errorJson("Zoom todavía no tiene el reporte de participantes de esta reunión.", 404);
@@ -75,8 +80,8 @@ export async function GET(_request: Request, { params }: Context) {
       headers: {
         ...NO_CACHE,
         "Content-Type": "application/json; charset=utf-8",
-        "Content-Disposition": `attachment; filename="zoom_participantes_original_${fecha}_${ocurrenciaId.replace(/[^a-zA-Z0-9_-]/g, "")}.json"`
-      }
+        "Content-Disposition": `attachment; filename="zoom_participantes_original_${fecha}_${ocurrenciaId.replace(/[^a-zA-Z0-9_-]/g, "")}.json"`,
+      },
     });
   } catch {
     return errorJson("No se pudieron recuperar los datos desde Zoom. Intentá nuevamente.", 502);

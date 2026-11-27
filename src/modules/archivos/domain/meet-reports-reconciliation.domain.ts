@@ -1,6 +1,6 @@
 import {
   resumirIntervalosAsistencia,
-  type ResumenIntervalosAsistencia
+  type ResumenIntervalosAsistencia,
 } from "./meet-attendance-summary.domain";
 
 export type SesionMeetConciliable = Readonly<{
@@ -79,7 +79,7 @@ function intervaloValido(inicio: string, fin: string): boolean {
 
 function haySolapamiento(
   a: Readonly<{ inicio: string; fin: string }>,
-  b: Readonly<{ inicio: string; fin: string }>
+  b: Readonly<{ inicio: string; fin: string }>,
 ): boolean {
   return Date.parse(a.inicio) < Date.parse(b.fin) && Date.parse(b.inicio) < Date.parse(a.fin);
 }
@@ -93,7 +93,7 @@ export function conciliarMeetReports(
   sesionesMeet: readonly SesionMeetConciliable[],
   eventosReports: readonly EventoReportsConciliable[],
   inicio: Date,
-  fin: Date
+  fin: Date,
 ): ResultadoConciliacion {
   const sesionesValidas = sesionesMeet.filter((s) => intervaloValido(s.inicio, s.fin));
   const meetGrupos = sesionesValidas.reduce<
@@ -122,8 +122,8 @@ export function conciliarMeetReports(
         nombre: previo?.nombre ?? sesion.nombre,
         correo: previo?.correo ?? correo,
         sesiones: [...(previo?.sesiones ?? []), sesion],
-        keys: [...(previo?.keys ?? []), sesionKey]
-      }
+        keys: [...(previo?.keys ?? []), sesionKey],
+      },
     };
   }, {});
 
@@ -136,16 +136,20 @@ export function conciliarMeetReports(
         current.identificador,
         current.timestamp,
         current.inicio,
-        current.fin
+        current.fin,
       ].join("|");
       return acc.some(
         (e) =>
-          [e.conferenciaId, e.endpointId, e.identificador, e.timestamp, e.inicio, e.fin].join("|") === key
+          [e.conferenciaId, e.endpointId, e.identificador, e.timestamp, e.inicio, e.fin].join(
+            "|",
+          ) === key,
       )
         ? acc
         : [...acc, current];
     }, []);
-  const reportConferencias = [...new Set(reportEventos.map((e) => e.conferenciaId).filter(Boolean))];
+  const reportConferencias = [
+    ...new Set(reportEventos.map((e) => e.conferenciaId).filter(Boolean)),
+  ];
   // Cuando varias conferencias de auditoría se solapan, sus correos no se
   // atribuyen a la instancia ni se comparan individualmente.
   const conferenciaUnica = reportConferencias.length === 1;
@@ -160,21 +164,26 @@ export function conciliarMeetReports(
       >
     >
   >((acc, evento) => {
-    const email = evento.tipoIdentificador === "email_address" ? correoValido(evento.identificador) : null;
+    const email =
+      evento.tipoIdentificador === "email_address" ? correoValido(evento.identificador) : null;
     if (!email) {
       return acc;
     }
     const prev = acc[email];
     return {
       ...acc,
-      [email]: { nombre: prev?.nombre || evento.nombre || email, eventos: [...(prev?.eventos ?? []), evento] }
+      [email]: {
+        nombre: prev?.nombre || evento.nombre || email,
+        eventos: [...(prev?.eventos ?? []), evento],
+      },
     };
   }, {});
 
   const gruposMeet = Object.entries(meetGrupos);
   const emailsDeMeet = gruposMeet.reduce<Readonly<Record<string, number>>>(
-    (acc, [, person]) => (person.correo ? { ...acc, [person.correo]: (acc[person.correo] ?? 0) + 1 } : acc),
-    {}
+    (acc, [, person]) =>
+      person.correo ? { ...acc, [person.correo]: (acc[person.correo] ?? 0) + 1 } : acc,
+    {},
   );
 
   const reports = Object.entries(reportGrupos).map(([correo, group]) => {
@@ -184,7 +193,7 @@ export function conciliarMeetReports(
       nombre: group.nombre,
       sesiones: group.eventos.length,
       resumen,
-      vinculada: conferenciaUnica && (emailsDeMeet[correo] ?? 0) === 1
+      vinculada: conferenciaUnica && (emailsDeMeet[correo] ?? 0) === 1,
     };
   });
 
@@ -205,7 +214,7 @@ export function conciliarMeetReports(
       diferenciaMinutos: reporte
         ? Math.round((resumen.minutosConectados - reporte.resumen.minutosConectados) * 100) / 100
         : null,
-      diferenciaSesiones: reporte ? group.sesiones.length - reporte.sesiones : null
+      diferenciaSesiones: reporte ? group.sesiones.length - reporte.sesiones : null,
     };
   });
 
@@ -213,7 +222,7 @@ export function conciliarMeetReports(
   const sesionesMeetTotal = meet.reduce((acc, m) => acc + m.sesiones, 0);
   const sesionesReportsTotal = reportEventos.length;
   const reportSinSolapamiento = reportEventos.filter(
-    (e) => !sesionesValidas.some((s) => haySolapamiento(e, s))
+    (e) => !sesionesValidas.some((s) => haySolapamiento(e, s)),
   ).length;
   const indicador: IndicadorConciliacion = {
     personasMeet: meet.length,
@@ -221,7 +230,7 @@ export function conciliarMeetReports(
     correosReports: reports.length,
     sesionesReports: sesionesReportsTotal,
     registrosReportsSinCorreo: reportEventos.filter(
-      (e) => e.tipoIdentificador !== "email_address" || !correoValido(e.identificador)
+      (e) => e.tipoIdentificador !== "email_address" || !correoValido(e.identificador),
     ).length,
     personasVinculadas: vinculadas,
     meetSinVincular: meet.length - vinculadas,
@@ -239,7 +248,7 @@ export function conciliarMeetReports(
             ? "CONFERENCIA_AMBIGUA"
             : vinculadas === meet.length && vinculadas === reports.length
               ? "VINCULADA"
-              : "PARCIAL"
+              : "PARCIAL",
   };
   return { meet, reports, indicador };
 }

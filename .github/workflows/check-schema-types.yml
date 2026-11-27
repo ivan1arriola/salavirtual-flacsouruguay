@@ -51,4 +51,14 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/preparar-entorno
       - name: Comprobar TypeScript
-        run: npm run check
+        run: |
+          set -o pipefail
+          npm run check -- --pretty false 2>&1 | tee "$RUNNER_TEMP/typescript-debt.txt"
+      - name: Publicar inventario TypeScript
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: typescript-debt-${{ github.sha }}
+          path: ${{ runner.temp }}/typescript-debt.txt
+          if-no-files-found: ignore
+          retention-days: 14

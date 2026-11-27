@@ -7,7 +7,7 @@ import { useState, useTransition } from "react";
 export function AdminRetryMeetAction({
   eventoProveedorId,
   operacion = "PROVISIONAR",
-  label = "Reintentar provisión de Meet (1 clic)"
+  label = "Reintentar provisión de Meet (1 clic)",
 }: Readonly<{
   eventoProveedorId?: string;
   operacion?: "PROVISIONAR" | "REPROGRAMAR" | "CONFIGURAR_MEET" | "CANCELAR";
@@ -26,15 +26,15 @@ export function AdminRetryMeetAction({
           ...(eventoProveedorId
             ? {
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ eventoProveedorId, operacion })
+                body: JSON.stringify({ eventoProveedorId, operacion }),
               }
-            : {})
+            : {}),
         });
         const result = await response.json().catch(() => ({}));
         if (!response.ok) {
           setFeedback({
             text: result.error ?? "No se pudo reintentar la provisión.",
-            isError: true
+            isError: true,
           });
           return;
         }
@@ -42,13 +42,13 @@ export function AdminRetryMeetAction({
         const errs = result.errores ?? 0;
         setFeedback({
           text: `Completado: ${synced} sincronizada${synced === 1 ? "" : "s"}${errs > 0 ? `, ${errs} con error` : ""}.`,
-          isError: errs > 0 && synced === 0
+          isError: errs > 0 && synced === 0,
         });
         router.refresh();
       } catch {
         setFeedback({
           text: "Error de conexión al reintentar.",
-          isError: true
+          isError: true,
         });
       }
     });
@@ -75,7 +75,7 @@ export function AdminRetryMeetAction({
 }
 
 export function AdminSyncRecordingsAction({
-  label = "Sincronizar grabaciones ahora"
+  label = "Sincronizar grabaciones ahora",
 }: Readonly<{
   label?: string;
 }>) {
@@ -88,13 +88,13 @@ export function AdminSyncRecordingsAction({
     startTransition(async () => {
       try {
         const response = await fetch("/api/v1/reuniones/sincronizar-archivos", {
-          method: "POST"
+          method: "POST",
         });
         const result = await response.json().catch(() => ({}));
         if (!response.ok) {
           setFeedback({
             text: result.error ?? "No se pudo sincronizar las grabaciones.",
-            isError: true
+            isError: true,
           });
           return;
         }
@@ -102,13 +102,13 @@ export function AdminSyncRecordingsAction({
         const procs = result.procesadas ?? 0;
         setFeedback({
           text: `${procs} reuniones revisadas, ${files} archivos nuevos.`,
-          isError: false
+          isError: false,
         });
         router.refresh();
       } catch {
         setFeedback({
           text: "Error de conexión al sincronizar.",
-          isError: true
+          isError: true,
         });
       }
     });
@@ -132,7 +132,7 @@ export function AdminSyncRecordingsAction({
 export function AdminQuickAssignAction({
   meetingId,
   firstApplicant,
-  assistants
+  assistants,
 }: Readonly<{
   meetingId: string;
   firstApplicant?: { id: string; name: string } | null;
@@ -154,14 +154,14 @@ export function AdminQuickAssignAction({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             instanciaSalaId: meetingId,
-            asistenteTecnicoId: assistantId
-          })
+            asistenteTecnicoId: assistantId,
+          }),
         });
         const result = await response.json().catch(() => ({}));
         if (!response.ok) {
           setFeedback({
             text: result.error ?? "No se pudo asignar asistente.",
-            isError: true
+            isError: true,
           });
           return;
         }
@@ -195,7 +195,9 @@ export function AdminQuickAssignAction({
           disabled={pending}
           onChange={(e) => assign(e.target.value)}
         >
-          <option value="">{firstApplicant ? "O asignar a otro asistente…" : "Asignar asistente…"}</option>
+          <option value="">
+            {firstApplicant ? "O asignar a otro asistente…" : "Asignar asistente…"}
+          </option>
           {assistants.map((ast) => (
             <option key={ast.id} value={ast.id}>
               {ast.name}

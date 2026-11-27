@@ -3,11 +3,11 @@ import {
   crearUsuarioIdBase,
   planificarMigracionUsuarios,
   type CuentaGoogleLegacy,
-  type UsuarioLegacy
+  type UsuarioLegacy,
 } from "../src/modules/migracion/usuarios-legacy.domain";
 
 const googleAccount = (providerAccountId: string): CuentaGoogleLegacy => ({
-  providerAccountId
+  providerAccountId,
 });
 
 const legacyUser = (overrides: Partial<UsuarioLegacy> = {}): UsuarioLegacy => ({
@@ -30,7 +30,7 @@ const legacyUser = (overrides: Partial<UsuarioLegacy> = {}): UsuarioLegacy => ({
   accounts: [],
   docenteProfile: null,
   asistenteProfile: null,
-  ...overrides
+  ...overrides,
 });
 
 describe("plan funcional de migracion de usuarios", () => {
@@ -51,11 +51,11 @@ describe("plan funcional de migracion de usuarios", () => {
         legacyUser({
           id: "legacy-2",
           email: "ana.perez@example.com",
-          role: "DOCENTE"
-        })
+          role: "DOCENTE",
+        }),
       ],
       new Set(),
-      new Map()
+      new Map(),
     );
 
     expect(planes.map(({ usuarioId }) => usuarioId)).toEqual(["ana.perez", "ana.perez-2"]);
@@ -66,7 +66,7 @@ describe("plan funcional de migracion de usuarios", () => {
     const [plan] = planificarMigracionUsuarios(
       [legacyUser()],
       new Set(["ana.perez"]),
-      new Map([["legacy-1", "usuario-existente"]])
+      new Map([["legacy-1", "usuario-existente"]]),
     );
 
     expect(plan?.usuarioId).toBe("usuario-existente");
@@ -79,17 +79,17 @@ describe("plan funcional de migracion de usuarios", () => {
           firstName: "   ",
           name: "  Nombre alternativo  ",
           lastName: "   ",
-          role: "ROL_DESCONOCIDO"
-        })
+          role: "ROL_DESCONOCIDO",
+        }),
       ],
       new Set(),
-      new Map()
+      new Map(),
     );
 
     expect(plan).toMatchObject({
       nombres: "Nombre alternativo",
       apellidos: null,
-      rol: "DOCENTE"
+      rol: "DOCENTE",
     });
   });
 
@@ -97,7 +97,7 @@ describe("plan funcional de migracion de usuarios", () => {
     const [plan] = planificarMigracionUsuarios(
       [legacyUser({ firstName: null, name: null })],
       new Set(),
-      new Map()
+      new Map(),
     );
     expect(plan?.nombres).toBe("ana.perez");
   });
@@ -108,18 +108,22 @@ describe("plan funcional de migracion de usuarios", () => {
         legacyUser({
           email: " Persona@FLACSO.EDU.UY ",
           emailAliases: [{ email: " ALIAS@FLACSO.EDU.UY " }, { email: "externo@gmail.com" }],
-          accounts: [googleAccount("google-1"), googleAccount("google-2"), googleAccount("google-3")]
-        })
+          accounts: [
+            googleAccount("google-1"),
+            googleAccount("google-2"),
+            googleAccount("google-3"),
+          ],
+        }),
       ],
       new Set(),
-      new Map()
+      new Map(),
     );
 
     expect(plan?.emailPrincipal).toBe("persona@flacso.edu.uy");
     expect(plan?.aliases).toEqual(["alias@flacso.edu.uy", "externo@gmail.com"]);
     expect(plan?.cuentasGoogle.map(({ providerAccountId }) => providerAccountId)).toEqual([
       "google-1",
-      "google-2"
+      "google-2",
     ]);
     expect(plan?.cuentasGoogleOmitidas).toBe(1);
   });
@@ -129,11 +133,11 @@ describe("plan funcional de migracion de usuarios", () => {
       [
         legacyUser({
           email: "persona@gmail.com",
-          accounts: [googleAccount("google-subject")]
-        })
+          accounts: [googleAccount("google-subject")],
+        }),
       ],
       new Set(),
-      new Map()
+      new Map(),
     );
 
     expect(plan?.cuentasGoogle).toHaveLength(0);
@@ -142,10 +146,13 @@ describe("plan funcional de migracion de usuarios", () => {
 
   it("falla de forma explícita si se agotan los sufijos de colisión", () => {
     const base = "ana.perez";
-    const reservados = new Set([base, ...Array.from({ length: 999 }, (_, index) => `${base}-${index + 2}`)]);
+    const reservados = new Set([
+      base,
+      ...Array.from({ length: 999 }, (_, index) => `${base}-${index + 2}`),
+    ]);
 
     expect(() => planificarMigracionUsuarios([legacyUser()], reservados, new Map())).toThrow(
-      `No se pudo generar un usuario unico para ${base}.`
+      `No se pudo generar un usuario unico para ${base}.`,
     );
   });
 });

@@ -8,16 +8,20 @@ import { aplicarEjecucionZoomAInstancia } from "../src/modules/archivos/infrastr
 
 export async function backfillEjecucionZoom(
   db: Pick<PrismaClient, "ocurrenciaArchivoZoom" | "$transaction">,
-  aplicar: boolean
+  aplicar: boolean,
 ): Promise<{ candidatas: number; aplicadas: number }> {
   const candidatas = await db.ocurrenciaArchivoZoom.findMany({
     where: {
       eventoProveedorId: { not: null },
       eventoProveedor: {
-        instancia: { OR: [{ inicioRealAt: null }, { finRealAt: null }, { estado: "PROGRAMADA" }] }
-      }
+        instancia: { OR: [{ inicioRealAt: null }, { finRealAt: null }, { estado: "PROGRAMADA" }] },
+      },
     },
-    select: { cuentaZoomId: true, uuid: true, eventoProveedor: { select: { instanciaSalaId: true } } }
+    select: {
+      cuentaZoomId: true,
+      uuid: true,
+      eventoProveedor: { select: { instanciaSalaId: true } },
+    },
   });
   let aplicadas = 0;
   for (const { cuentaZoomId, uuid, eventoProveedor } of candidatas) {
@@ -26,7 +30,7 @@ export async function backfillEjecucionZoom(
     }
     const instanciaSalaId = eventoProveedor.instanciaSalaId;
     await db.$transaction((tx) =>
-      aplicarEjecucionZoomAInstancia(tx, { instanciaSalaId, cuentaZoomId, uuid })
+      aplicarEjecucionZoomAInstancia(tx, { instanciaSalaId, cuentaZoomId, uuid }),
     );
     aplicadas++;
   }

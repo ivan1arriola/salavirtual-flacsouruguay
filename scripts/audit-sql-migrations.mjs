@@ -6,7 +6,7 @@ const paths = base
   ? execFileSync(
       "/usr/bin/git",
       ["diff", "--name-only", "--diff-filter=ACMR", base, "HEAD", "--", "prisma/migrations"],
-      { encoding: "utf8" }
+      { encoding: "utf8" },
     )
   : execFileSync("/usr/bin/git", ["ls-files", "prisma/migrations"], { encoding: "utf8" });
 
@@ -15,7 +15,7 @@ const rules = [
   ["TRUNCATE", /\bTRUNCATE\b/i],
   ["DELETE", /\bDELETE\s+FROM\b/i],
   ["NOT_NULL", /\bSET\s+NOT\s+NULL\b/i],
-  ["TYPE_CHANGE", /\bALTER\s+COLUMN\b[^;]*\bTYPE\b/i]
+  ["TYPE_CHANGE", /\bALTER\s+COLUMN\b[^;]*\bTYPE\b/i],
 ];
 
 const findings = [];

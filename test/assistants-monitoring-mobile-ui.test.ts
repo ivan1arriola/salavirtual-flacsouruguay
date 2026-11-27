@@ -3,11 +3,11 @@ import { describe, expect, it } from "vitest";
 
 const page = readFileSync(
   new URL("../src/bootstrap/ui/asistencia/asistentes-page.server.tsx", import.meta.url),
-  "utf8"
+  "utf8",
 );
 const css = readFileSync(
   new URL("../app/(gestion)/assistants-monitoring-mobile.css", import.meta.url),
-  "utf8"
+  "utf8",
 );
 
 describe("directorio de asistentes de monitoreo responsive", () => {

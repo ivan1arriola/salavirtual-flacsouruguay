@@ -9,7 +9,7 @@ import { db } from "@/src/lib/db";
 import {
   etiquetaTipoNotificacion,
   PREFERENCIA_PREDETERMINADA,
-  type TipoNotificacion
+  type TipoNotificacion,
 } from "@/src/modules/notificaciones/notificaciones.domain";
 import { guardarPassword, guardarPerfil, guardarPreferenciasNotificacion } from "./actions";
 import { tiposNotificacionPerfil } from "./preferencias";
@@ -25,7 +25,7 @@ const profileSelect = {
   passwordHash: true,
   debeCambiarPassword: true,
   cuentasGoogle: { orderBy: { email: "asc" }, select: { email: true } },
-  preferenciasNotificacion: { select: { tipo: true, push: true, email: true } }
+  preferenciasNotificacion: { select: { tipo: true, push: true, email: true } },
 } satisfies Prisma.UsuarioSelect;
 
 type Profile = Prisma.UsuarioGetPayload<{ select: typeof profileSelect }>;
@@ -33,7 +33,7 @@ type Profile = Prisma.UsuarioGetPayload<{ select: typeof profileSelect }>;
 const labels = {
   ADMINISTRACION: "Administración",
   DOCENTE: "Docente",
-  ASISTENTE_TECNICO: "Asistencia técnica"
+  ASISTENTE_TECNICO: "Asistencia técnica",
 } as const;
 
 const messages = new Map([
@@ -41,14 +41,17 @@ const messages = new Map([
   ["password-guardada", "Tu contraseña fue actualizada."],
   ["notificaciones-guardadas", "Tus preferencias de notificación fueron actualizadas."],
   ["error-perfil", "No se pudieron guardar los datos. Revisá los campos."],
-  ["error-password", "No se pudo actualizar la contraseña. Revisá la contraseña actual y la confirmación."],
-  ["error-notificaciones", "No se pudieron actualizar tus preferencias de notificación."]
+  [
+    "error-password",
+    "No se pudo actualizar la contraseña. Revisá la contraseña actual y la confirmación.",
+  ],
+  ["error-notificaciones", "No se pudieron actualizar tus preferencias de notificación."],
 ]);
 
 function ProfilePanel({
   title,
   description,
-  children
+  children,
 }: Readonly<{ title: string; description?: string; children: ReactNode }>) {
   return (
     <section className="content-section profile-panel" aria-labelledby="profile-panel-title">
@@ -137,7 +140,12 @@ function AccessPanel({ user }: Readonly<{ user: Profile }>) {
           {tienePassword ? (
             <label className="field field-wide">
               <span>Contraseña actual</span>
-              <input name="passwordActual" type="password" required autoComplete="current-password" />
+              <input
+                name="passwordActual"
+                type="password"
+                required
+                autoComplete="current-password"
+              />
             </label>
           ) : null}
           <label className="field">
@@ -175,10 +183,16 @@ function AccessPanel({ user }: Readonly<{ user: Profile }>) {
 
 function NotificationsPanel({
   tipos,
-  preferencias
-}: Readonly<{ tipos: readonly TipoNotificacion[]; preferencias: Profile["preferenciasNotificacion"] }>) {
+  preferencias,
+}: Readonly<{
+  tipos: readonly TipoNotificacion[];
+  preferencias: Profile["preferenciasNotificacion"];
+}>) {
   return (
-    <ProfilePanel title="Notificaciones" description="Elegí cómo recibir los avisos de Sala Virtual.">
+    <ProfilePanel
+      title="Notificaciones"
+      description="Elegí cómo recibir los avisos de Sala Virtual."
+    >
       <form className="profile-form" action={guardarPreferenciasNotificacion}>
         <div className="notification-preferences">
           <div className="notification-preference-head">
@@ -216,7 +230,7 @@ function NotificationsPanel({
 }
 
 export default async function MiPerfilPage({
-  searchParams
+  searchParams,
 }: Readonly<{ searchParams: Promise<{ estado?: string; seccion?: string }> }>) {
   const session = await auth();
   if (!session?.user) {
@@ -246,9 +260,9 @@ export default async function MiPerfilPage({
           tipos={tiposNotificacionPerfil(actor.rol)}
           preferencias={user.preferenciasNotificacion}
         />
-      )
-    }
-  ];
+      ),
+    },
+  ] as const;
   const active = sections.find(({ id }) => id === seccion) ?? sections[0];
   const panel = user.debeCambiarPassword ? <AccessPanel user={user} /> : active.panel;
 
@@ -267,7 +281,9 @@ export default async function MiPerfilPage({
       </header>
 
       {user.debeCambiarPassword ? (
-        <p className="form-notice">Actualizá tu contraseña para completar el acceso a Sala Virtual.</p>
+        <p className="form-notice">
+          Actualizá tu contraseña para completar el acceso a Sala Virtual.
+        </p>
       ) : (
         <nav className="profile-sections" aria-label="Opciones de Mi perfil">
           {sections.map(({ id, label }) => (

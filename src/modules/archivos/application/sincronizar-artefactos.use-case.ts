@@ -4,12 +4,12 @@ import {
   TIPOS_ARTEFACTO_SINCRONIZABLES,
   type EstadoGrabacionDetectada,
   type EstadoResultadoGrabacion,
-  type SyncArtifactsResult
+  type SyncArtifactsResult,
 } from "../domain";
 import type {
   ArchivosRepositoryPort,
   ArtifactProviderFactory,
-  EventoParaSincronizarArchivos
+  EventoParaSincronizarArchivos,
 } from "../ports";
 
 export type SincronizarArtefactosInput = Readonly<{
@@ -22,7 +22,7 @@ export async function sincronizarArtefactosUseCase(
   repositorio: ArchivosRepositoryPort,
   providerFactory: ArtifactProviderFactory,
   descifrar: (cifrado: string) => string,
-  input: SincronizarArtefactosInput
+  input: SincronizarArtefactosInput,
 ): Promise<readonly SyncArtifactsResult[]> {
   const configuracion = await repositorio.obtenerConfiguracionWorkspacePrincipal();
   if (
@@ -35,7 +35,7 @@ export async function sincronizarArtefactosUseCase(
       eventoProveedorId,
       estado: "ERROR",
       archivos: 0,
-      error: "Faltan credenciales o carpeta destino de Google Workspace."
+      error: "Faltan credenciales o carpeta destino de Google Workspace.",
     }));
   }
 
@@ -54,8 +54,8 @@ export async function sincronizarArtefactosUseCase(
       configuracion.serviceAccountSubject ?? null,
       evento,
       input.regenerarAsistencia ?? false,
-      input.asistenciaDriveFileIds?.[evento.id]
-    )
+      input.asistenciaDriveFileIds?.[evento.id],
+    ),
   );
 }
 
@@ -68,7 +68,7 @@ async function sincronizarEventoIndividual(
   adminEmailSubject: string | null,
   evento: EventoParaSincronizarArchivos,
   regenerarAsistencia: boolean,
-  asistenciaDriveFileId?: string
+  asistenciaDriveFileId?: string,
 ): Promise<SyncArtifactsResult> {
   const hostEmail = evento.emailOrganizador;
   if (!hostEmail || !evento.codigoReunion) {
@@ -78,7 +78,7 @@ async function sincronizarEventoIndividual(
       eventoProveedorId: evento.id,
       estado: "ERROR",
       archivos: 0,
-      error: errorMsg
+      error: errorMsg,
     };
   }
 
@@ -87,7 +87,7 @@ async function sincronizarEventoIndividual(
       serviceAccountEmail,
       privateKey,
       subject: hostEmail,
-      adminEmail: adminEmailSubject
+      adminEmail: adminEmailSubject,
     });
 
     const conference = evento.conferenceRecordName
@@ -95,7 +95,7 @@ async function sincronizarEventoIndividual(
       : await provider.buscarConferencia(
           evento.codigoReunion,
           evento.inicioProgramadoAt,
-          evento.finProgramadoAt
+          evento.finProgramadoAt,
         );
 
     if (!conference) {
@@ -103,7 +103,7 @@ async function sincronizarEventoIndividual(
         eventoProveedorId: evento.id,
         estado: "SIN_REGISTRO_FINALIZADO",
         archivos: 0,
-        grabacion: evento.requiereGrabacion ? "PENDIENTE" : "NO_REQUERIDA"
+        grabacion: evento.requiereGrabacion ? "PENDIENTE" : "NO_REQUERIDA",
       };
     }
 
@@ -121,7 +121,7 @@ async function sincronizarEventoIndividual(
       archivosSincronizadosAt: null,
       errorArchivos: null,
       estadoGrabacionMeet,
-      grabacionObservadaAt: new Date()
+      grabacionObservadaAt: new Date(),
     });
 
     if (!conference.endTime) {
@@ -133,15 +133,15 @@ async function sincronizarEventoIndividual(
             nombreCarpetaReunion({
               titulo: evento.tituloSolicitud,
               inicio: evento.inicioProgramadoAt,
-              timezone: evento.timezone
-            })
+              timezone: evento.timezone,
+            }),
           );
         }
         return folderId;
       };
       let synchronized = 0;
       const grabacionesConocidas = new Set(
-        evento.archivos.filter((a) => a.tipo === "GRABACION").map((a) => a.externalResourceName)
+        evento.archivos.filter((a) => a.tipo === "GRABACION").map((a) => a.externalResourceName),
       );
       for (const [index, recording] of [...artifacts.recordings]
         .sort((a, b) => (Date.parse(a.startTime ?? "") || 0) - (Date.parse(b.startTime ?? "") || 0))
@@ -159,14 +159,14 @@ async function sincronizarEventoIndividual(
             codigoReunion: evento.codigoReunion,
             tipo: TIPOS_ARTEFACTO_SINCRONIZABLES[0],
             indice: index + 1,
-            extension: recording.extension
-          })
+            extension: recording.extension,
+          }),
         );
         await repositorio.registrarArchivoSincronizado(
           evento.id,
           TIPOS_ARTEFACTO_SINCRONIZABLES[0],
           recording,
-          moved
+          moved,
         );
         synchronized += 1;
       }
@@ -175,10 +175,13 @@ async function sincronizarEventoIndividual(
           conferenceRecordName: conference.name,
           driveFolderId: folderId,
           archivosSincronizadosAt: null,
-          errorArchivos: null
+          errorArchivos: null,
         });
       }
-      const attendance = await provider.obtenerDocumentoAsistencia(conference.name, evento.codigoReunion);
+      const attendance = await provider.obtenerDocumentoAsistencia(
+        conference.name,
+        evento.codigoReunion,
+      );
       if (attendance.sesiones > 0 && attendance.planilla && provider.subirPlanillaAsistencia) {
         const folderId = await obtenerCarpeta();
         const name = nombreArchivoReunion({
@@ -187,7 +190,7 @@ async function sincronizarEventoIndividual(
           timezone: evento.timezone,
           codigoReunion: evento.codigoReunion,
           tipo: TIPOS_ARTEFACTO_SINCRONIZABLES[2],
-          indice: 1
+          indice: 1,
         });
         const uploaded = await provider.subirPlanillaAsistencia(
           folderId,
@@ -197,19 +200,19 @@ async function sincronizarEventoIndividual(
           evento.finProgramadoAt,
           hostEmail,
           evento.cohostEmails ?? [],
-          evento.asistenciaDriveFileId ?? undefined
+          evento.asistenciaDriveFileId ?? undefined,
         );
         await repositorio.registrarArchivoSincronizado(
           evento.id,
           TIPOS_ARTEFACTO_SINCRONIZABLES[2],
           { resourceName: `${conference.name}/attendance`, driveFileId: uploaded.id },
-          uploaded
+          uploaded,
         );
         await repositorio.actualizarEstadoSincronizacion(evento.id, {
           conferenceRecordName: conference.name,
           driveFolderId: folderId,
           archivosSincronizadosAt: null,
-          errorArchivos: null
+          errorArchivos: null,
         });
         return {
           eventoProveedorId: evento.id,
@@ -222,16 +225,20 @@ async function sincronizarEventoIndividual(
                 ? "PENDIENTE"
                 : evento.requiereGrabacion
                   ? "PENDIENTE"
-                  : "NO_REQUERIDA"
+                  : "NO_REQUERIDA",
         };
       }
 
-      if (synchronized > 0 || estadoGrabacionMeet === "EN_CURSO" || estadoGrabacionMeet === "PROCESANDO") {
+      if (
+        synchronized > 0 ||
+        estadoGrabacionMeet === "EN_CURSO" ||
+        estadoGrabacionMeet === "PROCESANDO"
+      ) {
         return {
           eventoProveedorId: evento.id,
           estado: "ARTEFACTOS_PENDIENTES",
           archivos: synchronized,
-          grabacion: synchronized > 0 ? "DISPONIBLE" : "PENDIENTE"
+          grabacion: synchronized > 0 ? "DISPONIBLE" : "PENDIENTE",
         };
       }
 
@@ -239,32 +246,34 @@ async function sincronizarEventoIndividual(
         eventoProveedorId: evento.id,
         estado: "SIN_REGISTRO_FINALIZADO",
         archivos: 0,
-        grabacion: evento.requiereGrabacion ? "PENDIENTE" : "NO_REQUERIDA"
+        grabacion: evento.requiereGrabacion ? "PENDIENTE" : "NO_REQUERIDA",
       };
     }
 
     const folderName = nombreCarpetaReunion({
       titulo: evento.tituloSolicitud,
       inicio: evento.inicioProgramadoAt,
-      timezone: evento.timezone
+      timezone: evento.timezone,
     });
 
-    const folderId = evento.driveFolderId ?? (await provider.obtenerOCrearCarpeta(destinationId, folderName));
+    const folderId =
+      evento.driveFolderId ?? (await provider.obtenerOCrearCarpeta(destinationId, folderName));
 
     const known = new Set(
       evento.archivos
         .filter(
           (file) =>
-            file.tipo !== "LISTA_ASISTENCIA" || file.mimeType === "application/vnd.google-apps.spreadsheet"
+            file.tipo !== "LISTA_ASISTENCIA" ||
+            file.mimeType === "application/vnd.google-apps.spreadsheet",
         )
-        .map((file) => file.externalResourceName)
+        .map((file) => file.externalResourceName),
     );
 
     const common = {
       titulo: evento.tituloSolicitud,
       inicio: evento.inicioProgramadoAt,
       timezone: evento.timezone,
-      codigoReunion: evento.codigoReunion
+      codigoReunion: evento.codigoReunion,
     };
 
     let synchronized = 0;
@@ -273,7 +282,7 @@ async function sincronizarEventoIndividual(
     for (const [type, items] of [
       [TIPOS_ARTEFACTO_SINCRONIZABLES[0], artifacts.recordings],
       [TIPOS_ARTEFACTO_SINCRONIZABLES[1], artifacts.transcripts],
-      [TIPOS_ARTEFACTO_SINCRONIZABLES[3], artifacts.notes]
+      [TIPOS_ARTEFACTO_SINCRONIZABLES[3], artifacts.notes],
     ] as const) {
       const sortedItems = [...items].sort((a, b) => {
         const timeA = a.startTime ? Date.parse(a.startTime) : 0;
@@ -288,7 +297,7 @@ async function sincronizarEventoIndividual(
           ...common,
           tipo: type,
           indice: index + 1,
-          extension: artifact.extension
+          extension: artifact.extension,
         });
         const moved = await provider.moverArchivo(artifact.driveFileId, folderId, name);
         await repositorio.registrarArchivoSincronizado(evento.id, type, artifact, moved);
@@ -309,7 +318,10 @@ async function sincronizarEventoIndividual(
 
     const attendanceResource = `${conference.name}/attendance`;
     if (!known.has(attendanceResource) || regenerarAsistencia) {
-      const attendance = await provider.obtenerDocumentoAsistencia(conference.name, evento.codigoReunion);
+      const attendance = await provider.obtenerDocumentoAsistencia(
+        conference.name,
+        evento.codigoReunion,
+      );
       const debeGenerarPlanilla =
         regenerarAsistencia ||
         attendance.completa ||
@@ -318,7 +330,7 @@ async function sincronizarEventoIndividual(
         const name = nombreArchivoReunion({
           ...common,
           tipo: TIPOS_ARTEFACTO_SINCRONIZABLES[2],
-          indice: 1
+          indice: 1,
         });
         if (regenerarAsistencia && (!provider.subirPlanillaAsistencia || !attendance.planilla)) {
           throw new Error("No se pudo reconstruir la planilla desde las APIs de Meet y Workspace.");
@@ -335,14 +347,14 @@ async function sincronizarEventoIndividual(
                 evento.cohostEmails ?? [],
                 regenerarAsistencia
                   ? (asistenciaDriveFileId ?? evento.asistenciaDriveFileId ?? undefined)
-                  : undefined
+                  : undefined,
               )
             : await provider.subirDocumentoGoogle(folderId, name, attendance.html);
         await repositorio.registrarArchivoSincronizado(
           evento.id,
           TIPOS_ARTEFACTO_SINCRONIZABLES[2],
           { resourceName: attendanceResource, driveFileId: uploaded.id },
-          uploaded
+          uploaded,
         );
         synchronized += 1;
       } else {
@@ -358,13 +370,13 @@ async function sincronizarEventoIndividual(
         conferenceRecordName: conference.name,
         driveFolderId: folderId,
         archivosSincronizadosAt: null,
-        errorArchivos: null
+        errorArchivos: null,
       });
       return {
         eventoProveedorId: evento.id,
         estado: "ARTEFACTOS_PENDIENTES",
         archivos: synchronized,
-        grabacion: recordingState
+        grabacion: recordingState,
       };
     }
 
@@ -372,35 +384,40 @@ async function sincronizarEventoIndividual(
       conferenceRecordName: conference.name,
       driveFolderId: folderId,
       archivosSincronizadosAt: new Date(),
-      errorArchivos: null
+      errorArchivos: null,
     });
 
     return {
       eventoProveedorId: evento.id,
       estado: "SINCRONIZADO",
       archivos: synchronized,
-      grabacion: recordingState
+      grabacion: recordingState,
     };
   } catch (error) {
-    const errorMsg = error instanceof Error ? error.message : "Error desconocido al sincronizar archivos.";
+    const errorMsg =
+      error instanceof Error ? error.message : "Error desconocido al sincronizar archivos.";
     await repositorio.registrarErrorSincronizacion(evento.id, errorMsg);
     return {
       eventoProveedorId: evento.id,
       estado: "ERROR",
       archivos: 0,
-      error: errorMsg
+      error: errorMsg,
     };
   }
 }
 
-function conferenciaTerminadaHaceMasDe(endTime: string, hours: number, ahoraMs = Date.now()): boolean {
+function conferenciaTerminadaHaceMasDe(
+  endTime: string,
+  hours: number,
+  ahoraMs = Date.now(),
+): boolean {
   return ahoraMs - Date.parse(endTime) > hours * 60 * 60 * 1000;
 }
 
 async function mapConLimite<T, R>(
   items: readonly T[],
   limite: number,
-  operation: (item: T) => Promise<R>
+  operation: (item: T) => Promise<R>,
 ): Promise<R[]> {
   if (items.length === 0) {
     return [];

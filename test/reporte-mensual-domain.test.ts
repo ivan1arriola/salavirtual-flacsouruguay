@@ -3,7 +3,7 @@ import {
   construirCorreoReporteMensual,
   etiquetaMes,
   formatearDuracion,
-  periodoMesAnteriorUtc3
+  periodoMesAnteriorUtc3,
 } from "../src/modules/asistencia/reporte-mensual.domain";
 
 describe("reporte mensual de asistencia técnica", () => {
@@ -41,8 +41,8 @@ describe("reporte mensual de asistencia técnica", () => {
         minutosHibridos: 90,
         montoVirtual: 0,
         montoHibrido: 0,
-        monto: 0
-      }
+        monto: 0,
+      },
     });
     expect(correo.subject).toContain("Agosto de 2026");
     expect(correo.text).toContain("3 h 30 min");

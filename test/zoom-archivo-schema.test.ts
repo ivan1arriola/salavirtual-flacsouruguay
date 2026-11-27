@@ -2,8 +2,8 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const schema = readFileSync(new URL("../prisma/schema.prisma", import.meta.url), "utf8");
-const carpetaMigracion = readdirSync(new URL("../prisma/migrations/", import.meta.url)).find((nombre) =>
-  nombre.endsWith("_zoom_archivos_asistencia")
+const carpetaMigracion = readdirSync(new URL("../prisma/migrations/", import.meta.url)).find(
+  (nombre) => nombre.endsWith("_zoom_archivos_asistencia"),
 );
 const rutaSql = carpetaMigracion
   ? new URL(`../prisma/migrations/${carpetaMigracion}/migration.sql`, import.meta.url)
@@ -40,7 +40,14 @@ function campo(bloque: string, nombre: string): string {
 describe("schema de inventario Zoom", () => {
   it("OcurrenciaArchivoZoom identifica la ocurrencia por cuenta y UUID, con encuentro opcional no único", () => {
     const m = modelo("OcurrenciaArchivoZoom");
-    for (const c of ["cuentaZoomId", "uuid", "meetingId", "anfitrionZoomId", "inicioRealAt", "titulo"]) {
+    for (const c of [
+      "cuentaZoomId",
+      "uuid",
+      "meetingId",
+      "anfitrionZoomId",
+      "inicioRealAt",
+      "titulo",
+    ]) {
       expect(campo(m, c)).toMatch(/\sString\s|\sDateTime\s|\sString$|\sDateTime$/);
     }
     expect(campo(m, "cuentaProveedorId")).toMatch(/String\?/);
@@ -56,7 +63,7 @@ describe("schema de inventario Zoom", () => {
       "vinculadaAt",
       "vinculadaPorId",
       "createdAt",
-      "updatedAt"
+      "updatedAt",
     ]) {
       expect(m, c).toMatch(new RegExp(`\\n\\s+${c}\\s`));
     }
@@ -101,7 +108,7 @@ describe("schema de inventario Zoom", () => {
       "ultimaObservacionAt",
       "conservadoAt",
       "createdAt",
-      "updatedAt"
+      "updatedAt",
     ]) {
       expect(m, c).toMatch(new RegExp(`\\n\\s+${c}\\s`));
     }
@@ -127,7 +134,7 @@ describe("schema de inventario Zoom", () => {
       "COPIANDO",
       "CONSERVADO",
       "ERROR_REINTENTABLE",
-      "REQUIERE_REVISION"
+      "REQUIERE_REVISION",
     ]);
     expect(enumeracion("PrioridadTransferenciaZoom")).toEqual(["RECIENTE", "HISTORICO"]);
   });
@@ -155,7 +162,7 @@ describe("schema de inventario Zoom", () => {
       "leaseHasta",
       "solicitanteId",
       "createdAt",
-      "updatedAt"
+      "updatedAt",
     ]) {
       expect(m, c).toMatch(new RegExp(`\\n\\s+${c}\\s`));
     }
@@ -196,14 +203,18 @@ describe("migración aditiva de inventario Zoom", () => {
   });
 
   it("crea los tipos, tablas e índices nuevos", () => {
-    for (const tipo of ["EstadoArchivoZoom", "EstadoBarridoArchivoZoom", "PrioridadTransferenciaZoom"]) {
+    for (const tipo of [
+      "EstadoArchivoZoom",
+      "EstadoBarridoArchivoZoom",
+      "PrioridadTransferenciaZoom",
+    ]) {
       expect(sql).toContain(`CREATE TYPE "${tipo}"`);
     }
     for (const tabla of [
       "OcurrenciaArchivoZoom",
       "ArchivoOrigenZoom",
       "BarridoArchivoZoom",
-      "ReservaTransferenciaZoom"
+      "ReservaTransferenciaZoom",
     ]) {
       expect(sql).toContain(`CREATE TABLE "${tabla}"`);
     }
@@ -224,11 +235,11 @@ describe("migración aditiva de inventario Zoom", () => {
       "OcurrenciaArchivoZoom",
       "ArchivoOrigenZoom",
       "BarridoArchivoZoom",
-      "ReservaTransferenciaZoom"
+      "ReservaTransferenciaZoom",
     ]);
     expect(alteradas.filter((t) => !nuevas.has(t))).toEqual([]);
     const alteraciones = [...sinComentarios.matchAll(/ALTER TABLE "[^"]+" ([A-Z]+ [A-Z]+)/g)].map(
-      (m) => m[1]
+      (m) => m[1],
     );
     expect(new Set(alteraciones)).toEqual(new Set(["ADD CONSTRAINT"]));
   });
@@ -246,7 +257,7 @@ describe("migración aditiva de inventario Zoom", () => {
       "OcurrenciaArchivoZoom_cuentaProveedorId_fkey",
       "OcurrenciaArchivoZoom_vinculadaPorId_fkey",
       "ArchivoOrigenZoom_archivoReunionId_fkey",
-      "BarridoArchivoZoom_solicitanteId_fkey"
+      "BarridoArchivoZoom_solicitanteId_fkey",
     ]) {
       expect(fk(nombre)).toContain("ON DELETE SET NULL");
     }

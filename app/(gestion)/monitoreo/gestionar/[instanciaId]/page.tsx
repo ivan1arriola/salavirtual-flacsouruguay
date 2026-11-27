@@ -10,7 +10,7 @@ import { uuidsDeOcurrenciasZoom } from "@/src/modules/reuniones/uuids-ocurrencia
 import { GestionCoberturaPanel } from "@/src/modules/asistencia/presentation/components/gestion-cobertura-panel";
 
 export default async function GestionCoberturaPage({
-  params
+  params,
 }: Readonly<{ params: Promise<{ instanciaId: string }> }>) {
   const session = await auth();
   if (!session?.user) {
@@ -32,30 +32,30 @@ export default async function GestionCoberturaPage({
             cuentaProveedor: true,
             ocurrenciasArchivoZoom: {
               orderBy: { inicioRealAt: "asc" },
-              select: { uuid: true }
-            }
-          }
+              select: { uuid: true },
+            },
+          },
         },
         solicitud: { select: { id: true, titulo: true, modalidad: true } },
         asignaciones: {
           where: { estado: { in: ["ASIGNADO", "ACEPTADO"] } },
-          include: { asistenteTecnico: { include: { usuario: true } } }
+          include: { asistenteTecnico: { include: { usuario: true } } },
         },
         postulaciones: {
           where: { estado: "ME_INTERESA" },
           select: { asistenteTecnicoId: true, comentario: true, createdAt: true },
-          orderBy: { createdAt: "asc" }
+          orderBy: { createdAt: "asc" },
         },
         registrosMonitoreoRetroactivo: {
           orderBy: { createdAt: "desc" },
-          include: { asistente: { include: { usuario: true } } }
-        }
-      }
+          include: { asistente: { include: { usuario: true } } },
+        },
+      },
     }),
     db.asistenteTecnico.findMany({
       orderBy: [{ usuario: { nombres: "asc" } }, { usuario: { apellidos: "asc" } }],
-      include: { usuario: { select: { nombres: true, apellidos: true, activo: true, rol: true } } }
-    })
+      include: { usuario: { select: { nombres: true, apellidos: true, activo: true, rol: true } } },
+    }),
   ]);
   if (!meeting) {
     notFound();
@@ -70,7 +70,10 @@ export default async function GestionCoberturaPage({
   const current = meeting.asignaciones[0] ?? null;
   const event = seleccionarEventoProveedorActivo(meeting);
   const zoom = event?.proveedor.tipo === "ZOOM" || event?.proveedor.tipo === "ZOOM_HISTORICO";
-  const uuids = uuidsDeOcurrenciasZoom(event?.ocurrenciasArchivoZoom ?? [], event?.zoomMeetingUuid ?? null);
+  const uuids = uuidsDeOcurrenciasZoom(
+    event?.ocurrenciasArchivoZoom ?? [],
+    event?.zoomMeetingUuid ?? null,
+  );
 
   return (
     <div className="monitoring-workflow-page">
@@ -86,7 +89,7 @@ export default async function GestionCoberturaPage({
             <CalendarClock size={17} aria-hidden="true" />{" "}
             {meeting.inicioProgramadoAt.toLocaleDateString("es-UY", {
               timeZone: "America/Montevideo",
-              dateStyle: "full"
+              dateStyle: "full",
             })}
           </span>
           <span>
@@ -94,17 +97,18 @@ export default async function GestionCoberturaPage({
             {meeting.inicioProgramadoAt.toLocaleTimeString("es-UY", {
               timeZone: "America/Montevideo",
               hour: "2-digit",
-              minute: "2-digit"
+              minute: "2-digit",
             })}
             –
             {meeting.finProgramadoAt.toLocaleTimeString("es-UY", {
               timeZone: "America/Montevideo",
               hour: "2-digit",
-              minute: "2-digit"
+              minute: "2-digit",
             })}
           </span>
           <span>
-            <UserRoundCheck size={17} aria-hidden="true" /> {modality === "HIBRIDA" ? "Híbrida" : "Virtual"}
+            <UserRoundCheck size={17} aria-hidden="true" />{" "}
+            {modality === "HIBRIDA" ? "Híbrida" : "Virtual"}
           </span>
         </div>
       </header>
@@ -125,7 +129,7 @@ export default async function GestionCoberturaPage({
             ? [current.asistenteTecnico.usuario.nombres, current.asistenteTecnico.usuario.apellidos]
                 .filter(Boolean)
                 .join(" ")
-            : null
+            : null,
         }}
         assistants={assistants.map((assistant) => ({
           id: assistant.id,
@@ -134,12 +138,12 @@ export default async function GestionCoberturaPage({
             assistant.usuario.activo &&
             assistant.usuario.rol === "ASISTENTE_TECNICO" &&
             !assistant.cesadoHastaProximoInicioSesion,
-          unavailableReason: availability.get(assistant.id) ?? null
+          unavailableReason: availability.get(assistant.id) ?? null,
         }))}
         applicants={meeting.postulaciones.map((application) => ({
           assistantId: application.asistenteTecnicoId,
           comment: application.comentario,
-          date: application.createdAt.toISOString()
+          date: application.createdAt.toISOString(),
         }))}
         assignedId={current?.asistenteTecnicoId ?? null}
         assignmentId={current?.id ?? null}
@@ -155,12 +159,14 @@ export default async function GestionCoberturaPage({
           monto: record.montoEstimado.toNumber(),
           moneda: record.moneda,
           motivo: record.motivo,
-          motivoRechazo: record.motivoRechazo
+          motivoRechazo: record.motivoRechazo,
         }))}
       />
       <details className="monitoring-workflow-surface monitoring-meeting-info">
         <summary className="monitoring-workflow-section-heading">
-          <span>Información técnica · {zoom ? "Zoom" : event ? "Google Meet" : "Sin plataforma"}</span>
+          <span>
+            Información técnica · {zoom ? "Zoom" : event ? "Google Meet" : "Sin plataforma"}
+          </span>
           <ChevronDown size={18} aria-hidden="true" />
         </summary>
         <div className="monitoring-workflow-body">
@@ -196,7 +202,12 @@ export default async function GestionCoberturaPage({
           )}
           {event?.joinUrl ? (
             <p>
-              <a className="secondary-action" href={event.joinUrl} target="_blank" rel="noopener noreferrer">
+              <a
+                className="secondary-action"
+                href={event.joinUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 Abrir reunión
               </a>
             </p>

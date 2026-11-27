@@ -7,7 +7,7 @@ const base: MeetAudit = {
   entidadId: "m1",
   valorAnterior: { codigoReunion: "rsf-wtgp-uxt" },
   valorNuevo: { joinUrl: "https://meet.google.com/jgw-boaw-dgr?authuser=1" },
-  createdAt: new Date()
+  createdAt: new Date(),
 };
 describe("evidencia histórica", () => {
   it("recupera una migración demostrada", () => {
@@ -24,7 +24,7 @@ describe("evidencia histórica", () => {
       ...base,
       accion: "MEET_GRUPO_MIGRADO_A_ESPACIO_PREVIEW",
       valorAnterior: { codigoReunion: "rsf-wtgp-uxt", encuentros: ["m1", "m2", "ambiguo", 7] },
-      valorNuevo: { codigoReunion: "jgw-boaw-dgr", encuentros: ["m1", "m2"] }
+      valorNuevo: { codigoReunion: "jgw-boaw-dgr", encuentros: ["m1", "m2"] },
     })!;
     expect(result.meetingIds).toEqual(["m1", "m2"]);
   });
@@ -36,20 +36,20 @@ describe("evidencia histórica", () => {
         accion,
         entidadTipo: "SolicitudSala",
         valorAnterior: { codigosMeet: ["rsf-wtgp-uxt", "inválido"] },
-        valorNuevo: { codigoMeet: "jgw-boaw-dgr" }
+        valorNuevo: { codigoMeet: "jgw-boaw-dgr" },
       })!;
       expect(result.meetingIds).toEqual([]);
       expect(result.seriesId).toBe("m1");
       expect(result.change.before).toEqual(["rsf-wtgp-uxt"]);
       expect(result.change.reason).toBeTruthy();
-    }
+    },
   );
   it("lee altas, cambios y bajas capturados por el trigger sin inventar fechas de inicio", () => {
     const result = readMeetEvidence({
       ...base,
       accion: "ENLACE_MEET_REGISTRADO",
       entidadTipo: "EventoProveedor",
-      valorNuevo: { instanciaSalaId: "m2", origen: "script", motivo: "Corrección", joinUrl: null }
+      valorNuevo: { instanciaSalaId: "m2", origen: "script", motivo: "Corrección", joinUrl: null },
     })!;
     expect(result.meetingIds).toEqual(["m2"]);
     expect(result.change.after).toEqual([]);
@@ -61,8 +61,8 @@ describe("evidencia histórica", () => {
         accion: "ENLACE_MEET_REGISTRADO",
         entidadTipo: "EventoProveedor",
         valorAnterior: null,
-        valorNuevo: { instanciaSalaId: "m1", codigoReunion: "jgw-boaw-dgr" }
-      })?.change.reason
+        valorNuevo: { instanciaSalaId: "m1", codigoReunion: "jgw-boaw-dgr" },
+      })?.change.reason,
     ).toBeNull();
   });
   it("ignora datos ajenos o inválidos", () => {
@@ -72,7 +72,7 @@ describe("evidencia histórica", () => {
       ["ENLACE_MEET_REGISTRADO", "Usuario"],
       ["MEET_MIGRADO_A_ESPACIO_PREVIEW", "Usuario"],
       ["MEET_GRUPO_MIGRADO_A_ESPACIO_PREVIEW", "Usuario"],
-      ["ENLACE_MEET_UNIFICADO_EN_SERIE", "Usuario"]
+      ["ENLACE_MEET_UNIFICADO_EN_SERIE", "Usuario"],
     ]) {
       expect(readMeetEvidence({ ...base, accion, entidadTipo })).toBeNull();
     }

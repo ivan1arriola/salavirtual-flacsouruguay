@@ -4,12 +4,12 @@ import {
   reconciliarCalendariosAsistentesUseCase,
   sincronizarCalendarioAsistenteInstanciaUseCase,
   sincronizarCalendariosAsistenteSolicitudUseCase,
-  sincronizarCalendariosAsistenteUsuarioUseCase
+  sincronizarCalendariosAsistenteUsuarioUseCase,
 } from "../src/modules/asistencia/application";
 import type {
   AssistantCalendarProvider,
   AssistantCalendarRepositoryPort,
-  InstanciaParaCalendario
+  InstanciaParaCalendario,
 } from "../src/modules/asistencia/ports";
 
 const linkedAccount = {
@@ -17,10 +17,12 @@ const linkedAccount = {
   email: "asistente@flacso.edu.uy",
   dominio: "flacso.edu.uy",
   providerAccountId: "subject-1",
-  emailVerificadoAt: new Date("2026-09-01T12:00:00Z")
+  emailVerificadoAt: new Date("2026-09-01T12:00:00Z"),
 };
 
-function createMockInstance(overrides: Partial<InstanciaParaCalendario> = {}): InstanciaParaCalendario {
+function createMockInstance(
+  overrides: Partial<InstanciaParaCalendario> = {},
+): InstanciaParaCalendario {
   return {
     id: "instancia-1",
     estado: "PROGRAMADA",
@@ -46,12 +48,12 @@ function createMockInstance(overrides: Partial<InstanciaParaCalendario> = {}): I
             rol: "ASISTENTE_TECNICO",
             activo: true,
             fusionadoEnId: null,
-            cuentasGoogle: [linkedAccount]
-          }
-        }
-      }
+            cuentasGoogle: [linkedAccount],
+          },
+        },
+      },
     ],
-    ...overrides
+    ...overrides,
   };
 }
 
@@ -62,14 +64,18 @@ describe("casos de uso de calendario de asistentes", () => {
       obtenerInstanciasDeSolicitud: vi.fn(),
       obtenerInstanciasDeAsistente: vi.fn(),
       obtenerInstanciasFuturasParaReconciliar: vi.fn(),
-      obtenerCredencialesWorkspace: vi.fn()
+      obtenerCredencialesWorkspace: vi.fn(),
     };
     const provider: AssistantCalendarProvider = {
       publicarEvento: vi.fn(),
-      eliminarEvento: vi.fn()
+      eliminarEvento: vi.fn(),
     };
 
-    const results = await sincronizarCalendarioAsistenteInstanciaUseCase(repository, provider, "no-existe");
+    const results = await sincronizarCalendarioAsistenteInstanciaUseCase(
+      repository,
+      provider,
+      "no-existe",
+    );
     expect(results).toEqual([]);
     expect(provider.publicarEvento).not.toHaveBeenCalled();
   });
@@ -80,18 +86,18 @@ describe("casos de uso de calendario de asistentes", () => {
       obtenerInstanciasDeSolicitud: vi.fn(),
       obtenerInstanciasDeAsistente: vi.fn(),
       obtenerInstanciasFuturasParaReconciliar: vi.fn(),
-      obtenerCredencialesWorkspace: vi.fn().mockResolvedValue(null)
+      obtenerCredencialesWorkspace: vi.fn().mockResolvedValue(null),
     };
     const provider: AssistantCalendarProvider = {
       publicarEvento: vi.fn(),
-      eliminarEvento: vi.fn()
+      eliminarEvento: vi.fn(),
     };
 
     const results = await sincronizarCalendarioAsistenteInstanciaUseCase(
       repository,
       provider,
       "instancia-1",
-      new Date("2026-09-01T00:00:00Z")
+      new Date("2026-09-01T00:00:00Z"),
     );
 
     expect(results).toHaveLength(1);
@@ -107,19 +113,19 @@ describe("casos de uso de calendario de asistentes", () => {
       obtenerInstanciasFuturasParaReconciliar: vi.fn(),
       obtenerCredencialesWorkspace: vi.fn().mockResolvedValue({
         serviceAccountEmail: "sa@flacso.edu.uy",
-        privateKey: "pk-123"
-      })
+        privateKey: "pk-123",
+      }),
     };
     const provider: AssistantCalendarProvider = {
       publicarEvento: vi.fn().mockResolvedValue(undefined),
-      eliminarEvento: vi.fn().mockResolvedValue(undefined)
+      eliminarEvento: vi.fn().mockResolvedValue(undefined),
     };
 
     const results = await sincronizarCalendarioAsistenteInstanciaUseCase(
       repository,
       provider,
       "instancia-1",
-      new Date("2026-09-01T00:00:00Z")
+      new Date("2026-09-01T00:00:00Z"),
     );
 
     expect(results).toHaveLength(1);
@@ -137,8 +143,8 @@ describe("casos de uso de calendario de asistentes", () => {
         reunionInicio: new Date("2026-10-01T18:00:00Z"),
         reunionFin: new Date("2026-10-01T20:00:00Z"),
         modalidad: "HIBRIDA",
-        joinUrl: null
-      })
+        joinUrl: null,
+      }),
     );
     expect(provider.publicarEvento).toHaveBeenCalledWith(
       expect.objectContaining({ subject: "asistente@flacso.edu.uy" }),
@@ -149,8 +155,8 @@ describe("casos de uso de calendario de asistentes", () => {
         inicio: new Date("2026-10-01T20:00:00Z"),
         fin: new Date("2026-10-01T20:30:00Z"),
         modalidad: "HIBRIDA",
-        joinUrl: null
-      })
+        joinUrl: null,
+      }),
     );
     expect(provider.eliminarEvento).toHaveBeenCalledTimes(1);
   });
@@ -161,27 +167,27 @@ describe("casos de uso de calendario de asistentes", () => {
         createMockInstance({
           modalidad: "VIRTUAL",
           inicioAsistenciaTecnicaAt: null,
-          finAsistenciaTecnicaAt: null
-        })
+          finAsistenciaTecnicaAt: null,
+        }),
       ),
       obtenerInstanciasDeSolicitud: vi.fn(),
       obtenerInstanciasDeAsistente: vi.fn(),
       obtenerInstanciasFuturasParaReconciliar: vi.fn(),
       obtenerCredencialesWorkspace: vi.fn().mockResolvedValue({
         serviceAccountEmail: "sa@flacso.edu.uy",
-        privateKey: "pk-123"
-      })
+        privateKey: "pk-123",
+      }),
     };
     const provider: AssistantCalendarProvider = {
       publicarEvento: vi.fn().mockResolvedValue(undefined),
-      eliminarEvento: vi.fn().mockResolvedValue(undefined)
+      eliminarEvento: vi.fn().mockResolvedValue(undefined),
     };
 
     const results = await sincronizarCalendarioAsistenteInstanciaUseCase(
       repository,
       provider,
       "instancia-1",
-      new Date("2026-09-01T00:00:00Z")
+      new Date("2026-09-01T00:00:00Z"),
     );
 
     expect(results[0]?.estado).toBe("SINCRONIZADA");
@@ -197,19 +203,19 @@ describe("casos de uso de calendario de asistentes", () => {
       obtenerInstanciasFuturasParaReconciliar: vi.fn(),
       obtenerCredencialesWorkspace: vi.fn().mockResolvedValue({
         serviceAccountEmail: "sa@flacso.edu.uy",
-        privateKey: "pk-123"
-      })
+        privateKey: "pk-123",
+      }),
     };
     const provider: AssistantCalendarProvider = {
       publicarEvento: vi.fn().mockRejectedValue(new Error("Network timeout")),
-      eliminarEvento: vi.fn()
+      eliminarEvento: vi.fn(),
     };
 
     const results = await sincronizarCalendarioAsistenteInstanciaUseCase(
       repository,
       provider,
       "instancia-1",
-      new Date("2026-09-01T00:00:00Z")
+      new Date("2026-09-01T00:00:00Z"),
     );
 
     expect(results).toHaveLength(1);
@@ -225,19 +231,19 @@ describe("casos de uso de calendario de asistentes", () => {
       obtenerInstanciasFuturasParaReconciliar: vi.fn(),
       obtenerCredencialesWorkspace: vi.fn().mockResolvedValue({
         serviceAccountEmail: "sa@flacso.edu.uy",
-        privateKey: "pk-123"
-      })
+        privateKey: "pk-123",
+      }),
     };
     const provider: AssistantCalendarProvider = {
       publicarEvento: vi.fn().mockResolvedValue(undefined),
-      eliminarEvento: vi.fn()
+      eliminarEvento: vi.fn(),
     };
 
     const results = await sincronizarCalendariosAsistenteSolicitudUseCase(
       repository,
       provider,
       "solicitud-1",
-      new Date("2026-09-01T00:00:00Z")
+      new Date("2026-09-01T00:00:00Z"),
     );
 
     expect(results).toHaveLength(2);
@@ -252,19 +258,19 @@ describe("casos de uso de calendario de asistentes", () => {
       obtenerInstanciasFuturasParaReconciliar: vi.fn(),
       obtenerCredencialesWorkspace: vi.fn().mockResolvedValue({
         serviceAccountEmail: "sa@flacso.edu.uy",
-        privateKey: "pk-123"
-      })
+        privateKey: "pk-123",
+      }),
     };
     const provider: AssistantCalendarProvider = {
       publicarEvento: vi.fn().mockResolvedValue(undefined),
-      eliminarEvento: vi.fn()
+      eliminarEvento: vi.fn(),
     };
 
     const results = await sincronizarCalendariosAsistenteUsuarioUseCase(
       repository,
       provider,
       "usr-1",
-      new Date("2026-09-01T00:00:00Z")
+      new Date("2026-09-01T00:00:00Z"),
     );
 
     expect(results).toHaveLength(1);
@@ -279,18 +285,18 @@ describe("casos de uso de calendario de asistentes", () => {
       obtenerInstanciasFuturasParaReconciliar: vi.fn().mockResolvedValue(["inst-futura"]),
       obtenerCredencialesWorkspace: vi.fn().mockResolvedValue({
         serviceAccountEmail: "sa@flacso.edu.uy",
-        privateKey: "pk-123"
-      })
+        privateKey: "pk-123",
+      }),
     };
     const provider: AssistantCalendarProvider = {
       publicarEvento: vi.fn().mockResolvedValue(undefined),
-      eliminarEvento: vi.fn()
+      eliminarEvento: vi.fn(),
     };
 
     const results = await reconciliarCalendariosAsistentesUseCase(
       repository,
       provider,
-      new Date("2026-09-01T00:00:00Z")
+      new Date("2026-09-01T00:00:00Z"),
     );
 
     expect(results).toHaveLength(1);
@@ -298,7 +304,12 @@ describe("casos de uso de calendario de asistentes", () => {
 
   it("intentarSincronizacionCalendarioAsistente aisla fallos", async () => {
     const exito = await intentarSincronizacionCalendarioAsistente(async () => [
-      { cuentaGoogleId: "g1", email: "a@flacso.edu.uy", accion: "PUBLICAR", estado: "SINCRONIZADA" }
+      {
+        cuentaGoogleId: "g1",
+        email: "a@flacso.edu.uy",
+        accion: "PUBLICAR",
+        estado: "SINCRONIZADA",
+      },
     ]);
     expect(exito.error).toBeNull();
     expect(exito.resultados).toHaveLength(1);

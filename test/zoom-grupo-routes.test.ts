@@ -9,29 +9,31 @@ const state = vi.hoisted(() => ({
   listar: vi.fn(),
   elegir: vi.fn(),
   sincronizar: vi.fn(),
-  previsualizar: vi.fn()
+  previsualizar: vi.fn(),
 }));
 
 vi.mock("next/server", () => ({
   NextResponse: class {
     constructor(
       public body: unknown,
-      public status = 200
+      public status = 200,
     ) {}
     static json(body: unknown, init?: { status?: number }) {
       return new this(body, init?.status ?? 200);
     }
-  }
+  },
 }));
 vi.mock("@/auth", () => ({ auth: async () => state.session }));
-vi.mock("@/src/lib/auth/session-actor.adapter", () => ({ resolveSessionActor: async () => state.actor }));
+vi.mock("@/src/lib/auth/session-actor.adapter", () => ({
+  resolveSessionActor: async () => state.actor,
+}));
 vi.mock("@/src/lib/db", () => ({ db: state.db }));
 vi.mock("@/src/lib/config/encryption", () => ({ descifrarConfiguracion: state.descifrar }));
 vi.mock("@/src/modules/configuracion/api", () => ({
   listarGruposZoom: state.listar,
   elegirGrupoZoom: state.elegir,
   sincronizarCuentasZoomConGrupo: state.sincronizar,
-  previsualizarSincronizacionConGrupo: state.previsualizar
+  previsualizarSincronizacionConGrupo: state.previsualizar,
 }));
 
 import { GET, POST, PUT } from "../app/api/v1/configuracion/zoom/grupo/route";
@@ -52,14 +54,14 @@ const VISTA_PREVIA = {
   desactivar: ["sala02@flacso.edu.uy"],
   marcarFuera: [],
   sinLicencia: ["nueva@flacso.edu.uy"],
-  pierdenLicencia: []
+  pierdenLicencia: [],
 };
 
 const put = (body: unknown) =>
   new Request(URL_GRUPO, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body)
+    body: JSON.stringify(body),
   });
 const post = (body?: unknown) =>
   new Request(
@@ -69,22 +71,27 @@ const post = (body?: unknown) =>
       : {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body)
-        }
+          body: JSON.stringify(body),
+        },
   );
 const periodicaGet = (authorization?: string) =>
   new Request(URL_PERIODICA, {
-    headers: authorization ? { authorization } : {}
+    headers: authorization ? { authorization } : {},
   });
 
 beforeEach(() => {
   state.session = { user: { id: "admin", email: "admin@flacso.edu.uy", role: "ADMINISTRACION" } };
   state.actor = { id: "admin", rol: "ADMINISTRACION", activo: true };
-  state.listar.mockReset().mockResolvedValue([{ id: "g1", nombre: "Anfitriones", totalMiembros: 3 }]);
+  state.listar
+    .mockReset()
+    .mockResolvedValue([{ id: "g1", nombre: "Anfitriones", totalMiembros: 3 }]);
   state.elegir.mockReset().mockResolvedValue(undefined);
   state.sincronizar
     .mockReset()
-    .mockResolvedValue({ ok: true, resumen: "2 nuevas, 0 desactivadas, 0 fuera del grupo con reuniones" });
+    .mockResolvedValue({
+      ok: true,
+      resumen: "2 nuevas, 0 desactivadas, 0 fuera del grupo con reuniones",
+    });
   state.previsualizar.mockReset().mockResolvedValue(VISTA_PREVIA);
   vi.stubEnv("CRON_SECRET", "secreto-cron");
 });
@@ -99,7 +106,9 @@ describe("rutas del grupo de Zoom", () => {
     state.session = { user: { id: "doc", email: "doc@flacso.edu.uy", role: "DOCENTE" } };
 
     expect(((await GET()) as any).status).toBe(403);
-    expect(((await PUT(put({ grupoId: "g1", grupoNombre: "Anfitriones" }))) as any).status).toBe(403);
+    expect(((await PUT(put({ grupoId: "g1", grupoNombre: "Anfitriones" }))) as any).status).toBe(
+      403,
+    );
     expect(((await POST(post())) as any).status).toBe(403);
     expect(((await POST(post({ vistaPrevia: true }))) as any).status).toBe(403);
 
@@ -116,7 +125,9 @@ describe("rutas del grupo de Zoom", () => {
   it("una sesión desactualizada recibe 401", async () => {
     state.actor = { id: "admin", rol: "ADMINISTRACION", activo: false };
 
-    expect(((await PUT(put({ grupoId: "g1", grupoNombre: "Anfitriones" }))) as any).status).toBe(401);
+    expect(((await PUT(put({ grupoId: "g1", grupoNombre: "Anfitriones" }))) as any).status).toBe(
+      401,
+    );
     expect(state.elegir).not.toHaveBeenCalled();
   });
 
@@ -124,7 +135,9 @@ describe("rutas del grupo de Zoom", () => {
     const response = (await GET()) as any;
 
     expect(response.status).toBe(200);
-    expect(response.body).toEqual({ grupos: [{ id: "g1", nombre: "Anfitriones", totalMiembros: 3 }] });
+    expect(response.body).toEqual({
+      grupos: [{ id: "g1", nombre: "Anfitriones", totalMiembros: 3 }],
+    });
     expect(state.listar).toHaveBeenCalledWith(state.db, state.descifrar);
   });
 
@@ -156,7 +169,7 @@ describe("rutas del grupo de Zoom", () => {
     expect(state.elegir).toHaveBeenCalledWith(state.db, {
       grupoId: "g1",
       grupoNombre: "Anfitriones",
-      actorId: "admin"
+      actorId: "admin",
     });
   });
 
@@ -167,7 +180,7 @@ describe("rutas del grupo de Zoom", () => {
       { grupoId: 7, grupoNombre: "Anfitriones" },
       { grupoNombre: "Anfitriones" },
       { grupoId: "g".repeat(201), grupoNombre: "Anfitriones" },
-      null
+      null,
     ]) {
       const response = (await PUT(put(body))) as any;
 
@@ -176,7 +189,9 @@ describe("rutas del grupo de Zoom", () => {
       expect(response.body.error).not.toMatch(/Invalid|expected/i);
     }
 
-    const malformado = (await PUT(new Request(URL_GRUPO, { method: "PUT", body: "{no es json" }))) as any;
+    const malformado = (await PUT(
+      new Request(URL_GRUPO, { method: "PUT", body: "{no es json" }),
+    )) as any;
     expect(malformado.status).toBe(400);
     expect(state.elegir).not.toHaveBeenCalled();
   });
@@ -187,11 +202,11 @@ describe("rutas del grupo de Zoom", () => {
     expect(response.status).toBe(200);
     expect(response.body).toEqual({
       ok: true,
-      resumen: "2 nuevas, 0 desactivadas, 0 fuera del grupo con reuniones"
+      resumen: "2 nuevas, 0 desactivadas, 0 fuera del grupo con reuniones",
     });
     expect(state.sincronizar).toHaveBeenCalledWith(state.db, state.descifrar, expect.any(Date), {
       actorId: "admin",
-      confirmar: false
+      confirmar: false,
     });
     expect(state.previsualizar).not.toHaveBeenCalled();
   });
@@ -202,19 +217,21 @@ describe("rutas del grupo de Zoom", () => {
     expect(response.status).toBe(200);
     expect(state.sincronizar).toHaveBeenCalledWith(state.db, state.descifrar, expect.any(Date), {
       actorId: "admin",
-      confirmar: false
+      confirmar: false,
     });
   });
 
   it("POST con confirmar pasa la revisión y el actor de la sesión, nunca el del cuerpo", async () => {
     const revision = "a".repeat(64);
-    const response = (await POST(post({ confirmar: true, revision, actorId: "otra-persona" }))) as any;
+    const response = (await POST(
+      post({ confirmar: true, revision, actorId: "otra-persona" }),
+    )) as any;
 
     expect(response.status).toBe(200);
     expect(state.sincronizar).toHaveBeenCalledWith(state.db, state.descifrar, expect.any(Date), {
       actorId: "admin",
       confirmar: true,
-      revision
+      revision,
     });
   });
 
@@ -238,7 +255,7 @@ describe("rutas del grupo de Zoom", () => {
       resumen: "El grupo de Zoom no tiene miembros.",
       crear: [],
       desactivar: [],
-      sinLicencia: []
+      sinLicencia: [],
     };
     state.previsualizar.mockResolvedValue(aviso);
 
@@ -267,14 +284,19 @@ describe("rutas del grupo de Zoom", () => {
       expect(response.body.error).not.toMatch(/Invalid|expected/i);
     }
 
-    const malformado = (await POST(new Request(URL_GRUPO, { method: "POST", body: "{no es json" }))) as any;
+    const malformado = (await POST(
+      new Request(URL_GRUPO, { method: "POST", body: "{no es json" }),
+    )) as any;
     expect(malformado.status).toBe(400);
     expect(state.sincronizar).not.toHaveBeenCalled();
     expect(state.previsualizar).not.toHaveBeenCalled();
   });
 
   it("POST devuelve el aviso cuando la sincronización no se hizo", async () => {
-    state.sincronizar.mockResolvedValue({ ok: false, resumen: "Ya hay una sincronización en curso." });
+    state.sincronizar.mockResolvedValue({
+      ok: false,
+      resumen: "Ya hay una sincronización en curso.",
+    });
 
     const response = (await POST(post())) as any;
 
@@ -310,11 +332,13 @@ describe("sincronización periódica del grupo de Zoom", () => {
     const response = (await periodica.GET(periodicaGet("Bearer secreto-cron"))) as any;
 
     expect(response.status).toBe(200);
-    expect(response.body).toEqual({ resumen: "2 nuevas, 0 desactivadas, 0 fuera del grupo con reuniones" });
+    expect(response.body).toEqual({
+      resumen: "2 nuevas, 0 desactivadas, 0 fuera del grupo con reuniones",
+    });
     // Sin actor y sin confirmar: una sincronización masiva nunca se aplica sola.
     expect(state.sincronizar).toHaveBeenCalledWith(state.db, state.descifrar, expect.any(Date), {
       actorId: null,
-      confirmar: false
+      confirmar: false,
     });
   });
 
@@ -328,7 +352,10 @@ describe("sincronización periódica del grupo de Zoom", () => {
   });
 
   it("el GET periódico responde 502 si la sincronización no se hizo", async () => {
-    state.sincronizar.mockResolvedValue({ ok: false, resumen: "El grupo de Zoom no tiene miembros." });
+    state.sincronizar.mockResolvedValue({
+      ok: false,
+      resumen: "El grupo de Zoom no tiene miembros.",
+    });
 
     const response = (await periodica.GET(periodicaGet("Bearer secreto-cron"))) as any;
 

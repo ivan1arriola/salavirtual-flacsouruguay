@@ -222,30 +222,15 @@
     }
   },
   "src/bootstrap/ui/reuniones/reuniones-lista-meet-page.server.tsx": {
-    "@typescript-eslint/no-unused-vars": {
-      "count": 1
-    },
     "sonarjs/cognitive-complexity": {
       "count": 3
     },
-    "sonarjs/no-dead-store": {
-      "count": 1
-    },
     "sonarjs/no-nested-conditional": {
       "count": 26
-    },
-    "sonarjs/no-unused-vars": {
-      "count": 1
     }
   },
   "src/bootstrap/ui/reuniones/reuniones-lista-zoom-page.server.tsx": {
-    "@typescript-eslint/no-unused-vars": {
-      "count": 1
-    },
     "sonarjs/cognitive-complexity": {
-      "count": 1
-    },
-    "sonarjs/no-dead-store": {
       "count": 1
     },
     "sonarjs/no-nested-conditional": {
@@ -325,11 +310,6 @@
       "count": 1
     }
   },
-  "src/components/notification-actions.tsx": {
-    "sonarjs/void-use": {
-      "count": 1
-    }
-  },
   "src/components/operational-assistance-closure-form.tsx": {
     "sonarjs/no-nested-conditional": {
       "count": 1
@@ -359,11 +339,6 @@
   },
   "src/components/program-members-config.tsx": {
     "sonarjs/redundant-type-aliases": {
-      "count": 1
-    }
-  },
-  "src/components/pwa-register.tsx": {
-    "sonarjs/void-use": {
       "count": 1
     }
   },
@@ -430,9 +405,6 @@
     },
     "sonarjs/misplaced-loop-counter": {
       "count": 1
-    },
-    "sonarjs/void-use": {
-      "count": 1
     }
   },
   "src/integrations/zoom/zoom-http.ts": {
@@ -490,9 +462,6 @@
     },
     "sonarjs/no-redundant-assignments": {
       "count": 1
-    },
-    "sonarjs/void-use": {
-      "count": 1
     }
   },
   "src/modules/archivos/domain/attendance-view.domain.ts": {
@@ -540,19 +509,10 @@
     }
   },
   "src/modules/archivos/infrastructure/google/google-artifacts-provider.adapter.ts": {
-    "@typescript-eslint/no-unused-vars": {
-      "count": 1
-    },
-    "sonarjs/no-dead-store": {
-      "count": 1
-    },
     "sonarjs/no-nested-conditional": {
       "count": 5
     },
     "sonarjs/no-nested-template-literals": {
-      "count": 1
-    },
-    "sonarjs/no-unused-vars": {
       "count": 1
     },
     "sonarjs/redundant-type-aliases": {
@@ -780,16 +740,7 @@
     }
   },
   "src/modules/operaciones/salud.domain.ts": {
-    "@typescript-eslint/no-unused-vars": {
-      "count": 1
-    },
-    "sonarjs/no-dead-store": {
-      "count": 1
-    },
     "sonarjs/no-nested-conditional": {
-      "count": 1
-    },
-    "sonarjs/no-unused-vars": {
       "count": 1
     }
   },
@@ -1062,7 +1013,7 @@
   },
   "test/calendario-asistente-infrastructure.test.ts": {
     "@typescript-eslint/no-explicit-any": {
-      "count": 7
+      "count": 5
     }
   },
   "test/conciliar-asistencia-zoom-route.test.ts": {
@@ -1129,11 +1080,6 @@
   "test/google-workspace-config.test.ts": {
     "@typescript-eslint/no-explicit-any": {
       "count": 6
-    }
-  },
-  "test/google-workspace-credentials-service.test.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 7
     }
   },
   "test/google-workspace-legacy-meet.test.ts": {
@@ -1302,7 +1248,7 @@
   },
   "test/proveedor-activo-consumidores.test.ts": {
     "@typescript-eslint/no-explicit-any": {
-      "count": 5
+      "count": 4
     },
     "sonarjs/no-hardcoded-passwords": {
       "count": 1

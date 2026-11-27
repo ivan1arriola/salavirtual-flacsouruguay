@@ -7,7 +7,7 @@ export function MeetingCreationDialog({
   state,
   message,
   meetingId,
-  meetingCount
+  meetingCount,
 }: Readonly<{
   state: "saving" | "done";
   message: string;

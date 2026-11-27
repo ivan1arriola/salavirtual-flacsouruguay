@@ -1,5 +1,5 @@
 import { normalizeMeetLink } from "../src/modules/meet/meet-link.domain";
-import { Prisma } from "@prisma/client";
+import type { Prisma } from "@prisma/client";
 import { loadEnvConfig } from "@next/env";
 import { JWT } from "google-auth-library";
 import { db } from "../src/lib/db";
@@ -14,7 +14,7 @@ const MEET_READ_SCOPE = "https://www.googleapis.com/auth/meetings.space.readonly
 async function main(): Promise<void> {
   const request = await db.solicitudSala.findUnique({
     where: { id: solicitudId },
-    select: { id: true, titulo: true, docenteProgramaId: true, createdAt: true }
+    select: { id: true, titulo: true, docenteProgramaId: true, createdAt: true },
   });
   if (!request) {
     throw new Error(`No existe la solicitud ${solicitudId}.`);
@@ -24,17 +24,17 @@ async function main(): Promise<void> {
       solicitud: {
         docenteProgramaId: request.docenteProgramaId,
         titulo: request.titulo,
-        createdAt: request.createdAt
-      }
+        createdAt: request.createdAt,
+      },
     },
     orderBy: { inicioProgramadoAt: "asc" },
     include: {
       solicitud: { select: { id: true } },
       eventosProveedor: {
         where: { proveedor: { tipo: "GOOGLE_MEET" } },
-        include: { cuentaProveedor: true }
-      }
-    }
+        include: { cuentaProveedor: true },
+      },
+    },
   });
   if (meetings.length === 0) {
     throw new Error("La serie no tiene encuentros Google Meet.");
@@ -48,10 +48,15 @@ async function main(): Promise<void> {
   });
   loadEnvConfig(process.cwd());
   const { descifrarConfiguracion } = await import("../src/lib/config/encryption");
-  const { obtenerCredencialPrincipalGoogleWorkspace } = await import("../src/modules/configuracion/api");
-  const configuration = await obtenerCredencialPrincipalGoogleWorkspace(db, descifrarConfiguracion, {
-    requireActiva: true
-  });
+  const { obtenerCredencialPrincipalGoogleWorkspace } =
+    await import("../src/modules/configuracion/api");
+  const configuration = await obtenerCredencialPrincipalGoogleWorkspace(
+    db,
+    descifrarConfiguracion,
+    {
+      requireActiva: true,
+    },
+  );
   if (!configuration) {
     throw new Error("Google Workspace no está configurado.");
   }
@@ -72,12 +77,12 @@ async function main(): Promise<void> {
           inicio: meeting.inicioProgramadoAt,
           calendarId,
           externalEventId: event.externalEventId,
-          enlaceAnterior: event.joinUrl
-        }))
+          enlaceAnterior: event.joinUrl,
+        })),
       },
       null,
-      2
-    )
+      2,
+    ),
   );
   if (!applyChanges) {
     return;
@@ -88,7 +93,7 @@ async function main(): Promise<void> {
     const auth = calendarAuth(configuration.serviceAccountEmail, privateKey, calendarId);
     const current = await auth.request<CalendarEvent>({
       url: calendarEventUrl(calendarId, event.externalEventId!),
-      method: "GET"
+      method: "GET",
     });
     const description = withMeetAccess(current.data.description, meetUrl);
     const updated = await auth.request<CalendarEvent>({
@@ -97,13 +102,18 @@ async function main(): Promise<void> {
       data: {
         conferenceData: null,
         location: meetUrl,
-        description
-      }
+        description,
+      },
     });
     if (updated.data.hangoutLink || updated.data.location !== meetUrl) {
-      throw new Error(`Calendar no confirmó la sustitución del enlace en ${event.externalEventId}.`);
+      throw new Error(
+        `Calendar no confirmó la sustitución del enlace en ${event.externalEventId}.`,
+      );
     }
-    updatedPayloads.set(event.id, JSON.parse(JSON.stringify(updated.data)) as Prisma.InputJsonValue);
+    updatedPayloads.set(
+      event.id,
+      JSON.parse(JSON.stringify(updated.data)) as Prisma.InputJsonValue,
+    );
   }
 
   await db.$transaction(async (tx) => {
@@ -117,8 +127,8 @@ async function main(): Promise<void> {
           payloadUltimo: updatedPayloads.get(event.id),
           sincronizadoAt: new Date(),
           estadoIntegracion: "SINCRONIZADA",
-          errorIntegracion: null
-        }
+          errorIntegracion: null,
+        },
       });
     }
     await tx.auditoria.create({
@@ -127,10 +137,10 @@ async function main(): Promise<void> {
         entidadTipo: "SolicitudSala",
         entidadId: request.id,
         valorAnterior: {
-          codigosMeet: [...new Set(events.map(({ event }) => event.codigoReunion).filter(Boolean))]
+          codigosMeet: [...new Set(events.map(({ event }) => event.codigoReunion).filter(Boolean))],
         },
-        valorNuevo: { codigoMeet: meetCode, meetUrl, encuentros: events.length }
-      }
+        valorNuevo: { codigoMeet: meetCode, meetUrl, encuentros: events.length },
+      },
     });
   });
 }
@@ -143,23 +153,28 @@ type CalendarEvent = Readonly<{
 }>;
 
 function calendarAuth(serviceAccountEmail: string, privateKey: string, subject: string): JWT {
-  return new JWT({ email: serviceAccountEmail, key: privateKey, scopes: [CALENDAR_SCOPE], subject });
+  return new JWT({
+    email: serviceAccountEmail,
+    key: privateKey,
+    scopes: [CALENDAR_SCOPE],
+    subject,
+  });
 }
 
 async function verifyMeetSpace(
   serviceAccountEmail: string,
   privateKey: string,
-  subject: string
+  subject: string,
 ): Promise<void> {
   const auth = new JWT({
     email: serviceAccountEmail,
     key: privateKey,
     scopes: [MEET_READ_SCOPE],
-    subject
+    subject,
   });
   const result = await auth.request<{ meetingCode?: string; meetingUri?: string }>({
     url: `https://meet.googleapis.com/v2/spaces/${encodeURIComponent(meetCode)}`,
-    method: "GET"
+    method: "GET",
   });
   if (result.data.meetingCode !== meetCode || result.data.meetingUri !== meetUrl) {
     throw new Error("Google Meet no confirmó el espacio solicitado.");

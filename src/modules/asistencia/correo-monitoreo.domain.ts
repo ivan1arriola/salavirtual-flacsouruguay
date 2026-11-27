@@ -26,7 +26,7 @@ const COLOR = {
   teal: "#087f9e",
   ink: "#192b44",
   muted: "#506278",
-  border: "#dce5ee"
+  border: "#dce5ee",
 } as const;
 
 function escapar(value: string): string {
@@ -40,7 +40,7 @@ function escapar(value: string): string {
 
 function enlaceAccesoValido(
   value: string | null | undefined,
-  proveedor: "GOOGLE_MEET" | "ZOOM"
+  proveedor: "GOOGLE_MEET" | "ZOOM",
 ): string | null {
   if (!value) {
     return null;
@@ -52,7 +52,9 @@ function enlaceAccesoValido(
     }
     const host = url.hostname.toLowerCase();
     const permitido =
-      proveedor === "ZOOM" ? host === "zoom.us" || host.endsWith(".zoom.us") : host === "meet.google.com";
+      proveedor === "ZOOM"
+        ? host === "zoom.us" || host.endsWith(".zoom.us")
+        : host === "meet.google.com";
     return permitido ? url.toString() : null;
   } catch {
     return null;
@@ -68,14 +70,14 @@ function boton(url: string, label: string, secondary = false): string {
       escapar(url) +
       '" style="display:inline-block;padding:12px 18px;color:#ffffff;text-decoration:none;font-size:14px;font-weight:700;line-height:20px">',
     escapar(label),
-    "</a></td></tr></table>"
+    "</a></td></tr></table>",
   ].join("");
 }
 
 function tarjeta(
   reunion: ReunionResumenMonitoreo,
   index: number,
-  variante: ResumenMonitoreoEmailInput["variante"]
+  variante: ResumenMonitoreoEmailInput["variante"],
 ): string {
   const proveedor = reunion.proveedor ?? "GOOGLE_MEET";
   const meet = variante === "asignadas" ? enlaceAccesoValido(reunion.meetUrl, proveedor) : null;
@@ -136,7 +138,7 @@ function tarjeta(
         boton(meet, proveedor === "ZOOM" ? "Ingresar a Zoom" : "Ingresar a Google Meet", true) +
         "</div>"
       : "",
-    "</td></tr></table>"
+    "</td></tr></table>",
   ].join("");
 }
 
@@ -153,7 +155,9 @@ export function construirHtmlResumenMonitoreo(input: ResumenMonitoreoEmailInput)
     ? "Tenés " + cantidad + (cantidad === 1 ? " reunión asignada." : " reuniones asignadas.")
     : "Hay " +
       cantidad +
-      (cantidad === 1 ? " reunión disponible para postularte." : " reuniones disponibles para postularte.");
+      (cantidad === 1
+        ? " reunión disponible para postularte."
+        : " reuniones disponibles para postularte.");
   const descripcion = asignadas
     ? "Este es tu próximo cronograma. Revisá las fechas y accedé a cada reunión desde el enlace correspondiente."
     : "Estas reuniones todavía no tienen una persona asignada. Revisá los horarios y postuláte desde Agenda Abierta.";
@@ -162,7 +166,9 @@ export function construirHtmlResumenMonitoreo(input: ResumenMonitoreoEmailInput)
     : "https://salavirtual.flacso.edu.uy/agenda-abierta";
   const etiquetaBoton = asignadas ? "Abrir Mi Agenda" : "Ver Agenda Abierta";
   const saludo = input.nombre?.trim() ? "Hola, " + escapar(input.nombre.trim()) + "." : "Hola.";
-  const tarjetas = input.reuniones.map((reunion, index) => tarjeta(reunion, index, input.variante)).join("");
+  const tarjetas = input.reuniones
+    .map((reunion, index) => tarjeta(reunion, index, input.variante))
+    .join("");
   return envolverCorreo({
     categoria: asignadas ? "Cronograma personal" : "Coberturas disponibles",
     titulo,
@@ -179,6 +185,6 @@ export function construirHtmlResumenMonitoreo(input: ResumenMonitoreoEmailInput)
     nota: asignadas
       ? "Los cambios en asignaciones y horarios se actualizan en Mi Agenda."
       : "Postularte no confirma la asignación. La confirmación aparece en Mi Agenda.",
-    preferenciasUrl: "https://salavirtual.flacso.edu.uy/mi-perfil"
+    preferenciasUrl: "https://salavirtual.flacso.edu.uy/mi-perfil",
   });
 }

@@ -2,7 +2,10 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 describe("página de monitoreo compacta", () => {
-  const page = readFileSync("src/bootstrap/ui/asistencia/asistencia-tecnica-page.server.tsx", "utf8");
+  const page = readFileSync(
+    "src/bootstrap/ui/asistencia/asistencia-tecnica-page.server.tsx",
+    "utf8",
+  );
   const css = readFileSync("app/(gestion)/operations.css", "utf8");
 
   it("usa un dashboard con resumen, filtros y filas compactas", () => {
@@ -25,7 +28,7 @@ describe("página de monitoreo compacta", () => {
       ".monitoring-row.is-pending",
       ".coverage-notify-menu",
       ".monitoring-summary",
-      ".coverage-toolbar"
+      ".coverage-toolbar",
     ]) {
       expect(css).toContain(selector);
     }

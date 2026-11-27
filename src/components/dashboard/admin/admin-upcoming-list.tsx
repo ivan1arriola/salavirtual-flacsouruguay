@@ -5,7 +5,7 @@ import type { AdminUpcomingMeetingDTO } from "@/src/modules/dashboard/admin-dash
 import styles from "./admin-upcoming-list.module.css";
 
 export function AdminUpcomingList({
-  meetings
+  meetings,
 }: Readonly<{
   meetings: readonly AdminUpcomingMeetingDTO[];
 }>) {
@@ -35,41 +35,43 @@ export function AdminUpcomingList({
           <p>No hay otros encuentros programados para los próximos siete días.</p>
         </div>
       ) : (
-        <ol className={styles.list}>
+        <ol className={styles["list"]}>
           {meetings.map((meeting) => {
             const startsAt = new Date(meeting.inicioProgramadoAt);
             const endsAt = new Date(meeting.finProgramadoAt);
             return (
-              <li className={styles.item} key={meeting.id}>
-                <time className={styles.when} dateTime={startsAt.toISOString()}>
+              <li className={styles["item"]} key={meeting.id}>
+                <time className={styles["when"]} dateTime={startsAt.toISOString()}>
                   <span>{formatDate(startsAt)}</span>
                   <strong>
                     {formatTime(startsAt)}–{formatTime(endsAt)}
                   </strong>
                   <small>Encuentro</small>
                 </time>
-                <div className={styles.details}>
-                  <Link className={styles.title} href={`/reuniones/${meeting.solicitudId}`}>
+                <div className={styles["details"]}>
+                  <Link className={styles["title"]} href={`/reuniones/${meeting.solicitudId}`}>
                     {meeting.titulo}
                   </Link>
                   <p>
                     {meeting.programa} · {meeting.docenteNombre}
                   </p>
                 </div>
-                <div className={styles.status}>
+                <div className={styles["status"]}>
                   <span
-                    className={`${styles.modality} ${meeting.modalidad === "HIBRIDA" ? styles.hybrid : styles.virtual}`}
+                    className={`${styles["modality"]} ${meeting.modalidad === "HIBRIDA" ? styles["hybrid"] : styles["virtual"]}`}
                   >
                     {meeting.modalidad === "HIBRIDA" ? "Híbrida" : "Virtual"}
                   </span>
                   {meeting.requiereAsistencia ? (
-                    <span className={meeting.asistenteNombre ? styles.assigned : styles.pending}>
+                    <span
+                      className={meeting.asistenteNombre ? styles["assigned"] : styles["pending"]}
+                    >
                       {meeting.asistenteNombre
                         ? `Monitoreo: ${meeting.asistenteNombre}`
                         : "Monitoreo sin asignar"}
                     </span>
                   ) : (
-                    <span className={styles.notRequired}>No requiere monitoreo</span>
+                    <span className={styles["notRequired"]}>No requiere monitoreo</span>
                   )}
                 </div>
               </li>

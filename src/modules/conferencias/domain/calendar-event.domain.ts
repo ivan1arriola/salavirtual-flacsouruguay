@@ -19,21 +19,24 @@ export type CalendarEvent = Readonly<{
 }>;
 
 export function crearCalendarEvent(request: ConferenceProvisionRequest) {
-  const attendeeEmails = normalizeEmails([...(request.cohostEmails ?? []), ...(request.guestEmails ?? [])]);
+  const attendeeEmails = normalizeEmails([
+    ...(request.cohostEmails ?? []),
+    ...(request.guestEmails ?? []),
+  ]);
   return {
     id: request.calendarEventId,
     summary: request.titulo,
     description: request.descripcion,
     start: {
       dateTime: request.inicio.toISOString(),
-      timeZone: request.timezone
+      timeZone: request.timezone,
     },
     end: {
       dateTime: request.fin.toISOString(),
-      timeZone: request.timezone
+      timeZone: request.timezone,
     },
     ...(attendeeEmails.length ? { attendees: attendeeEmails.map((email) => ({ email })) } : {}),
-    ...(request.conferenceData ? { conferenceData: request.conferenceData } : {})
+    ...(request.conferenceData ? { conferenceData: request.conferenceData } : {}),
   } as const;
 }
 
@@ -42,20 +45,22 @@ export function crearConferenceDataMeet(codigoReunion: string, joinUrl: string) 
     conferenceId: codigoReunion,
     conferenceSolution: {
       key: { type: "hangoutsMeet" },
-      name: "Google Meet"
+      name: "Google Meet",
     },
     entryPoints: [
       {
         entryPointType: "video",
         uri: joinUrl,
         label: joinUrl.replace(/^https?:\/\//, ""),
-        meetingCode: codigoReunion
-      }
-    ]
+        meetingCode: codigoReunion,
+      },
+    ],
   } as const;
 }
 
-export function extraerConferenceData(payload: unknown): Readonly<Record<string, unknown>> | undefined {
+export function extraerConferenceData(
+  payload: unknown,
+): Readonly<Record<string, unknown>> | undefined {
   if (!payload || typeof payload !== "object") {
     return undefined;
   }
@@ -69,7 +74,8 @@ export function extraerConferenceData(payload: unknown): Readonly<Record<string,
 export function extraerMeetProvisionado(event: CalendarEvent): ConferenceProvisionResult | null {
   const codigoReunion =
     event.conferenceData?.conferenceId ??
-    event.conferenceData?.entryPoints?.find((entry) => entry.entryPointType === "video")?.meetingCode;
+    event.conferenceData?.entryPoints?.find((entry) => entry.entryPointType === "video")
+      ?.meetingCode;
   if (!event.id || !event.hangoutLink || !codigoReunion) {
     return null;
   }
@@ -78,13 +84,16 @@ export function extraerMeetProvisionado(event: CalendarEvent): ConferenceProvisi
     externalEventId: event.id,
     codigoReunion,
     joinUrl: event.hangoutLink,
-    payload: event
+    payload: event,
   };
 }
 
 export function eventoCalendarCoincideConSolicitud(
   payload: unknown,
-  request: Pick<ConferenceProvisionRequest, "titulo" | "descripcion" | "inicio" | "fin" | "timezone">
+  request: Pick<
+    ConferenceProvisionRequest,
+    "titulo" | "descripcion" | "inicio" | "fin" | "timezone"
+  >,
 ): boolean {
   if (!payload || typeof payload !== "object") {
     return false;

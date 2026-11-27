@@ -20,26 +20,30 @@ describe("tokens semánticos de estados", () => {
     "danger-border",
     "neutral-foreground",
     "neutral-background",
-    "neutral-border"
+    "neutral-border",
   ])("define el token state-%s", (name) => {
     expect(tokens).toContain(`--state-${name}:`);
   });
 
   it("usa los mismos tokens semánticos para los estados compartidos", () => {
     expect(baseStyles).toMatch(/\.status-ok\s*\{[^}]*color:\s*var\(--state-success-foreground\)/s);
-    expect(baseStyles).toMatch(/\.status-warning\s*\{[^}]*color:\s*var\(--state-warning-foreground\)/s);
-    expect(baseStyles).toMatch(/\.status-error\s*\{[^}]*color:\s*var\(--state-danger-foreground\)/s);
-    expect(refreshedStyles).toMatch(
-      /\.status-ok\s*\{[^}]*border-color:\s*var\(--state-success-border\);[^}]*background:\s*var\(--state-success-background\)/s
+    expect(baseStyles).toMatch(
+      /\.status-warning\s*\{[^}]*color:\s*var\(--state-warning-foreground\)/s,
+    );
+    expect(baseStyles).toMatch(
+      /\.status-error\s*\{[^}]*color:\s*var\(--state-danger-foreground\)/s,
     );
     expect(refreshedStyles).toMatch(
-      /\.status-warning\s*\{[^}]*border-color:\s*var\(--state-warning-border\);[^}]*background:\s*var\(--state-warning-background\)/s
+      /\.status-ok\s*\{[^}]*border-color:\s*var\(--state-success-border\);[^}]*background:\s*var\(--state-success-background\)/s,
     );
     expect(refreshedStyles).toMatch(
-      /\.status-error\s*\{[^}]*border-color:\s*var\(--state-danger-border\);[^}]*background:\s*var\(--state-danger-background\)/s
+      /\.status-warning\s*\{[^}]*border-color:\s*var\(--state-warning-border\);[^}]*background:\s*var\(--state-warning-background\)/s,
     );
     expect(refreshedStyles).toMatch(
-      /\.status-neutral\s*\{[^}]*border-color:\s*var\(--state-neutral-border\);[^}]*background:\s*var\(--state-neutral-background\)/s
+      /\.status-error\s*\{[^}]*border-color:\s*var\(--state-danger-border\);[^}]*background:\s*var\(--state-danger-background\)/s,
+    );
+    expect(refreshedStyles).toMatch(
+      /\.status-neutral\s*\{[^}]*border-color:\s*var\(--state-neutral-border\);[^}]*background:\s*var\(--state-neutral-background\)/s,
     );
   });
 });

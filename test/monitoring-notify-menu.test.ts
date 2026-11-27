@@ -5,7 +5,7 @@ describe("menú de notificaciones masivas", () => {
   it("agrupa las acciones en un menú Notificar", () => {
     const src = readFileSync(
       "src/modules/asistencia/presentation/components/bulk-monitoring-notification-actions.tsx",
-      "utf8"
+      "utf8",
     );
     expect(src).toContain('<details className="coverage-notify-menu"');
     expect(src).toContain("<summary");

@@ -21,25 +21,25 @@ export async function POST(_request: Request, context: RouteContext) {
     // Una serie migrada a Zoom conserva su evento de Meet: manda el proveedor activo, no la mera existencia del evento.
     const instancia = await db.instanciaSala.findUnique({
       where: { id: instanciaId },
-      select: { proveedorActivoTipo: true }
+      select: { proveedorActivoTipo: true },
     });
     const event =
       instancia?.proveedorActivoTipo === "ZOOM"
         ? null
         : await db.eventoProveedor.findFirst({
             where: { instanciaSalaId: instanciaId, proveedor: { tipo: "GOOGLE_MEET" } },
-            select: { id: true }
+            select: { id: true },
           });
     if (!event) {
       // Encuentro Zoom: la asistencia sale de la base y la planilla de Drive es un paso independiente (ver detalle por ocurrencia).
       const zoom = await db.eventoProveedor.findFirst({
         where: { instanciaSalaId: instanciaId, proveedor: { tipo: "ZOOM" } },
-        select: { id: true }
+        select: { id: true },
       });
       if (!zoom) {
         return NextResponse.json(
           { error: "No se encontró un encuentro Meet ni Zoom para esta instancia." },
-          { status: 404 }
+          { status: 404 },
         );
       }
       const resumen = await regenerarAsistenciaInstanciaZoom(instanciaId);
@@ -50,11 +50,13 @@ export async function POST(_request: Request, context: RouteContext) {
           resultados: resumen.resultados.map((r) => ({
             sincronizacion: r.sincronizacion.tipo,
             planilla: r.planilla.tipo,
-            ...(r.sincronizacion.tipo === "ERROR" ? { codigoSincronizacion: r.sincronizacion.codigo } : {}),
-            ...(r.planilla.tipo === "ERROR" ? { codigoPlanilla: r.planilla.codigo } : {})
-          }))
+            ...(r.sincronizacion.tipo === "ERROR"
+              ? { codigoSincronizacion: r.sincronizacion.codigo }
+              : {}),
+            ...(r.planilla.tipo === "ERROR" ? { codigoPlanilla: r.planilla.codigo } : {}),
+          })),
         },
-        { headers: { "Cache-Control": "private, no-store, max-age=0" } }
+        { headers: { "Cache-Control": "private, no-store, max-age=0" } },
       );
     }
     const [result] = await sincronizarArtefactos([event.id], true);
@@ -62,14 +64,14 @@ export async function POST(_request: Request, context: RouteContext) {
       return NextResponse.json(
         {
           error: "No se pudo regenerar la planilla de asistencia.",
-          detalle: result?.error ?? "La sincronización no devolvió un motivo del error."
+          detalle: result?.error ?? "La sincronización no devolvió un motivo del error.",
         },
-        { status: 502 }
+        { status: 502 },
       );
     }
     return NextResponse.json(
       { estado: result.estado },
-      { headers: { "Cache-Control": "private, no-store, max-age=0" } }
+      { headers: { "Cache-Control": "private, no-store, max-age=0" } },
     );
   } catch (error) {
     const mapped = toHttpError(error);

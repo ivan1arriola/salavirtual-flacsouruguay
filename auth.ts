@@ -12,18 +12,18 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   secret: authConfig.secret,
   trustHost: authConfig.trustHost,
   session: {
-    strategy: "jwt"
+    strategy: "jwt",
   },
   pages: {
     signIn: "/acceso",
-    error: "/acceso"
+    error: "/acceso",
   },
   providers: [
     Credentials({
       name: "Usuario y contrasena",
       credentials: {
         usuario: { label: "Usuario", type: "text" },
-        password: { label: "Contrasena", type: "password" }
+        password: { label: "Contrasena", type: "password" },
       },
       authorize: async (credentials) => {
         const usuario = await identity.autenticarCredenciales(credentials);
@@ -36,9 +36,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           name: usuario.nombre,
           email: usuario.email,
           role: usuario.rol,
-          mustChangePassword: usuario.debeCambiarPassword
+          mustChangePassword: usuario.debeCambiarPassword,
         };
-      }
+      },
     }),
     ...(authConfig.google
       ? [
@@ -52,7 +52,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                 emailVerificado: profile.email_verified,
                 nombre: profile.name,
                 nombres: profile.given_name,
-                apellidos: profile.family_name
+                apellidos: profile.family_name,
               });
               if (!usuario) {
                 throw new Error("La cuenta Google todavía no tiene acceso autorizado.");
@@ -65,12 +65,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                 email: usuario.email,
                 image: profile.picture,
                 role: usuario.rol,
-                mustChangePassword: usuario.debeCambiarPassword
+                mustChangePassword: usuario.debeCambiarPassword,
               };
-            }
-          })
+            },
+          }),
         ]
-      : [])
+      : []),
   ],
   callbacks: {
     async jwt({ token, user, account }) {
@@ -84,32 +84,32 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           const vinculacion = internalUserId
             ? await db.usuario.findUnique({
                 where: { id: internalUserId },
-                select: { activo: true, fusionadoEnId: true }
+                select: { activo: true, fusionadoEnId: true },
               })
             : null;
           console.info("[Auth] Retorno Google", {
-            identidadInternaValida: vinculacion?.activo === true && !vinculacion.fusionadoEnId
+            identidadInternaValida: vinculacion?.activo === true && !vinculacion.fusionadoEnId,
           });
         }
-        token.userId = internalUserId;
-        token.role = user.role;
-        token.mustChangePassword = user.mustChangePassword;
+        token["userId"] = internalUserId;
+        token["role"] = user.role;
+        token["mustChangePassword"] = user.mustChangePassword;
       }
       return token;
     },
     session({ session, token }) {
       if (session.user) {
-        if (!token.userId && token.sub) {
+        if (!token["userId"] && token.sub) {
           console.warn("[Auth] JWT sin identificador interno; usando subject de reserva.");
         }
-        session.user.id = String(token.userId ?? token.sub ?? "");
-        session.user.role = esRolUsuario(token.role) ? token.role : "DOCENTE";
-        session.user.mustChangePassword = token.mustChangePassword === true;
+        session.user.id = String(token["userId"] ?? token.sub ?? "");
+        session.user.role = esRolUsuario(token["role"]) ? token["role"] : "DOCENTE";
+        session.user.mustChangePassword = token["mustChangePassword"] === true;
       }
       return session;
     },
     redirect({ url }) {
       return resolverRedireccionAutorizada(url, authConfig.baseUrl);
-    }
-  }
+    },
+  },
 });

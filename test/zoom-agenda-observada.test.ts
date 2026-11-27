@@ -3,7 +3,7 @@ import { interpretarMovimientoReunionZoom } from "../src/integrations/zoom/zoom-
 import { detectarInconsistenciasAgendaZoom } from "../src/modules/operaciones/zoom-agenda-observada.domain";
 import {
   registrarMovimientoReunionZoom,
-  reservasZoomExternas
+  reservasZoomExternas,
 } from "../src/modules/operaciones/zoom-agenda-observada.service";
 
 const cuerpo = (event: string, object: Record<string, unknown>) =>
@@ -18,17 +18,17 @@ describe("movimientos de reuniones de Zoom", () => {
         topic: "Clase",
         type: 2,
         start_time: "2026-11-20T12:00:00Z",
-        duration: 90
-      })
+        duration: 90,
+      }),
     );
     expect(mov).toMatchObject({
       tipo: "created",
       meetingId: "123",
       anfitrionZoomId: "h1",
-      sinHorarioFijo: false
+      sinHorarioFijo: false,
     });
     expect(mov?.ocurrencias).toEqual([
-      { ocurrenciaZoomId: "", inicio: new Date("2026-11-20T12:00:00Z"), duracionMin: 90 }
+      { ocurrenciaZoomId: "", inicio: new Date("2026-11-20T12:00:00Z"), duracionMin: 90 },
     ]);
   });
 
@@ -41,15 +41,17 @@ describe("movimientos de reuniones de Zoom", () => {
         duration: 60,
         occurrences: [
           { occurrence_id: "a", start_time: "2026-11-20T12:00:00Z", duration: 60 },
-          { occurrence_id: "b", start_time: "2026-11-27T12:00:00Z", status: "deleted" }
-        ]
-      })
+          { occurrence_id: "b", start_time: "2026-11-27T12:00:00Z", status: "deleted" },
+        ],
+      }),
     );
     expect(mov?.ocurrencias.map(({ ocurrenciaZoomId }) => ocurrenciaZoomId)).toEqual(["a"]);
   });
 
   it("ignora eventos ajenos o sin anfitrión", () => {
-    expect(interpretarMovimientoReunionZoom(cuerpo("meeting.started", { id: 1, host_id: "h" }))).toBeNull();
+    expect(
+      interpretarMovimientoReunionZoom(cuerpo("meeting.started", { id: 1, host_id: "h" })),
+    ).toBeNull();
     expect(interpretarMovimientoReunionZoom(cuerpo("meeting.created", { id: 1 }))).toBeNull();
   });
 });
@@ -63,7 +65,7 @@ const reunion = (id: string, meetingId: string, inicio: Date, fin: Date) => ({
   inicio,
   fin,
   cuentaId: "c1",
-  meetingId
+  meetingId,
 });
 const obs = (id: string, meetingId: string, inicio: Date, fin: Date, estado = "ACTIVA") => ({
   id,
@@ -73,7 +75,7 @@ const obs = (id: string, meetingId: string, inicio: Date, fin: Date, estado = "A
   tema: "Tema",
   inicio,
   fin,
-  estado
+  estado,
 });
 
 describe("inconsistencias de agenda", () => {
@@ -83,7 +85,7 @@ describe("inconsistencias de agenda", () => {
       [obs("o1", "999", h(20, 12), h(20, 14)), obs("o2", "100", h(20, 12), h(20, 13))],
       [local],
       new Set(["100"]),
-      hoy
+      hoy,
     );
     expect(resultado.externas).toHaveLength(1);
     expect(resultado.externas[0]?.choques).toEqual([local]);
@@ -98,7 +100,7 @@ describe("inconsistencias de agenda", () => {
       [obs("o1", "100", h(20, 12), h(20, 13), "ELIMINADA"), obs("o2", "200", h(21, 15), h(21, 16))],
       [eliminada, movida],
       new Set(["100", "200"]),
-      hoy
+      hoy,
     );
     expect(resultado.eliminadasEnZoom).toEqual([eliminada]);
     expect(resultado.horarioDistinto.map(({ reunion: r }) => r.instanciaId)).toEqual(["2"]);
@@ -110,7 +112,7 @@ describe("inconsistencias de agenda", () => {
       [obs("o1", "100", h(17, 11), h(17, 13), "ELIMINADA")],
       [enCurso],
       new Set(["100"]),
-      hoy
+      hoy,
     );
     expect(resultado.eliminadasEnZoom).toEqual([]);
     expect(resultado.horarioDistinto).toEqual([]);
@@ -121,7 +123,7 @@ describe("inconsistencias de agenda", () => {
       [],
       [reunion("1", "100", h(20, 12), h(20, 13))],
       new Set(["100"]),
-      hoy
+      hoy,
     );
     expect(resultado.eliminadasEnZoom).toEqual([]);
     expect(resultado.horarioDistinto).toEqual([]);
@@ -161,24 +163,30 @@ function baseFalsa(propias: string[] = []) {
   const db = {
     cuentaProveedor: { findFirst: async () => ({ id: "c1" }) },
     eventoProveedor: {
-      findMany: async () => propias.map((id) => ({ codigoReunion: id, externalEventId: null }))
+      findMany: async () => propias.map((id) => ({ codigoReunion: id, externalEventId: null })),
     },
     reunionZoomObservada: {
       findMany: async ({ where }: { where: Record<string, unknown> }) =>
         filas.filter((f) => coincide(f, where)),
-      updateMany: async ({ where, data }: { where: Record<string, unknown>; data: Partial<Fila> }) => {
+      updateMany: async ({
+        where,
+        data,
+      }: {
+        where: Record<string, unknown>;
+        data: Partial<Fila>;
+      }) => {
         filas.filter((f) => coincide(f, where)).forEach((f) => Object.assign(f, data));
         return { count: 1 };
       },
       update: async ({ where, data }: { where: { id: string }; data: Partial<Fila> }) =>
         Object.assign(
           filas.find((f) => f.id === where.id)!,
-          data
+          data,
         ),
       upsert: async ({
         where,
         create,
-        update
+        update,
       }: {
         where: {
           cuentaZoomId_meetingId_ocurrenciaZoomId: Pick<
@@ -189,15 +197,17 @@ function baseFalsa(propias: string[] = []) {
         create: Omit<Fila, "id">;
         update: Partial<Fila>;
       }) => {
-        const existente = filas.find((f) => coincide(f, where.cuentaZoomId_meetingId_ocurrenciaZoomId));
+        const existente = filas.find((f) =>
+          coincide(f, where.cuentaZoomId_meetingId_ocurrenciaZoomId),
+        );
         if (existente) {
           return Object.assign(existente, update);
         }
         const nueva = { ignoradaAt: null, ...create, id: `f${filas.length}` } as Fila;
         filas.push(nueva);
         return nueva;
-      }
-    }
+      },
+    },
   };
   return { db: db as never, filas };
 }
@@ -211,8 +221,8 @@ describe("registro de movimientos y reservas externas", () => {
         type: 2,
         start_time: "2026-11-20T12:00:00Z",
         duration: 60,
-        ...extra
-      })
+        ...extra,
+      }),
     )!;
 
   it("una reunión creada en Zoom ocupa la sala y al borrarse la libera", async () => {
@@ -224,8 +234,8 @@ describe("registro de movimientos y reservas externas", () => {
       {
         cuentaProveedorId: "c1",
         inicio: new Date("2026-11-20T12:00:00Z"),
-        fin: new Date("2026-11-20T13:00:00Z")
-      }
+        fin: new Date("2026-11-20T13:00:00Z"),
+      },
     ]);
     await registrarMovimientoReunionZoom(db, movimiento("deleted"), hoy);
     expect(filas[0]?.estado).toBe("ELIMINADA");
@@ -241,10 +251,10 @@ describe("registro de movimientos y reservas externas", () => {
         {
           cuentaIds: ["c1"],
           desde: new Date("2026-11-20T00:00:00Z"),
-          hasta: new Date("2026-11-21T00:00:00Z")
+          hasta: new Date("2026-11-21T00:00:00Z"),
         },
-        hoy
-      )
+        hoy,
+      ),
     ).toEqual([]);
   });
 
@@ -264,13 +274,13 @@ describe("registro de movimientos y reservas externas", () => {
       finAt: new Date("2026-11-20T13:00:00Z"),
       estado: "ACTIVA",
       origen: "PULL",
-      observadaAt: hoy
+      observadaAt: hoy,
     });
     await registrarMovimientoReunionZoom(db, movimiento("deleted"), ahora);
     await registrarMovimientoReunionZoom(
       db,
       movimiento("created", { start_time: "2026-11-20T15:00:00Z" }),
-      ahora
+      ahora,
     );
     expect(filas[0]).toMatchObject({ estado: "ACTIVA", tema: "Original", origen: "PULL" });
     expect(filas[0]?.inicioAt).toEqual(new Date("2026-11-20T12:00:00Z"));
@@ -278,7 +288,11 @@ describe("registro de movimientos y reservas externas", () => {
 
   it("no registra una reunión que ya terminó", async () => {
     const { db, filas } = baseFalsa();
-    await registrarMovimientoReunionZoom(db, movimiento("created"), new Date("2026-11-20T14:00:00Z"));
+    await registrarMovimientoReunionZoom(
+      db,
+      movimiento("created"),
+      new Date("2026-11-20T14:00:00Z"),
+    );
     expect(filas).toHaveLength(0);
   });
 });

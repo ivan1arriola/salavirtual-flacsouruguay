@@ -19,7 +19,7 @@ type RepairResult = Readonly<{
 
 export function MeetingIntegrationProblems({
   problems,
-  canRepair
+  canRepair,
 }: Readonly<{
   problems: readonly IntegrationProblem[];
   canRepair: boolean;
@@ -34,21 +34,24 @@ export function MeetingIntegrationProblems({
 
   async function repair(problem: IntegrationProblem) {
     setBusyId(problem.eventoProveedorId);
-    setFeedback((current) => ({ ...current, [problem.eventoProveedorId]: "Reintentando con Google…" }));
+    setFeedback((current) => ({
+      ...current,
+      [problem.eventoProveedorId]: "Reintentando con Google…",
+    }));
     try {
       const response = await fetch("/api/v1/reuniones/provisionar-pendientes", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           eventoProveedorId: problem.eventoProveedorId,
-          operacion: problem.hasMeet ? "CONFIGURAR_MEET" : "PROVISIONAR"
-        })
+          operacion: problem.hasMeet ? "CONFIGURAR_MEET" : "PROVISIONAR",
+        }),
       });
       const result = await response.json().catch(() => ({}));
       if (!response.ok) {
         setFeedback((current) => ({
           ...current,
-          [problem.eventoProveedorId]: result.error ?? "No se pudo reintentar la integración."
+          [problem.eventoProveedorId]: result.error ?? "No se pudo reintentar la integración.",
         }));
         return;
       }
@@ -72,7 +75,7 @@ export function MeetingIntegrationProblems({
     } catch {
       setFeedback((current) => ({
         ...current,
-        [problem.eventoProveedorId]: "No se pudo conectar con el servicio de sincronización."
+        [problem.eventoProveedorId]: "No se pudo conectar con el servicio de sincronización.",
       }));
     } finally {
       setBusyId(null);
@@ -119,8 +122,16 @@ export function MeetingIntegrationProblems({
                   onClick={() => repair(problem)}
                   type="button"
                 >
-                  {busy ? <LoaderCircle className="button-spinner" size={16} /> : <RefreshCw size={16} />}
-                  {busy ? "Reintentando…" : problem.hasMeet ? "Reintentar configuración" : "Reintentar Meet"}
+                  {busy ? (
+                    <LoaderCircle className="button-spinner" size={16} />
+                  ) : (
+                    <RefreshCw size={16} />
+                  )}
+                  {busy
+                    ? "Reintentando…"
+                    : problem.hasMeet
+                      ? "Reintentar configuración"
+                      : "Reintentar Meet"}
                 </button>
               ) : (
                 <span className="status status-warning">Requiere Administración</span>

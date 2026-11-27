@@ -18,7 +18,7 @@ export async function GET(_request: Request, context: RouteContext) {
   try {
     const actor = await resolveSessionActor(db, {
       id: session.user.id,
-      email: session.user.email
+      email: session.user.email,
     });
     if (!actor?.activo || actor.rol !== "ADMINISTRACION") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -30,13 +30,13 @@ export async function GET(_request: Request, context: RouteContext) {
     return NextResponse.json(
       {
         ...result,
-        actualizadoAt: new Date().toISOString()
+        actualizadoAt: new Date().toISOString(),
       },
       {
         headers: {
-          "Cache-Control": "private, no-store, max-age=0"
-        }
-      }
+          "Cache-Control": "private, no-store, max-age=0",
+        },
+      },
     );
   } catch (error) {
     const mapped = toHttpError(error);

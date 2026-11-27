@@ -13,8 +13,8 @@ export const vincularCuentaGoogleSchema = z.object({
     .email()
     .transform((email) => email.trim().toLowerCase())
     .refine((email) => email.endsWith("@flacso.edu.uy"), {
-      message: "La cuenta debe pertenecer al dominio flacso.edu.uy."
+      message: "La cuenta debe pertenecer al dominio flacso.edu.uy.",
     }),
   providerAccountId: z.string().trim().min(1),
-  dominio: z.literal("flacso.edu.uy")
+  dominio: z.literal("flacso.edu.uy"),
 });

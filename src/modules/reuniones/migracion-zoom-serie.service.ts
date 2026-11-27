@@ -6,7 +6,7 @@ import {
   planificarMigracionZoomPorSerie,
   type EncuentroSerieMigracionZoom,
   type EstadoVistaPreviaZoom,
-  type SerieMigracionZoom
+  type SerieMigracionZoom,
 } from "./migracion-zoom-preview.domain";
 import { cargarDatosMigracionZoom, exigirAdministracion } from "./migracion-zoom.service";
 import { claveSerieReunion } from "./serie-reunion.domain";
@@ -68,11 +68,13 @@ export type InstanciaParaSerieMigracion = Readonly<{
 export function armarSerieMigracionZoom(
   serieClave: string,
   delaSerie: readonly InstanciaParaSerieMigracion[],
-  hosts: readonly Readonly<{ id: string; emailOrganizador: string | null }>[]
+  hosts: readonly Readonly<{ id: string; emailOrganizador: string | null }>[],
 ): SerieMigracionZoom {
   const encuentros = delaSerie.map((instancia): EncuentroSerieMigracionZoom => {
     const activo = seleccionarEventoProveedorActivo(instancia)?.proveedor.tipo;
-    const meet = instancia.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET");
+    const meet = instancia.eventosProveedor.find(
+      ({ proveedor }) => proveedor.tipo === "GOOGLE_MEET",
+    );
     const zoom = instancia.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "ZOOM");
     return {
       id: instancia.id,
@@ -85,13 +87,13 @@ export function armarSerieMigracionZoom(
         meet
           ? {
               ...meet,
-              emailOrganizador: meet.cuentaProveedor?.emailOrganizador ?? null
+              emailOrganizador: meet.cuentaProveedor?.emailOrganizador ?? null,
             }
-          : null
+          : null,
       ),
       meetJoinUrl: meet?.joinUrl ?? null,
       zoomSincronizado: zoom?.estadoIntegracion === "SINCRONIZADA",
-      reunionCompartidaId: zoom?.reunionProveedorId ?? null
+      reunionCompartidaId: zoom?.reunionProveedorId ?? null,
     };
   });
 
@@ -100,9 +102,9 @@ export function armarSerieMigracionZoom(
   const primeroEnZoom = delaSerie.flatMap(({ eventosProveedor, proveedorActivoTipo }) =>
     proveedorActivoTipo === "ZOOM"
       ? eventosProveedor.filter(
-          ({ proveedor, reunionProveedorId }) => proveedor.tipo === "ZOOM" && reunionProveedorId
+          ({ proveedor, reunionProveedorId }) => proveedor.tipo === "ZOOM" && reunionProveedorId,
         )
-      : []
+      : [],
   )[0];
   const emailMeet = delaSerie
     .flatMap(({ eventosProveedor }) => eventosProveedor)
@@ -112,7 +114,8 @@ export function armarSerieMigracionZoom(
   const cuentaZoomPreferidaId =
     primeroEnZoom?.cuentaProveedorId ??
     (emailMeet
-      ? (hosts.find((host) => host.emailOrganizador?.trim().toLowerCase() === emailMeet)?.id ?? null)
+      ? (hosts.find((host) => host.emailOrganizador?.trim().toLowerCase() === emailMeet)?.id ??
+        null)
       : null);
   return { serieClave, encuentros, cuentaZoomPreferidaId };
 }
@@ -124,7 +127,7 @@ export function armarSerieMigracionZoom(
 export async function obtenerVistaPreviaMigracionZoomPorSerie(
   db: PrismaClient,
   actor: Actor,
-  ahora: Date = new Date()
+  ahora: Date = new Date(),
 ): Promise<VistaPreviaMigracionZoomSerie> {
   exigirAdministracion(actor);
   const { instancias, hosts, reservas } = await cargarDatosMigracionZoom(db, ahora);
@@ -135,11 +138,11 @@ export async function obtenerVistaPreviaMigracionZoomPorSerie(
       const clave = claveSerieReunion(instancia.solicitud);
       return new Map([...mapa, [clave, [...(mapa.get(clave) ?? []), instancia]]]);
     },
-    new Map()
+    new Map(),
   );
 
   const series: SerieMigracionZoom[] = [...porSerie].map(([serieClave, delaSerie]) =>
-    armarSerieMigracionZoom(serieClave, delaSerie, hosts)
+    armarSerieMigracionZoom(serieClave, delaSerie, hosts),
   );
 
   const plan = planificarMigracionZoomPorSerie({
@@ -154,11 +157,11 @@ export async function obtenerVistaPreviaMigracionZoomPorSerie(
               cuentaProveedorId,
               inicio: instancia.inicioProgramadoAt,
               fin: instancia.finProgramadoAt,
-              instanciaId: instanciaSalaId
-            }
+              instanciaId: instanciaSalaId,
+            },
           ]
-        : []
-    )
+        : [],
+    ),
   });
 
   const conteos: Record<EstadoVistaPreviaZoom, number> = {
@@ -169,12 +172,12 @@ export async function obtenerVistaPreviaMigracionZoomPorSerie(
     SIN_SALA: 0,
     CERCANO: 0,
     NO_FUTURO: 0,
-    REVISAR: 0
+    REVISAR: 0,
   };
   const filas = plan.map((fila): FilaVistaPreviaSerie => {
     conteos[fila.estado] += 1;
     const delaSerie = [...(porSerie.get(fila.serieClave) ?? [])].sort(
-      (a, b) => a.inicioProgramadoAt.getTime() - b.inicioProgramadoAt.getTime()
+      (a, b) => a.inicioProgramadoAt.getTime() - b.inicioProgramadoAt.getTime(),
     );
     const aMigrar = new Set(fila.encuentroIds);
     const primera = delaSerie[0];
@@ -185,9 +188,11 @@ export async function obtenerVistaPreviaMigracionZoomPorSerie(
         for (const email of [
           instancia.solicitud.docentePrograma.docente.usuario.emailPrincipal,
           instancia.solicitud.creadaPor.emailPrincipal,
-          ...instancia.asignaciones.map(({ asistenteTecnico }) => asistenteTecnico.usuario.emailPrincipal),
+          ...instancia.asignaciones.map(
+            ({ asistenteTecnico }) => asistenteTecnico.usuario.emailPrincipal,
+          ),
           ...instancia.cohostEmails.map(({ email: correo }) => correo),
-          ...instancia.invitados.map(({ email: correo }) => correo)
+          ...instancia.invitados.map(({ email: correo }) => correo),
         ]) {
           if (email) {
             correos.add(email.toLowerCase());
@@ -211,11 +216,13 @@ export async function obtenerVistaPreviaMigracionZoomPorSerie(
           enlaceActual: activo?.joinUrl ?? null,
           migra: aMigrar.has(instancia.id),
           conservarEnMeet: instancia.conservarGoogleMeet,
-          motivoExcepcion: instancia.conservarGoogleMeet ? instancia.motivoConservarGoogleMeet : null
+          motivoExcepcion: instancia.conservarGoogleMeet
+            ? instancia.motivoConservarGoogleMeet
+            : null,
         };
       }),
       cambioEnlace: fila.estado === "MIGRABLE",
-      destinatarios: [...correos].sort()
+      destinatarios: [...correos].sort(),
     };
   });
 
@@ -224,6 +231,6 @@ export async function obtenerVistaPreviaMigracionZoomPorSerie(
     generadaAt: ahora.toISOString(),
     margenSeguridadHoras: MARGEN_SEGURIDAD_HORAS_APLICAR,
     conteos,
-    filas
+    filas,
   };
 }

@@ -17,7 +17,7 @@ export function AccionAgendaZoomBoton({
   instanciaId,
   observadaId,
   etiqueta,
-  confirmacion
+  confirmacion,
 }: Readonly<{
   accion: Accion;
   instanciaId?: string;
@@ -40,7 +40,7 @@ export function AccionAgendaZoomBoton({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         cache: "no-store",
-        body: JSON.stringify({ accion, instanciaId, observadaId })
+        body: JSON.stringify({ accion, instanciaId, observadaId }),
       });
       const datos = await respuesta.json().catch(() => ({}));
       if (!respuesta.ok && respuesta.status !== 202) {

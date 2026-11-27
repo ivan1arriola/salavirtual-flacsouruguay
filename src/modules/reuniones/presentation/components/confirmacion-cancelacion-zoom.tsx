@@ -12,7 +12,7 @@ export type CancelacionZoom =
 export function ConfirmacionCancelacionZoom({
   detalle,
   onCerrar,
-  onConfirmar
+  onConfirmar,
 }: Readonly<{ detalle: CancelacionZoom; onCerrar: () => void; onConfirmar: () => void }>) {
   const dialogo = useRef<HTMLDialogElement>(null);
   const volver = useRef<HTMLButtonElement>(null);

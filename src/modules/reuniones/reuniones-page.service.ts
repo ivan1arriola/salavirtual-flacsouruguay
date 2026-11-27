@@ -6,7 +6,7 @@ import {
   parsearFechaFiltro,
   resolverPaginacionAgenda,
   resolverPeriodoAgenda,
-  resolverVistaAgenda
+  resolverVistaAgenda,
 } from "./agenda-view.domain";
 import { filtroProveedorActivo, resolverProveedorReunion } from "./proveedor-reunion.domain";
 
@@ -17,25 +17,25 @@ export const meetingInclude = {
   solicitud: {
     include: {
       docentePrograma: {
-        include: { programa: true, docente: { include: { usuario: true } } }
-      }
-    }
+        include: { programa: true, docente: { include: { usuario: true } } },
+      },
+    },
   },
   eventosProveedor: { include: { proveedor: true, cuentaProveedor: true } },
   cohosts: {
     include: {
       cuentaGoogle: {
-        include: { user: true }
-      }
-    }
+        include: { user: true },
+      },
+    },
   },
   cohostEmails: true,
   asignaciones: {
     where: { estado: { in: [...ACTIVE_ASSIGNMENTS] } },
     include: { asistenteTecnico: { include: { usuario: true } } },
     orderBy: { updatedAt: "desc" as const },
-    take: 1
-  }
+    take: 1,
+  },
 } satisfies Prisma.InstanciaSalaInclude;
 
 export function startOfMontevideoDay(date: Date): Date {
@@ -43,7 +43,7 @@ export function startOfMontevideoDay(date: Date): Date {
     timeZone: "America/Montevideo",
     year: "numeric",
     month: "2-digit",
-    day: "2-digit"
+    day: "2-digit",
   }).formatToParts(date);
   const value = (type: "year" | "month" | "day") => parts.find((part) => part.type === type)?.value;
   return new Date(`${value("year")}-${value("month")}-${value("day")}T00:00:00-03:00`);
@@ -71,7 +71,7 @@ export type ReunionesPageSearchParams = Readonly<{
 export async function obtenerDatosPaginaReuniones(
   db: PrismaClient,
   actor: SessionActorReuniones,
-  params: ReunionesPageSearchParams
+  params: ReunionesPageSearchParams,
 ) {
   const {
     q = "",
@@ -82,7 +82,7 @@ export async function obtenerDatosPaginaReuniones(
     porPagina: porPaginaParam,
     desde: desdeParam = "",
     hasta: hastaParam = "",
-    proveedor: proveedorParam
+    proveedor: proveedorParam,
   } = params;
 
   const vista = resolverVistaAgenda(vistaParam);
@@ -113,11 +113,11 @@ export async function obtenerDatosPaginaReuniones(
               docentes: {
                 some: {
                   activo: true,
-                  docente: { usuarioId: actor.id }
-                }
-              }
-            }
-          }
+                  docente: { usuarioId: actor.id },
+                },
+              },
+            },
+          },
         }
       : programaId
         ? { docentePrograma: { programaId } }
@@ -129,10 +129,10 @@ export async function obtenerDatosPaginaReuniones(
       ? {
           inicioProgramadoAt: {
             ...(desdeDate ? { gte: desdeDate } : {}),
-            ...(hastaDate ? { lte: hastaDate } : {})
-          }
+            ...(hastaDate ? { lte: hastaDate } : {}),
+          },
         }
-      : {})
+      : {}),
   };
 
   const dateRangeWhere: Prisma.InstanciaSalaWhereInput =
@@ -140,8 +140,8 @@ export async function obtenerDatosPaginaReuniones(
       ? {
           inicioProgramadoAt: {
             ...(desdeDate ? { gte: desdeDate } : {}),
-            ...(hastaDate ? { lte: hastaDate } : {})
-          }
+            ...(hastaDate ? { lte: hastaDate } : {}),
+          },
         }
       : {};
 
@@ -153,18 +153,18 @@ export async function obtenerDatosPaginaReuniones(
               some: {
                 OR: [
                   { codigoReunion: { contains: meetingCodeQuery, mode: "insensitive" } },
-                  { joinUrl: { contains: query, mode: "insensitive" } }
-                ]
-              }
-            }
+                  { joinUrl: { contains: query, mode: "insensitive" } },
+                ],
+              },
+            },
           },
           { solicitud: { titulo: { contains: query, mode: "insensitive" } } },
           {
             solicitud: {
               docentePrograma: {
-                programa: { nombre: { contains: query, mode: "insensitive" } }
-              }
-            }
+                programa: { nombre: { contains: query, mode: "insensitive" } },
+              },
+            },
           },
           {
             solicitud: {
@@ -173,12 +173,12 @@ export async function obtenerDatosPaginaReuniones(
                   usuario: {
                     OR: [
                       { nombres: { contains: query, mode: "insensitive" } },
-                      { apellidos: { contains: query, mode: "insensitive" } }
-                    ]
-                  }
-                }
-              }
-            }
+                      { apellidos: { contains: query, mode: "insensitive" } },
+                    ],
+                  },
+                },
+              },
+            },
           },
           {
             cohosts: {
@@ -187,14 +187,14 @@ export async function obtenerDatosPaginaReuniones(
                   OR: [
                     { email: { contains: query, mode: "insensitive" } },
                     { user: { nombres: { contains: query, mode: "insensitive" } } },
-                    { user: { apellidos: { contains: query, mode: "insensitive" } } }
-                  ]
-                }
-              }
-            }
+                    { user: { apellidos: { contains: query, mode: "insensitive" } } },
+                  ],
+                },
+              },
+            },
           },
-          { cohostEmails: { some: { email: { contains: query, mode: "insensitive" } } } }
-        ]
+          { cohostEmails: { some: { email: { contains: query, mode: "insensitive" } } } },
+        ],
       }
     : {};
 
@@ -202,11 +202,11 @@ export async function obtenerDatosPaginaReuniones(
     estado: { not: "CANCELADA" },
     solicitud: requestScope,
     ...instanceSearch,
-    ...proveedorWhere
+    ...proveedorWhere,
   };
   const encounterWhere: Prisma.InstanciaSalaWhereInput = {
     ...baseInstanceWhere,
-    ...temporalWhere
+    ...temporalWhere,
   };
 
   const seriesSearch: Prisma.SolicitudSalaWhereInput = query
@@ -220,11 +220,11 @@ export async function obtenerDatosPaginaReuniones(
                 usuario: {
                   OR: [
                     { nombres: { contains: query, mode: "insensitive" } },
-                    { apellidos: { contains: query, mode: "insensitive" } }
-                  ]
-                }
-              }
-            }
+                    { apellidos: { contains: query, mode: "insensitive" } },
+                  ],
+                },
+              },
+            },
           },
           {
             instancias: {
@@ -237,10 +237,10 @@ export async function obtenerDatosPaginaReuniones(
                       some: {
                         OR: [
                           { codigoReunion: { contains: meetingCodeQuery, mode: "insensitive" } },
-                          { joinUrl: { contains: query, mode: "insensitive" } }
-                        ]
-                      }
-                    }
+                          { joinUrl: { contains: query, mode: "insensitive" } },
+                        ],
+                      },
+                    },
                   },
                   {
                     cohosts: {
@@ -249,18 +249,18 @@ export async function obtenerDatosPaginaReuniones(
                           OR: [
                             { email: { contains: query, mode: "insensitive" } },
                             { user: { nombres: { contains: query, mode: "insensitive" } } },
-                            { user: { apellidos: { contains: query, mode: "insensitive" } } }
-                          ]
-                        }
-                      }
-                    }
+                            { user: { apellidos: { contains: query, mode: "insensitive" } } },
+                          ],
+                        },
+                      },
+                    },
                   },
-                  { cohostEmails: { some: { email: { contains: query, mode: "insensitive" } } } }
-                ]
-              }
-            }
-          }
-        ]
+                  { cohostEmails: { some: { email: { contains: query, mode: "insensitive" } } } },
+                ],
+              },
+            },
+          },
+        ],
       }
     : {};
 
@@ -271,14 +271,14 @@ export async function obtenerDatosPaginaReuniones(
       some: {
         estado: { not: "CANCELADA" },
         ...temporalWhere,
-        ...proveedorWhere
-      }
-    }
+        ...proveedorWhere,
+      },
+    },
   };
 
   const [totalMeetings, totalSeries] = await Promise.all([
     db.instanciaSala.count({ where: encounterWhere }),
-    db.solicitudSala.count({ where: seriesWhere })
+    db.solicitudSala.count({ where: seriesWhere }),
   ]);
 
   // El listado Zoom permite 10/20/50 sin alterar el tamaño histórico de Meet.
@@ -293,7 +293,7 @@ export async function obtenerDatosPaginaReuniones(
   const pagination = calcularInfoPaginacion(
     selectedTotal,
     requestedPagination.page,
-    requestedPagination.pageSize
+    requestedPagination.pageSize,
   );
   const skip = (pagination.paginaActual - 1) * pagination.tamanoPagina;
 
@@ -304,7 +304,7 @@ export async function obtenerDatosPaginaReuniones(
           orderBy: { inicioProgramadoAt: isHistory ? "desc" : "asc" },
           take: pagination.tamanoPagina,
           skip,
-          include: meetingInclude
+          include: meetingInclude,
         })
       : db.solicitudSala
           .findMany({
@@ -312,7 +312,7 @@ export async function obtenerDatosPaginaReuniones(
             orderBy: { fechaInicioSolicitada: isHistory ? "desc" : "asc" },
             take: pagination.tamanoPagina,
             skip,
-            select: { id: true }
+            select: { id: true },
           })
           .then(async (requests) => {
             const requestIds = requests.map(({ id }) => id);
@@ -324,10 +324,10 @@ export async function obtenerDatosPaginaReuniones(
                 solicitudSalaId: { in: requestIds },
                 estado: { not: "CANCELADA" },
                 ...temporalWhere,
-                ...proveedorWhere
+                ...proveedorWhere,
               },
               orderBy: { inicioProgramadoAt: isHistory ? "desc" : "asc" },
-              include: meetingInclude
+              include: meetingInclude,
             });
           });
 
@@ -343,35 +343,47 @@ export async function obtenerDatosPaginaReuniones(
     nextWeekCount,
     lastSevenDaysCount,
     lastThirtyDaysCount,
-    pendingAssistanceCount
+    pendingAssistanceCount,
   ] = await Promise.all([
     meetingsPromise,
     actor.rol === "ADMINISTRACION"
       ? db.programa.findMany({
           where: { activo: true },
           orderBy: { nombre: "asc" },
-          select: { id: true, nombre: true }
+          select: { id: true, nombre: true },
         })
       : Promise.resolve([]),
     db.instanciaSala.count({
       where: {
-        AND: [baseInstanceWhere, dateRangeWhere, { inicioProgramadoAt: { gte: todayStart, lt: todayEnd } }]
-      }
+        AND: [
+          baseInstanceWhere,
+          dateRangeWhere,
+          { inicioProgramadoAt: { gte: todayStart, lt: todayEnd } },
+        ],
+      },
     }),
     db.instanciaSala.count({
       where: {
-        AND: [baseInstanceWhere, dateRangeWhere, { inicioProgramadoAt: { gte: now, lt: weekEnd } }]
-      }
+        AND: [baseInstanceWhere, dateRangeWhere, { inicioProgramadoAt: { gte: now, lt: weekEnd } }],
+      },
     }),
     db.instanciaSala.count({
       where: {
-        AND: [baseInstanceWhere, dateRangeWhere, { finProgramadoAt: { gte: sevenDaysAgo, lt: todayStart } }]
-      }
+        AND: [
+          baseInstanceWhere,
+          dateRangeWhere,
+          { finProgramadoAt: { gte: sevenDaysAgo, lt: todayStart } },
+        ],
+      },
     }),
     db.instanciaSala.count({
       where: {
-        AND: [baseInstanceWhere, dateRangeWhere, { finProgramadoAt: { gte: thirtyDaysAgo, lt: todayStart } }]
-      }
+        AND: [
+          baseInstanceWhere,
+          dateRangeWhere,
+          { finProgramadoAt: { gte: thirtyDaysAgo, lt: todayStart } },
+        ],
+      },
     }),
     db.instanciaSala.count({
       where: {
@@ -380,11 +392,11 @@ export async function obtenerDatosPaginaReuniones(
           {
             requiereAsistenciaTecnica: true,
             ...(isHistory ? {} : { finProgramadoAt: { gt: now } }),
-            asignaciones: { none: { estado: { in: [...ACTIVE_ASSIGNMENTS] } } }
-          }
-        ]
-      }
-    })
+            asignaciones: { none: { estado: { in: [...ACTIVE_ASSIGNMENTS] } } },
+          },
+        ],
+      },
+    }),
   ]);
 
   const meetingsForSeries = isHistory ? [...meetings].reverse() : meetings;
@@ -394,8 +406,8 @@ export async function obtenerDatosPaginaReuniones(
     meetings.some(({ eventosProveedor }) =>
       eventosProveedor.some(
         ({ proveedor, estadoIntegracion }) =>
-          proveedor.tipo === "GOOGLE_MEET" && estadoIntegracion === "PENDIENTE"
-      )
+          proveedor.tipo === "GOOGLE_MEET" && estadoIntegracion === "PENDIENTE",
+      ),
     );
 
   return {
@@ -420,6 +432,6 @@ export async function obtenerDatosPaginaReuniones(
     pendingAssistanceCount,
     hasPendingMeet,
     desdeParam,
-    hastaParam
+    hastaParam,
   };
 }

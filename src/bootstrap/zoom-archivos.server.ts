@@ -22,12 +22,12 @@ import {
   resolverCarpetaDestinoZoom,
   transferirArchivoZoomUseCase,
   type AnfitrionInventarioZoom,
-  type SaludWorkerZoom
+  type SaludWorkerZoom,
 } from "../modules/archivos/application";
 import {
   FALLOS_CONSECUTIVOS_PARA_REVISION_ZOOM,
   leerConfiguracionZoomArchivos,
-  type LeaseArchivoZoom
+  type LeaseArchivoZoom,
 } from "../modules/archivos/domain";
 import {
   GoogleDriveArchivoStorageAdapter,
@@ -37,7 +37,7 @@ import {
   crearPrismaAsistenciaZoomRepositoryAdapter,
   crearPrismaSincronizacionAsistenciaZoomAdapter,
   crearZoomAsistenciaProviderAdapter,
-  crearZoomOrigenAdapter
+  crearZoomOrigenAdapter,
 } from "../modules/archivos/infrastructure";
 
 const TIPOS_ZOOM = ["ZOOM", "ZOOM_HISTORICO"] as const;
@@ -69,35 +69,39 @@ export type WorkerZoomArchivos = Readonly<{
 }>;
 
 /** Anfitriones configurados, activos o no: salir del grupo no oculta el histórico ya conocido. */
-export async function listarAnfitriones(cuentaZoomId: string): Promise<readonly AnfitrionInventarioZoom[]> {
+export async function listarAnfitriones(
+  cuentaZoomId: string,
+): Promise<readonly AnfitrionInventarioZoom[]> {
   const cuentas = await db.cuentaProveedor.findMany({
     where: { proveedor: { tipo: { in: [...TIPOS_ZOOM] } }, externalAccountId: { not: null } },
     select: { id: true, externalAccountId: true },
-    orderBy: { id: "asc" }
+    orderBy: { id: "asc" },
   });
   return cuentas.flatMap((c) =>
     c.externalAccountId
       ? [{ cuentaZoomId, anfitrionZoomId: c.externalAccountId, cuentaProveedorId: c.id }]
-      : []
+      : [],
   );
 }
 
 export async function crearWorkerZoomArchivos(
-  env: Readonly<Record<string, string | undefined>> = process.env
+  env: Readonly<Record<string, string | undefined>> = process.env,
 ): Promise<WorkerZoomArchivos> {
   const config = leerConfiguracionZoomArchivos(env);
   const repo = crearPrismaZoomArchivoRepositoryAdapter({ db, hash });
 
   const zoom = await obtenerCredencialesZoom(db, descifrarConfiguracion);
   const workspace = await obtenerCredencialPrincipalGoogleWorkspace(db, descifrarConfiguracion, {
-    requireActiva: true
+    requireActiva: true,
   });
 
   const driveAuth = workspace
     ? crearGoogleDriveAuthClient({
         serviceAccountEmail: workspace.serviceAccountEmail,
         privateKey: workspace.privateKey,
-        subject: workspace.serviceAccountSubject ?? undefined
+        ...(workspace.serviceAccountSubject != null
+          ? { subject: workspace.serviceAccountSubject }
+          : {}),
       })
     : null;
 
@@ -106,7 +110,7 @@ export async function crearWorkerZoomArchivos(
     zoomDisponible: zoom.disponible,
     driveHistoricoId: config.driveHistoricoId,
     verificarEscritura: (carpetaId) =>
-      driveAuth ? verificarEscrituraCarpetaDrive(driveAuth, carpetaId) : Promise.resolve(false)
+      driveAuth ? verificarEscrituraCarpetaDrive(driveAuth, carpetaId) : Promise.resolve(false),
   });
   if (!salud.ok || !zoom.disponible || !driveAuth || !workspace) {
     return {
@@ -119,7 +123,7 @@ export async function crearWorkerZoomArchivos(
       procesarRecuperaciones: async () => undefined,
       moverCarpetasVinculadas: async () => undefined,
       procesarWebhooks: async () => undefined,
-      notificarGrabaciones: async () => undefined
+      notificarGrabaciones: async () => undefined,
     };
   }
 
@@ -127,20 +131,23 @@ export async function crearWorkerZoomArchivos(
   const auth = crearProveedorTokenZoom({
     accountId: zoom.accountId,
     clientId: zoom.clientId,
-    clientSecret: zoom.clientSecret
+    clientSecret: zoom.clientSecret,
   });
   const origen = crearZoomOrigenAdapter({ auth, cuentaZoomId, hash });
   const storage = new GoogleDriveArchivoStorageAdapter({
     auth: driveAuth,
     cifrar: cifrarConfiguracion,
-    descifrar: descifrarConfiguracion
+    descifrar: descifrarConfiguracion,
   });
   const repoBarridos = crearPrismaZoomBarridoRepositoryAdapter({
     db,
     cifrar: cifrarConfiguracion,
-    descifrar: descifrarConfiguracion
+    descifrar: descifrarConfiguracion,
   });
-  const raices = { raizVinculados: workspace.driveDestinationId, raizHistorico: config.driveHistoricoId };
+  const raices = {
+    raizVinculados: workspace.driveDestinationId,
+    raizHistorico: config.driveHistoricoId,
+  };
 
   // El barrido periódico cubre todo lo que Zoom devuelva desde INICIO_HISTORICO_ZOOM. Encolar una importación durable única
   // permite recuperar el historial por páginas y ventanas sin repetirlo en cada ciclo.
@@ -151,9 +158,11 @@ export async function crearWorkerZoomArchivos(
       where: {
         cuentaZoomId,
         desde: fechaInicio,
-        estado: { in: ["PENDIENTE", "EN_CURSO", "COMPLETADO", "ERROR_REINTENTABLE", "REQUIERE_REVISION"] }
+        estado: {
+          in: ["PENDIENTE", "EN_CURSO", "COMPLETADO", "ERROR_REINTENTABLE", "REQUIERE_REVISION"],
+        },
       },
-      select: { id: true }
+      select: { id: true },
     });
     if (!importacionExistente) {
       const hasta = new Date().toISOString().slice(0, 10);
@@ -161,11 +170,11 @@ export async function crearWorkerZoomArchivos(
         cuentaZoomId,
         anfitriones: anfitrionesIniciales.map(({ anfitrionZoomId, cuentaProveedorId }) => ({
           anfitrionZoomId,
-          cuentaProveedorId
+          cuentaProveedorId,
         })),
         desde: INICIO_HISTORICO_ZOOM,
         hasta,
-        solicitanteId: null
+        solicitanteId: null,
       });
     }
   }
@@ -178,18 +187,20 @@ export async function crearWorkerZoomArchivos(
       const asistencia = {
         sync: crearPrismaSincronizacionAsistenciaZoomAdapter({ db }),
         repo: crearPrismaAsistenciaZoomRepositoryAdapter({ db }),
-        provider: crearZoomAsistenciaProviderAdapter({ auth, hash })
+        provider: crearZoomAsistenciaProviderAdapter({ auth, hash }),
       };
-      return procesarWebhooksZoom(cuentaZoomId, 25, (id) => sincronizarAsistenciaZoomUseCase(asistencia, id));
+      return procesarWebhooksZoom(cuentaZoomId, 25, (id) =>
+        sincronizarAsistenciaZoomUseCase(asistencia, id),
+      );
     },
     notificarGrabaciones: () =>
       notificarGrabacionesZoom(
         {
           db,
           compartirArchivo: crearCompartirArchivoZoom(driveAuth),
-          enviarCorreo: (input) => enviarCorreoConfigurado(db, input)
+          enviarCorreo: (input) => enviarCorreoConfigurado(db, input),
         },
-        cuentaZoomId
+        cuentaZoomId,
       ),
     reclamarArchivo: (ahora, duracionMs) => repo.reclamarArchivo(ahora, duracionMs),
     transferir: (lease, signal) =>
@@ -201,20 +212,20 @@ export async function crearWorkerZoomArchivos(
         heartbeatMs: config.heartbeatMs,
         margenLeaseMs: config.margenLeaseMs,
         bloqueBytes: config.bloqueBytes,
-        resolverCarpeta: (archivo) => resolverCarpetaDestinoZoom(storage, hash, archivo, raices)
+        resolverCarpeta: (archivo) => resolverCarpetaDestinoZoom(storage, hash, archivo, raices),
       }),
     inventariarVencidas: () =>
       inventariarOcurrenciasVencidasZoomUseCase(repo, origen, {
         ahora: new Date(),
         limite: LOTE_INVENTARIO,
-        corteDias: config.corteDias
+        corteDias: config.corteDias,
       }),
     barrerRecientes: async () =>
       barrerAnfitrionesZoomUseCase(repo, origen, {
         anfitriones: await listarAnfitriones(cuentaZoomId),
         ahora: new Date(),
         diasAtras: diasDeBarridoZoom(new Date(), INICIO_HISTORICO_ZOOM, DIAS_BARRIDO_RECIENTE),
-        corteDias: config.corteDias
+        corteDias: config.corteDias,
       }),
     moverCarpetasVinculadas: () =>
       ordenarCarpetasVinculadasZoomUseCase(
@@ -223,9 +234,9 @@ export async function crearWorkerZoomArchivos(
           storage,
           hash,
           raizVinculados: raices.raizVinculados,
-          ahora: () => new Date()
+          ahora: () => new Date(),
         },
-        { limite: LOTE_CARPETAS }
+        { limite: LOTE_CARPETAS },
       ),
     procesarRecuperaciones: async () => {
       let paginas = 0;
@@ -243,9 +254,9 @@ export async function crearWorkerZoomArchivos(
               leaseMs: config.leaseMs,
               corteDias: config.corteDias,
               aleatorio: Math.random,
-              limiteIntentos: FALLOS_CONSECUTIVOS_PARA_REVISION_ZOOM
+              limiteIntentos: FALLOS_CONSECUTIVOS_PARA_REVISION_ZOOM,
             },
-            barridoId
+            barridoId,
           );
           paginas++;
           if (r.tipo === "AVANZO" || r.tipo === "COMPLETADO") {
@@ -261,6 +272,6 @@ export async function crearWorkerZoomArchivos(
         }
       }
       return { paginas, ocurrencias, requierenRevision: detenidos.length };
-    }
+    },
   };
 }

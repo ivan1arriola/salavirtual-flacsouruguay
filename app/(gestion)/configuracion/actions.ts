@@ -10,7 +10,7 @@ import { actualizarConfiguracionCorreoSes } from "@/src/modules/configuracion/co
 import {
   actualizarPrograma,
   crearPrograma,
-  eliminarPrograma
+  eliminarPrograma,
 } from "@/src/modules/programas/programas-admin.service";
 import { invitarUsuario } from "@/src/modules/usuarios/invitaciones.service";
 import { actualizarProgramasDocente } from "@/src/modules/usuarios/programas-docente.service";
@@ -76,7 +76,7 @@ export async function agregarIntegrantePrograma(formData: FormData): Promise<voi
     }
     const programaIds = await programasActivosDelDocente(usuarioId);
     await actualizarProgramasDocente(db, actor, usuarioId, {
-      programaIds: [...programaIds, programaId]
+      programaIds: [...programaIds, programaId],
     });
   } catch (error) {
     redirect(programRedirect(programaId, undefined, errorMessage(error), context));
@@ -101,7 +101,7 @@ export async function quitarIntegrantePrograma(formData: FormData): Promise<void
       throw new Error("La persona ya no pertenece a este programa.");
     }
     await actualizarProgramasDocente(db, actor, usuarioId, {
-      programaIds: programaIds.filter((id) => id !== programaId)
+      programaIds: programaIds.filter((id) => id !== programaId),
     });
   } catch (error) {
     redirect(programRedirect(programaId, undefined, errorMessage(error), context));
@@ -124,7 +124,7 @@ export async function invitarIntegrantePrograma(formData: FormData): Promise<voi
       email: formData.get("email"),
       rol: "DOCENTE",
       programaId,
-      programaNuevo: null
+      programaNuevo: null,
     });
     estado = result.correoEnviado ? "invitacion-enviada" : "invitacion-creada";
   } catch (error) {
@@ -141,14 +141,14 @@ export async function actualizarReportesAsistenciaAdmin(formData: FormData): Pro
   const actor = await requireAdmin();
   try {
     await actualizarConfiguracionAsistenciaTecnica(db, actor, {
-      correosCopiaReporteMensual: formData.get("correosCopiaReporteMensual")
+      correosCopiaReporteMensual: formData.get("correosCopiaReporteMensual"),
     });
   } catch (error) {
     redirect(
       asistenciaRedirect(
         undefined,
-        errorMessage(error, "No se pudo actualizar la configuración de asistencia técnica.")
-      )
+        errorMessage(error, "No se pudo actualizar la configuración de asistencia técnica."),
+      ),
     );
   }
 
@@ -163,11 +163,11 @@ export async function actualizarCorreoSesAdmin(formData: FormData): Promise<void
       activa: formData.get("activa") === "on",
       awsRegion: formData.get("awsRegion"),
       fromEmail: formData.get("fromEmail"),
-      replyToEmail: formData.get("replyToEmail")
+      replyToEmail: formData.get("replyToEmail"),
     });
   } catch (error) {
     redirect(
-      `/configuracion/correo?error=${encodeURIComponent(errorMessage(error, "No se pudo guardar la configuración de Amazon SES."))}`
+      `/configuracion/correo?error=${encodeURIComponent(errorMessage(error, "No se pudo guardar la configuración de Amazon SES."))}`,
     );
   }
   revalidatePath("/configuracion/correo");
@@ -192,9 +192,9 @@ async function programasActivosDelDocente(usuarioId: string): Promise<string[]> 
     select: {
       rol: true,
       docente: {
-        select: { programas: { where: { activo: true }, select: { programaId: true } } }
-      }
-    }
+        select: { programas: { where: { activo: true }, select: { programaId: true } } },
+      },
+    },
   });
   if (!user || user.rol !== "DOCENTE") {
     throw new Error("La persona seleccionada no es docente.");
@@ -208,7 +208,7 @@ function programaInput(formData: FormData) {
     nombre: formData.get("nombre"),
     codigo: formData.get("codigo"),
     ...(unidadAcademicaId === null ? {} : { unidadAcademicaId }),
-    activo: formData.get("activo") === "on"
+    activo: formData.get("activo") === "on",
   };
 }
 
@@ -234,7 +234,7 @@ function programRedirect(
   programaId: string,
   estado?: string,
   error?: string,
-  context: ProgramReturnContext = "configuracion"
+  context: ProgramReturnContext = "configuracion",
 ): string {
   const params =
     context === "usuarios"

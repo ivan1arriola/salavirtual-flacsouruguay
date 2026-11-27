@@ -1,11 +1,19 @@
-import { ArrowLeft, ArrowRight, CalendarClock, CircleAlert, CircleCheck, History, Video } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  CalendarClock,
+  CircleAlert,
+  CircleCheck,
+  History,
+  Video,
+} from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import {
   comprobarCuentaZoom,
   comprobarReunionPasadaZoom,
-  leerDiagnosticoZoom
+  leerDiagnosticoZoom,
 } from "@/src/bootstrap/zoom-diagnostico.server";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
@@ -23,7 +31,7 @@ type Vista = "cuentas" | "series" | "pasadas" | "agenda";
 const motivos = {
   SIN_REUNION: "Falta ID o cuenta",
   IDS_DISTINTOS: "IDs distintos",
-  CUENTAS_DISTINTAS: "Cuentas distintas"
+  CUENTAS_DISTINTAS: "Cuentas distintas",
 } as const;
 
 const paginaActual = (actual: Vista, tab: Vista) => (actual === tab ? "page" : undefined);
@@ -31,7 +39,7 @@ const VISTAS: readonly Vista[] = ["series", "pasadas", "agenda"];
 const leerVista = (valor?: string): Vista => VISTAS.find((vista) => vista === valor) ?? "cuentas";
 
 function estadoCuenta(
-  cuenta: Readonly<{ activa: boolean; fueraDelGrupoAt: Date | null; tieneLicencia: boolean }>
+  cuenta: Readonly<{ activa: boolean; fueraDelGrupoAt: Date | null; tieneLicencia: boolean }>,
 ) {
   if (cuenta.fueraDelGrupoAt) {
     return "Fuera del grupo";
@@ -43,7 +51,7 @@ function estadoCuenta(
 }
 
 export default async function DiagnosticoZoomPage({
-  searchParams
+  searchParams,
 }: Readonly<{ searchParams: Promise<{ vista?: string; cuenta?: string; ocurrencia?: string }> }>) {
   const session = await auth();
   if (!session?.user) {
@@ -57,32 +65,35 @@ export default async function DiagnosticoZoomPage({
   const vista = leerVista(params.vista);
   const datos = await leerDiagnosticoZoom();
   const agenda = await leerInconsistenciasAgendaZoom(db, datos.reuniones);
-  const totalAgenda = agenda.externas.length + agenda.eliminadasEnZoom.length + agenda.horarioDistinto.length;
+  const totalAgenda =
+    agenda.externas.length + agenda.eliminadasEnZoom.length + agenda.horarioDistinto.length;
   const cuentaSeleccionada =
     vista === "cuentas" ? datos.cuentas.find(({ id }) => id === params.cuenta) : null;
   const pasadaSeleccionada =
     vista === "pasadas" ? datos.pasadas.find(({ id }) => id === params.ocurrencia) : null;
   const [verificacion, detallePasado] = await Promise.all([
     cuentaSeleccionada ? comprobarCuentaZoom(cuentaSeleccionada.id, datos.reuniones) : null,
-    pasadaSeleccionada ? comprobarReunionPasadaZoom(pasadaSeleccionada.id) : null
+    pasadaSeleccionada ? comprobarReunionPasadaZoom(pasadaSeleccionada.id) : null,
   ]);
-  const activas = datos.cuentas.filter(({ activa, fueraDelGrupoAt }) => activa && !fueraDelGrupoAt).length;
+  const activas = datos.cuentas.filter(
+    ({ activa, fueraDelGrupoAt }) => activa && !fueraDelGrupoAt,
+  ).length;
 
   return (
-    <div className={styles.page}>
-      <header className={styles.header}>
-        <Link href="/centro-operaciones" className={styles.back}>
+    <div className={styles["page"]}>
+      <header className={styles["header"]}>
+        <Link href="/centro-operaciones" className={styles["back"]}>
           <ArrowLeft size={16} /> Centro de operaciones
         </Link>
         <p className="page-eyebrow">Control de agenda</p>
         <h1>Diagnóstico de Zoom</h1>
         <p>
-          Estado de las cuentas, coherencia de las series y detalles de clases finalizadas. Las comprobaciones
-          no modifican datos; en Pasadas se pueden vincular, desvincular y reintentar la asistencia de
-          ejecuciones.
+          Estado de las cuentas, coherencia de las series y detalles de clases finalizadas. Las
+          comprobaciones no modifican datos; en Pasadas se pueden vincular, desvincular y reintentar
+          la asistencia de ejecuciones.
         </p>
       </header>
-      <div className={styles.metrics}>
+      <div className={styles["metrics"]}>
         <div>
           <Video size={20} />
           <strong>{activas}</strong>
@@ -99,17 +110,18 @@ export default async function DiagnosticoZoomPage({
           <span>series para revisar</span>
         </div>
       </div>
-      <p className={styles.scope}>
-        Próximos 60 días · {formatDateTime(datos.desde)} al {formatDateTime(datos.hasta)}. El historial
-        muestra las últimas 30 ocurrencias vinculadas y las no vinculadas de los últimos 30 días.
+      <p className={styles["scope"]}>
+        Próximos 60 días · {formatDateTime(datos.desde)} al {formatDateTime(datos.hasta)}. El
+        historial muestra las últimas 30 ocurrencias vinculadas y las no vinculadas de los últimos
+        30 días.
       </p>
       {datos.parcial ? (
-        <p className={styles.notice} role="alert">
-          Hay más de 2000 encuentros próximos. El diagnóstico es parcial; ampliá la consulta antes de
-          descartar incidencias.
+        <p className={styles["notice"]} role="alert">
+          Hay más de 2000 encuentros próximos. El diagnóstico es parcial; ampliá la consulta antes
+          de descartar incidencias.
         </p>
       ) : null}
-      <nav className={styles.tabs} aria-label="Secciones del diagnóstico">
+      <nav className={styles["tabs"]} aria-label="Secciones del diagnóstico">
         <Link href="?vista=cuentas" aria-current={paginaActual(vista, "cuentas")}>
           Cuentas <span>{datos.cuentas.length}</span>
         </Link>
@@ -124,7 +136,7 @@ export default async function DiagnosticoZoomPage({
         </Link>
       </nav>
       {vista === "cuentas" ? (
-        <section aria-label="Cuentas anfitrionas" className={styles.list}>
+        <section aria-label="Cuentas anfitrionas" className={styles["list"]}>
           {datos.cuentas.length === 0 ? <p>No hay cuentas Zoom configuradas.</p> : null}
           {datos.cuentas.map((cuenta) => {
             const agenda = datos.reuniones.filter(({ cuentaId }) => cuentaId === cuenta.id);
@@ -132,11 +144,11 @@ export default async function DiagnosticoZoomPage({
             const seleccionada = cuentaSeleccionada?.id === cuenta.id;
             return (
               <article
-                className={styles.card}
+                className={styles["card"]}
                 data-cuenta={colorCuentaZoom(cuenta.emailOrganizador ?? cuenta.nombre) ?? "sin"}
                 key={cuenta.id}
               >
-                <div className={styles.cardHead}>
+                <div className={styles["cardHead"]}>
                   <div>
                     <small>Cuenta anfitriona</small>
                     <h2>{cuenta.nombre}</h2>
@@ -145,23 +157,23 @@ export default async function DiagnosticoZoomPage({
                   <span
                     className={
                       cuenta.activa && !cuenta.fueraDelGrupoAt && cuenta.tieneLicencia
-                        ? styles.ok
-                        : styles.warning
+                        ? styles["ok"]
+                        : styles["warning"]
                     }
                   >
                     {estadoCuenta(cuenta)}
                   </span>
                 </div>
                 <p>
-                  {agenda.length} encuentros próximos en Sala Virtual · {solapes.length} solapamientos de
-                  horario
+                  {agenda.length} encuentros próximos en Sala Virtual · {solapes.length}{" "}
+                  solapamientos de horario
                 </p>
                 {solapes.length ? (
-                  <ul className={styles.warnings}>
+                  <ul className={styles["warnings"]}>
                     {solapes.map(({ primera, segunda }) => (
                       <li key={`${primera.instanciaId}:${segunda.instanciaId}`}>
-                        <CircleAlert size={15} /> {formatDateTime(segunda.inicio)}: {primera.titulo} y{" "}
-                        {segunda.titulo}
+                        <CircleAlert size={15} /> {formatDateTime(segunda.inicio)}: {primera.titulo}{" "}
+                        y {segunda.titulo}
                       </li>
                     ))}
                   </ul>
@@ -173,7 +185,7 @@ export default async function DiagnosticoZoomPage({
                   Comprobar agenda en Zoom <ArrowRight size={15} />
                 </Link>
                 {seleccionada && verificacion ? (
-                  <div className={styles.result} role="status">
+                  <div className={styles["result"]} role="status">
                     {verificacion.estado === "DISPONIBLE" ? (
                       <>
                         <strong>
@@ -186,8 +198,8 @@ export default async function DiagnosticoZoomPage({
                         {verificacion.ausentes.length ? (
                           <>
                             <p>
-                              Estos IDs de Sala Virtual no aparecen en la agenda próxima de Zoom; revisá su
-                              estado antes de actuar:
+                              Estos IDs de Sala Virtual no aparecen en la agenda próxima de Zoom;
+                              revisá su estado antes de actuar:
                             </p>
                             <ul>
                               {verificacion.ausentes.map((item) => (
@@ -201,8 +213,8 @@ export default async function DiagnosticoZoomPage({
                           </>
                         ) : null}
                         <small>
-                          La API de Zoom puede agrupar una serie bajo un solo ID. Esta comprobación no
-                          modifica encuentros.
+                          La API de Zoom puede agrupar una serie bajo un solo ID. Esta comprobación
+                          no modifica encuentros.
                         </small>
                       </>
                     ) : (
@@ -218,19 +230,19 @@ export default async function DiagnosticoZoomPage({
         </section>
       ) : null}
       {vista === "series" ? (
-        <section aria-label="Auditoría de series Zoom" className={styles.list}>
+        <section aria-label="Auditoría de series Zoom" className={styles["list"]}>
           <p>
-            Revisión global de series con dos o más encuentros próximos. Los enlaces y cuentas distintos
-            requieren inspección; no se corrigen automáticamente.
+            Revisión global de series con dos o más encuentros próximos. Los enlaces y cuentas
+            distintos requieren inspección; no se corrigen automáticamente.
           </p>
           {datos.incidencias.length === 0 ? (
-            <div className={styles.empty}>
+            <div className={styles["empty"]}>
               <CircleCheck size={24} /> No se encontraron inconsistencias en el período consultado.
             </div>
           ) : null}
           {datos.incidencias.map((serie) => (
-            <article className={styles.card} key={serie.solicitudId}>
-              <div className={styles.cardHead}>
+            <article className={styles["card"]} key={serie.solicitudId}>
+              <div className={styles["cardHead"]}>
                 <div>
                   <small>
                     {formatDateTime(serie.inicio)} · {serie.encuentros} encuentros
@@ -239,7 +251,7 @@ export default async function DiagnosticoZoomPage({
                 </div>
                 <CircleAlert size={21} aria-label="Requiere revisión" />
               </div>
-              <div className={styles.tags}>
+              <div className={styles["tags"]}>
                 {serie.motivos.map((motivo) => (
                   <span key={motivo}>{motivos[motivo]}</span>
                 ))}
@@ -253,17 +265,19 @@ export default async function DiagnosticoZoomPage({
       ) : null}
       {vista === "agenda" ? <AgendaZoomSeccion agenda={agenda} total={totalAgenda} /> : null}
       {vista === "pasadas" ? (
-        <section aria-label="Reuniones Zoom pasadas" className={styles.list}>
+        <section aria-label="Reuniones Zoom pasadas" className={styles["list"]}>
           <p>
-            Las conexiones registradas y el estado de asistencia vienen de la base de Sala Virtual. El detalle
-            de horario y duración se consulta a Zoom al abrirlo.
+            Las conexiones registradas y el estado de asistencia vienen de la base de Sala Virtual.
+            El detalle de horario y duración se consulta a Zoom al abrirlo.
           </p>
           <SinVincularLista items={datos.sinVincular} />
           <h2>Vinculadas</h2>
-          {datos.pasadas.length === 0 ? <p>No hay ocurrencias vinculadas en este período.</p> : null}
+          {datos.pasadas.length === 0 ? (
+            <p>No hay ocurrencias vinculadas en este período.</p>
+          ) : null}
           {datos.pasadas.map((pasada) => (
-            <article className={styles.card} key={pasada.id}>
-              <div className={styles.cardHead}>
+            <article className={styles["card"]} key={pasada.id}>
+              <div className={styles["cardHead"]}>
                 <div>
                   <small>
                     {formatDateTime(pasada.inicioRealAt)} · Zoom {pasada.meetingId}
@@ -276,7 +290,7 @@ export default async function DiagnosticoZoomPage({
                 {pasada.sesionesAsistencia.length} conexiones registradas · Reporte:{" "}
                 {pasada.estadoAsistencia.toLowerCase().replaceAll("_", " ")}
               </p>
-              <div className={styles.actions}>
+              <div className={styles["actions"]}>
                 <Link
                   href={`/reuniones/${pasada.eventoProveedor?.instancia.solicitudSalaId}/encuentros/${pasada.eventoProveedor?.instanciaSalaId}/asistencia#ocurrencia-${pasada.id}`}
                 >
@@ -292,10 +306,12 @@ export default async function DiagnosticoZoomPage({
               <AccionesPasada
                 ocurrenciaId={pasada.id}
                 eventoId={pasada.eventoProveedorId}
-                instanciaId={pasada.eventoProveedor?.instanciaSalaId}
+                {...(pasada.eventoProveedor
+                  ? { instanciaId: pasada.eventoProveedor.instanciaSalaId }
+                  : {})}
               />
               {pasadaSeleccionada?.id === pasada.id && detallePasado ? (
-                <div className={styles.result} role="status">
+                <div className={styles["result"]} role="status">
                   {detallePasado.estado === "DISPONIBLE" ? (
                     <>
                       <strong>Detalle informado por Zoom</strong>
@@ -305,7 +321,9 @@ export default async function DiagnosticoZoomPage({
                           ? formatDateTime(detallePasado.detalle.inicio)
                           : "Sin dato"}{" "}
                         · Fin:{" "}
-                        {detallePasado.detalle.fin ? formatDateTime(detallePasado.detalle.fin) : "Sin dato"}
+                        {detallePasado.detalle.fin
+                          ? formatDateTime(detallePasado.detalle.fin)
+                          : "Sin dato"}
                       </p>
                       <p>
                         Duración real:{" "}
@@ -318,8 +336,9 @@ export default async function DiagnosticoZoomPage({
                       </p>
                       {detallePasado.detalle.participantesReportados !== null ? (
                         <p>
-                          Participaciones informadas por Zoom: {detallePasado.detalle.participantesReportados}
-                          . Puede incluir reconexiones; la asistencia por ejecución figura en el informe.
+                          Participaciones informadas por Zoom:{" "}
+                          {detallePasado.detalle.participantesReportados}. Puede incluir
+                          reconexiones; la asistencia por ejecución figura en el informe.
                         </p>
                       ) : null}
                     </>

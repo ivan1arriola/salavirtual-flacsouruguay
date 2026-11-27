@@ -13,7 +13,7 @@ describe("mobile token", () => {
       role: "ASISTENTE_TECNICO",
       iat: 1_000,
       exp: 1_600,
-      v: 1
+      v: 1,
     });
     expect(issued.expiresAt).toBe(new Date(1_600_000).toISOString());
   });
@@ -23,7 +23,7 @@ describe("mobile token", () => {
 
     expect(verifyMobileToken(issued.accessToken, SECRET, 1_200)).toMatchObject({
       sub: "usuario-1",
-      role: "ADMINISTRACION"
+      role: "ADMINISTRACION",
     });
   });
 
@@ -37,7 +37,7 @@ describe("mobile token", () => {
     const [payload, signature] = issued.accessToken.split(".");
     const tamperedPayload = Buffer.from(
       JSON.stringify({ sub: "otro", role: "ASISTENTE_TECNICO", iat: 1_000, exp: 1_600, v: 1 }),
-      "utf8"
+      "utf8",
     ).toString("base64url");
 
     expect(verifyMobileToken(`${tamperedPayload}.${signature}`, SECRET, 1_200)).toBeNull();

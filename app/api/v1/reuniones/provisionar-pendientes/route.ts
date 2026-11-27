@@ -11,7 +11,7 @@ export const runtime = "nodejs";
 
 const revisionSchema = z.object({
   eventoProveedorId: z.string().min(1),
-  operacion: z.enum(["PROVISIONAR", "REPROGRAMAR", "CONFIGURAR_MEET", "CANCELAR"]).optional()
+  operacion: z.enum(["PROVISIONAR", "REPROGRAMAR", "CONFIGURAR_MEET", "CANCELAR"]).optional(),
 });
 
 const eventoReintentable = {
@@ -20,9 +20,9 @@ const eventoReintentable = {
     {
       proveedor: { tipo: "GOOGLE_MEET" },
       externalEventId: { not: null },
-      instancia: { proveedorActivoTipo: "GOOGLE_MEET", conservarGoogleMeet: true }
-    }
-  ]
+      instancia: { proveedorActivoTipo: "GOOGLE_MEET", conservarGoogleMeet: true },
+    },
+  ],
 } satisfies Prisma.EventoProveedorWhereInput;
 
 export async function POST(request: Request) {
@@ -34,7 +34,7 @@ export async function POST(request: Request) {
   try {
     const actor = await resolveSessionActor(db, {
       id: session.user.id,
-      email: session.user.email
+      email: session.user.email,
     });
     if (!actor?.activo || actor.rol !== "ADMINISTRACION") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -42,7 +42,7 @@ export async function POST(request: Request) {
 
     const body = await request.json().catch(() => null);
     const hasTargetPayload = Boolean(
-      body && typeof body === "object" && !Array.isArray(body) && Object.keys(body).length > 0
+      body && typeof body === "object" && !Array.isArray(body) && Object.keys(body).length > 0,
     );
 
     let targetIds: readonly string[] | null = null;
@@ -52,13 +52,13 @@ export async function POST(request: Request) {
       const current = await db.eventoProveedor.findFirst({
         where: {
           id: revision.eventoProveedorId,
-          ...eventoReintentable
+          ...eventoReintentable,
         },
         select: {
           id: true,
           estadoIntegracion: true,
-          operacionPendiente: true
-        }
+          operacionPendiente: true,
+        },
       });
 
       if (!current) {
@@ -69,7 +69,7 @@ export async function POST(request: Request) {
         if (!revision.operacion) {
           return NextResponse.json(
             { error: "El evento no tiene una operación pendiente para reintentar." },
-            { status: 409 }
+            { status: 409 },
           );
         }
         const puedeReconfigurar = revision.operacion === "CONFIGURAR_MEET";
@@ -90,20 +90,20 @@ export async function POST(request: Request) {
             id: revision.eventoProveedorId,
             ...eventoReintentable,
             operacionPendiente: null,
-            estadoIntegracion: { in: [...validStates] }
+            estadoIntegracion: { in: [...validStates] },
           },
           data: {
             operacionPendiente: revision.operacion,
             estadoIntegracion: "PENDIENTE",
             reclamoIntegracionAt: null,
             reclamoIntegracionToken: null,
-            errorIntegracion: null
-          }
+            errorIntegracion: null,
+          },
         });
         if (assigned.count !== 1) {
           return NextResponse.json(
             { error: "El evento cambió mientras se intentaba preparar la reparación." },
-            { status: 409 }
+            { status: 409 },
           );
         }
       }
@@ -117,9 +117,9 @@ export async function POST(request: Request) {
         await db.eventoProveedor.findMany({
           where: {
             ...eventoReintentable,
-            operacionPendiente: { not: null }
+            operacionPendiente: { not: null },
           },
-          select: { id: true }
+          select: { id: true },
         })
       ).map(({ id }) => id);
 
@@ -128,10 +128,11 @@ export async function POST(request: Request) {
       procesadas: results.length,
       sincronizadas: results.filter(({ estado }) => estado === "SINCRONIZADA").length,
       enProceso: results.filter(({ estado }) => estado === "EN_PROCESO").length,
-      pendientesConfiguracion: results.filter(({ estado }) => estado === "PENDIENTE_CONFIGURACION").length,
+      pendientesConfiguracion: results.filter(({ estado }) => estado === "PENDIENTE_CONFIGURACION")
+        .length,
       requierenRevision: results.filter(({ estado }) => estado === "REQUIERE_REVISION").length,
       errores: results.filter(({ estado }) => estado === "ERROR").length,
-      resultados: results
+      resultados: results,
     };
     const pending = results.some(({ estado }) => estado !== "SINCRONIZADA");
     return NextResponse.json(payload, { status: pending ? 202 : 200 });

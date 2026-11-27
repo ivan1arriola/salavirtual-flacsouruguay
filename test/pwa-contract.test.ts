@@ -3,7 +3,10 @@ import { describe, expect, it } from "vitest";
 
 const manifest = readFileSync(new URL("../app/manifest.ts", import.meta.url), "utf8");
 const serviceWorker = readFileSync(new URL("../public/sw.js", import.meta.url), "utf8");
-const protectedLayout = readFileSync(new URL("../app/(gestion)/layout.tsx", import.meta.url), "utf8");
+const protectedLayout = readFileSync(
+  new URL("../app/(gestion)/layout.tsx", import.meta.url),
+  "utf8",
+);
 
 describe("contrato PWA y acceso", () => {
   it("declara una PWA instalable con iconos y modo standalone", () => {

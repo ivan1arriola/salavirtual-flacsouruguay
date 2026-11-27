@@ -3,7 +3,7 @@ import {
   derivarEstadoGrabacionOperativa,
   derivarEstadoReunionOperativa,
   incidenciaOperativaSchema,
-  puedeConsultarReunionOperativa
+  puedeConsultarReunionOperativa,
 } from "../src/modules/reuniones/reunion-operativa.domain";
 
 describe("reunión operativa", () => {
@@ -17,8 +17,8 @@ describe("reunión operativa", () => {
         inicio,
         fin,
         conferenciaInicio: null,
-        conferenciaFin: null
-      })
+        conferenciaFin: null,
+      }),
     ).toBe("ESPERANDO_INICIO");
   });
 
@@ -29,8 +29,8 @@ describe("reunión operativa", () => {
         inicio,
         fin,
         conferenciaInicio: new Date("2026-09-23T18:05:00-03:00"),
-        conferenciaFin: null
-      })
+        conferenciaFin: null,
+      }),
     ).toBe("EN_CURSO");
   });
 
@@ -41,8 +41,8 @@ describe("reunión operativa", () => {
         inicio,
         fin,
         conferenciaInicio: new Date("2026-09-23T18:05:00-03:00"),
-        conferenciaFin: new Date("2026-09-23T20:03:00-03:00")
-      })
+        conferenciaFin: new Date("2026-09-23T20:03:00-03:00"),
+      }),
     ).toBe("FINALIZADA");
 
     expect(
@@ -51,8 +51,8 @@ describe("reunión operativa", () => {
         inicio,
         fin,
         conferenciaInicio: null,
-        conferenciaFin: null
-      })
+        conferenciaFin: null,
+      }),
     ).toBe("NO_INICIADA");
   });
 
@@ -61,29 +61,29 @@ describe("reunión operativa", () => {
       derivarEstadoGrabacionOperativa({
         requiereGrabacion: false,
         estadoReunion: "EN_CURSO",
-        estadoProveedor: "AUSENTE"
-      })
+        estadoProveedor: "AUSENTE",
+      }),
     ).toBe("NO_REQUERIDA");
     expect(
       derivarEstadoGrabacionOperativa({
         requiereGrabacion: true,
         estadoReunion: "EN_CURSO",
-        estadoProveedor: "PROCESANDO"
-      })
+        estadoProveedor: "PROCESANDO",
+      }),
     ).toBe("PROCESANDO");
     expect(
       derivarEstadoGrabacionOperativa({
         requiereGrabacion: true,
         estadoReunion: "FINALIZADA",
-        estadoProveedor: "GENERADA"
-      })
+        estadoProveedor: "GENERADA",
+      }),
     ).toBe("DISPONIBLE");
     expect(
       derivarEstadoGrabacionOperativa({
         requiereGrabacion: true,
         estadoReunion: "FINALIZADA",
-        estadoProveedor: "AUSENTE"
-      })
+        estadoProveedor: "AUSENTE",
+      }),
     ).toBe("NO_REALIZADA");
   });
 
@@ -92,28 +92,28 @@ describe("reunión operativa", () => {
       incidenciaOperativaSchema.parse({
         tipo: "AUDIO_VIDEO",
         severidad: "ALTA",
-        descripcion: "El docente no escucha a los participantes."
-      })
+        descripcion: "El docente no escucha a los participantes.",
+      }),
     ).toEqual({
       tipo: "AUDIO_VIDEO",
       severidad: "ALTA",
-      descripcion: "El docente no escucha a los participantes."
+      descripcion: "El docente no escucha a los participantes.",
     });
 
     expect(() =>
       incidenciaOperativaSchema.parse({
         tipo: "DESCONOCIDA",
         severidad: "MEDIA",
-        descripcion: "Problema."
-      })
+        descripcion: "Problema.",
+      }),
     ).toThrow();
 
     expect(() =>
       incidenciaOperativaSchema.parse({
         tipo: "OTRA",
         severidad: "MEDIA",
-        descripcion: "x"
-      })
+        descripcion: "x",
+      }),
     ).toThrow();
   });
 
@@ -121,26 +121,26 @@ describe("reunión operativa", () => {
     expect(
       puedeConsultarReunionOperativa({
         rol: "ADMINISTRACION",
-        asistenteAsignado: false
-      })
+        asistenteAsignado: false,
+      }),
     ).toBe(true);
     expect(
       puedeConsultarReunionOperativa({
         rol: "ASISTENTE_TECNICO",
-        asistenteAsignado: true
-      })
+        asistenteAsignado: true,
+      }),
     ).toBe(true);
     expect(
       puedeConsultarReunionOperativa({
         rol: "ASISTENTE_TECNICO",
-        asistenteAsignado: false
-      })
+        asistenteAsignado: false,
+      }),
     ).toBe(false);
     expect(
       puedeConsultarReunionOperativa({
         rol: "DOCENTE",
-        asistenteAsignado: false
-      })
+        asistenteAsignado: false,
+      }),
     ).toBe(false);
   });
 });

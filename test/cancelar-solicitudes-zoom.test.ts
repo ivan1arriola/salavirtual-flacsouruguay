@@ -3,10 +3,10 @@ import type { PrismaClient } from "@prisma/client";
 import { cancelarSolicitudesAtomicas } from "../src/modules/reuniones/cancelar-solicitudes-atomicas.service";
 
 vi.mock("../src/modules/reuniones/permisos-programa.service", () => ({
-  puedeGestionarPrograma: vi.fn(async () => true)
+  puedeGestionarPrograma: vi.fn(async () => true),
 }));
 vi.mock("../src/modules/reuniones/reserva-salas.adapter", () => ({
-  bloquearSolicitudSala: vi.fn(async () => {})
+  bloquearSolicitudSala: vi.fn(async () => {}),
 }));
 
 const actor = { id: "admin", rol: "ADMINISTRACION" as const, activo: true };
@@ -16,13 +16,13 @@ function fakeDatabase(solicitudes: readonly unknown[]) {
     solicitudSala: { findMany: vi.fn(async () => solicitudes), update: vi.fn(async () => ({})) },
     instanciaSala: { updateMany: vi.fn(async () => ({ count: 1 })) },
     eventoProveedor: { updateMany: vi.fn(async () => ({ count: 1 })) },
-    auditoria: { create: vi.fn(async () => ({})) }
+    auditoria: { create: vi.fn(async () => ({})) },
   };
   return {
     tx,
     db: {
-      $transaction: async (fn: (value: typeof tx) => Promise<unknown>) => fn(tx)
-    } as unknown as PrismaClient
+      $transaction: async (fn: (value: typeof tx) => Promise<unknown>) => fn(tx),
+    } as unknown as PrismaClient,
   };
 }
 
@@ -40,11 +40,11 @@ const solicitud = (id: string, estado = "PROVISIONADA") => ({
         {
           id: "zoom-" + id,
           operacionPendiente: estado === "CANCELADA" ? "CANCELAR" : null,
-          proveedor: { tipo: "ZOOM" }
-        }
-      ]
-    }
-  ]
+          proveedor: { tipo: "ZOOM" },
+        },
+      ],
+    },
+  ],
 });
 
 describe("cancelación de series con eventos Zoom", () => {
@@ -55,8 +55,8 @@ describe("cancelación de series con eventos Zoom", () => {
     expect(tx.eventoProveedor.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: { in: ["zoom-s1"] } },
-        data: expect.objectContaining({ operacionPendiente: "CANCELAR" })
-      })
+        data: expect.objectContaining({ operacionPendiente: "CANCELAR" }),
+      }),
     );
   });
 

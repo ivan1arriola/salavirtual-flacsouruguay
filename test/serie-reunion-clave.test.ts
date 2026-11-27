@@ -3,7 +3,7 @@ import {
   claveSerieReunion,
   construirFiltroSerieSolicitud,
   filtroSerieDesdeClave,
-  normalizarClaveSerie
+  normalizarClaveSerie,
 } from "../src/modules/reuniones/serie-reunion.domain";
 
 describe("clave de serie y su filtro de consulta", () => {
@@ -16,13 +16,13 @@ describe("clave de serie y su filtro de consulta", () => {
       serieReunionId: null,
       docenteProgramaId: "dp-1",
       titulo: "Seminario",
-      createdAt: new Date("2026-10-01T12:00:00.000Z")
+      createdAt: new Date("2026-10-01T12:00:00.000Z"),
     };
     const filtro = filtroSerieDesdeClave(claveSerieReunion(solicitud));
     expect(filtro).toEqual({
       docenteProgramaId: "dp-1",
       titulo: "Seminario",
-      createdAt: new Date("2026-10-01T12:00:00.000Z")
+      createdAt: new Date("2026-10-01T12:00:00.000Z"),
     });
     expect(filtro).toEqual(construirFiltroSerieSolicitud(solicitud));
   });
@@ -31,10 +31,10 @@ describe("clave de serie y su filtro de consulta", () => {
     const solicitud = {
       docenteProgramaId: "dp-1",
       titulo: "Ñandú: ¿qué «es»? — 100%",
-      createdAt: new Date("2026-10-01T12:00:00.000Z")
+      createdAt: new Date("2026-10-01T12:00:00.000Z"),
     };
     expect(filtroSerieDesdeClave(claveSerieReunion(solicitud))).toMatchObject({
-      titulo: "Ñandú: ¿qué «es»? — 100%"
+      titulo: "Ñandú: ¿qué «es»? — 100%",
     });
   });
 
@@ -51,7 +51,7 @@ describe("la clave de serie se guarda en Postgres, que no admite NUL (22021)", (
     serieReunionId: null,
     docenteProgramaId: "dp-1",
     titulo: "Taller\u0000 Metodológico I | Grupo",
-    createdAt: new Date("2026-10-01T12:00:00.000Z")
+    createdAt: new Date("2026-10-01T12:00:00.000Z"),
   };
 
   it("la clave de una serie antigua nunca contiene NUL ni otros caracteres de control", () => {
@@ -63,7 +63,7 @@ describe("la clave de serie se guarda en Postgres, que no admite NUL (22021)", (
     expect(filtroSerieDesdeClave(claveSerieReunion(legada))).toEqual({
       docenteProgramaId: "dp-1",
       titulo: legada.titulo,
-      createdAt: legada.createdAt
+      createdAt: legada.createdAt,
     });
   });
 
@@ -72,7 +72,7 @@ describe("la clave de serie se guarda en Postgres, que no admite NUL (22021)", (
     expect(filtroSerieDesdeClave(antigua)).toEqual({
       docenteProgramaId: "dp-1",
       titulo: "Seminario",
-      createdAt: new Date("2026-10-01T12:00:00.000Z")
+      createdAt: new Date("2026-10-01T12:00:00.000Z"),
     });
   });
 

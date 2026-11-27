@@ -14,6 +14,6 @@ export async function POST() {
   }
   return NextResponse.json(
     { error: "La migración se aplica por serie: usa la migración por serie." },
-    { status: 409 }
+    { status: 409 },
   );
 }

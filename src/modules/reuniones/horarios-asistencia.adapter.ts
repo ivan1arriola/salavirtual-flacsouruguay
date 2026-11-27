@@ -5,7 +5,7 @@ export function asistenciaLocalAIso(
   fecha: string,
   horaEvento: string,
   horaAsistencia: string,
-  extremo: "LLEGADA" | "SALIDA"
+  extremo: "LLEGADA" | "SALIDA",
 ): string {
   const ajuste = desfaseDiaAsistencia(horaEvento, horaAsistencia, extremo);
   const instante = new Date(`${fecha}T${horaAsistencia}:00-03:00`);

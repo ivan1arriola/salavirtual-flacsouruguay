@@ -16,7 +16,7 @@ const TRANSIENT_NETWORK_CODES = new Set([
   "EPIPE",
   "UND_ERR_CONNECT_TIMEOUT",
   "UND_ERR_HEADERS_TIMEOUT",
-  "UND_ERR_SOCKET"
+  "UND_ERR_SOCKET",
 ]);
 const TRANSIENT_HTTP_STATUSES = new Set([408, 429, 500, 502, 503, 504]);
 
@@ -26,7 +26,7 @@ const TRANSIENT_HTTP_STATUSES = new Set([408, 429, 500, 502, 503, 504]);
  */
 export async function conReintentosPorLimiteGoogle<T>(
   operation: () => Promise<T>,
-  options: RetryOptions = {}
+  options: RetryOptions = {},
 ): Promise<T> {
   return retry(operation, options, esLimiteTemporalGoogle, false);
 }
@@ -38,7 +38,7 @@ export async function conReintentosPorLimiteGoogle<T>(
  */
 export async function conReintentosGoogleLectura<T>(
   operation: () => Promise<T>,
-  options: RetryOptions = {}
+  options: RetryOptions = {},
 ): Promise<T> {
   return retry(operation, options, esFalloTemporalGoogle, true);
 }
@@ -47,7 +47,7 @@ async function retry<T>(
   operation: () => Promise<T>,
   options: RetryOptions,
   retryable: (error: unknown) => boolean,
-  jitter: boolean
+  jitter: boolean,
 ): Promise<T> {
   const attempts = boundedInteger(options.intentosMaximos ?? 4, 1, 6);
   const base = boundedInteger(options.demoraBaseMs ?? 500, 1, 30_000);
@@ -106,7 +106,10 @@ export function esFalloTemporalGoogle(error: unknown): boolean {
     return false;
   }
   const candidate = error as { code?: unknown; cause?: unknown };
-  if (typeof candidate.code === "string" && TRANSIENT_NETWORK_CODES.has(candidate.code.toUpperCase())) {
+  if (
+    typeof candidate.code === "string" &&
+    TRANSIENT_NETWORK_CODES.has(candidate.code.toUpperCase())
+  ) {
     return true;
   }
   if (candidate.cause && candidate.cause !== error) {

@@ -2,7 +2,7 @@
 export {
   resolverPeriodoMes,
   resumirAsignacionesPorAsistente,
-  resumirTotales
+  resumirTotales,
 } from "@/src/modules/liquidaciones/domain";
 export type {
   AsignacionResumenAdministracion,
@@ -10,5 +10,5 @@ export type {
   FilaResumenAsistente,
   MontoMoneda,
   PeriodoMes,
-  TotalesResumen
+  TotalesResumen,
 } from "@/src/modules/liquidaciones/domain";

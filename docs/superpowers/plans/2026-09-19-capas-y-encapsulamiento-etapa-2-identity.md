@@ -66,7 +66,7 @@ import {
   parseAuthConfig,
   resolverRedireccionAutorizada,
   type PerfilGoogle,
-  type CuentaGoogleVinculada
+  type CuentaGoogleVinculada,
 } from "@/src/modules/identity/domain";
 
 describe("identity domain", () => {
@@ -88,7 +88,7 @@ describe("identity domain", () => {
       activo: true,
       fusionadoEnId: null,
       nombre: "Docente Test",
-      email: "docente@flacso.edu.uy"
+      email: "docente@flacso.edu.uy",
     };
 
     expect(evaluarAccesoLocal(usuario, true)?.id).toBe("usr-1");
@@ -101,7 +101,7 @@ describe("identity domain", () => {
     const perfil: PerfilGoogle = {
       subject: "sub-123",
       email: "docente@flacso.edu.uy",
-      emailVerificado: true
+      emailVerificado: true,
     };
     const cuenta: CuentaGoogleVinculada = {
       providerAccountId: "sub-123",
@@ -113,8 +113,8 @@ describe("identity domain", () => {
         activo: true,
         fusionadoEnId: null,
         nombre: "Docente Test",
-        email: "docente@flacso.edu.uy"
-      }
+        email: "docente@flacso.edu.uy",
+      },
     };
 
     expect(evaluarAccesoGoogle(perfil, cuenta)?.id).toBe("usr-1");
@@ -128,11 +128,11 @@ describe("identity domain", () => {
     const config = parseAuthConfig({
       AUTH_SECRET: "a".repeat(64),
       AUTH_TRUST_HOST: "true",
-      APP_BASE_URL: "http://localhost:3000"
+      APP_BASE_URL: "http://localhost:3000",
     });
     expect(config.trustHost).toBe(true);
     expect(resolverRedireccionAutorizada("/reuniones", "http://localhost:3000")).toBe(
-      "http://localhost:3000/reuniones"
+      "http://localhost:3000/reuniones",
     );
   });
 });
@@ -187,12 +187,23 @@ git commit -m "feat(identity): implementar capa de dominio para autenticacion y 
 Crear `src/modules/identity/ports/identity-repository.port.ts`:
 
 ```ts
-import type { CuentaGoogleVinculada, PerfilGoogle, UsuarioCredenciales } from "../domain/identity.types";
+import type {
+  CuentaGoogleVinculada,
+  PerfilGoogle,
+  UsuarioCredenciales,
+} from "../domain/identity.types";
 
 export type IdentityRepository = Readonly<{
   buscarParaLoginLocal: (identificador: string) => Promise<UsuarioCredenciales | null>;
-  registrarAcceso: (usuarioId: string, proveedor: "credentials" | "google", fecha?: Date) => Promise<void>;
-  resolverOCrearCuentaGoogle: (perfil: PerfilGoogle, fecha: Date) => Promise<CuentaGoogleVinculada | null>;
+  registrarAcceso: (
+    usuarioId: string,
+    proveedor: "credentials" | "google",
+    fecha?: Date,
+  ) => Promise<void>;
+  resolverOCrearCuentaGoogle: (
+    perfil: PerfilGoogle,
+    fecha: Date,
+  ) => Promise<CuentaGoogleVinculada | null>;
   actualizarUltimoAccesoGoogle: (cuentaId: string, subject: string, fecha: Date) => Promise<void>;
 }>;
 ```
@@ -249,9 +260,12 @@ Crear `test/identity-application.test.ts`:
 import { describe, expect, it, vi } from "vitest";
 import {
   crearAutenticarCredencialesUseCase,
-  crearResolverUsuarioGoogleUseCase
+  crearResolverUsuarioGoogleUseCase,
 } from "@/src/modules/identity/application";
-import type { IdentityRepository, CalendarioAsistenteDispatcher } from "@/src/modules/identity/ports";
+import type {
+  IdentityRepository,
+  CalendarioAsistenteDispatcher,
+} from "@/src/modules/identity/ports";
 
 describe("identity application use cases", () => {
   it("autentica con credenciales validas", async () => {
@@ -264,16 +278,19 @@ describe("identity application use cases", () => {
         activo: true,
         fusionadoEnId: null,
         nombre: "Admin",
-        email: "admin@flacso.edu.uy"
+        email: "admin@flacso.edu.uy",
       }),
       registrarAcceso: vi.fn().mockResolvedValue(undefined),
       resolverOCrearCuentaGoogle: vi.fn(),
-      actualizarUltimoAccesoGoogle: vi.fn()
+      actualizarUltimoAccesoGoogle: vi.fn(),
     };
     const mockVerificar = vi.fn().mockResolvedValue(true);
 
     const useCase = crearAutenticarCredencialesUseCase(mockRepo, mockVerificar);
-    const usuario = await useCase({ usuario: "admin@flacso.edu.uy", password: "secretPassword123" });
+    const usuario = await useCase({
+      usuario: "admin@flacso.edu.uy",
+      password: "secretPassword123",
+    });
 
     expect(usuario?.id).toBe("usr-1");
     expect(mockRepo.registrarAcceso).toHaveBeenCalledWith("usr-1", "credentials");
@@ -293,13 +310,13 @@ describe("identity application use cases", () => {
           activo: true,
           fusionadoEnId: null,
           nombre: "Asistente Uno",
-          email: "asistente@flacso.edu.uy"
-        }
+          email: "asistente@flacso.edu.uy",
+        },
       }),
-      actualizarUltimoAccesoGoogle: vi.fn().mockResolvedValue(undefined)
+      actualizarUltimoAccesoGoogle: vi.fn().mockResolvedValue(undefined),
     };
     const mockDispatcher: CalendarioAsistenteDispatcher = {
-      reconciliarCalendarioAsistente: vi.fn().mockResolvedValue(undefined)
+      reconciliarCalendarioAsistente: vi.fn().mockResolvedValue(undefined),
     };
 
     const useCase = crearResolverUsuarioGoogleUseCase(mockRepo, mockDispatcher);
@@ -307,7 +324,7 @@ describe("identity application use cases", () => {
       subject: "sub-google-1",
       email: "asistente@flacso.edu.uy",
       emailVerificado: true,
-      nombre: "Asistente Uno"
+      nombre: "Asistente Uno",
     });
 
     expect(usuario?.id).toBe("asist-1");
@@ -328,20 +345,22 @@ describe("identity application use cases", () => {
           activo: true,
           fusionadoEnId: null,
           nombre: "Asistente Dos",
-          email: "asistente@flacso.edu.uy"
-        }
+          email: "asistente@flacso.edu.uy",
+        },
       }),
-      actualizarUltimoAccesoGoogle: vi.fn().mockResolvedValue(undefined)
+      actualizarUltimoAccesoGoogle: vi.fn().mockResolvedValue(undefined),
     };
     const mockFailingDispatcher: CalendarioAsistenteDispatcher = {
-      reconciliarCalendarioAsistente: vi.fn().mockRejectedValue(new Error("Google Calendar timeout"))
+      reconciliarCalendarioAsistente: vi
+        .fn()
+        .mockRejectedValue(new Error("Google Calendar timeout")),
     };
 
     const useCase = crearResolverUsuarioGoogleUseCase(mockRepo, mockFailingDispatcher);
     const usuario = await useCase({
       subject: "sub-google-2",
       email: "asistente@flacso.edu.uy",
-      emailVerificado: true
+      emailVerificado: true,
     });
 
     expect(usuario?.id).toBe("asist-2");

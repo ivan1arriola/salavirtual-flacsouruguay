@@ -2,7 +2,7 @@ import {
   botonCorreo,
   envolverCorreo,
   escaparHtmlEmail,
-  panelCorreo
+  panelCorreo,
 } from "@/src/lib/email/email-design-system";
 
 export type EstadoVerificacionMeet = "CONFIRMADO" | "SIN_PERMISOS" | "NO_VERIFICABLE";
@@ -29,7 +29,7 @@ export type DatosRecordatorio = Readonly<{
 }>;
 
 function construirRecordatorioZoom(
-  input: DatosRecordatorio
+  input: DatosRecordatorio,
 ): Readonly<{ subject: string; text: string; html: string }> {
   const e = escaparHtmlEmail;
   const text = [
@@ -42,8 +42,10 @@ function construirRecordatorioZoom(
     input.horarioMonitoreo ? "Horario de monitoreo: " + input.horarioMonitoreo : null,
     "Modalidad: " + input.modalidad,
     "",
-    input.urlMeet ? "Enlace de Zoom: " + input.urlMeet : "El enlace de Zoom todavía no está disponible.",
-    "Revisá la reunión en " + input.urlDetalle
+    input.urlMeet
+      ? "Enlace de Zoom: " + input.urlMeet
+      : "El enlace de Zoom todavía no está disponible.",
+    "Revisá la reunión en " + input.urlDetalle,
   ]
     .filter((line): line is string => line !== null)
     .join("\n");
@@ -68,10 +70,12 @@ function construirRecordatorioZoom(
       '<p style="margin:8px 0 0;color:#526277;font-size:13px">' +
       e(input.modalidad) +
       "</p>",
-    "Fecha y horario · Uruguay"
+    "Fecha y horario · Uruguay",
   );
   const zoom = input.urlMeet
-    ? '<div style="margin:15px 0">' + botonCorreo({ texto: "Ingresar a Zoom", url: input.urlMeet }) + "</div>"
+    ? '<div style="margin:15px 0">' +
+      botonCorreo({ texto: "Ingresar a Zoom", url: input.urlMeet }) +
+      "</div>"
     : '<p style="color:#995218;font-size:13px">El enlace de Zoom todavía no está disponible.</p>';
   const html = envolverCorreo({
     categoria: "Recordatorio de reunión",
@@ -81,13 +85,13 @@ function construirRecordatorioZoom(
     contenidoHtml: detalles + zoom,
     accion: { texto: "Ver detalle de la reunión", url: input.urlDetalle },
     nota: "Si el horario cambia, consultá la agenda actualizada.",
-    preferenciasUrl: "https://salavirtual.flacso.edu.uy/mi-perfil"
+    preferenciasUrl: "https://salavirtual.flacso.edu.uy/mi-perfil",
   });
   return { subject: "Recordatorio: " + input.reunion + " · Sala Virtual FLACSO", text, html };
 }
 
 export function construirRecordatorioReunion(
-  input: DatosRecordatorio
+  input: DatosRecordatorio,
 ): Readonly<{ subject: string; text: string; html: string }> {
   if (input.proveedor === "ZOOM") {
     return construirRecordatorioZoom(input);
@@ -113,11 +117,13 @@ export function construirRecordatorioReunion(
     "Modalidad: " + input.modalidad,
     "",
     textAcceso,
-    sinPermiso.length ? "Cuentas sin permisos de coanfitrión confirmados: " + sinPermiso.join(", ") : null,
+    sinPermiso.length
+      ? "Cuentas sin permisos de coanfitrión confirmados: " + sinPermiso.join(", ")
+      : null,
     input.urlMeet
       ? "Enlace de Google Meet: " + input.urlMeet
       : "El enlace de Google Meet todavía no está disponible.",
-    "Revisá la reunión en " + input.urlDetalle
+    "Revisá la reunión en " + input.urlDetalle,
   ]
     .filter((line): line is string => line !== null)
     .join("\n");
@@ -132,7 +138,7 @@ export function construirRecordatorioReunion(
               (email) =>
                 '<p style="margin:0 0 6px;color:#192b44;font-size:13px;overflow-wrap:anywhere">' +
                 e(email) +
-                "</p>"
+                "</p>",
             )
             .join("")
         : '<p style="margin:0;color:#995218;font-size:13px;line-height:21px"><strong>Ninguna de tus cuentas figura como coanfitrión.</strong> Podrías ingresar como participante, pero no se confirmaron permisos para conducir la reunión.</p>';
@@ -164,7 +170,7 @@ export function construirRecordatorioReunion(
       '<p style="margin:8px 0 0;color:#526277;font-size:13px">' +
       e(input.modalidad) +
       "</p>",
-    "Fecha y horario · Uruguay"
+    "Fecha y horario · Uruguay",
   );
   const meet = input.urlMeet
     ? '<div style="margin:15px 0">' +
@@ -186,7 +192,7 @@ export function construirRecordatorioReunion(
       meet,
     accion: { texto: "Ver detalle de la reunión", url: input.urlDetalle },
     nota: "La verificación se realizó antes del envío. Solo las cuentas confirmadas por la API aparecen como coanfitrionas. Si el horario cambia, consultá la agenda actualizada.",
-    preferenciasUrl: "https://salavirtual.flacso.edu.uy/mi-perfil"
+    preferenciasUrl: "https://salavirtual.flacso.edu.uy/mi-perfil",
   });
   return { subject: "Recordatorio: " + input.reunion + " · Sala Virtual FLACSO", text, html };
 }

@@ -11,7 +11,9 @@ const navigation = readFileSync(navigationUrl, "utf8");
 function declarations(selector: string) {
   const values = new Map<string, string>();
   styles.walkRules(selector, (rule) => {
-    for (const { prop, value } of rule.nodes.filter((node): node is Declaration => node.type === "decl")) {
+    for (const { prop, value } of rule.nodes.filter(
+      (node): node is Declaration => node.type === "decl",
+    )) {
       values.set(prop, value);
     }
   });
@@ -20,7 +22,9 @@ function declarations(selector: string) {
 
 describe("navegación móvil secundaria", () => {
   it("mantiene una lista legible con objetivos táctiles de 48px", () => {
-    expect(declarations(".mobile-more-menu nav").get("grid-template-columns")).toBe("minmax(0, 1fr)");
+    expect(declarations(".mobile-more-menu nav").get("grid-template-columns")).toBe(
+      "minmax(0, 1fr)",
+    );
     expect(declarations(".mobile-more-menu nav a").get("min-height")).toBe("48px");
     expect(declarations(".mobile-more-menu nav a").get("text-align")).toBe("left");
     expect(declarations(".mobile-more-menu nav a > span").get("white-space")).toBe("normal");
@@ -36,9 +40,15 @@ describe("navegación móvil secundaria", () => {
 
   it("indica la página actual con más que color y conserva el foco visible", () => {
     expect(shell).toContain('className="mobile-more-current"');
-    const current = declarations('.mobile-more-menu nav a[aria-current="page"] .mobile-more-current');
+    const current = declarations(
+      '.mobile-more-menu nav a[aria-current="page"] .mobile-more-current',
+    );
     expect(current.get("visibility")).toBe("visible");
-    expect(declarations(".mobile-more-menu :is(a, button):focus-visible").get("outline")).toContain("2px");
-    expect(navigation).toContain('.mobile-nav-more:has(a[aria-current="page"]):not([open]) > summary');
+    expect(declarations(".mobile-more-menu :is(a, button):focus-visible").get("outline")).toContain(
+      "2px",
+    );
+    expect(navigation).toContain(
+      '.mobile-nav-more:has(a[aria-current="page"]):not([open]) > summary',
+    );
   });
 });

@@ -7,11 +7,14 @@ import {
   toHttpError,
   ForbiddenApiError,
   NotFoundApiError,
-  IntegrationApiError
+  IntegrationApiError,
 } from "@/src/lib/http/api-error";
 import { puedeGestionarPrograma } from "@/src/modules/reuniones/permisos-programa.service";
 import { construirFiltroSerieSolicitud } from "@/src/modules/reuniones/serie-reunion.domain";
-import { consultarCohostsEspacioMeet, extraerCohostEmailsDeInstancia } from "@/src/modules/conferencias/api";
+import {
+  consultarCohostsEspacioMeet,
+  extraerCohostEmailsDeInstancia,
+} from "@/src/modules/conferencias/api";
 import { obtenerCredencialesWorkspaceActivas } from "@/src/modules/configuracion/api";
 
 type RouteContext = Readonly<{ params: Promise<{ solicitudId: string }> }>;
@@ -36,8 +39,8 @@ export async function GET(_request: Request, context: RouteContext) {
         docenteProgramaId: true,
         titulo: true,
         createdAt: true,
-        docentePrograma: { select: { programaId: true } }
-      }
+        docentePrograma: { select: { programaId: true } },
+      },
     });
     if (!request) {
       throw new NotFoundApiError("La serie no existe.");
@@ -58,21 +61,27 @@ export async function GET(_request: Request, context: RouteContext) {
             cohostEmails: { select: { email: true } },
             eventosProveedor: {
               where: { proveedor: { tipo: "GOOGLE_MEET" } },
-              select: { codigoReunion: true, cuentaProveedor: { select: { emailOrganizador: true } } },
-              take: 1
-            }
-          }
-        }
-      }
+              select: {
+                codigoReunion: true,
+                cuentaProveedor: { select: { emailOrganizador: true } },
+              },
+              take: 1,
+            },
+          },
+        },
+      },
     });
     const meetings = series.flatMap((item) => item.instancias);
     if (meetings.length > 100) {
       return NextResponse.json(
         { error: "La serie excede el límite de verificación. Contactá a administración." },
-        { status: 422 }
+        { status: 422 },
       );
     }
-    const { principal, legacy } = await obtenerCredencialesWorkspaceActivas(db, descifrarConfiguracion);
+    const { principal, legacy } = await obtenerCredencialesWorkspaceActivas(
+      db,
+      descifrarConfiguracion,
+    );
     if (!principal) {
       throw new IntegrationApiError("Google Workspace no está configurado.", 503);
     }
@@ -93,7 +102,9 @@ export async function GET(_request: Request, context: RouteContext) {
       const event = meeting.eventosProveedor[0];
       const host = event?.cuentaProveedor?.emailOrganizador ?? "";
       const code = event?.codigoReunion ?? "";
-      const emails = extraerCohostEmailsDeInstancia(meeting).filter((email) => email !== host.toLowerCase());
+      const emails = extraerCohostEmailsDeInstancia(meeting).filter(
+        (email) => email !== host.toLowerCase(),
+      );
       if (!emails.length) {
         continue;
       }
@@ -107,14 +118,14 @@ export async function GET(_request: Request, context: RouteContext) {
               serviceAccountEmail: principal.serviceAccountEmail,
               privateKey: principal.privateKey,
               subject: host,
-              origen: "PRINCIPAL" as const
+              origen: "PRINCIPAL" as const,
             },
             ...legacy.map((c) => ({
               serviceAccountEmail: c.serviceAccountEmail,
               privateKey: c.privateKey,
               subject: host,
-              origen: "LEGACY" as const
-            }))
+              origen: "LEGACY" as const,
+            })),
           ];
           const res = await consultarCohostsEspacioMeet(candidates, code);
           memberCache.set(cacheKey, res.cohosts ? new Set(res.cohosts) : null);
@@ -128,12 +139,19 @@ export async function GET(_request: Request, context: RouteContext) {
           rejected: 0,
           unknown: 0,
           total: 0,
-          meetings: [] as { id: string; fecha: string; result: Result }[]
+          meetings: [] as { id: string; fecha: string; result: Result }[],
         };
-        const result: Result = members === null ? "unknown" : members.has(email) ? "confirmed" : "rejected";
+        const result: Result =
+          members === null ? "unknown" : members.has(email) ? "confirmed" : "rejected";
         entry.total++;
-        entry[result === "confirmed" ? "confirmed" : result === "rejected" ? "rejected" : "unknown"]++;
-        entry.meetings.push({ id: meeting.id, fecha: meeting.inicioProgramadoAt.toISOString(), result });
+        entry[
+          result === "confirmed" ? "confirmed" : result === "rejected" ? "rejected" : "unknown"
+        ]++;
+        entry.meetings.push({
+          id: meeting.id,
+          fecha: meeting.inicioProgramadoAt.toISOString(),
+          result,
+        });
         perEmail.set(email, entry);
       }
     }
@@ -141,9 +159,9 @@ export async function GET(_request: Request, context: RouteContext) {
       {
         verifiedAt: new Date().toISOString(),
         meetings: meetings.length,
-        entries: [...perEmail.values()].sort((a, b) => a.email.localeCompare(b.email))
+        entries: [...perEmail.values()].sort((a, b) => a.email.localeCompare(b.email)),
       },
-      { headers: { "Cache-Control": "no-store" } }
+      { headers: { "Cache-Control": "no-store" } },
     );
   } catch (error) {
     const mapped = toHttpError(error);

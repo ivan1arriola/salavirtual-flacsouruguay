@@ -2,7 +2,7 @@ import type { CuentaGoogleVinculada, PerfilGoogle, UsuarioAutenticado } from "./
 
 export function evaluarAccesoGoogle(
   perfil: PerfilGoogle,
-  cuenta: CuentaGoogleVinculada | null
+  cuenta: CuentaGoogleVinculada | null,
 ): UsuarioAutenticado | null {
   const email = perfil.email.trim().toLowerCase();
   if (
@@ -21,7 +21,7 @@ export function evaluarAccesoGoogle(
     rol: cuenta.usuario.rol,
     nombre: cuenta.usuario.nombre,
     email: cuenta.usuario.email,
-    debeCambiarPassword: cuenta.usuario.debeCambiarPassword
+    debeCambiarPassword: cuenta.usuario.debeCambiarPassword,
   };
 }
 
@@ -30,13 +30,15 @@ export function esPerfilGoogleVerificado(perfil: PerfilGoogle): boolean {
 }
 
 export function esPerfilGoogleInstitucional(perfil: PerfilGoogle): boolean {
-  return esPerfilGoogleVerificado(perfil) && perfil.email.trim().toLowerCase().endsWith("@flacso.edu.uy");
+  return (
+    esPerfilGoogleVerificado(perfil) && perfil.email.trim().toLowerCase().endsWith("@flacso.edu.uy")
+  );
 }
 
 export function resolverVinculacionSubjectGoogle(
   subjectActual: string | null,
   subjectEntrante: string,
-  subjectPerteneceAOtraCuenta: boolean
+  subjectPerteneceAOtraCuenta: boolean,
 ): "MANTENER" | "REVINCULAR" | "RECHAZAR" {
   if (subjectPerteneceAOtraCuenta) {
     return "RECHAZAR";

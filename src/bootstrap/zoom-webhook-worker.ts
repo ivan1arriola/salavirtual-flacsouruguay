@@ -19,19 +19,19 @@ async function reclamar(ahora: Date) {
     where: {
       estado: { in: ["RECIBIDO", "ERROR"] },
       intentos: { gte: MAX_INTENTOS },
-      OR: [{ claimHasta: null }, { claimHasta: { lte: ahora } }]
+      OR: [{ claimHasta: null }, { claimHasta: { lte: ahora } }],
     },
-    data: { estado: "FALLIDO", claimHasta: null, errorCodigo: "INTENTOS_AGOTADOS" }
+    data: { estado: "FALLIDO", claimHasta: null, errorCodigo: "INTENTOS_AGOTADOS" },
   });
   const elegibles = await db.eventoWebhookZoom.findMany({
     where: {
       estado: { in: ["RECIBIDO", "ERROR"] },
       intentos: { lt: MAX_INTENTOS },
       proximoIntentoAt: { lte: ahora },
-      OR: [{ claimHasta: null }, { claimHasta: { lte: ahora } }]
+      OR: [{ claimHasta: null }, { claimHasta: { lte: ahora } }],
     },
     orderBy: [{ proximoIntentoAt: "asc" }, { id: "asc" }],
-    take: 25
+    take: 25,
   });
   for (const aviso of elegibles) {
     const claimHasta = new Date(ahora.getTime() + LEASE_MS);
@@ -40,9 +40,9 @@ async function reclamar(ahora: Date) {
         id: aviso.id,
         intentos: aviso.intentos,
         estado: { in: ["RECIBIDO", "ERROR"] },
-        OR: [{ claimHasta: null }, { claimHasta: { lte: ahora } }]
+        OR: [{ claimHasta: null }, { claimHasta: { lte: ahora } }],
       },
-      data: { claimHasta, intentos: { increment: 1 } }
+      data: { claimHasta, intentos: { increment: 1 } },
     });
     if (count === 1) {
       return { ...aviso, intentos: aviso.intentos + 1, claimHasta };
@@ -54,7 +54,7 @@ async function reclamar(ahora: Date) {
 async function aplicarAviso(
   aviso: NonNullable<Awaited<ReturnType<typeof reclamar>>>,
   cuentaConfigurada: string,
-  ahora: Date
+  ahora: Date,
 ): Promise<{ estado: "PROCESADO" | "IGNORADO"; ocurrenciaId: string | null }> {
   if (aviso.cuentaZoomId !== cuentaConfigurada) {
     return { estado: "IGNORADO", ocurrenciaId: null };
@@ -62,7 +62,7 @@ async function aplicarAviso(
   const ocurrenciaId = await db.$transaction(async (tx) => {
     const cuenta = await tx.cuentaProveedor.findFirst({
       where: { externalAccountId: aviso.anfitrionZoomId, proveedor: { tipo: "ZOOM" } },
-      select: { id: true }
+      select: { id: true },
     });
     const esGrabacion = TIPOS_GRABACION.includes(aviso.tipo);
     const ocurrencia = await tx.ocurrenciaArchivoZoom.upsert({
@@ -75,14 +75,14 @@ async function aplicarAviso(
         cuentaProveedorId: cuenta?.id ?? null,
         inicioRealAt: aviso.inicioRealAt,
         titulo: aviso.titulo,
-        proximoInventarioAt: esGrabacion ? ahora : null
+        proximoInventarioAt: esGrabacion ? ahora : null,
       },
       update: {
         // La señal sólo adelanta el inventario; los archivos y la asistencia previos nunca se reemplazan.
         ...(esGrabacion ? { proximoInventarioAt: ahora } : {}),
-        ...(cuenta ? { cuentaProveedorId: cuenta.id } : {})
+        ...(cuenta ? { cuentaProveedorId: cuenta.id } : {}),
       },
-      select: { id: true, eventoProveedorId: true }
+      select: { id: true, eventoProveedorId: true },
     });
     const vinculo = await vincularAutomaticamenteSiInequivoco(tx, {
       ocurrenciaId: ocurrencia.id,
@@ -90,16 +90,17 @@ async function aplicarAviso(
       meetingId: aviso.meetingId,
       inicioRealAt: aviso.inicioRealAt,
       eventoProveedorId: ocurrencia.eventoProveedorId,
-      ahora
+      ahora,
     });
     const eventoId =
-      ocurrencia.eventoProveedorId ?? (vinculo.tipo === "VINCULADA" ? vinculo.eventoProveedorId : null);
+      ocurrencia.eventoProveedorId ??
+      (vinculo.tipo === "VINCULADA" ? vinculo.eventoProveedorId : null);
     if (!eventoId) {
       return ocurrencia.id;
     }
     const evento = await tx.eventoProveedor.findUnique({
       where: { id: eventoId },
-      select: { instanciaSalaId: true }
+      select: { instanciaSalaId: true },
     });
     if (!evento) {
       return ocurrencia.id;
@@ -108,7 +109,7 @@ async function aplicarAviso(
       await aplicarEjecucionZoomAInstancia(tx, {
         instanciaSalaId: evento.instanciaSalaId,
         cuentaZoomId: aviso.cuentaZoomId,
-        uuid: aviso.uuid
+        uuid: aviso.uuid,
       });
     }
     return ocurrencia.id;
@@ -126,7 +127,7 @@ function falloReintentable(nombre: string): Error {
 /** Al terminar la reunión se pide el reporte de participantes; si Zoom aún no lo tiene, el aviso se reintenta. */
 async function sincronizarAsistenciaDelAviso(
   ocurrenciaId: string,
-  sincronizar: (ocurrenciaId: string) => Promise<ResultadoAsistenciaZoom>
+  sincronizar: (ocurrenciaId: string) => Promise<ResultadoAsistenciaZoom>,
 ): Promise<void> {
   const resultado = await sincronizar(ocurrenciaId);
   if (resultado.tipo === "PENDIENTE") {
@@ -145,7 +146,7 @@ async function sincronizarAsistenciaDelAviso(
 export async function procesarWebhooksZoom(
   cuentaZoomId: string,
   limite = 25,
-  sincronizarAsistencia?: (ocurrenciaId: string) => Promise<ResultadoAsistenciaZoom>
+  sincronizarAsistencia?: (ocurrenciaId: string) => Promise<ResultadoAsistenciaZoom>,
 ) {
   let procesados = 0;
   let ignorados = 0;
@@ -159,12 +160,17 @@ export async function procesarWebhooksZoom(
     try {
       const { estado, ocurrenciaId } = await aplicarAviso(aviso, cuentaZoomId, ahora);
       // Fuera de la transacción de aplicarAviso: la llamada a Zoom no debe retener conexiones de base de datos.
-      if (aviso.tipo === "meeting.ended" && estado === "PROCESADO" && ocurrenciaId && sincronizarAsistencia) {
+      if (
+        aviso.tipo === "meeting.ended" &&
+        estado === "PROCESADO" &&
+        ocurrenciaId &&
+        sincronizarAsistencia
+      ) {
         await sincronizarAsistenciaDelAviso(ocurrenciaId, sincronizarAsistencia);
       }
       await db.eventoWebhookZoom.updateMany({
         where: { id: aviso.id, claimHasta: aviso.claimHasta },
-        data: { estado, claimHasta: null, procesadoAt: new Date(), errorCodigo: null }
+        data: { estado, claimHasta: null, procesadoAt: new Date(), errorCodigo: null },
       });
       if (estado === "IGNORADO") {
         ignorados++;
@@ -181,8 +187,8 @@ export async function procesarWebhooksZoom(
           estado: aviso.intentos >= MAX_INTENTOS ? "FALLIDO" : "ERROR",
           claimHasta: null,
           errorCodigo: codigo,
-          proximoIntentoAt: proximoIntento(new Date(), aviso.intentos)
-        }
+          proximoIntentoAt: proximoIntento(new Date(), aviso.intentos),
+        },
       });
     }
   }

@@ -3,34 +3,39 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const state = vi.hoisted(() => ({
   session: null as null | { user: { id: string; email: string; role: string } },
   actor: null as null | { id: string; rol: string; activo: boolean },
-  ejecutar: vi.fn()
+  ejecutar: vi.fn(),
 }));
 
 vi.mock("next/server", () => ({
   NextResponse: class {
     constructor(
       public body: unknown,
-      public status = 200
+      public status = 200,
     ) {}
     static json(body: unknown, init?: { status?: number }) {
       return new this(body, init?.status ?? 200);
     }
-  }
+  },
 }));
 vi.mock("@/auth", () => ({ auth: async () => state.session }));
-vi.mock("@/src/lib/auth/session-actor.adapter", () => ({ resolveSessionActor: async () => state.actor }));
+vi.mock("@/src/lib/auth/session-actor.adapter", () => ({
+  resolveSessionActor: async () => state.actor,
+}));
 vi.mock("@/src/lib/db", () => ({ db: {} }));
 vi.mock("@/src/bootstrap/conferencias.server", () => ({
-  obtenerServicioConferencias: () => ({ sincronizarEventosPendientes: async () => [] })
+  obtenerServicioConferencias: () => ({ sincronizarEventosPendientes: async () => [] }),
 }));
-vi.mock("@/src/bootstrap/zoom-agenda-acciones.server", () => ({ ejecutarAccionAgendaZoom: state.ejecutar }));
+vi.mock("@/src/bootstrap/zoom-agenda-acciones.server", () => ({
+  ejecutarAccionAgendaZoom: state.ejecutar,
+}));
 
 import { POST } from "../app/api/v1/configuracion/zoom/agenda/acciones/route";
 
 const post = (body: unknown) =>
   new Request("http://localhost/x", { method: "POST", body: JSON.stringify(body) });
 
-const estado = async (body: unknown) => ((await POST(post(body))) as unknown as { status: number }).status;
+const estado = async (body: unknown) =>
+  ((await POST(post(body))) as unknown as { status: number }).status;
 
 beforeEach(() => {
   state.session = { user: { id: "u", email: "a@flacso.edu.uy", role: "ADMINISTRACION" } };
@@ -56,7 +61,7 @@ describe("ruta de acciones de la agenda de Zoom", () => {
     expect(await estado({ accion: "RECREAR_EN_ZOOM", instanciaId: "i1" })).toBe(200);
     expect(state.ejecutar).toHaveBeenCalledWith(state.actor, {
       accion: "RECREAR_EN_ZOOM",
-      instanciaId: "i1"
+      instanciaId: "i1",
     });
   });
 });

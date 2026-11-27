@@ -11,7 +11,7 @@ export type EstadoCorreoAuditado = Readonly<{
 
 export function MailDeliveryDiagnostics({
   attempts,
-  sesEnabled
+  sesEnabled,
 }: Readonly<{ attempts: readonly EstadoCorreoAuditado[]; sesEnabled: boolean }>) {
   const accepted = attempts.filter((item) => item.estado === "ACEPTADO").length;
   const omitted = attempts.filter((item) => item.estado === "OMITIDO").length;
@@ -22,16 +22,16 @@ export function MailDeliveryDiagnostics({
         <div>
           <h2 id="mail-delivery-diagnostics-heading">Diagnóstico de notificaciones por correo</h2>
           <p>
-            Últimos {attempts.length} intentos registrados. «Aceptado» significa que el proveedor recibió la
-            solicitud de envío, no que el mensaje llegó a Recibidos.
+            Últimos {attempts.length} intentos registrados. «Aceptado» significa que el proveedor
+            recibió la solicitud de envío, no que el mensaje llegó a Recibidos.
           </p>
         </div>
         <MailWarning size={22} aria-hidden="true" />
       </header>
       {!sesEnabled ? (
         <p className="form-notice" role="status">
-          Amazon SES está desactivado. Se intentará Gmail y, únicamente si no está configurado, SMTP. Los
-          fallos de Gmail no se reintentan automáticamente para evitar duplicaciones.
+          Amazon SES está desactivado. Se intentará Gmail y, únicamente si no está configurado,
+          SMTP. Los fallos de Gmail no se reintentan automáticamente para evitar duplicaciones.
         </p>
       ) : null}
       <div className="settings-status-metrics" role="group" aria-label="Resultados de correo">
@@ -47,8 +47,8 @@ export function MailDeliveryDiagnostics({
       </div>
       {attempts.length === 0 ? (
         <p>
-          Sin resultados auditados todavía. Los envíos anteriores a esta actualización no tienen registro de
-          aceptación o fallo.
+          Sin resultados auditados todavía. Los envíos anteriores a esta actualización no tienen
+          registro de aceptación o fallo.
         </p>
       ) : (
         <div className="table-scroll" tabIndex={0} aria-label="Desplazar historial de envíos">
@@ -79,8 +79,8 @@ export function MailDeliveryDiagnostics({
         </div>
       )}
       <p className="muted-text">
-        Este historial no muestra destinatarios, asuntos ni contenido de correos. La recepción final y los
-        rebotes deben confirmarse en el proveedor.
+        Este historial no muestra destinatarios, asuntos ni contenido de correos. La recepción final
+        y los rebotes deben confirmarse en el proveedor.
       </p>
     </section>
   );

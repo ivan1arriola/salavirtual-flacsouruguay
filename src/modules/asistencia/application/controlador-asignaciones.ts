@@ -11,7 +11,10 @@ export type SincronizacionAsignacion = Readonly<{
 export type ControladorAsignacionesDeps = Readonly<{
   repo: AsistenciaRepositoryPort;
   /** Se ejecuta después del commit: cohosts de Meet y calendario del asistente. */
-  sincronizar: (instanciaSalaId: string, avisoCalendario: string) => Promise<SincronizacionAsignacion>;
+  sincronizar: (
+    instanciaSalaId: string,
+    avisoCalendario: string,
+  ) => Promise<SincronizacionAsignacion>;
 }>;
 
 /**
@@ -29,7 +32,7 @@ export function crearControladorAsignaciones(deps: ControladorAsignacionesDeps) 
     },
     sincronizar(instanciaSalaId: string, avisoCalendario: string) {
       return deps.sincronizar(instanciaSalaId, avisoCalendario);
-    }
+    },
   } as const;
 }
 

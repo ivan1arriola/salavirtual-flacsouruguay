@@ -4,7 +4,11 @@ import { describe, expect, it, vi } from "vitest";
 import type { PrismaClient } from "@prisma/client";
 import { crearPrismaConciliacionAsistenciaZoomRepositoryAdapter } from "../src/modules/archivos/infrastructure/prisma/prisma-conciliacion-asistencia-zoom-repository.adapter";
 
-const CAMBIO = { estadoConciliacion: "CONCILIADO" as const, invitadoReunionId: "inv", esExterno: false };
+const CAMBIO = {
+  estadoConciliacion: "CONCILIADO" as const,
+  invitadoReunionId: "inv",
+  esExterno: false,
+};
 
 function crear(opciones: { actual?: any; invitado?: any; count?: number } = {}) {
   const actual =
@@ -14,20 +18,20 @@ function crear(opciones: { actual?: any; invitado?: any; count?: number } = {}) 
           estadoConciliacion: "SIN_CONCILIAR",
           invitadoReunionId: null,
           esExterno: null,
-          eventoProveedor: { instanciaSalaId: "i1" }
+          eventoProveedor: { instanciaSalaId: "i1" },
         }
       : opciones.actual;
   const tx = {
     registroAsistenciaZoom: {
       findUnique: vi.fn(async () => actual),
-      updateMany: vi.fn(async () => ({ count: opciones.count ?? 1 }))
+      updateMany: vi.fn(async () => ({ count: opciones.count ?? 1 })),
     },
     invitadoReunion: {
       findUnique: vi.fn(async () =>
-        opciones.invitado === undefined ? { instanciaSalaId: "i1" } : opciones.invitado
-      )
+        opciones.invitado === undefined ? { instanciaSalaId: "i1" } : opciones.invitado,
+      ),
     },
-    auditoria: { create: vi.fn(async () => ({})) }
+    auditoria: { create: vi.fn(async () => ({})) },
   };
   const db = { $transaction: async (fn: any) => fn(tx) } as unknown as PrismaClient;
   return { tx, repo: crearPrismaConciliacionAsistenciaZoomRepositoryAdapter({ db }) };
@@ -44,12 +48,12 @@ describe("repositorio de conciliación de asistencia Zoom", () => {
     expect(auditoria).toMatchObject({
       actorUsuarioId: "actor",
       accion: "ZOOM_ASISTENCIA_CONCILIADA",
-      entidadId: "r1"
+      entidadId: "r1",
     });
     expect(auditoria.valorAnterior).toMatchObject({ estadoConciliacion: "SIN_CONCILIAR" });
     expect(auditoria.valorNuevo).toMatchObject({
       estadoConciliacion: "CONCILIADO",
-      invitadoReunionId: "inv"
+      invitadoReunionId: "inv",
     });
     expect(JSON.stringify(auditoria)).not.toMatch(/https?:|token/i);
   });
@@ -75,15 +79,15 @@ describe("repositorio de conciliación de asistencia Zoom", () => {
         estadoConciliacion: "SIN_CONCILIAR",
         invitadoReunionId: null,
         esExterno: null,
-        eventoProveedor: null
-      }
+        eventoProveedor: null,
+      },
     });
     expect(await repo.aplicar("r1", 2, CAMBIO, "actor")).toEqual({ tipo: "INVITADO_AJENO" });
   });
 
   it("registro inexistente: NO_ENCONTRADO", async () => {
     expect(await crear({ actual: null }).repo.aplicar("x", 1, CAMBIO, "actor")).toEqual({
-      tipo: "NO_ENCONTRADO"
+      tipo: "NO_ENCONTRADO",
     });
   });
 });
@@ -92,11 +96,13 @@ describe("la vía antigua de edición no alcanza la asistencia de Zoom", () => {
   const servicio = readFileSync("src/modules/reuniones/reunion-operativa.service.ts", "utf8");
   const ruta = readFileSync(
     "app/api/v1/reuniones/instancias/[instanciaId]/control-operativo/route.ts",
-    "utf8"
+    "utf8",
   );
 
   it("guardarRegistroAsistenciaOperativo y control-operativo solo escriben RegistroAsistenciaMeet", () => {
-    expect(servicio).not.toMatch(/registroAsistenciaZoom|RegistroAsistenciaZoom|sesionAsistenciaZoom/);
+    expect(servicio).not.toMatch(
+      /registroAsistenciaZoom|RegistroAsistenciaZoom|sesionAsistenciaZoom/,
+    );
     expect(ruta).not.toMatch(/AsistenciaZoom/);
     expect(servicio).toMatch(/db\.registroAsistenciaMeet\.upsert/);
   });
@@ -104,11 +110,11 @@ describe("la vía antigua de edición no alcanza la asistencia de Zoom", () => {
   it("la ruta de conciliación es el único camino de edición y exige permisos, versión y auditoría", () => {
     const rutaNueva = readFileSync(
       "app/api/v1/reuniones/instancias/[instanciaId]/asistencia/conciliar/route.ts",
-      "utf8"
+      "utf8",
     );
     const caso = readFileSync(
       "src/modules/archivos/application/conciliar-asistencia-zoom.use-case.ts",
-      "utf8"
+      "utf8",
     );
     expect(rutaNueva).toMatch(/conciliarAsistenciaZoom/);
     expect(caso).toMatch(/puedeConciliarAsistenciaZoom/);

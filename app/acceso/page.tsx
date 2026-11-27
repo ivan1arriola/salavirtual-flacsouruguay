@@ -17,7 +17,7 @@ const MENSAJES_ERROR: Readonly<Record<string, string>> = Object.freeze({
   CredentialsSignin: "El usuario o la contraseña no son correctos.",
   AccessDenied: "Esta cuenta no tiene acceso autorizado.",
   Configuration: "Tu solicitud de acceso fue registrada y deberá ser autorizada.",
-  OAuthCallbackError: "Tu solicitud de acceso fue registrada y deberá ser autorizada."
+  OAuthCallbackError: "Tu solicitud de acceso fue registrada y deberá ser autorizada.",
 });
 
 type AccesoPageProps = Readonly<{

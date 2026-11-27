@@ -3,7 +3,7 @@ import {
   agruparPorFecha,
   evaluarConflictoAsistencia,
   formatearDiasRestantes,
-  ordenarPostulantesParaAdministracion
+  ordenarPostulantesParaAdministracion,
 } from "../src/modules/asistencia/agenda-abierta.domain";
 
 describe("agenda-abierta.domain", () => {
@@ -11,7 +11,7 @@ describe("agenda-abierta.domain", () => {
     it("detecta DISPONIBLE cuando no hay asignaciones", () => {
       const candidata = {
         inicio: new Date("2026-09-10T18:00:00Z"),
-        fin: new Date("2026-09-10T20:00:00Z")
+        fin: new Date("2026-09-10T20:00:00Z"),
       };
       const result = evaluarConflictoAsistencia(candidata, []);
       expect(result.estado).toBe("DISPONIBLE");
@@ -21,15 +21,15 @@ describe("agenda-abierta.domain", () => {
     it("detecta DISPONIBLE cuando la separación es mayor o igual a 30 minutos", () => {
       const candidata = {
         inicio: new Date("2026-09-10T18:00:00Z"),
-        fin: new Date("2026-09-10T20:00:00Z")
+        fin: new Date("2026-09-10T20:00:00Z"),
       };
       const asignadas = [
         {
           id: "asig-1",
           titulo: "Clase previa",
           inicio: new Date("2026-09-10T15:00:00Z"),
-          fin: new Date("2026-09-10T17:30:00Z")
-        }
+          fin: new Date("2026-09-10T17:30:00Z"),
+        },
       ];
       const result = evaluarConflictoAsistencia(candidata, asignadas);
       expect(result.estado).toBe("DISPONIBLE");
@@ -38,15 +38,15 @@ describe("agenda-abierta.domain", () => {
     it("detecta CONFLICTO cuando hay superposición de horarios directa", () => {
       const candidata = {
         inicio: new Date("2026-09-10T18:00:00Z"),
-        fin: new Date("2026-09-10T20:00:00Z")
+        fin: new Date("2026-09-10T20:00:00Z"),
       };
       const asignadas = [
         {
           id: "asig-1",
           titulo: "Taller Solapado",
           inicio: new Date("2026-09-10T19:00:00Z"),
-          fin: new Date("2026-09-10T21:00:00Z")
-        }
+          fin: new Date("2026-09-10T21:00:00Z"),
+        },
       ];
       const result = evaluarConflictoAsistencia(candidata, asignadas);
       expect(result.estado).toBe("CONFLICTO");
@@ -59,15 +59,15 @@ describe("agenda-abierta.domain", () => {
     it("detecta MUY_PROXIMO cuando la separación es menor a 30 minutos sin solapamiento", () => {
       const candidata = {
         inicio: new Date("2026-09-10T18:00:00Z"),
-        fin: new Date("2026-09-10T20:00:00Z")
+        fin: new Date("2026-09-10T20:00:00Z"),
       };
       const asignadas = [
         {
           id: "asig-1",
           titulo: "Clase Muy Cercana",
           inicio: new Date("2026-09-10T16:00:00Z"),
-          fin: new Date("2026-09-10T17:45:00Z")
-        }
+          fin: new Date("2026-09-10T17:45:00Z"),
+        },
       ];
       const result = evaluarConflictoAsistencia(candidata, asignadas);
       expect(result.estado).toBe("MUY_PROXIMO");
@@ -105,7 +105,7 @@ describe("agenda-abierta.domain", () => {
       const items = [
         { id: "1", inicioProgramadoAt: new Date("2026-09-10T14:00:00Z") },
         { id: "2", inicioProgramadoAt: new Date("2026-09-10T18:00:00Z") },
-        { id: "3", inicioProgramadoAt: new Date("2026-09-11T12:00:00Z") }
+        { id: "3", inicioProgramadoAt: new Date("2026-09-11T12:00:00Z") },
       ];
       const grupos = agruparPorFecha(items, new Date("2026-09-10T10:00:00Z"), "America/Montevideo");
       expect(grupos).toHaveLength(2);
@@ -124,29 +124,29 @@ describe("agenda-abierta.domain", () => {
           name: "Carlos",
           estadoDisponibilidad: "CONFLICTO" as const,
           etiquetaDisponibilidad: "Conflicto",
-          minutosMensuales: 0
+          minutosMensuales: 0,
         },
         {
           id: "2",
           name: "Bruno",
           estadoDisponibilidad: "DISPONIBLE" as const,
           etiquetaDisponibilidad: "Disponible",
-          minutosMensuales: 240
+          minutosMensuales: 240,
         },
         {
           id: "1",
           name: "Ana",
           estadoDisponibilidad: "DISPONIBLE" as const,
           etiquetaDisponibilidad: "Disponible",
-          minutosMensuales: 120
+          minutosMensuales: 120,
         },
         {
           id: "4",
           name: "Daniela",
           estadoDisponibilidad: "MUY_PROXIMO" as const,
           etiquetaDisponibilidad: "Muy próximo",
-          minutosMensuales: 60
-        }
+          minutosMensuales: 60,
+        },
       ];
 
       const ordenados = ordenarPostulantesParaAdministracion(postulantes);

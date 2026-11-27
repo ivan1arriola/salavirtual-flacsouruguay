@@ -15,10 +15,10 @@ describe("asistencia infrastructure", () => {
               rol: "ASISTENTE_TECNICO",
               nombres: "Ana",
               apellidos: "Silva",
-              emailPrincipal: "ana@flacso.edu.uy"
-            }
-          })
-        }
+              emailPrincipal: "ana@flacso.edu.uy",
+            },
+          }),
+        },
       };
 
       const adapter = crearPrismaAsistenciaRepositoryAdapter(mockDb as any);
@@ -30,7 +30,7 @@ describe("asistencia infrastructure", () => {
         nombre: "Ana Silva",
         email: "ana@flacso.edu.uy",
         activo: true,
-        cesadoHastaProximoInicioSesion: false
+        cesadoHastaProximoInicioSesion: false,
       });
     });
 
@@ -40,9 +40,9 @@ describe("asistencia infrastructure", () => {
           findUnique: vi.fn().mockResolvedValue({
             id: "asist-1",
             usuarioId: "u-1",
-            usuario: { rol: "DOCENTE" }
-          })
-        }
+            usuario: { rol: "DOCENTE" },
+          }),
+        },
       };
 
       const adapter = crearPrismaAsistenciaRepositoryAdapter(mockDb as any);
@@ -53,8 +53,8 @@ describe("asistencia infrastructure", () => {
     it("obtiene slug del asistente", async () => {
       const mockDb = {
         asistenteTecnico: {
-          findUnique: vi.fn().mockResolvedValue({ slug: "ana-silva" })
-        }
+          findUnique: vi.fn().mockResolvedValue({ slug: "ana-silva" }),
+        },
       };
 
       const adapter = crearPrismaAsistenciaRepositoryAdapter(mockDb as any);
@@ -74,14 +74,14 @@ describe("asistencia infrastructure", () => {
             solicitud: {
               titulo: "Seminario",
               modalidad: "VIRTUAL",
-              docentePrograma: { docente: { usuario: { nombres: "Prof.", apellidos: "Gomez" } } }
+              docentePrograma: { docente: { usuario: { nombres: "Prof.", apellidos: "Gomez" } } },
             },
-            asignaciones: []
-          })
+            asignaciones: [],
+          }),
         },
         asistenteTecnico: {
-          findMany: vi.fn().mockResolvedValue([{ usuarioId: "u-1" }, { usuarioId: "u-2" }])
-        }
+          findMany: vi.fn().mockResolvedValue([{ usuarioId: "u-1" }, { usuarioId: "u-2" }]),
+        },
       };
 
       const adapter = crearPrismaAsistenciaRepositoryAdapter(mockDb as any);

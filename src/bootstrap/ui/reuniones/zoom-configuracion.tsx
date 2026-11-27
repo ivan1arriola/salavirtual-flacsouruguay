@@ -10,7 +10,7 @@ function estado(valor: boolean | null | undefined): string {
 
 export function ZoomConfiguracion({
   configuracion,
-  anfitrion
+  anfitrion,
 }: Readonly<{
   configuracion?: ConfiguracionZoom;
   anfitrion: string | null;
@@ -28,16 +28,18 @@ export function ZoomConfiguracion({
     ["Cuenta asignada en Sala Virtual", anfitrion ?? "Sin asignar"],
     [
       "Anfitriones alternativos",
-      configuracion?.alternativos === "" ? "Ninguno" : (configuracion?.alternativos ?? "Sin verificar")
-    ]
+      configuracion?.alternativos === ""
+        ? "Ninguno"
+        : (configuracion?.alternativos ?? "Sin verificar"),
+    ],
   ];
   return (
-    <section className={styles.card} aria-label="Configuración efectiva de Zoom">
-      <h2 className={styles.sectionTitle}>Configuración de Zoom</h2>
-      <p className={styles.note}>
+    <section className={styles["card"]} aria-label="Configuración efectiva de Zoom">
+      <h2 className={styles["sectionTitle"]}>Configuración de Zoom</h2>
+      <p className={styles["note"]}>
         Configuración de la reunión consultada en Zoom, no el estado de la ejecución.
       </p>
-      <dl className={styles.facts}>
+      <dl className={styles["facts"]}>
         {datos.map(([nombre, valor]) => (
           <div key={nombre}>
             <dt>{nombre}</dt>

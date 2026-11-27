@@ -15,7 +15,7 @@ import {
   type ArchivoOrigenZoom,
   type EstadoCalculadoArchivoZoom,
   type HashZoom,
-  type LeaseArchivoZoom
+  type LeaseArchivoZoom,
 } from "../../domain";
 import type {
   ActorVinculoZoom,
@@ -29,7 +29,7 @@ import type {
   ResultadoVinculo,
   ResumenInventarioGuardado,
   SolicitudReservaTransferenciaZoom,
-  ZoomArchivoRepositoryPort
+  ZoomArchivoRepositoryPort,
 } from "../../ports";
 
 export type PrismaZoomArchivoRepositoryDeps = Readonly<{
@@ -51,12 +51,12 @@ function elegibleParaReclamo(ahora: Date): Prisma.ArchivoOrigenZoomWhereInput {
       {
         descargable: true,
         estado: { in: ["PENDIENTE", "ERROR_REINTENTABLE"] },
-        OR: [{ proximoIntentoAt: null }, { proximoIntentoAt: { lte: ahora } }]
+        OR: [{ proximoIntentoAt: null }, { proximoIntentoAt: { lte: ahora } }],
       },
       // Lease vencido: el worker anterior cayó o dejó de renovar. Se recupera aunque el último
       // inventario ya no ofrezca descarga, para que el fallo quede registrado y visible.
-      { estado: "COPIANDO", OR: [{ leaseHasta: null }, { leaseHasta: { lt: ahora } }] }
-    ]
+      { estado: "COPIANDO", OR: [{ leaseHasta: null }, { leaseHasta: { lt: ahora } }] },
+    ],
   };
 }
 
@@ -72,7 +72,9 @@ function leaseVigente(lease: LeaseArchivoZoom) {
 }
 
 function esUnicidadViolada(error: unknown): boolean {
-  return typeof error === "object" && error !== null && (error as { code?: unknown }).code === "P2002";
+  return (
+    typeof error === "object" && error !== null && (error as { code?: unknown }).code === "P2002"
+  );
 }
 
 /**
@@ -84,11 +86,15 @@ async function cerrarReservasDeLeasesAnteriores(
   cliente: Tx,
   archivoId: string,
   versionVigente: number,
-  ahora: Date
+  ahora: Date,
 ): Promise<void> {
   const abiertas = await cliente.reservaTransferenciaZoom.findMany({
     where: { archivoOrigenId: archivoId, liberadoAt: null, leaseVersion: { lt: versionVigente } },
-    select: { id: true, bytesConfirmadosInicio: true, archivoOrigen: { select: { bytesConfirmados: true } } }
+    select: {
+      id: true,
+      bytesConfirmadosInicio: true,
+      archivoOrigen: { select: { bytesConfirmados: true } },
+    },
   });
   for (const reserva of abiertas) {
     await cliente.reservaTransferenciaZoom.updateMany({
@@ -96,10 +102,10 @@ async function cerrarReservasDeLeasesAnteriores(
       data: {
         ajustadoBytes: bytesTransferidosReservaAbandonadaZoom(
           reserva.bytesConfirmadosInicio,
-          reserva.archivoOrigen.bytesConfirmados
+          reserva.archivoOrigen.bytesConfirmados,
         ),
-        liberadoAt: ahora
-      }
+        liberadoAt: ahora,
+      },
     });
   }
 }
@@ -121,7 +127,7 @@ function metadatosRecurso(recurso: ArchivoOrigenZoom) {
     finAt: recurso.finAt,
     tamanoBytes: recurso.tamanoBytes,
     estadoOrigen: recurso.estadoOrigen,
-    descargable: recurso.descargable
+    descargable: recurso.descargable,
   };
 }
 
@@ -134,10 +140,12 @@ const SELECCION_REFERENCIA = {
   bytesConfirmados: true,
   mimeType: true,
   webViewUrl: true,
-  inicioAt: true
+  inicioAt: true,
 } as const;
 
-type ArchivoParaReferencia = Prisma.ArchivoOrigenZoomGetPayload<{ select: typeof SELECCION_REFERENCIA }>;
+type ArchivoParaReferencia = Prisma.ArchivoOrigenZoomGetPayload<{
+  select: typeof SELECCION_REFERENCIA;
+}>;
 type OcurrenciaParaReferencia = Readonly<{
   cuentaZoomId: string;
   uuid: string;
@@ -146,7 +154,7 @@ type OcurrenciaParaReferencia = Readonly<{
 }>;
 
 export function crearPrismaZoomArchivoRepositoryAdapter(
-  deps: PrismaZoomArchivoRepositoryDeps
+  deps: PrismaZoomArchivoRepositoryDeps,
 ): ZoomArchivoRepositoryPort {
   const { db, hash } = deps;
   const reloj = deps.reloj ?? (() => new Date());
@@ -156,7 +164,7 @@ export function crearPrismaZoomArchivoRepositoryAdapter(
     tx: Tx,
     archivo: ArchivoParaReferencia,
     ocurrencia: OcurrenciaParaReferencia,
-    nombre: string
+    nombre: string,
   ): Promise<void> {
     if (!archivo.driveFileId) {
       return;
@@ -165,7 +173,7 @@ export function crearPrismaZoomArchivoRepositoryAdapter(
       ocurrencia.cuentaZoomId,
       ocurrencia.uuid,
       archivo.claveOrigen,
-      hash
+      hash,
     );
     const datos = {
       tipo: tipoArchivoReunionZoom(archivo.tipoOriginal),
@@ -174,29 +182,29 @@ export function crearPrismaZoomArchivoRepositoryAdapter(
       mimeType: archivo.mimeType,
       tamanoBytes: archivo.bytesConfirmados,
       webViewUrl: archivo.webViewUrl,
-      capturadoAt: archivo.inicioAt ?? ocurrencia.inicioRealAt
+      capturadoAt: archivo.inicioAt ?? ocurrencia.inicioRealAt,
     };
     const referencia = await tx.archivoReunion.upsert({
       where: {
         eventoProveedorId_externalResourceName: {
           eventoProveedorId: ocurrencia.eventoProveedorId,
-          externalResourceName
-        }
+          externalResourceName,
+        },
       },
       create: { eventoProveedorId: ocurrencia.eventoProveedorId, externalResourceName, ...datos },
       update: datos,
-      select: { id: true }
+      select: { id: true },
     });
     await tx.archivoOrigenZoom.update({
       where: { id: archivo.id },
-      data: { archivoReunionId: referencia.id }
+      data: { archivoReunionId: referencia.id },
     });
   }
 
   return {
     async guardarInventario(
       entrada: OcurrenciaInventariadaZoom,
-      inventario
+      inventario,
     ): Promise<ResumenInventarioGuardado> {
       const ref = entrada.referencia;
       const ambiguos = multiplicidadesAmbiguasZoom(inventario.observaciones);
@@ -208,8 +216,8 @@ export function crearPrismaZoomArchivoRepositoryAdapter(
           recurso: previo?.recurso ?? recurso,
           multiplicidad: Math.max(
             ambiguos.get(recurso.claveOrigen) ?? 1,
-            (previo ? previo.multiplicidad : 0) + 1
-          )
+            (previo ? previo.multiplicidad : 0) + 1,
+          ),
         });
       }
       const observaciones = inventario.observaciones as unknown as Prisma.InputJsonValue;
@@ -229,7 +237,7 @@ export function crearPrismaZoomArchivoRepositoryAdapter(
             inventariadoAt: entrada.inventariadoAt,
             proximoInventarioAt: entrada.proximoInventarioAt,
             procesamientoPendiente: inventario.procesamientoPendiente,
-            observacionesInventario: observaciones
+            observacionesInventario: observaciones,
           },
           update: {
             meetingId: ref.meetingId,
@@ -239,9 +247,9 @@ export function crearPrismaZoomArchivoRepositoryAdapter(
             proximoInventarioAt: entrada.proximoInventarioAt,
             procesamientoPendiente: inventario.procesamientoPendiente,
             observacionesInventario: observaciones,
-            ...(entrada.cuentaProveedorId ? { cuentaProveedorId: entrada.cuentaProveedorId } : {})
+            ...(entrada.cuentaProveedorId ? { cuentaProveedorId: entrada.cuentaProveedorId } : {}),
           },
-          select: { id: true, eventoProveedorId: true }
+          select: { id: true, eventoProveedorId: true },
         });
         // Coincidencia inequívoca (UUID exacto, o reunión + horario único): se vincula sola; todo lo demás queda para vínculo manual.
         await vincularYCompletarEjecucion(tx, {
@@ -251,12 +259,12 @@ export function crearPrismaZoomArchivoRepositoryAdapter(
           meetingId: ref.meetingId,
           inicioRealAt: ref.inicioRealAt,
           eventoProveedorId: ocurrencia.eventoProveedorId,
-          ahora: entrada.inventariadoAt
+          ahora: entrada.inventariadoAt,
         });
 
         const existentes = await tx.archivoOrigenZoom.findMany({
           where: { ocurrenciaId: ocurrencia.id },
-          select: { id: true, claveOrigen: true, estado: true, nombreDestino: true }
+          select: { id: true, claveOrigen: true, estado: true, nombreDestino: true },
         });
         const existentesPorClave = new Map(existentes.map((e) => [e.claveOrigen, e]));
         const nuevos = [...porClave.values()]
@@ -265,7 +273,7 @@ export function crearPrismaZoomArchivoRepositoryAdapter(
         const nombres = asignarNombresDestinoZoom(
           ref,
           nuevos,
-          existentes.map((e) => e.nombreDestino)
+          existentes.map((e) => e.nombreDestino),
         );
 
         let creados = 0;
@@ -275,7 +283,7 @@ export function crearPrismaZoomArchivoRepositoryAdapter(
           const datos = {
             ...metadatosRecurso(recurso),
             multiplicidadObservada: multiplicidad,
-            ultimaObservacionAt: entrada.inventariadoAt
+            ultimaObservacionAt: entrada.inventariadoAt,
           };
           const existente = existentesPorClave.get(recurso.claveOrigen);
           if (existente) {
@@ -285,7 +293,11 @@ export function crearPrismaZoomArchivoRepositoryAdapter(
               ? (
                   await tx.archivoOrigenZoom.updateMany({
                     where: { id: existente.id, estado: existente.estado },
-                    data: { ...datos, estado: transicion.estado, errorCodigo: transicion.errorCodigo }
+                    data: {
+                      ...datos,
+                      estado: transicion.estado,
+                      errorCodigo: transicion.errorCodigo,
+                    },
                   })
                 ).count === 1
               : false;
@@ -310,8 +322,8 @@ export function crearPrismaZoomArchivoRepositoryAdapter(
               nombreDestino: nombre.nombre,
               ...datos,
               estado: inicial.estado,
-              errorCodigo: inicial.errorCodigo
-            }
+              errorCodigo: inicial.errorCodigo,
+            },
           });
           creados++;
           if (inicial.estado === "REQUIERE_REVISION") {
@@ -325,7 +337,7 @@ export function crearPrismaZoomArchivoRepositoryAdapter(
     async guardarCarpetaOcurrencia(ocurrenciaId, driveFolderId) {
       const { count } = await db.ocurrenciaArchivoZoom.updateMany({
         where: { id: ocurrenciaId, driveFolderId: null },
-        data: { driveFolderId }
+        data: { driveFolderId },
       });
       return count === 1;
     },
@@ -345,8 +357,8 @@ export function crearPrismaZoomArchivoRepositoryAdapter(
           anfitrionZoomId: true,
           inicioRealAt: true,
           titulo: true,
-          cuentaProveedorId: true
-        }
+          cuentaProveedorId: true,
+        },
       });
       return filas.map((f) => ({
         referencia: {
@@ -355,9 +367,9 @@ export function crearPrismaZoomArchivoRepositoryAdapter(
           meetingId: f.meetingId,
           anfitrionZoomId: f.anfitrionZoomId,
           inicioRealAt: f.inicioRealAt,
-          titulo: f.titulo
+          titulo: f.titulo,
         },
-        cuentaProveedorId: f.cuentaProveedorId
+        cuentaProveedorId: f.cuentaProveedorId,
       }));
     },
 
@@ -372,10 +384,10 @@ export function crearPrismaZoomArchivoRepositoryAdapter(
           orderBy: [
             { proximoIntentoAt: { sort: "asc", nulls: "first" } },
             { createdAt: "asc" },
-            { id: "asc" }
+            { id: "asc" },
           ],
           take: CANDIDATOS_POR_RONDA,
-          select: { id: true, leaseVersion: true, estado: true }
+          select: { id: true, leaseVersion: true, estado: true },
         });
         if (candidatos.length === 0) {
           return null;
@@ -391,7 +403,7 @@ export function crearPrismaZoomArchivoRepositoryAdapter(
               id: candidato.id,
               leaseVersion: candidato.leaseVersion,
               estado: candidato.estado,
-              AND: [elegibleParaReclamo(ahora)]
+              AND: [elegibleParaReclamo(ahora)],
             },
             data: {
               estado: "COPIANDO",
@@ -401,10 +413,10 @@ export function crearPrismaZoomArchivoRepositoryAdapter(
                 ? {
                     intentos: { increment: 1 },
                     errorCodigo: "LEASE_VENCIDO",
-                    errorDetalle: "El intento anterior no renovó su lease y se recuperó."
+                    errorDetalle: "El intento anterior no renovó su lease y se recuperó.",
                   }
-                : {})
-            }
+                : {}),
+            },
           });
           if (count !== 1) {
             continue;
@@ -421,14 +433,18 @@ export function crearPrismaZoomArchivoRepositoryAdapter(
     async obtenerArchivoReclamado(lease): Promise<ArchivoReclamadoZoom | null> {
       const fila = await db.archivoOrigenZoom.findFirst({
         where: leaseVigente(lease),
-        include: { ocurrencia: true }
+        include: { ocurrencia: true },
       });
       if (!fila) {
         return null;
       }
       const o = fila.ocurrencia;
       return {
-        lease: { archivoId: fila.id, version: fila.leaseVersion, venceAt: fila.leaseHasta ?? lease.venceAt },
+        lease: {
+          archivoId: fila.id,
+          version: fila.leaseVersion,
+          venceAt: fila.leaseHasta ?? lease.venceAt,
+        },
         ocurrenciaId: o.id,
         ocurrencia: {
           cuentaZoomId: o.cuentaZoomId,
@@ -436,7 +452,7 @@ export function crearPrismaZoomArchivoRepositoryAdapter(
           meetingId: o.meetingId,
           anfitrionZoomId: o.anfitrionZoomId,
           inicioRealAt: o.inicioRealAt,
-          titulo: o.titulo
+          titulo: o.titulo,
         },
         eventoProveedorId: o.eventoProveedorId,
         driveFolderId: o.driveFolderId,
@@ -445,7 +461,7 @@ export function crearPrismaZoomArchivoRepositoryAdapter(
         driveFileId: fila.driveFileId,
         uploadSessionCifrada: fila.uploadSessionCifrada,
         bytesConfirmados: fila.bytesConfirmados,
-        intentos: fila.intentos
+        intentos: fila.intentos,
       };
     },
 
@@ -462,8 +478,8 @@ export function crearPrismaZoomArchivoRepositoryAdapter(
             ? { uploadSessionCifrada: progreso.uploadSessionCifrada }
             : {}),
           ...(progreso.driveFileId !== undefined ? { driveFileId: progreso.driveFileId } : {}),
-          ...(progreso.leaseHasta ? { leaseHasta: progreso.leaseHasta } : {})
-        }
+          ...(progreso.leaseHasta ? { leaseHasta: progreso.leaseHasta } : {}),
+        },
       });
       return count === 1;
     },
@@ -474,7 +490,7 @@ export function crearPrismaZoomArchivoRepositoryAdapter(
         return await db.$transaction(async (tx) => {
           const archivo = await tx.archivoOrigenZoom.findUnique({
             where: { id: lease.archivoId },
-            select: { ocurrenciaId: true }
+            select: { ocurrenciaId: true },
           });
           if (!archivo) {
             return false;
@@ -493,14 +509,14 @@ export function crearPrismaZoomArchivoRepositoryAdapter(
               uploadSessionCifrada: null,
               errorCodigo: null,
               errorDetalle: null,
-              proximoIntentoAt: null
-            }
+              proximoIntentoAt: null,
+            },
           });
           if (count === 0) {
             // Reintento del mismo worker tras perder la respuesta: idempotente solo con el mismo destino.
             const fila = await tx.archivoOrigenZoom.findUnique({
               where: { id: lease.archivoId },
-              select: { estado: true, leaseVersion: true, driveFileId: true }
+              select: { estado: true, leaseVersion: true, driveFileId: true },
             });
             return (
               fila?.estado === "CONSERVADO" &&
@@ -510,18 +526,18 @@ export function crearPrismaZoomArchivoRepositoryAdapter(
           }
           const ocurrencia = await tx.ocurrenciaArchivoZoom.findUniqueOrThrow({
             where: { id: archivo.ocurrenciaId },
-            select: { cuentaZoomId: true, uuid: true, inicioRealAt: true, eventoProveedorId: true }
+            select: { cuentaZoomId: true, uuid: true, inicioRealAt: true, eventoProveedorId: true },
           });
           if (ocurrencia.eventoProveedorId) {
             const conservado = await tx.archivoOrigenZoom.findUniqueOrThrow({
               where: { id: lease.archivoId },
-              select: SELECCION_REFERENCIA
+              select: SELECCION_REFERENCIA,
             });
             await asegurarReferenciaLocal(
               tx,
               conservado,
               { ...ocurrencia, eventoProveedorId: ocurrencia.eventoProveedorId },
-              destino.nombre
+              destino.nombre,
             );
           }
           return true;
@@ -537,8 +553,8 @@ export function crearPrismaZoomArchivoRepositoryAdapter(
             estado: "REQUIERE_REVISION",
             errorCodigo: "DRIVE_ID_DUPLICADO",
             errorDetalle: "El ID de Drive confirmado ya está registrado para otro recurso.",
-            leaseHasta: null
-          }
+            leaseHasta: null,
+          },
         });
         return false;
       }
@@ -549,12 +565,12 @@ export function crearPrismaZoomArchivoRepositoryAdapter(
       const comun = {
         errorCodigo: sanearErrorZoom(fallo.codigo, 100) ?? "ERROR",
         errorDetalle: sanearErrorZoom(fallo.detalle),
-        leaseHasta: null
+        leaseHasta: null,
       };
       if (fallo.tipo === "ESPERA") {
         const { count } = await db.archivoOrigenZoom.updateMany({
           where: base,
-          data: { ...comun, estado: "PENDIENTE", proximoIntentoAt: fallo.proximoIntentoAt }
+          data: { ...comun, estado: "PENDIENTE", proximoIntentoAt: fallo.proximoIntentoAt },
         });
         return count === 1;
       }
@@ -562,7 +578,7 @@ export function crearPrismaZoomArchivoRepositoryAdapter(
         ...comun,
         estado: "REQUIERE_REVISION" as const,
         intentos: { increment: 1 },
-        proximoIntentoAt: null
+        proximoIntentoAt: null,
       };
       if (fallo.tipo === "REVISION") {
         return (await db.archivoOrigenZoom.updateMany({ where: base, data: revision })).count === 1;
@@ -571,16 +587,18 @@ export function crearPrismaZoomArchivoRepositoryAdapter(
         ...comun,
         estado: "ERROR_REINTENTABLE" as const,
         intentos: { increment: 1 },
-        proximoIntentoAt: fallo.proximoIntentoAt
+        proximoIntentoAt: fallo.proximoIntentoAt,
       };
       const limite = fallo.limiteIntentos ?? null;
       if (limite === null) {
-        return (await db.archivoOrigenZoom.updateMany({ where: base, data: reintento })).count === 1;
+        return (
+          (await db.archivoOrigenZoom.updateMany({ where: base, data: reintento })).count === 1
+        );
       }
       // Cada sentencia decide atómicamente según los intentos actuales de la fila.
       const bajoLimite = await db.archivoOrigenZoom.updateMany({
         where: { ...base, intentos: { lt: limite - 1 } },
-        data: reintento
+        data: reintento,
       });
       if (bajoLimite.count === 1) {
         return true;
@@ -589,7 +607,7 @@ export function crearPrismaZoomArchivoRepositoryAdapter(
         (
           await db.archivoOrigenZoom.updateMany({
             where: { ...base, intentos: { gte: limite - 1 } },
-            data: revision
+            data: revision,
           })
         ).count === 1
       );
@@ -597,7 +615,7 @@ export function crearPrismaZoomArchivoRepositoryAdapter(
 
     async reservarTransferencia(
       lease,
-      solicitud: SolicitudReservaTransferenciaZoom
+      solicitud: SolicitudReservaTransferenciaZoom,
     ): Promise<ResultadoReservaTransferenciaZoom> {
       if (solicitud.bytes < 0n) {
         throw new RangeError("Los bytes a reservar no pueden ser negativos.");
@@ -608,7 +626,7 @@ export function crearPrismaZoomArchivoRepositoryAdapter(
         await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${CLAVE_BLOQUEO_CUPO}))`;
         const vigente = await tx.archivoOrigenZoom.findFirst({
           where: leaseVigente(lease),
-          select: { bytesConfirmados: true }
+          select: { bytesConfirmados: true },
         });
         if (!vigente) {
           return { tipo: "LEASE_OBSOLETO" } as const;
@@ -617,20 +635,23 @@ export function crearPrismaZoomArchivoRepositoryAdapter(
         await cerrarReservasDeLeasesAnteriores(tx, lease.archivoId, lease.version, ahora);
         const reservas = await tx.reservaTransferenciaZoom.findMany({
           where: { reservadoAt: { gt: new Date(ahora.getTime() - limites.ventanaMs) } },
-          select: { reservadoAt: true, bytesReservados: true, ajustadoBytes: true }
+          select: { reservadoAt: true, bytesReservados: true, ajustadoBytes: true },
         });
         const evaluacion = evaluarCupoTransferenciaZoom(
-          reservas.map((r) => ({ reservadoAt: r.reservadoAt, bytes: r.ajustadoBytes ?? r.bytesReservados })),
+          reservas.map((r) => ({
+            reservadoAt: r.reservadoAt,
+            bytes: r.ajustadoBytes ?? r.bytesReservados,
+          })),
           solicitud.bytes,
           solicitud.prioridad,
           limites,
-          ahora
+          ahora,
         );
         if (!evaluacion.cabe) {
           return {
             tipo: "SIN_CUPO",
             disponibleBytes: evaluacion.disponibleBytes,
-            liberacionEstimadaAt: evaluacion.liberacionEstimadaAt
+            liberacionEstimadaAt: evaluacion.liberacionEstimadaAt,
           } as const;
         }
         const reserva = await tx.reservaTransferenciaZoom.create({
@@ -640,11 +661,15 @@ export function crearPrismaZoomArchivoRepositoryAdapter(
             bytesReservados: solicitud.bytes,
             bytesConfirmadosInicio: vigente.bytesConfirmados,
             prioridad: solicitud.prioridad,
-            reservadoAt: ahora
+            reservadoAt: ahora,
           },
-          select: { id: true }
+          select: { id: true },
         });
-        return { tipo: "RESERVADA", reservaId: reserva.id, bytesReservados: solicitud.bytes } as const;
+        return {
+          tipo: "RESERVADA",
+          reservaId: reserva.id,
+          bytesReservados: solicitud.bytes,
+        } as const;
       });
     },
 
@@ -654,7 +679,7 @@ export function crearPrismaZoomArchivoRepositoryAdapter(
       }
       const { count } = await db.reservaTransferenciaZoom.updateMany({
         where: { id: reservaId, liberadoAt: null },
-        data: { ajustadoBytes: bytesTransferidos, liberadoAt: ahora }
+        data: { ajustadoBytes: bytesTransferidos, liberadoAt: ahora },
       });
       return count === 1;
     },
@@ -662,7 +687,7 @@ export function crearPrismaZoomArchivoRepositoryAdapter(
     async vincularOcurrencia(
       ocurrenciaId,
       eventoId,
-      actor: ActorVinculoZoom | null
+      actor: ActorVinculoZoom | null,
     ): Promise<ResultadoVinculo> {
       const ahora = reloj();
       return db.$transaction(async (tx): Promise<ResultadoVinculo> => {
@@ -672,7 +697,7 @@ export function crearPrismaZoomArchivoRepositoryAdapter(
         }
         const evento = await tx.eventoProveedor.findUnique({
           where: { id: eventoId },
-          select: { instanciaSalaId: true, proveedor: { select: { tipo: true } } }
+          select: { instanciaSalaId: true, proveedor: { select: { tipo: true } } },
         });
         if (!evento) {
           return { tipo: "NO_ENCONTRADA", recurso: "EVENTO" };
@@ -690,12 +715,16 @@ export function crearPrismaZoomArchivoRepositoryAdapter(
 
         const ocurrencia = await tx.ocurrenciaArchivoZoom.update({
           where: { id: ocurrenciaId },
-          data: { eventoProveedorId: eventoId, vinculadaAt: ahora, vinculadaPorId: actor?.id ?? null },
-          select: { cuentaZoomId: true, uuid: true, inicioRealAt: true }
+          data: {
+            eventoProveedorId: eventoId,
+            vinculadaAt: ahora,
+            vinculadaPorId: actor?.id ?? null,
+          },
+          select: { cuentaZoomId: true, uuid: true, inicioRealAt: true },
         });
         const conservados = await tx.archivoOrigenZoom.findMany({
           where: { ocurrenciaId, estado: "CONSERVADO", driveFileId: { not: null } },
-          select: SELECCION_REFERENCIA
+          select: SELECCION_REFERENCIA,
         });
         // Referencias locales al mismo archivo de Drive: no se transfiere de nuevo.
         for (const archivo of conservados) {
@@ -703,7 +732,7 @@ export function crearPrismaZoomArchivoRepositoryAdapter(
             tx,
             archivo,
             { ...ocurrencia, eventoProveedorId: eventoId },
-            archivo.nombreDestino
+            archivo.nombreDestino,
           );
         }
         await trasladarAsistenciaAlEncuentro(tx, ocurrenciaId, eventoId);
@@ -711,7 +740,7 @@ export function crearPrismaZoomArchivoRepositoryAdapter(
         await aplicarEjecucionZoomAInstancia(tx, {
           instanciaSalaId: evento.instanciaSalaId,
           cuentaZoomId: ocurrencia.cuentaZoomId,
-          uuid: ocurrencia.uuid
+          uuid: ocurrencia.uuid,
         });
         await tx.auditoria.create({
           data: {
@@ -720,8 +749,8 @@ export function crearPrismaZoomArchivoRepositoryAdapter(
             entidadTipo: "OcurrenciaArchivoZoom",
             entidadId: ocurrenciaId,
             valorAnterior: { eventoProveedorId: null },
-            valorNuevo: { eventoProveedorId: eventoId, referenciasCreadas: conservados.length }
-          }
+            valorNuevo: { eventoProveedorId: eventoId, referenciasCreadas: conservados.length },
+          },
         });
         return { tipo: "VINCULADA", referenciasCreadas: conservados.length };
       });
@@ -730,7 +759,7 @@ export function crearPrismaZoomArchivoRepositoryAdapter(
     async desvincularOcurrencia(
       ocurrenciaId,
       eventoId,
-      actor: ActorVinculoZoom | null
+      actor: ActorVinculoZoom | null,
     ): Promise<ResultadoDesvinculo> {
       return db.$transaction(async (tx): Promise<ResultadoDesvinculo> => {
         const [fila] = await bloquearOcurrencia(tx, ocurrenciaId);
@@ -742,20 +771,22 @@ export function crearPrismaZoomArchivoRepositoryAdapter(
         }
         const referenciados = await tx.archivoOrigenZoom.findMany({
           where: { ocurrenciaId, archivoReunionId: { not: null } },
-          select: { archivoReunionId: true }
+          select: { archivoReunionId: true },
         });
-        const referencias = referenciados.flatMap((a) => (a.archivoReunionId ? [a.archivoReunionId] : []));
+        const referencias = referenciados.flatMap((a) =>
+          a.archivoReunionId ? [a.archivoReunionId] : [],
+        );
         await tx.archivoOrigenZoom.updateMany({
           where: { ocurrenciaId, archivoReunionId: { not: null } },
-          data: { archivoReunionId: null }
+          data: { archivoReunionId: null },
         });
         // Solo se quitan las referencias locales de esta ocurrencia; inventario y Drive quedan intactos.
         const { count } = await tx.archivoReunion.deleteMany({
-          where: { id: { in: referencias }, eventoProveedorId: eventoId }
+          where: { id: { in: referencias }, eventoProveedorId: eventoId },
         });
         await tx.ocurrenciaArchivoZoom.update({
           where: { id: ocurrenciaId },
-          data: { eventoProveedorId: null, vinculadaAt: null, vinculadaPorId: null }
+          data: { eventoProveedorId: null, vinculadaAt: null, vinculadaPorId: null },
         });
         await tx.auditoria.create({
           data: {
@@ -764,8 +795,8 @@ export function crearPrismaZoomArchivoRepositoryAdapter(
             entidadTipo: "OcurrenciaArchivoZoom",
             entidadId: ocurrenciaId,
             valorAnterior: { eventoProveedorId: eventoId },
-            valorNuevo: { eventoProveedorId: null, referenciasEliminadas: count }
-          }
+            valorNuevo: { eventoProveedorId: null, referenciasEliminadas: count },
+          },
         });
         return { tipo: "DESVINCULADA", referenciasEliminadas: count };
       });
@@ -780,13 +811,13 @@ export function crearPrismaZoomArchivoRepositoryAdapter(
             proximoIntentoAt: null,
             errorCodigo: null,
             errorDetalle: null,
-            leaseHasta: null
-          }
+            leaseHasta: null,
+          },
         });
         if (!cambio.count) {
           const existe = await tx.archivoOrigenZoom.findUnique({
             where: { id: archivoId },
-            select: { id: true }
+            select: { id: true },
           });
           return { tipo: existe ? "ESTADO_NO_REINTENTABLE" : "NO_ENCONTRADO" } as const;
         }
@@ -796,12 +827,12 @@ export function crearPrismaZoomArchivoRepositoryAdapter(
             accion: "ZOOM_ARCHIVO_REINTENTO",
             entidadTipo: "ArchivoOrigenZoom",
             entidadId: archivoId,
-            valorNuevo: { estado: "PENDIENTE" }
-          }
+            valorNuevo: { estado: "PENDIENTE" },
+          },
         });
         return { tipo: "OK" } as const;
       });
-    }
+    },
   };
 }
 
@@ -816,7 +847,7 @@ async function vincularYCompletarEjecucion(
     inicioRealAt: Date;
     eventoProveedorId: string | null;
     ahora: Date;
-  }>
+  }>,
 ): Promise<void> {
   const vinculo = await vincularAutomaticamenteSiInequivoco(tx, entrada);
   if (vinculo.tipo !== "VINCULADA") {
@@ -824,13 +855,13 @@ async function vincularYCompletarEjecucion(
   }
   const destino = await tx.eventoProveedor.findUnique({
     where: { id: vinculo.eventoProveedorId },
-    select: { instanciaSalaId: true }
+    select: { instanciaSalaId: true },
   });
   if (destino) {
     await aplicarEjecucionZoomAInstancia(tx, {
       instanciaSalaId: destino.instanciaSalaId,
       cuentaZoomId: entrada.cuentaZoomId,
-      uuid: entrada.uuid
+      uuid: entrada.uuid,
     });
   }
 }

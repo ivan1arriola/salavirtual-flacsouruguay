@@ -1048,7 +1048,8 @@
   border: 1px solid #cedbe5;
   border-left: 5px solid var(--brand);
   border-radius: 12px;
-  background: radial-gradient(circle at 100% 0%, rgba(44, 71, 119, 0.08), transparent 18rem), #ffffff;
+  background:
+    radial-gradient(circle at 100% 0%, rgba(44, 71, 119, 0.08), transparent 18rem), #ffffff;
   padding: 20px 22px;
   box-shadow: 0 8px 24px rgba(31, 50, 76, 0.045);
 }

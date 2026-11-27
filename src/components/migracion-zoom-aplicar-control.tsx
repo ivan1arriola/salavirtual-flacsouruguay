@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type {
   FilaVistaPreviaMigracion,
-  VistaPreviaMigracionZoom
+  VistaPreviaMigracionZoom,
 } from "@/src/modules/reuniones/migracion-zoom.service";
 import { ExcepcionMeetControl } from "./excepcion-meet-control";
 import styles from "./migracion-zoom-aplicar-control.module.css";
@@ -31,7 +31,7 @@ type Modo = "PILOTO" | "LOTE";
 const FECHA = new Intl.DateTimeFormat("es-UY", {
   dateStyle: "medium",
   timeStyle: "short",
-  timeZone: "America/Montevideo"
+  timeZone: "America/Montevideo",
 });
 
 const ETIQUETAS: Record<FilaVistaPreviaMigracion["estado"], string> = {
@@ -42,7 +42,7 @@ const ETIQUETAS: Record<FilaVistaPreviaMigracion["estado"], string> = {
   SIN_SALA: "Sin sala Zoom disponible",
   CERCANO: "Comienza dentro de 24 horas",
   NO_FUTURO: "No es futura",
-  REVISAR: "Requiere revisión"
+  REVISAR: "Requiere revisión",
 };
 
 function resumenAvisos(avisos: Avisos): string {
@@ -73,7 +73,7 @@ function coincideFiltro(fila: FilaVistaPreviaMigracion, filtro: Filtro): boolean
 }
 
 export function MigracionZoomAplicarControl({
-  vistaPrevia
+  vistaPrevia,
 }: Readonly<{ vistaPrevia: VistaPreviaMigracionZoom }>) {
   const router = useRouter();
   const [filtro, setFiltro] = useState<Filtro>("MIGRABLE");
@@ -101,14 +101,14 @@ export function MigracionZoomAplicarControl({
       (!consulta ||
         `${fila.titulo} ${fila.programa} ${FECHA.format(new Date(fila.inicio))}`
           .toLocaleLowerCase("es-UY")
-          .includes(consulta))
+          .includes(consulta)),
   );
   const tabs: readonly Readonly<{ id: Filtro; label: string; count: number }>[] = [
     { id: "MIGRABLE", label: "Para convertir", count: vistaPrevia.conteos.MIGRABLE },
     { id: "EXCEPCION", label: "Conservar en Meet", count: vistaPrevia.conteos.EXCEPCION },
     { id: "ATENCION", label: "Atención", count: atencion },
     { id: "YA_ZOOM", label: "Ya convertidas", count: vistaPrevia.conteos.YA_ZOOM },
-    { id: "TODOS", label: "Todas", count: vistaPrevia.filas.length }
+    { id: "TODOS", label: "Todas", count: vistaPrevia.filas.length },
   ];
 
   async function aplicar(modo: Modo, ids: readonly string[]) {
@@ -120,7 +120,7 @@ export function MigracionZoomAplicarControl({
       const response = await fetch("/api/v1/reuniones/migracion-zoom/aplicar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ modo, instanciaIds: ids })
+        body: JSON.stringify({ modo, instanciaIds: ids }),
       });
       const payload = await response.json();
       if (!response.ok) {
@@ -141,54 +141,57 @@ export function MigracionZoomAplicarControl({
   }
 
   return (
-    <main className={styles.page}>
-      <header className={styles.hero}>
-        <div className={styles.heroText}>
-          <span className={styles.eyebrow}>ADMINISTRACIÓN DE REUNIONES</span>
+    <main className={styles["page"]}>
+      <header className={styles["hero"]}>
+        <div className={styles["heroText"]}>
+          <span className={styles["eyebrow"]}>ADMINISTRACIÓN DE REUNIONES</span>
           <h1>Migración a Zoom</h1>
-          <p>Revisá cada encuentro, marcá los que deben seguir en Meet y convertí los demás por lotes.</p>
+          <p>
+            Revisá cada encuentro, marcá los que deben seguir en Meet y convertí los demás por
+            lotes.
+          </p>
         </div>
-        <div className={styles.heroMeta}>
-          <span className={styles.liveDot} aria-hidden="true" />
+        <div className={styles["heroMeta"]}>
+          <span className={styles["liveDot"]} aria-hidden="true" />
           Vista previa del {FECHA.format(new Date(vistaPrevia.generadaAt))}
           <small>No se cambió ningún enlace al generar esta vista.</small>
         </div>
       </header>
 
-      <div className={styles.metrics} aria-label="Resumen de la migración">
-        <div className={styles.metric}>
+      <div className={styles["metrics"]} aria-label="Resumen de la migración">
+        <div className={styles["metric"]}>
           <span>Para convertir</span>
           <strong>{vistaPrevia.conteos.MIGRABLE}</strong>
           <small>Con sala Zoom propuesta</small>
         </div>
-        <div className={styles.metric}>
+        <div className={styles["metric"]}>
           <span>Excepciones Meet</span>
           <strong>{vistaPrevia.conteos.EXCEPCION}</strong>
           <small>Conservan el enlace actual</small>
         </div>
-        <div className={styles.metric}>
+        <div className={styles["metric"]}>
           <span>Ya en Zoom</span>
           <strong>{vistaPrevia.conteos.YA_ZOOM}</strong>
           <small>Encuentros convertidos</small>
         </div>
-        <div className={`${styles.metric} ${atencion ? styles.metricWarning : ""}`}>
+        <div className={`${styles["metric"]} ${atencion ? styles["metricWarning"] : ""}`}>
           <span>Requieren atención</span>
           <strong>{atencion}</strong>
           <small>Fuera de la conversión automática</small>
         </div>
       </div>
 
-      <section className={styles.workArea} aria-labelledby="encuentros-title">
-        <div className={styles.sectionHeader}>
+      <section className={styles["workArea"]} aria-labelledby="encuentros-title">
+        <div className={styles["sectionHeader"]}>
           <div>
-            <span className={styles.sectionEyebrow}>VISTA PREVIA</span>
+            <span className={styles["sectionEyebrow"]}>VISTA PREVIA</span>
             <h2 id="encuentros-title">Encuentros</h2>
             <p>
-              Los que empiezan en menos de {vistaPrevia.margenSeguridadHoras} horas quedan fuera de la
-              conversión.
+              Los que empiezan en menos de {vistaPrevia.margenSeguridadHoras} horas quedan fuera de
+              la conversión.
             </p>
           </div>
-          <label className={styles.search}>
+          <label className={styles["search"]}>
             <span className="sr-only">Buscar encuentro o programa</span>
             <input
               type="search"
@@ -199,12 +202,12 @@ export function MigracionZoomAplicarControl({
           </label>
         </div>
 
-        <div className={styles.tabs} role="group" aria-label="Filtrar encuentros">
+        <div className={styles["tabs"]} role="group" aria-label="Filtrar encuentros">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               type="button"
-              className={filtro === tab.id ? styles.tabActive : styles.tab}
+              className={filtro === tab.id ? styles["tabActive"] : styles["tab"]}
               aria-pressed={filtro === tab.id}
               onClick={() => setFiltro(tab.id)}
             >
@@ -215,26 +218,28 @@ export function MigracionZoomAplicarControl({
         </div>
 
         {visibles.length === 0 ? (
-          <div className={styles.empty}>
+          <div className={styles["empty"]}>
             <strong>No hay encuentros en esta vista</strong>
-            <p>{consulta ? "Probá otra búsqueda." : "Elegí otra categoría para seguir revisando."}</p>
+            <p>
+              {consulta ? "Probá otra búsqueda." : "Elegí otra categoría para seguir revisando."}
+            </p>
           </div>
         ) : (
-          <div className={styles.meetings}>
+          <div className={styles["meetings"]}>
             {visibles.map((fila) => {
               const migrable = fila.estado === "MIGRABLE";
               const editable = ["MIGRABLE", "EXCEPCION", "CERCANO", "SIN_SALA", "SERIE"].includes(
-                fila.estado
+                fila.estado,
               );
               const selected = seleccionActiva.includes(fila.id);
               return (
                 <article
                   key={fila.id}
-                  className={`${styles.meeting} ${selected ? styles.meetingSelected : ""}`}
+                  className={`${styles["meeting"]} ${selected ? styles["meetingSelected"] : ""}`}
                 >
-                  <div className={styles.meetingMain}>
+                  <div className={styles["meetingMain"]}>
                     {migrable ? (
-                      <label className={styles.selectBox}>
+                      <label className={styles["selectBox"]}>
                         <input
                           type="checkbox"
                           checked={selected}
@@ -244,20 +249,22 @@ export function MigracionZoomAplicarControl({
                         />
                       </label>
                     ) : (
-                      <span className={styles.selectSpacer} aria-hidden="true" />
+                      <span className={styles["selectSpacer"]} aria-hidden="true" />
                     )}
-                    <div className={styles.meetingContent}>
-                      <div className={styles.meetingTop}>
-                        <span className={styles.meetingDate}>{FECHA.format(new Date(fila.inicio))}</span>
+                    <div className={styles["meetingContent"]}>
+                      <div className={styles["meetingTop"]}>
+                        <span className={styles["meetingDate"]}>
+                          {FECHA.format(new Date(fila.inicio))}
+                        </span>
                         <span
-                          className={`${styles.badge} ${fila.estado === "EXCEPCION" ? styles.badgeMeet : fila.estado === "MIGRABLE" ? styles.badgeReady : fila.estado === "YA_ZOOM" ? styles.badgeZoom : styles.badgeWarning}`}
+                          className={`${styles["badge"]} ${fila.estado === "EXCEPCION" ? styles["badgeMeet"] : fila.estado === "MIGRABLE" ? styles["badgeReady"] : fila.estado === "YA_ZOOM" ? styles["badgeZoom"] : styles["badgeWarning"]}`}
                         >
                           {ETIQUETAS[fila.estado]}
                         </span>
                       </div>
                       <h3>{fila.titulo}</h3>
-                      <p className={styles.program}>{fila.programa}</p>
-                      <div className={styles.meetingFacts}>
+                      <p className={styles["program"]}>{fila.programa}</p>
+                      <div className={styles["meetingFacts"]}>
                         <span>
                           <b>{fila.estado === "YA_ZOOM" ? "Enlace" : "Cambio"}</b>
                           {fila.cambioEnlace
@@ -283,9 +290,9 @@ export function MigracionZoomAplicarControl({
                       </div>
                     </div>
                   </div>
-                  <details className={styles.details}>
+                  <details className={styles["details"]}>
                     <summary>Ver enlace y destinatarios</summary>
-                    <div className={styles.detailGrid}>
+                    <div className={styles["detailGrid"]}>
                       <div>
                         <strong>Enlace vigente</strong>
                         {fila.enlaceActual ? (
@@ -329,16 +336,20 @@ export function MigracionZoomAplicarControl({
       </section>
 
       {vistaPrevia.conteos.YA_ZOOM > 0 && (
-        <details className={styles.retrySection}>
+        <details className={styles["retrySection"]}>
           <summary>Revisar avisos de encuentros ya convertidos</summary>
           {vistaPrevia.filas
             .filter((fila) => fila.estado === "YA_ZOOM" && fila.tieneMeetHistorico)
             .map((fila) => (
-              <div key={fila.id} className={styles.retryRow}>
+              <div key={fila.id} className={styles["retryRow"]}>
                 <span>
                   {fila.titulo} · {FECHA.format(new Date(fila.inicio))}
                 </span>
-                <button type="button" disabled={procesando} onClick={() => aplicar("PILOTO", [fila.id])}>
+                <button
+                  type="button"
+                  disabled={procesando}
+                  onClick={() => aplicar("PILOTO", [fila.id])}
+                >
                   Revisar avisos
                 </button>
               </div>
@@ -347,8 +358,8 @@ export function MigracionZoomAplicarControl({
       )}
 
       {resultados && (
-        <section className={styles.results} role="status" aria-label="Resultado de la migración">
-          <div className={styles.resultsHeading}>
+        <section className={styles["results"]} role="status" aria-label="Resultado de la migración">
+          <div className={styles["resultsHeading"]}>
             <h2>Resultado de la conversión</h2>
             <button type="button" onClick={() => setResultados(null)}>
               Cerrar
@@ -357,7 +368,7 @@ export function MigracionZoomAplicarControl({
           {resultados.map((resultado) => {
             const fila = vistaPrevia.filas.find((item) => item.id === resultado.instanciaId);
             return (
-              <div key={resultado.instanciaId} className={styles.resultRow}>
+              <div key={resultado.instanciaId} className={styles["resultRow"]}>
                 <strong>{fila?.titulo ?? resultado.instanciaId}</strong>
                 <span>
                   {resultado.resultado} · {resultado.etapa}
@@ -367,7 +378,7 @@ export function MigracionZoomAplicarControl({
                 {resultado.avisos?.detalle
                   .filter((detalle) => detalle.estado === "ERROR")
                   .map((detalle) => (
-                    <p key={detalle.email} className={styles.error}>
+                    <p key={detalle.email} className={styles["error"]}>
                       {detalle.email}: {detalle.error ?? "Error al enviar"}
                     </p>
                   ))}
@@ -387,21 +398,21 @@ export function MigracionZoomAplicarControl({
       )}
 
       {error && (
-        <p className={styles.errorBanner} role="alert">
+        <p className={styles["errorBanner"]} role="alert">
           {error}
         </p>
       )}
 
-      <div className={styles.actionBar} aria-label="Aplicar migración a Zoom">
+      <div className={styles["actionBar"]} aria-label="Aplicar migración a Zoom">
         <div>
           <strong>{seleccionActiva.length} de 10 seleccionados</strong>
           <span>La conversión reemplaza el enlace vigente y envía avisos.</span>
         </div>
-        <div className={styles.actionButtons}>
+        <div className={styles["actionButtons"]}>
           {seleccionActiva.length > 0 && (
             <button
               type="button"
-              className={styles.clearButton}
+              className={styles["clearButton"]}
               disabled={procesando}
               onClick={() => setSeleccion([])}
             >
@@ -410,7 +421,7 @@ export function MigracionZoomAplicarControl({
           )}
           <button
             type="button"
-            className={styles.secondaryButton}
+            className={styles["secondaryButton"]}
             disabled={procesando || seleccionActiva.length !== 1}
             onClick={() => setConfirmar("PILOTO")}
           >
@@ -418,7 +429,7 @@ export function MigracionZoomAplicarControl({
           </button>
           <button
             type="button"
-            className={styles.primaryButton}
+            className={styles["primaryButton"]}
             disabled={procesando || seleccionActiva.length < 1 || seleccionActiva.length > 10}
             onClick={() => setConfirmar("LOTE")}
           >
@@ -429,7 +440,7 @@ export function MigracionZoomAplicarControl({
 
       {confirmar && (
         <div
-          className={styles.modalBackdrop}
+          className={styles["modalBackdrop"]}
           role="presentation"
           onMouseDown={(event) => {
             if (event.target === event.currentTarget) {
@@ -437,8 +448,13 @@ export function MigracionZoomAplicarControl({
             }
           }}
         >
-          <div className={styles.modal} role="dialog" aria-modal="true" aria-labelledby="confirmar-migracion">
-            <span className={styles.sectionEyebrow}>CONFIRMAR CAMBIO DE ENLACES</span>
+          <div
+            className={styles["modal"]}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="confirmar-migracion"
+          >
+            <span className={styles["sectionEyebrow"]}>CONFIRMAR CAMBIO DE ENLACES</span>
             <h2 id="confirmar-migracion">
               {confirmar === "PILOTO"
                 ? "Convertir encuentro piloto"
@@ -448,7 +464,7 @@ export function MigracionZoomAplicarControl({
               Se crearán reuniones Zoom, se actualizarán los eventos de Calendar y se avisará a los
               destinatarios. Cada encuentro se valida de nuevo antes de cambiarlo.
             </p>
-            <ul className={styles.confirmList}>
+            <ul className={styles["confirmList"]}>
               {seleccionadas.map((fila) => (
                 <li key={fila.id}>
                   <strong>{fila.titulo}</strong>
@@ -459,13 +475,13 @@ export function MigracionZoomAplicarControl({
                 </li>
               ))}
             </ul>
-            <div className={styles.modalActions}>
+            <div className={styles["modalActions"]}>
               <button type="button" onClick={() => setConfirmar(null)}>
                 Volver a revisar
               </button>
               <button
                 type="button"
-                className={styles.primaryButton}
+                className={styles["primaryButton"]}
                 onClick={() => aplicar(confirmar, seleccionActiva)}
               >
                 {confirmar === "PILOTO" ? "Confirmar piloto" : "Confirmar conversión"}

@@ -2,7 +2,10 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-const disclosure = readFileSync(join(process.cwd(), "src/components/profile-menu-disclosure.tsx"), "utf8");
+const disclosure = readFileSync(
+  join(process.cwd(), "src/components/profile-menu-disclosure.tsx"),
+  "utf8",
+);
 
 describe("cierre de los menús de navegación", () => {
   it("cierra al activar un enlace interno, incluso si la URL no cambia", () => {

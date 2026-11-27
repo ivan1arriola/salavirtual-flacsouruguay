@@ -6,7 +6,7 @@ import {
   GOOGLE_CALENDAR_SCOPES,
   GOOGLE_MEET_SCOPES,
   GOOGLE_HTTP_TIMEOUT_MS,
-  type GoogleAuthCredentials
+  type GoogleAuthCredentials,
 } from "../src/integrations/google/auth";
 
 describe("integrations/google/auth", () => {
@@ -14,7 +14,7 @@ describe("integrations/google/auth", () => {
     serviceAccountEmail: "service-test@flacso.iam.gserviceaccount.com",
     privateKey:
       "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQC7\n-----END PRIVATE KEY-----\n",
-    subject: "sala01@flacso.edu.uy"
+    subject: "sala01@flacso.edu.uy",
   };
 
   it("crearGoogleAuthJwt instancia JWT con las credenciales y scopes dados", () => {

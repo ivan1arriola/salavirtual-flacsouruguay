@@ -17,7 +17,7 @@ const assistanceComponents = [
   "assistant-report-config-form.tsx",
   "assistant-tutorial-button.tsx",
   "assistant-unassign-button.tsx",
-  "coverage-assistance-actions.tsx"
+  "coverage-assistance-actions.tsx",
 ] as const;
 
 const meetingComponents = [
@@ -28,21 +28,27 @@ const meetingComponents = [
   "meeting-form-zoom.tsx",
   "meeting-integration-problems.tsx",
   "reunion-zoom-encuentros.tsx",
-  "series-management.tsx"
+  "series-management.tsx",
 ] as const;
 
 describe("capa de presentacion modular", () => {
   it("ubica los componentes de asistencia y reuniones dentro de sus modulos", () => {
     for (const file of assistanceComponents) {
-      expect(existsSync(join(root, "src/modules/asistencia/presentation/components", file)), file).toBe(true);
+      expect(
+        existsSync(join(root, "src/modules/asistencia/presentation/components", file)),
+        file,
+      ).toBe(true);
     }
     for (const file of meetingComponents) {
-      expect(existsSync(join(root, "src/modules/reuniones/presentation/components", file)), file).toBe(true);
+      expect(
+        existsSync(join(root, "src/modules/reuniones/presentation/components", file)),
+        file,
+      ).toBe(true);
     }
 
     const dashboard = readFileSync(
       join(root, "src/modules/asistencia/presentation/components/assistant-dashboard.tsx"),
-      "utf8"
+      "utf8",
     );
     expect(dashboard).not.toContain("@/src/components/dashboard/assistant/assistant-dashboard");
     expect(dashboard).not.toContain("@/src/lib/db");
@@ -57,13 +63,13 @@ describe("capa de presentacion modular", () => {
       "app/(gestion)/asistentes/[usuarioId]/page.tsx",
       "app/(gestion)/mi-agenda/page.tsx",
       "app/(gestion)/reuniones/nueva/page.tsx",
-      "app/(gestion)/reuniones/[solicitudId]/page.tsx"
+      "app/(gestion)/reuniones/[solicitudId]/page.tsx",
     ];
 
     for (const file of files) {
       const source = readFileSync(join(root, file), "utf8");
       expect(source, file).not.toMatch(
-        /@\/src\/components\/(?:assistant-|coverage-assistance|meeting-|series-management)/
+        /@\/src\/components\/(?:assistant-|coverage-assistance|meeting-|series-management)/,
       );
     }
   });
@@ -77,7 +83,7 @@ describe("capa de presentacion modular", () => {
   it("elimina fachadas legacy de presentacion sin consumidores", () => {
     const files = [
       ...assistanceComponents.map((file) => `src/components/${file}`),
-      ...meetingComponents.map((file) => `src/components/${file}`)
+      ...meetingComponents.map((file) => `src/components/${file}`),
     ];
 
     for (const file of files) {
@@ -94,7 +100,7 @@ describe("capa de presentacion modular", () => {
       "app/(gestion)/mi-agenda/page.tsx",
       "app/(gestion)/reuniones/page.tsx",
       "app/(gestion)/reuniones/nueva/page.tsx",
-      "app/(gestion)/reuniones/[solicitudId]/page.tsx"
+      "app/(gestion)/reuniones/[solicitudId]/page.tsx",
     ];
 
     for (const file of files) {

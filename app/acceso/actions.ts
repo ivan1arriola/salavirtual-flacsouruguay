@@ -9,7 +9,7 @@ export async function iniciarSesionLocal(formData: FormData): Promise<void> {
     await signIn("credentials", {
       usuario: formData.get("usuario"),
       password: formData.get("password"),
-      redirectTo: "/"
+      redirectTo: "/",
     });
   } catch (error) {
     if (error instanceof AuthError) {

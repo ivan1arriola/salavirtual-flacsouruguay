@@ -14,7 +14,7 @@ export async function guardarProgramas(formData: FormData): Promise<void> {
   }
   const actor = await resolveSessionActor(db, {
     id: session.user.id,
-    email: session.user.email
+    email: session.user.email,
   });
   if (!actor?.activo) {
     redirect("/acceso");
@@ -23,7 +23,7 @@ export async function guardarProgramas(formData: FormData): Promise<void> {
   let estado = "programas-guardados";
   try {
     await actualizarProgramasPropios(db, actor, {
-      programaIds: formData.getAll("programaIds")
+      programaIds: formData.getAll("programaIds"),
     });
   } catch {
     estado = "error-programas";

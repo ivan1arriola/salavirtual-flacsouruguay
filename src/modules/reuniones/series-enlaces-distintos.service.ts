@@ -2,7 +2,10 @@ import type { Prisma, PrismaClient } from "@prisma/client";
 import { exigirAdministracion } from "./migracion-zoom.service";
 import { proveedorActivoDeInstancia } from "./proveedor-reunion.domain";
 import { claveSerieReunion, construirFiltroSerieSolicitud } from "./serie-reunion.domain";
-import { evaluarEnlacesDeSerie, type EncuentroEnlaceSerie } from "./series-enlaces-distintos.domain";
+import {
+  evaluarEnlacesDeSerie,
+  type EncuentroEnlaceSerie,
+} from "./series-enlaces-distintos.domain";
 
 type Actor = Readonly<{ id: string; rol: string }>;
 
@@ -36,10 +39,10 @@ const seleccion = {
       docentePrograma: {
         select: {
           programa: { select: { nombre: true } },
-          docente: { select: { usuario: { select: { nombres: true, apellidos: true } } } }
-        }
-      }
-    }
+          docente: { select: { usuario: { select: { nombres: true, apellidos: true } } } },
+        },
+      },
+    },
   },
   eventosProveedor: {
     select: {
@@ -47,9 +50,9 @@ const seleccion = {
       externalEventId: true,
       cuentaProveedorId: true,
       reunionProveedorId: true,
-      proveedor: { select: { tipo: true } }
-    }
-  }
+      proveedor: { select: { tipo: true } },
+    },
+  },
 } satisfies Prisma.InstanciaSalaSelect;
 
 type InstanciaCargada = Prisma.InstanciaSalaGetPayload<{ select: typeof seleccion }>;
@@ -66,12 +69,12 @@ function aEncuentro(instancia: InstanciaCargada): EncuentroEnlaceSerie {
     joinUrl: evento?.joinUrl ?? null,
     externalEventId: evento?.externalEventId ?? null,
     cuentaProveedorId: evento?.cuentaProveedorId ?? null,
-    reunionProveedorId: evento?.reunionProveedorId ?? null
+    reunionProveedorId: evento?.reunionProveedorId ?? null,
   };
 }
 
 function agruparPorSerie(
-  instancias: readonly InstanciaCargada[]
+  instancias: readonly InstanciaCargada[],
 ): ReadonlyMap<string, readonly InstanciaCargada[]> {
   return instancias.reduce<ReadonlyMap<string, readonly InstanciaCargada[]>>((mapa, instancia) => {
     const clave = claveSerieReunion(instancia.solicitud);
@@ -79,7 +82,8 @@ function agruparPorSerie(
   }, new Map());
 }
 
-const futuras = (ahora: Date) => ({ estado: "PROGRAMADA", inicioProgramadoAt: { gt: ahora } }) as const;
+const futuras = (ahora: Date) =>
+  ({ estado: "PROGRAMADA", inicioProgramadoAt: { gt: ahora } }) as const;
 
 /**
  * Series cuyos encuentros futuros de Zoom no comparten un solo enlace y una sola cuenta anfitriona.
@@ -88,13 +92,13 @@ const futuras = (ahora: Date) => ({ estado: "PROGRAMADA", inicioProgramadoAt: { 
 export async function detectarSeriesConEnlacesDistintos(
   db: PrismaClient,
   actor: Actor,
-  ahora: Date = new Date()
+  ahora: Date = new Date(),
 ): Promise<readonly SerieConEnlacesDistintos[]> {
   exigirAdministracion(actor);
   const instancias = await db.instanciaSala.findMany({
     where: futuras(ahora),
     orderBy: [{ inicioProgramadoAt: "asc" }, { id: "asc" }],
-    select: seleccion
+    select: seleccion,
   });
 
   return [...agruparPorSerie(instancias)].flatMap(([serieClave, delaSerie]) => {
@@ -118,11 +122,11 @@ export async function detectarSeriesConEnlacesDistintos(
             inicio,
             joinUrl,
             externalEventId,
-            cuentaProveedorId
+            cuentaProveedorId,
           })),
         enlacesDistintos: evaluacion.enlacesDistintos,
-        cuentasDistintas: evaluacion.cuentasDistintas
-      }
+        cuentasDistintas: evaluacion.cuentasDistintas,
+      },
     ];
   });
 }
@@ -135,14 +139,14 @@ export async function detectarSeriesConEnlacesDistintos(
 export async function detectarSerieClavesConEnlacesDistintos(
   db: PrismaClient,
   solicitudIds: readonly string[],
-  ahora: Date = new Date()
+  ahora: Date = new Date(),
 ): Promise<ReadonlySet<string>> {
   if (solicitudIds.length === 0) {
     return new Set();
   }
   const solicitudes = await db.solicitudSala.findMany({
     where: { id: { in: [...solicitudIds] } },
-    select: { serieReunionId: true, docenteProgramaId: true, titulo: true, createdAt: true }
+    select: { serieReunionId: true, docenteProgramaId: true, titulo: true, createdAt: true },
   });
   if (solicitudes.length === 0) {
     return new Set();
@@ -150,11 +154,14 @@ export async function detectarSerieClavesConEnlacesDistintos(
   const instancias = await db.instanciaSala.findMany({
     where: { ...futuras(ahora), solicitud: { OR: solicitudes.map(construirFiltroSerieSolicitud) } },
     orderBy: [{ inicioProgramadoAt: "asc" }, { id: "asc" }],
-    select: seleccion
+    select: seleccion,
   });
   return new Set(
     [...agruparPorSerie(instancias)]
-      .filter(([, delaSerie]) => evaluarEnlacesDeSerie(delaSerie.map(aEncuentro), ahora).necesitaCorreccion)
-      .map(([serieClave]) => serieClave)
+      .filter(
+        ([, delaSerie]) =>
+          evaluarEnlacesDeSerie(delaSerie.map(aEncuentro), ahora).necesitaCorreccion,
+      )
+      .map(([serieClave]) => serieClave),
   );
 }

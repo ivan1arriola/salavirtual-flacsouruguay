@@ -9,12 +9,16 @@ import { crearWorkerZoomArchivos } from "../src/bootstrap/zoom-archivos.server";
 import { db } from "../src/lib/db";
 import {
   procesarColaZoomUseCase,
-  procesarMantenimientoZoomUseCase
+  procesarMantenimientoZoomUseCase,
 } from "../src/modules/archivos/application";
 
 const unaVez = process.argv.includes("--once");
 
-function log(nivel: "info" | "warn" | "error", mensaje: string, extra: Record<string, unknown> = {}): void {
+function log(
+  nivel: "info" | "warn" | "error",
+  mensaje: string,
+  extra: Record<string, unknown> = {},
+): void {
   // Solo códigos y contadores: nunca URLs, tokens ni cuerpos de respuesta.
   console.log(JSON.stringify({ t: new Date().toISOString(), nivel, mensaje, ...extra }));
 }
@@ -52,40 +56,43 @@ async function main(): Promise<number> {
       tareas: [
         {
           nombre: "webhooks",
-          ejecutar: async () => log("info", "webhooks", { resumen: await worker.procesarWebhooks() })
+          ejecutar: async () =>
+            log("info", "webhooks", { resumen: await worker.procesarWebhooks() }),
         },
         {
           nombre: "inventario-vencidas",
-          ejecutar: async () => log("info", "inventario", { resumen: await worker.inventariarVencidas() })
+          ejecutar: async () =>
+            log("info", "inventario", { resumen: await worker.inventariarVencidas() }),
         },
         {
           nombre: "carpetas-vinculadas",
-          ejecutar: async () => log("info", "carpetas", { resumen: await worker.moverCarpetasVinculadas() })
+          ejecutar: async () =>
+            log("info", "carpetas", { resumen: await worker.moverCarpetasVinculadas() }),
         },
         {
           nombre: "avisos-grabaciones",
           ejecutar: async () =>
-            log("info", "avisos-grabaciones", { resumen: await worker.notificarGrabaciones() })
+            log("info", "avisos-grabaciones", { resumen: await worker.notificarGrabaciones() }),
         },
         {
           nombre: "recuperacion-historica",
           ejecutar: async () =>
-            log("info", "recuperación", { resumen: await worker.procesarRecuperaciones() })
+            log("info", "recuperación", { resumen: await worker.procesarRecuperaciones() }),
         },
         {
           nombre: "barrido-recientes",
-          ejecutar: async () => log("info", "barrido", { resumen: await worker.barrerRecientes() })
-        }
+          ejecutar: async () => log("info", "barrido", { resumen: await worker.barrerRecientes() }),
+        },
       ],
       esperar,
       intervaloMs: config.intervaloMantenimientoMs,
       alFallar: (nombre, error) =>
         log("error", "tarea de mantenimiento falló", {
           tarea: nombre,
-          error: error instanceof Error ? error.name : "desconocido"
-        })
+          error: error instanceof Error ? error.name : "desconocido",
+        }),
     },
-    { signal: control.signal }
+    { signal: control.signal },
   );
 
   const cola = procesarColaZoomUseCase(
@@ -95,15 +102,15 @@ async function main(): Promise<number> {
         const r = await worker.transferir(lease, control.signal);
         log("info", "archivo procesado", {
           archivoId: lease.archivoId,
-          resultado: (r as { tipo?: string } | undefined)?.tipo ?? "n/d"
+          resultado: (r as { tipo?: string } | undefined)?.tipo ?? "n/d",
         });
       },
       ahora: () => new Date(),
       esperar,
       leaseMs: config.leaseMs,
-      esperaVaciaMs: config.esperaVaciaMs
+      esperaVaciaMs: config.esperaVaciaMs,
     },
-    { signal: control.signal, concurrencia: config.concurrencia, unaVez }
+    { signal: control.signal, concurrencia: config.concurrencia, unaVez },
   );
 
   if (unaVez) {
@@ -125,7 +132,9 @@ main()
     process.exit(codigo);
   })
   .catch(async (error: unknown) => {
-    log("error", "fallo fatal del worker", { error: error instanceof Error ? error.name : "desconocido" });
+    log("error", "fallo fatal del worker", {
+      error: error instanceof Error ? error.name : "desconocido",
+    });
     await db.$disconnect().catch(() => undefined);
     process.exit(1);
   });

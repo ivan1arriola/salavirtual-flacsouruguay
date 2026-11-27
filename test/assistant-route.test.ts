@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { assistantPathSegment, assistantSlug, userIdFromAssistantPath } from "../src/lib/ui/assistant-route";
+import {
+  assistantPathSegment,
+  assistantSlug,
+  userIdFromAssistantPath,
+} from "../src/lib/ui/assistant-route";
 
 describe("rutas de asistentes", () => {
   it("genera una ruta legible sin repetir el identificador", () => {

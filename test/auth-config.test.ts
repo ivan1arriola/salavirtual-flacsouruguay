@@ -1,10 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { parseAuthConfig, resolverRedireccionAutorizada } from "../src/modules/usuarios/auth-config.domain";
+import {
+  parseAuthConfig,
+  resolverRedireccionAutorizada,
+} from "../src/modules/usuarios/auth-config.domain";
 
 const validEnvironment = Object.freeze({
   AUTH_SECRET: "a".repeat(64),
   AUTH_TRUST_HOST: "true",
-  APP_BASE_URL: "http://localhost:3000"
+  APP_BASE_URL: "http://localhost:3000",
 });
 
 describe("configuracion funcional de autenticacion", () => {
@@ -13,7 +16,7 @@ describe("configuracion funcional de autenticacion", () => {
       secret: validEnvironment.AUTH_SECRET,
       trustHost: true,
       baseUrl: "http://localhost:3000",
-      google: null
+      google: null,
     });
   });
 
@@ -21,8 +24,8 @@ describe("configuracion funcional de autenticacion", () => {
     expect(() =>
       parseAuthConfig({
         ...validEnvironment,
-        AUTH_SECRET: "inseguro"
-      })
+        AUTH_SECRET: "inseguro",
+      }),
     ).toThrow();
   });
 
@@ -30,8 +33,8 @@ describe("configuracion funcional de autenticacion", () => {
     expect(() =>
       parseAuthConfig({
         ...validEnvironment,
-        AUTH_TRUST_HOST: "si"
-      })
+        AUTH_TRUST_HOST: "si",
+      }),
     ).toThrow();
   });
 
@@ -40,18 +43,18 @@ describe("configuracion funcional de autenticacion", () => {
       parseAuthConfig({
         ...validEnvironment,
         AUTH_GOOGLE_ID: "client-id",
-        AUTH_GOOGLE_SECRET: "client-secret"
-      }).google
+        AUTH_GOOGLE_SECRET: "client-secret",
+      }).google,
     ).toEqual({
       clientId: "client-id",
-      clientSecret: "client-secret"
+      clientSecret: "client-secret",
     });
 
     expect(() =>
       parseAuthConfig({
         ...validEnvironment,
-        AUTH_GOOGLE_ID: "client-id"
-      })
+        AUTH_GOOGLE_ID: "client-id",
+      }),
     ).toThrow();
   });
 });
@@ -59,13 +62,16 @@ describe("configuracion funcional de autenticacion", () => {
 describe("redirecciones de autenticacion", () => {
   it("permite rutas del origen configurado", () => {
     expect(resolverRedireccionAutorizada("/agenda", validEnvironment.APP_BASE_URL)).toBe(
-      "http://localhost:3000/agenda"
+      "http://localhost:3000/agenda",
     );
   });
 
   it("rechaza redirecciones a origenes externos", () => {
     expect(
-      resolverRedireccionAutorizada("https://sitio-externo.example/phishing", validEnvironment.APP_BASE_URL)
+      resolverRedireccionAutorizada(
+        "https://sitio-externo.example/phishing",
+        validEnvironment.APP_BASE_URL,
+      ),
     ).toBe("http://localhost:3000/");
   });
 });

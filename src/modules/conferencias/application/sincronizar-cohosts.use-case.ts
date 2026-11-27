@@ -10,7 +10,7 @@ export async function sincronizarCohostsExistenteUseCase(
     codigoReunion?: string | null;
     cohostsAnteriores: readonly string[];
     cohostsDeseados: readonly string[];
-  }>
+  }>,
 ): Promise<Readonly<Record<string, unknown>>> {
   const creds = await repository.obtenerCredencialesWorkspace();
   if (!creds.disponible || !creds.serviceAccountEmail || !creds.privateKey) {
@@ -20,7 +20,7 @@ export async function sincronizarCohostsExistenteUseCase(
   const provider = providerFactory({
     serviceAccountEmail: creds.serviceAccountEmail,
     privateKey: creds.privateKey,
-    subject: input.organizerEmail
+    subject: input.organizerEmail,
   });
 
   if (!provider.sincronizarCohostsExistente) {
@@ -38,7 +38,7 @@ export async function configurarMeetExistenteUseCase(
   settings: Readonly<{
     requiereAsistenciaTecnica?: boolean;
     cohostEmails?: readonly string[];
-  }>
+  }>,
 ): Promise<void> {
   const creds = await repository.obtenerCredencialesWorkspace();
   if (!creds.disponible || !creds.serviceAccountEmail || !creds.privateKey) {
@@ -48,7 +48,7 @@ export async function configurarMeetExistenteUseCase(
   const provider = providerFactory({
     serviceAccountEmail: creds.serviceAccountEmail,
     privateKey: creds.privateKey,
-    subject: organizerEmail
+    subject: organizerEmail,
   });
 
   if (!provider.configurarMeetExistente) {

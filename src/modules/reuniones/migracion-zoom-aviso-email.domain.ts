@@ -2,7 +2,7 @@ import {
   botonCorreo,
   envolverCorreo,
   escaparHtmlEmail,
-  panelCorreo
+  panelCorreo,
 } from "@/src/lib/email/email-design-system";
 
 export type DatosAvisoMigracionZoom = Readonly<{
@@ -26,7 +26,7 @@ export function esUrlZoom(url: string): boolean {
 
 /** Aviso individual: la reunión pasó de Google Meet a Zoom y este es el enlace vigente. */
 export function construirAvisoMigracionZoom(
-  input: DatosAvisoMigracionZoom
+  input: DatosAvisoMigracionZoom,
 ): Readonly<{ subject: string; text: string; html: string }> {
   const e = escaparHtmlEmail;
   const saludo = input.nombre?.trim() ? "Hola " + input.nombre.trim() + "," : "Hola,";
@@ -42,7 +42,7 @@ export function construirAvisoMigracionZoom(
     "Horario: " + input.horario,
     "",
     "Enlace de Zoom: " + input.urlZoom,
-    "Usá el enlace de Zoom para participar en este encuentro."
+    "Usá el enlace de Zoom para participar en este encuentro.",
   ].join("\n");
 
   const detalles = panelCorreo(
@@ -60,7 +60,7 @@ export function construirAvisoMigracionZoom(
       '<p style="margin:0;color:#192b44;font-size:20px;line-height:28px;font-weight:700">' +
       e(input.horario) +
       "</p>",
-    "Fecha y horario · Uruguay"
+    "Fecha y horario · Uruguay",
   );
   const html = envolverCorreo({
     categoria: "Cambio de plataforma",
@@ -73,7 +73,7 @@ export function construirAvisoMigracionZoom(
       botonCorreo({ texto: "Ingresar a Zoom", url: input.urlZoom }) +
       "</div>",
     nota: "Usá el enlace de Zoom para este encuentro. Fecha y horario no cambian.",
-    preferenciasUrl: null
+    preferenciasUrl: null,
   });
   return { subject: "Cambio a Zoom: " + input.reunion + " · Sala Virtual FLACSO", text, html };
 }

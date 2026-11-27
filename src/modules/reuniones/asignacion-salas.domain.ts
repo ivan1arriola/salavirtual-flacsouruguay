@@ -28,26 +28,26 @@ type EstadoAsignacionAsistenciaTecnica = Readonly<{
 
 export function asignarSalas(
   reuniones: readonly ReunionParaAsignar[],
-  salas: readonly SalaDisponible[]
+  salas: readonly SalaDisponible[],
 ): ResultadoAsignacionSalas {
   const initial: EstadoAsignacionAsistenciaTecnica = {
     salas: ordenar(
       salas.map((sala) => ({
         ...sala,
-        disponibleDesde: Number.NEGATIVE_INFINITY
+        disponibleDesde: Number.NEGATIVE_INFINITY,
       })),
-      (left, right) => left.prioridad - right.prioridad
+      (left, right) => left.prioridad - right.prioridad,
     ),
     series: [],
     asignaciones: [],
-    sinSala: []
+    sinSala: [],
   };
   const result = ordenar(
     reuniones,
     (left, right) =>
       left.inicio.getTime() - right.inicio.getTime() ||
       left.fin.getTime() - right.fin.getTime() ||
-      left.id.localeCompare(right.id)
+      left.id.localeCompare(right.id),
   ).reduce(asignarSiguiente, initial);
 
   return result.sinSala.length
@@ -66,7 +66,7 @@ function ordenar<T>(values: readonly T[], compare: (left: T, right: T) => number
 
 function asignarSiguiente(
   state: EstadoAsignacionAsistenciaTecnica,
-  meeting: ReunionParaAsignar
+  meeting: ReunionParaAsignar,
 ): EstadoAsignacionAsistenciaTecnica {
   const available = state.salas.filter((room) => room.disponibleDesde <= meeting.inicio.getTime());
   const preferredId = state.series.find((series) => series.serieId === meeting.serieId)?.salaId;
@@ -77,10 +77,12 @@ function asignarSiguiente(
 
   return {
     salas: state.salas.map((room) =>
-      room.id === selected.id ? { ...room, disponibleDesde: meeting.fin.getTime() } : room
+      room.id === selected.id ? { ...room, disponibleDesde: meeting.fin.getTime() } : room,
     ),
-    series: preferredId ? state.series : [...state.series, { serieId: meeting.serieId, salaId: selected.id }],
+    series: preferredId
+      ? state.series
+      : [...state.series, { serieId: meeting.serieId, salaId: selected.id }],
     asignaciones: [...state.asignaciones, { reunionId: meeting.id, salaId: selected.id }],
-    sinSala: state.sinSala
+    sinSala: state.sinSala,
   };
 }

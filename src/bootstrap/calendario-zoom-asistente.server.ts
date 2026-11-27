@@ -6,7 +6,7 @@ import { cifrarConfiguracion, descifrarConfiguracion } from "@/src/lib/config/en
 import { db } from "@/src/lib/db";
 import {
   eventoCoberturaZoom,
-  type EventoCoberturaZoom
+  type EventoCoberturaZoom,
 } from "@/src/modules/asistencia/domain/calendario-zoom.domain";
 
 const scope = "https://www.googleapis.com/auth/calendar.app.created";
@@ -14,12 +14,16 @@ const googleApi = "https://www.googleapis.com/calendar/v3/calendars";
 export const rutaCalendarioZoom = "/api/v1/asistencia/calendario-zoom";
 
 export function configurarOAuthCalendarioZoom(): OAuth2Client | null {
-  const clientId = process.env.ASISTENCIA_CALENDAR_GOOGLE_ID;
-  const clientSecret = process.env.ASISTENCIA_CALENDAR_GOOGLE_SECRET;
+  const clientId = process.env["ASISTENCIA_CALENDAR_GOOGLE_ID"];
+  const clientSecret = process.env["ASISTENCIA_CALENDAR_GOOGLE_SECRET"];
   if (!clientId || !clientSecret) {
     return null;
   }
-  return new OAuth2Client(clientId, clientSecret, new URL(rutaCalendarioZoom, authConfig.baseUrl).href);
+  return new OAuth2Client(
+    clientId,
+    clientSecret,
+    new URL(rutaCalendarioZoom, authConfig.baseUrl).href,
+  );
 }
 
 export function scopesCalendarioZoom(): string[] {
@@ -51,7 +55,7 @@ async function eliminarRecurso(client: OAuth2Client, url: string) {
 
 async function conBloqueo<T>(
   asistenteTecnicoId: string,
-  ejecutar: (tx: Prisma.TransactionClient) => Promise<T>
+  ejecutar: (tx: Prisma.TransactionClient) => Promise<T>,
 ): Promise<T | null> {
   return db.$transaction(
     async (tx) => {
@@ -60,7 +64,7 @@ async function conBloqueo<T>(
       `;
       return resultado?.adquirido ? ejecutar(tx) : null;
     },
-    { timeout: 45_000 }
+    { timeout: 45_000 },
   );
 }
 
@@ -68,11 +72,16 @@ export async function conectarCalendarioZoom(
   asistenteTecnicoId: string,
   client: OAuth2Client,
   code: string,
-  codeVerifier: string
+  codeVerifier: string,
 ) {
   const { tokens } = await client.getToken({ code, codeVerifier });
-  const clientId = process.env.ASISTENCIA_CALENDAR_GOOGLE_ID;
-  if (!clientId || !tokens.id_token || !tokens.refresh_token || !tokens.scope?.split(" ").includes(scope)) {
+  const clientId = process.env["ASISTENCIA_CALENDAR_GOOGLE_ID"];
+  if (
+    !clientId ||
+    !tokens.id_token ||
+    !tokens.refresh_token ||
+    !tokens.scope?.split(" ").includes(scope)
+  ) {
     return false;
   }
   const idToken = await client.verifyIdToken({ idToken: tokens.id_token, audience: clientId });
@@ -85,7 +94,9 @@ export async function conectarCalendarioZoom(
   client.setCredentials(tokens);
 
   return conBloqueo(asistenteTecnicoId, async (tx) => {
-    const existente = await tx.calendarioZoomAsistente.findUnique({ where: { asistenteTecnicoId } });
+    const existente = await tx.calendarioZoomAsistente.findUnique({
+      where: { asistenteTecnicoId },
+    });
     if (existente) {
       return false;
     }
@@ -99,18 +110,18 @@ async function crearCalendario(
   asistenteTecnicoId: string,
   client: OAuth2Client,
   email: string,
-  tokenCifrado: string
+  tokenCifrado: string,
 ) {
   const { data } = await client.request<{ id: string }>({
     url: googleApi,
     method: "POST",
     data: { summary: "Sala Virtual FLACSO · Coberturas Zoom", timeZone: "America/Montevideo" },
     timeout: 5000,
-    retry: false
+    retry: false,
   });
   try {
     await tx.calendarioZoomAsistente.create({
-      data: { asistenteTecnicoId, calendarId: data.id, email, tokenCifrado }
+      data: { asistenteTecnicoId, calendarId: data.id, email, tokenCifrado },
     });
   } catch (error) {
     await eliminarRecurso(client, destinoCalendario(data.id)).catch(() => undefined);
@@ -150,8 +161,12 @@ async function obtenerEventosPublicados(client: OAuth2Client, url: string, ahora
   do {
     const { data } = await client.request<{ items?: EventoPublicado[]; nextPageToken?: string }>({
       url,
-      params: { timeMin: ahora.toISOString(), privateExtendedProperty: "flacsoCoberturaZoom=1", pageToken },
-      timeout: 5000
+      params: {
+        timeMin: ahora.toISOString(),
+        privateExtendedProperty: "flacsoCoberturaZoom=1",
+        pageToken,
+      },
+      timeout: 5000,
     });
     publicados.push(...(data.items ?? []));
     pageToken = data.nextPageToken;
@@ -159,7 +174,12 @@ async function obtenerEventosPublicados(client: OAuth2Client, url: string, ahora
   return publicados;
 }
 
-async function actualizarEvento(client: OAuth2Client, url: string, id: string, evento: EventoCoberturaZoom) {
+async function actualizarEvento(
+  client: OAuth2Client,
+  url: string,
+  id: string,
+  evento: EventoCoberturaZoom,
+) {
   const endpoint = `${url}/${encodeURIComponent(id)}`;
   await client.request({ url: endpoint, method: "PATCH", data: evento.data, timeout: 5000 });
 }
@@ -189,19 +209,25 @@ async function publicarEvento(client: OAuth2Client, url: string, evento: EventoC
   throw new Error("Google Calendar agotó las variantes de ID para esta cobertura.");
 }
 
-async function leerEventosDeseados(tx: Prisma.TransactionClient, asistenteTecnicoId: string, ahora: Date) {
+async function leerEventosDeseados(
+  tx: Prisma.TransactionClient,
+  asistenteTecnicoId: string,
+  ahora: Date,
+) {
   const asignaciones = await tx.asignacionAsistenciaTecnica.findMany({
     where: {
       asistenteTecnicoId,
       estado: { in: ["ASIGNADO", "ACEPTADO"] },
-      asistenteTecnico: { usuario: { activo: true, rol: "ASISTENTE_TECNICO", fusionadoEnId: null } },
+      asistenteTecnico: {
+        usuario: { activo: true, rol: "ASISTENTE_TECNICO", fusionadoEnId: null },
+      },
       instancia: {
         estado: "PROGRAMADA",
         OR: [
           { finAsistenciaTecnicaAt: { gt: ahora } },
-          { finAsistenciaTecnicaAt: null, finProgramadoAt: { gt: ahora } }
-        ]
-      }
+          { finAsistenciaTecnicaAt: null, finProgramadoAt: { gt: ahora } },
+        ],
+      },
     },
     select: {
       instancia: {
@@ -214,10 +240,10 @@ async function leerEventosDeseados(tx: Prisma.TransactionClient, asistenteTecnic
           modalidadOverride: true,
           proveedorActivoTipo: true,
           eventosProveedor: { select: { proveedor: { select: { tipo: true } } } },
-          solicitud: { select: { titulo: true, modalidad: true } }
-        }
-      }
-    }
+          solicitud: { select: { titulo: true, modalidad: true } },
+        },
+      },
+    },
   });
   return asignaciones.flatMap(({ instancia }) => {
     const evento = eventoCoberturaZoom(instancia, authConfig.baseUrl);
@@ -229,7 +255,7 @@ async function conciliarEventos(
   client: OAuth2Client,
   url: string,
   eventos: EventoCoberturaZoom[],
-  ahora: Date
+  ahora: Date,
 ) {
   const remotos = await obtenerEventosPublicados(client, url, ahora);
   const deseados = new Map(eventos.map((evento) => [evento.id, evento]));
@@ -271,7 +297,7 @@ export async function sincronizarCalendarioZoom(asistenteTecnicoId: string, clie
     }
     await tx.calendarioZoomAsistente.update({
       where: { asistenteTecnicoId },
-      data: { ultimoIntentoAt: ahora, error: estado === "sincronizado" ? null : estado }
+      data: { ultimoIntentoAt: ahora, error: estado === "sincronizado" ? null : estado },
     });
     return estado;
   });
@@ -285,16 +311,16 @@ export async function reconciliarCalendariosZoom(): Promise<number> {
     where: { OR: [{ error: null }, { error: "error" }] },
     orderBy: [{ ultimoIntentoAt: { sort: "asc", nulls: "first" } }, { asistenteTecnicoId: "asc" }],
     take: 10,
-    select: { asistenteTecnicoId: true }
+    select: { asistenteTecnicoId: true },
   });
   const resultados = await Promise.allSettled(
     conexiones.map(({ asistenteTecnicoId }) => {
       const cliente = configurarOAuthCalendarioZoom();
       return cliente ? sincronizarCalendarioZoom(asistenteTecnicoId, cliente) : null;
-    })
+    }),
   );
   const fallos = resultados.filter(
-    (resultado) => resultado.status === "rejected" || resultado.value === "error"
+    (resultado) => resultado.status === "rejected" || resultado.value === "error",
   );
   return fallos.length;
 }

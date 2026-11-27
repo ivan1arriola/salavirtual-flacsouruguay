@@ -19,18 +19,18 @@ export type EnviarReportesMensualesDeps = Readonly<{
       subject: string;
       text: string;
       html: string;
-    }>
+    }>,
   ) => Promise<Readonly<{ sent: boolean; skipped?: string }>>;
 }>;
 
 export async function enviarReportesMensualesUseCase(
   deps: EnviarReportesMensualesDeps,
-  ahora = new Date()
+  ahora = new Date(),
 ): Promise<ResultadoReportesMensuales> {
   const periodo = periodoMesAnteriorUtc3(ahora);
   const [candidatos, copiasBase] = await Promise.all([
     deps.liquidacionesRepo.obtenerCandidatosReporteMensual(periodo, ahora),
-    deps.liquidacionesRepo.obtenerCopiasAdministracion()
+    deps.liquidacionesRepo.obtenerCopiasAdministracion(),
   ]);
 
   let asistentes = 0;
@@ -53,7 +53,7 @@ export async function enviarReportesMensualesUseCase(
       periodo: periodo.clave,
       destinatario,
       copias,
-      resumen: candidato.resumen
+      resumen: candidato.resumen,
     });
 
     if (!reserva) {
@@ -65,13 +65,13 @@ export async function enviarReportesMensualesUseCase(
       const correo = construirCorreoReporteMensual({
         nombre: candidato.nombre || "asistente",
         periodo: periodo.clave,
-        resumen: candidato.resumen
+        resumen: candidato.resumen,
       });
 
       const resultado = await deps.enviarCorreo({
         to: [destinatario],
         cc: copias,
-        ...correo
+        ...correo,
       });
 
       if (!resultado.sent) {
@@ -81,7 +81,8 @@ export async function enviarReportesMensualesUseCase(
       await deps.liquidacionesRepo.marcarEnvioReporteExitoso(reserva.id, new Date());
       enviados += 1;
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Error desconocido al enviar el reporte.";
+      const message =
+        error instanceof Error ? error.message : "Error desconocido al enviar el reporte.";
       await deps.liquidacionesRepo.marcarEnvioReporteError(reserva.id, message.slice(0, 1000));
       errores += 1;
     }
@@ -93,6 +94,6 @@ export async function enviarReportesMensualesUseCase(
     enviados,
     yaProcesados,
     errores,
-    sinCorreo
+    sinCorreo,
   };
 }

@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   crearProveedorTokenZoom,
   invalidarZoomAccessToken,
-  obtenerZoomAccessToken
+  obtenerZoomAccessToken,
 } from "@/src/integrations/zoom/zoom-client";
 
 afterEach(() => vi.unstubAllGlobals());
@@ -10,7 +10,10 @@ afterEach(() => vi.unstubAllGlobals());
 function oauthMock(tokens: string[]) {
   let i = 0;
   return vi.fn(
-    async () => new Response(JSON.stringify({ access_token: tokens[i++], expires_in: 3600 }), { status: 200 })
+    async () =>
+      new Response(JSON.stringify({ access_token: tokens[i++], expires_in: 3600 }), {
+        status: 200,
+      }),
   );
 }
 
@@ -35,7 +38,7 @@ describe("renovación forzada del token Zoom", () => {
     const [x, y, z] = await Promise.all([
       invalidarZoomAccessToken(creds, viejo),
       invalidarZoomAccessToken(creds, viejo),
-      invalidarZoomAccessToken(creds, viejo)
+      invalidarZoomAccessToken(creds, viejo),
     ]);
     expect([x, y, z]).toEqual(["token-b", "token-b", "token-b"]);
     expect(fetchMock).toHaveBeenCalledTimes(2);

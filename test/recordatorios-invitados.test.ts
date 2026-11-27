@@ -24,7 +24,7 @@ describe("recordatorios de invitados externos", () => {
               titulo: "Seminario",
               modalidad: "VIRTUAL",
               creadaPorUsuarioId: "u1",
-              docentePrograma: { docente: { usuarioId: "u2" }, programa: { nombre: "Género" } }
+              docentePrograma: { docente: { usuarioId: "u2" }, programa: { nombre: "Género" } },
             },
             asignaciones: [],
             eventosProveedor: [
@@ -32,17 +32,17 @@ describe("recordatorios de invitados externos", () => {
                 proveedor: { tipo: "GOOGLE_MEET" },
                 codigoReunion: "abc-defg-hij",
                 joinUrl: "https://meet.google.com/abc-defg-hij",
-                cuentaProveedor: { emailOrganizador: "sala@flacso.edu.uy" }
-              }
-            ]
-          }
+                cuentaProveedor: { emailOrganizador: "sala@flacso.edu.uy" },
+              },
+            ],
+          },
         ]),
         findUnique: vi.fn().mockResolvedValue({
           estado: "PROGRAMADA",
           inicioProgramadoAt: inicio,
           solicitud: { estado: "REGISTRADA" },
-          invitados: [{ id: "guest" }]
-        })
+          invitados: [{ id: "guest" }],
+        }),
       },
       usuario: { findMany: vi.fn().mockResolvedValue([]) },
       recordatorioInvitadoReunion: {
@@ -53,8 +53,8 @@ describe("recordatorios de invitados externos", () => {
           reservado = true;
           return { id: "reminder-1" };
         }),
-        update: vi.fn().mockResolvedValue({})
-      }
+        update: vi.fn().mockResolvedValue({}),
+      },
     };
     const enviarCorreo = vi.fn().mockResolvedValue({ sent: true });
     const deps = { verificarCohosts: vi.fn().mockResolvedValue(new Set()), enviarCorreo };

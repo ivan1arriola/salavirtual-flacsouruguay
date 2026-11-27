@@ -7,14 +7,14 @@ const dateFormatter = new Intl.DateTimeFormat("es-UY", {
   day: "2-digit",
   month: "2-digit",
   year: "numeric",
-  timeZone: timezone
+  timeZone: timezone,
 });
 
 const timeFormatter = new Intl.DateTimeFormat("es-UY", {
   hour: "2-digit",
   minute: "2-digit",
   hour12: false,
-  timeZone: timezone
+  timeZone: timezone,
 });
 
 export type CuentaSala =
@@ -49,7 +49,9 @@ export function formatRange(inicio: Date, fin: Date): string {
   return `${capitalize(dateFormatter.format(inicio))}, ${timeFormatter.format(inicio)} a ${timeFormatter.format(fin)} h`;
 }
 
-export function fullName(persona: Readonly<{ nombres: string; apellidos?: string | null }>): string {
+export function fullName(
+  persona: Readonly<{ nombres: string; apellidos?: string | null }>,
+): string {
   return [persona.nombres, persona.apellidos].filter(Boolean).join(" ");
 }
 
@@ -57,7 +59,10 @@ export function firstName(persona: Readonly<{ nombres: string }>): string {
   return persona.nombres.replace(/,+$/, "");
 }
 
-export function passwordSala(cuenta: CuentaSala, descifrar: (value: string) => string): string | null {
+export function passwordSala(
+  cuenta: CuentaSala,
+  descifrar: (value: string) => string,
+): string | null {
   if (!cuenta?.secretRef) {
     return null;
   }
@@ -74,7 +79,7 @@ export function buildMeetingDigestEmail(
     intro: string;
     cards: readonly MeetingEmailCard[];
     footer?: string;
-  }>
+  }>,
 ): EmailMessage {
   const footer = input.footer ?? "Equipo FLACSO Uruguay";
   const textCards = input.cards.map((card, index) => {
@@ -93,7 +98,7 @@ export function buildMeetingDigestEmail(
       card.codigoReunion ? `   Código Meet: ${card.codigoReunion}` : null,
       card.usuarioSala ? `   Usuario sala: ${card.usuarioSala}` : null,
       card.passwordSala ? `   Contraseña sala: ${card.passwordSala}` : null,
-      card.observaciones.length ? `   Observaciones: ${card.observaciones.join("; ")}` : null
+      card.observaciones.length ? `   Observaciones: ${card.observaciones.join("; ")}` : null,
     ];
     return details.filter(Boolean).join("\n");
   });
@@ -106,7 +111,7 @@ export function buildMeetingDigestEmail(
     textCards.join("\n\n"),
     "",
     "Saludos,",
-    footer
+    footer,
   ].join("\n");
 
   const htmlCards = input.cards
@@ -141,7 +146,7 @@ export function buildMeetingDigestEmail(
               (fecha) =>
                 '<p style="margin:0 0 5px;color:#33465c;font-size:13px;line-height:20px">' +
                 escapeHtml(fecha) +
-                "</p>"
+                "</p>",
             )
             .join("") +
           '<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="width:100%;margin-top:12px;font-size:13px">' +
@@ -151,7 +156,7 @@ export function buildMeetingDigestEmail(
               ? '<a href="' +
                   escapeAttribute(card.joinUrl) +
                   '" style="color:#087f9e;text-decoration:underline">Abrir Google Meet</a>'
-              : "Pendiente de provisión"
+              : "Pendiente de provisión",
           ) +
           (card.codigoReunion ? detailRow("Código Meet", escapeHtml(card.codigoReunion)) : "") +
           (card.usuarioSala ? detailRow("Usuario sala", escapeHtml(card.usuarioSala)) : "") +
@@ -161,8 +166,8 @@ export function buildMeetingDigestEmail(
             ? '<p style="margin:12px 0 0;color:#526277;font-size:12px;line-height:19px">' +
               escapeHtml(card.observaciones.join("; ")) +
               "</p>"
-            : "")
-      )
+            : ""),
+      ),
     )
     .join("");
 
@@ -178,7 +183,7 @@ export function buildMeetingDigestEmail(
       htmlCards +
       '<p style="margin:16px 0 0;font-size:13px;color:#526277;line-height:20px">' +
       escapeHtml(footer) +
-      "</p>"
+      "</p>",
   });
 
   return { text, html };

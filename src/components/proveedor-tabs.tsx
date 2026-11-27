@@ -3,7 +3,10 @@ import type { ProveedorReunion } from "@/src/modules/reuniones/proveedor-reunion
 
 const NOMBRES: Record<ProveedorReunion, string> = { GOOGLE_MEET: "Meet", ZOOM: "Zoom" };
 
-function conservarFiltros(href: string, filtros: Readonly<Record<string, string | undefined>>): string {
+function conservarFiltros(
+  href: string,
+  filtros: Readonly<Record<string, string | undefined>>,
+): string {
   const search = new URLSearchParams(href.split("?")[1]);
   for (const clave of ["vista", "q", "programa", "periodo", "desde", "hasta"]) {
     const valor = filtros[clave];
@@ -17,7 +20,7 @@ function conservarFiltros(href: string, filtros: Readonly<Record<string, string 
 /** Separa las reuniones por proveedor: las que siguen en Meet y las de Zoom (nuevas y migradas). */
 export function ProveedorTabs({
   activo,
-  filtros = {}
+  filtros = {},
 }: Readonly<{
   activo: ProveedorReunion;
   filtros?: Readonly<{
@@ -31,7 +34,7 @@ export function ProveedorTabs({
 }>) {
   const tabs = [
     { proveedor: "ZOOM", href: "/reuniones?proveedor=zoom" },
-    { proveedor: "GOOGLE_MEET", href: "/reuniones?proveedor=meet" }
+    { proveedor: "GOOGLE_MEET", href: "/reuniones?proveedor=meet" },
   ] as const;
   return (
     <nav className="proveedor-tabs" aria-label="Proveedor de reuniones">
@@ -53,7 +56,7 @@ export function ProveedorTabs({
 export function OtroProveedorAviso({
   proveedor,
   cantidad,
-  href
+  href,
 }: Readonly<{ proveedor: ProveedorReunion; cantidad: number; href: string }>) {
   return (
     <p className="proveedor-aviso" role="note">

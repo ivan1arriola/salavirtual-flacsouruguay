@@ -6,11 +6,11 @@ import { obtenerServicioConferencias } from "@/src/bootstrap/conferencias.server
 import { toHttpError } from "@/src/lib/http/api-error";
 import {
   hayErroresSincronizacionCalendarioAsistente,
-  sincronizarCalendarioAsistenteInstancia
+  sincronizarCalendarioAsistenteInstancia,
 } from "@/src/modules/asistencia/calendario-asistente.service";
 import {
   eliminarEventoCalendarioAsistente,
-  publicarEventoCalendarioAsistente
+  publicarEventoCalendarioAsistente,
 } from "@/src/modules/asistencia/calendario-asistente-google.adapter";
 import { intentarSincronizacionCalendarioAsistente } from "@/src/modules/asistencia/calendario-asistente-safe.service";
 import { descifrarConfiguracion } from "@/src/lib/config/encryption";
@@ -38,7 +38,11 @@ export async function GET(request: Request, context: RouteContext) {
   }
 }
 
-const ALLOWED_ACTIONS = new Set(["CAMBIAR_MODALIDAD", "CAMBIAR_ASISTENCIA", "EDITAR_HORARIO_ASISTENCIA"]);
+const ALLOWED_ACTIONS = new Set([
+  "CAMBIAR_MODALIDAD",
+  "CAMBIAR_ASISTENCIA",
+  "EDITAR_HORARIO_ASISTENCIA",
+]);
 
 /** Mutations reuse the web application's authorization, audit and business rules. */
 export async function POST(request: Request, context: RouteContext) {
@@ -66,7 +70,7 @@ export async function POST(request: Request, context: RouteContext) {
       if (meeting.modality !== "HIBRIDA") {
         return NextResponse.json(
           { error: "La cobertura virtual es fija y no se puede editar." },
-          { status: 400 }
+          { status: 400 },
         );
       }
       const arrival = Date.parse(input.inicioAsistenciaTecnica);
@@ -78,14 +82,17 @@ export async function POST(request: Request, context: RouteContext) {
         departure < Date.parse(meeting.endsAt) + 30 * 60_000
       ) {
         return NextResponse.json(
-          { error: "La asistencia híbrida requiere al menos 30 minutos antes y después del encuentro." },
-          { status: 400 }
+          {
+            error:
+              "La asistencia híbrida requiere al menos 30 minutos antes y después del encuentro.",
+          },
+          { status: 400 },
         );
       }
     }
     const result = await actualizarEncuentro({ db }, actor, meeting.requestId, id, input);
     const sincronizacion = await obtenerServicioConferencias().sincronizarEventosPendientes(
-      result.eventoProveedorIds
+      result.eventoProveedorIds,
     );
     const calendario = await intentarSincronizacionCalendarioAsistente(() =>
       sincronizarCalendarioAsistenteInstancia(
@@ -93,10 +100,10 @@ export async function POST(request: Request, context: RouteContext) {
           db,
           descifrar: descifrarConfiguracion,
           publicarEvento: publicarEventoCalendarioAsistente,
-          eliminarEvento: eliminarEventoCalendarioAsistente
+          eliminarEvento: eliminarEventoCalendarioAsistente,
         },
-        id
-      )
+        id,
+      ),
     );
     const incomplete =
       sincronizacion.some(({ estado }) => estado !== "SINCRONIZADA") ||
@@ -108,9 +115,9 @@ export async function POST(request: Request, context: RouteContext) {
         warning: incomplete
           ? "El cambio quedó guardado; algunas sincronizaciones con Google están pendientes."
           : null,
-        meeting: await getAdminMeeting(db, id)
+        meeting: await getAdminMeeting(db, id),
       },
-      { status: incomplete ? 202 : 200 }
+      { status: incomplete ? 202 : 200 },
     );
   } catch (error) {
     if (error instanceof MobileActorError) {

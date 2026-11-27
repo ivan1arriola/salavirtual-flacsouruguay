@@ -3,7 +3,7 @@ import { ZodError } from "zod";
 export class ApiError extends Error {
   constructor(
     message: string,
-    public readonly status: number
+    public readonly status: number,
   ) {
     super(message);
     this.name = new.target.name;
@@ -43,7 +43,7 @@ export function toHttpError(error: unknown): Readonly<{ status: number; message:
   if (error instanceof ZodError) {
     return {
       status: 400,
-      message: error.issues[0]?.message ?? "Datos inválidos."
+      message: error.issues[0]?.message ?? "Datos inválidos.",
     };
   }
   const code = prismaErrorCode(error);

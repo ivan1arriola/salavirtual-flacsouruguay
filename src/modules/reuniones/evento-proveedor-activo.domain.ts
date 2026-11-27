@@ -9,12 +9,13 @@ type InstanciaConEventos<T extends EventoConProveedor> = Readonly<{
 
 /** Selecciona el enlace vigente sin depender del orden de los eventos en Prisma. */
 export function seleccionarEventoProveedorActivo<T extends EventoConProveedor>(
-  instancia: InstanciaConEventos<T>
+  instancia: InstanciaConEventos<T>,
 ): T | null {
   if (instancia.proveedorActivoTipo != null) {
     return (
-      instancia.eventosProveedor.find(({ proveedor }) => proveedor.tipo === instancia.proveedorActivoTipo) ??
-      null
+      instancia.eventosProveedor.find(
+        ({ proveedor }) => proveedor.tipo === instancia.proveedorActivoTipo,
+      ) ?? null
     );
   }
 

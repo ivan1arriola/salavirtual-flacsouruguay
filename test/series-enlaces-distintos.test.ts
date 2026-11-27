@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   detectarSerieClavesConEnlacesDistintos,
-  detectarSeriesConEnlacesDistintos
+  detectarSeriesConEnlacesDistintos,
 } from "../src/modules/reuniones/series-enlaces-distintos.service";
 
 const ahora = new Date("2026-11-03T12:00:00Z");
@@ -15,8 +15,8 @@ const solicitud = (serie: string | null) => ({
   createdAt: new Date("2026-10-01T00:00:00Z"),
   docentePrograma: {
     programa: { nombre: "Prog" },
-    docente: { usuario: { nombres: "Ana", apellidos: "Paz" } }
-  }
+    docente: { usuario: { nombres: "Ana", apellidos: "Paz" } },
+  },
 });
 const zoom = (n: number, extra: object = {}) => ({
   joinUrl: `https://zoom.us/j/${n}`,
@@ -24,7 +24,7 @@ const zoom = (n: number, extra: object = {}) => ({
   cuentaProveedorId: "c1",
   reunionProveedorId: null,
   proveedor: { tipo: "ZOOM" },
-  ...extra
+  ...extra,
 });
 const instancia = (n: number, serie: string | null, evento: object, extra: object = {}) => ({
   id: `i${n}`,
@@ -33,16 +33,21 @@ const instancia = (n: number, serie: string | null, evento: object, extra: objec
   proveedorActivoTipo: "ZOOM",
   solicitud: solicitud(serie),
   eventosProveedor: [evento],
-  ...extra
+  ...extra,
 });
 const dbCon = (instancias: object[]) =>
   ({
     instanciaSala: { findMany: vi.fn(async () => instancias) },
     solicitudSala: {
       findMany: vi.fn(async () => [
-        { serieReunionId: "s1", docenteProgramaId: "dp", titulo: "Seminario", createdAt: new Date() }
-      ])
-    }
+        {
+          serieReunionId: "s1",
+          docenteProgramaId: "dp",
+          titulo: "Seminario",
+          createdAt: new Date(),
+        },
+      ]),
+    },
   }) as never;
 
 describe("detectarSeriesConEnlacesDistintos", () => {
@@ -60,8 +65,8 @@ describe("detectarSeriesConEnlacesDistintos", () => {
         2,
         "d",
         { ...zoom(2), proveedor: { tipo: "GOOGLE_MEET" } },
-        { proveedorActivoTipo: "GOOGLE_MEET" }
-      )
+        { proveedorActivoTipo: "GOOGLE_MEET" },
+      ),
     ]);
     const series = await detectarSeriesConEnlacesDistintos(db, admin, ahora);
     expect(series.map(({ serieClave }) => serieClave)).toEqual(["serie:a"]);
@@ -81,13 +86,13 @@ describe("detectarSeriesConEnlacesDistintos", () => {
     await detectarSeriesConEnlacesDistintos(db as never, admin, ahora);
     expect(db.instanciaSala.findMany.mock.calls[0][0].where).toMatchObject({
       estado: "PROGRAMADA",
-      inicioProgramadoAt: { gt: ahora }
+      inicioProgramadoAt: { gt: ahora },
     });
   });
 
   it("un usuario que no es Administración recibe Forbidden", async () => {
     await expect(
-      detectarSeriesConEnlacesDistintos(dbCon([]), { id: "d", rol: "DOCENTE" }, ahora)
+      detectarSeriesConEnlacesDistintos(dbCon([]), { id: "d", rol: "DOCENTE" }, ahora),
     ).rejects.toThrow();
   });
 });
@@ -95,7 +100,9 @@ describe("detectarSeriesConEnlacesDistintos", () => {
 describe("detectarSerieClavesConEnlacesDistintos", () => {
   it("devuelve las claves de las series de las solicitudes dadas que necesitan corrección, sin exigir rol", async () => {
     const db = dbCon([instancia(1, "s1", zoom(1)), instancia(2, "s1", zoom(2))]);
-    expect([...(await detectarSerieClavesConEnlacesDistintos(db, ["sol1"], ahora))]).toEqual(["serie:s1"]);
+    expect([...(await detectarSerieClavesConEnlacesDistintos(db, ["sol1"], ahora))]).toEqual([
+      "serie:s1",
+    ]);
     expect((await detectarSerieClavesConEnlacesDistintos(db, [], ahora)).size).toBe(0);
   });
 });

@@ -15,7 +15,7 @@ import {
   Settings2,
   Trash2,
   UsersRound,
-  X
+  X,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
@@ -38,7 +38,7 @@ export function SeriesManagement({
   seriesInfo,
   verificationByEmail,
   programPeopleCount,
-  hasManageableMeetings
+  hasManageableMeetings,
 }: Readonly<{
   solicitudId: string;
   cohostOptions: readonly CohostOption[];
@@ -46,15 +46,25 @@ export function SeriesManagement({
   initialManualCohostEmails: readonly string[];
   initialGuestEmails: readonly string[];
   suggestedPeople: readonly { email: string; name: string; source: string }[];
-  seriesInfo: Readonly<{ titulo: string; modalidad: string; encuentros: number; siguientes: number }>;
-  verificationByEmail: readonly { email: string; confirmed: number; total: number; pending: number }[];
+  seriesInfo: Readonly<{
+    titulo: string;
+    modalidad: string;
+    encuentros: number;
+    siguientes: number;
+  }>;
+  verificationByEmail: readonly {
+    email: string;
+    confirmed: number;
+    total: number;
+    pending: number;
+  }[];
   programPeopleCount: number;
   hasManageableMeetings: boolean;
 }>) {
   const router = useRouter();
   const [selectedIds, setSelectedIds] = useState<readonly string[]>(initialCohostCuentaIds);
   const [manualEmails, setManualEmails] = useState<readonly string[]>(
-    normalizeManualEmails(initialManualCohostEmails.join(","))
+    normalizeManualEmails(initialManualCohostEmails.join(",")),
   );
   const [query, setQuery] = useState("");
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -77,7 +87,11 @@ export function SeriesManagement({
         rejected: number;
         unknown: number;
         total: number;
-        meetings: readonly { id: string; fecha: string; result: "confirmed" | "rejected" | "unknown" }[];
+        meetings: readonly {
+          id: string;
+          fecha: string;
+          result: "confirmed" | "rejected" | "unknown";
+        }[];
       }[]
     | null
   >(null);
@@ -94,7 +108,7 @@ export function SeriesManagement({
     setVerificationError("");
     try {
       const response = await fetch("/api/v1/reuniones/" + solicitudId + "/cohosts/verificar", {
-        cache: "no-store"
+        cache: "no-store",
       });
       const result = await response.json();
       if (!response.ok) {
@@ -117,7 +131,9 @@ export function SeriesManagement({
     setLoadingPreview(true);
     setMessage("");
     try {
-      const response = await fetch("/api/v1/reuniones/" + solicitudId + "/notificar", { cache: "no-store" });
+      const response = await fetch("/api/v1/reuniones/" + solicitudId + "/notificar", {
+        cache: "no-store",
+      });
       const result = await response.json();
       if (!response.ok) {
         throw new Error(result.error || "No fue posible preparar el correo.");
@@ -126,7 +142,7 @@ export function SeriesManagement({
         asunto: result.asunto,
         texto: result.texto,
         destinatarios: result.destinatarios,
-        encuentros: result.encuentros
+        encuentros: result.encuentros,
       });
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "No se pudo mostrar la vista previa.");
@@ -138,7 +154,7 @@ export function SeriesManagement({
   async function notifyProgram() {
     if (
       !window.confirm(
-        `Se reenviará el aviso de esta serie a ${programPeopleCount} ${programPeopleCount === 1 ? "persona" : "personas"} del programa. ¿Continuar?`
+        `Se reenviará el aviso de esta serie a ${programPeopleCount} ${programPeopleCount === 1 ? "persona" : "personas"} del programa. ¿Continuar?`,
       )
     ) {
       return;
@@ -146,7 +162,9 @@ export function SeriesManagement({
     setBusy("notify");
     setMessage("");
     try {
-      const response = await fetch(`/api/v1/reuniones/${solicitudId}/notificar`, { method: "POST" });
+      const response = await fetch(`/api/v1/reuniones/${solicitudId}/notificar`, {
+        method: "POST",
+      });
       const result = await response.json().catch(() => ({}));
       if (!response.ok) {
         throw new Error(result.error ?? "No se pudo reenviar la notificación.");
@@ -173,8 +191,8 @@ export function SeriesManagement({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           cohostCuentaIds: selectedIds,
-          cohostEmailsManual: manualEmails
-        })
+          cohostEmailsManual: manualEmails,
+        }),
       });
       const result = await response.json().catch(() => ({}));
       if (!response.ok) {
@@ -219,7 +237,7 @@ export function SeriesManagement({
       const response = await fetch(`/api/v1/reuniones/${solicitudId}/invitados`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ emails: guestEmails })
+        body: JSON.stringify({ emails: guestEmails }),
       });
       const result = await response.json().catch(() => ({}));
       if (!response.ok) {
@@ -227,11 +245,15 @@ export function SeriesManagement({
       }
       setMessage(
         `Invitados actualizados en ${result.encuentros} encuentros. Correos aceptados: ${result.correosEnviados}.` +
-          (result.erroresCorreo ? ` ${result.erroresCorreo} correos sin confirmar; revisá el proveedor.` : "")
+          (result.erroresCorreo
+            ? ` ${result.erroresCorreo} correos sin confirmar; revisá el proveedor.`
+            : ""),
       );
       router.refresh();
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "No se pudo actualizar la lista de invitados.");
+      setMessage(
+        error instanceof Error ? error.message : "No se pudo actualizar la lista de invitados.",
+      );
     } finally {
       setBusy(null);
     }
@@ -245,7 +267,7 @@ export function SeriesManagement({
     }
     if (
       !window.confirm(
-        "Se reemplazará el enlace de los encuentros futuros y se enviará un correo individual a todos los cohosts e invitados. Los encuentros pasados no cambiarán. ¿Continuar?"
+        "Se reemplazará el enlace de los encuentros futuros y se enviará un correo individual a todos los cohosts e invitados. Los encuentros pasados no cambiarán. ¿Continuar?",
       )
     ) {
       return;
@@ -256,7 +278,7 @@ export function SeriesManagement({
       const response = await fetch(`/api/v1/reuniones/${solicitudId}/enlace-recuperacion`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ meetUrl: url })
+        body: JSON.stringify({ meetUrl: url }),
       });
       const result = await response.json().catch(() => ({}));
       if (!response.ok) {
@@ -264,7 +286,9 @@ export function SeriesManagement({
       }
       setMessage(
         `Enlace actualizado en ${result.encuentros} encuentros futuros. Avisos a cohosts: ${result.cohostsNotificados}; invitados: ${result.invitadosNotificados}.` +
-          (result.erroresCorreo ? ` ${result.erroresCorreo} correos sin confirmar; revisá el proveedor.` : "")
+          (result.erroresCorreo
+            ? ` ${result.erroresCorreo} correos sin confirmar; revisá el proveedor.`
+            : ""),
       );
       setRecoveryVisible(false);
       setReplacementMeetUrl("");
@@ -278,7 +302,13 @@ export function SeriesManagement({
     }
   }
 
-  type KnownCohost = { email: string; id: string | null; name: string; required: boolean; source: string };
+  type KnownCohost = {
+    email: string;
+    id: string | null;
+    name: string;
+    required: boolean;
+    source: string;
+  };
   const knownEntries: Array<readonly [string, KnownCohost]> = [
     ...suggestedPeople.map(
       (person) =>
@@ -289,9 +319,9 @@ export function SeriesManagement({
             id: null,
             name: person.name,
             required: false,
-            source: person.source
-          }
-        ] as const
+            source: person.source,
+          },
+        ] as const,
     ),
     ...cohostOptions.map(
       (option) =>
@@ -302,17 +332,17 @@ export function SeriesManagement({
             id: option.id,
             name: option.name || option.email,
             required: option.required,
-            source: "Cuenta institucional"
-          }
-        ] as const
-    )
+            source: "Cuenta institucional",
+          },
+        ] as const,
+    ),
   ];
   const known = [...new Map<string, KnownCohost>(knownEntries).values()];
   const selectedEmails = new Set([
     ...cohostOptions
       .filter((option) => selectedIds.includes(option.id) || option.required)
       .map((option) => option.email.toLowerCase()),
-    ...manualEmails
+    ...manualEmails,
   ]);
   const options = query.trim()
     ? known
@@ -320,7 +350,7 @@ export function SeriesManagement({
           (option) =>
             !selectedEmails.has(option.email) &&
             (option.email.includes(query.trim().toLowerCase()) ||
-              option.name.toLowerCase().includes(query.trim().toLowerCase()))
+              option.name.toLowerCase().includes(query.trim().toLowerCase())),
         )
         .slice(0, 7)
     : [];
@@ -358,7 +388,9 @@ export function SeriesManagement({
       setManualEmails((current) => current.filter((value) => value !== email));
     }
   }
-  const verification = new Map(verificationByEmail.map((entry) => [entry.email.toLowerCase(), entry]));
+  const verification = new Map(
+    verificationByEmail.map((entry) => [entry.email.toLowerCase(), entry]),
+  );
   const live = new Map((liveVerification ?? []).map((entry) => [entry.email.toLowerCase(), entry]));
   return (
     <details className="series-management-v2" id="administrar-serie" open>
@@ -385,7 +417,8 @@ export function SeriesManagement({
 
         <details className="series-management-tool-disclosure" open>
           <summary>
-            <UsersRound size={17} aria-hidden="true" /> Cohosts <ChevronDown size={16} aria-hidden="true" />
+            <UsersRound size={17} aria-hidden="true" /> Cohosts{" "}
+            <ChevronDown size={16} aria-hidden="true" />
           </summary>
           <article className="series-tool-card series-cohost-manager">
             <header>
@@ -451,7 +484,8 @@ export function SeriesManagement({
                 />
               )}
               <small id="series-cohost-search-help">
-                Seleccioná una sugerencia con Tab y Enter o ingresá un correo nuevo. Máximo 50 cohosts.
+                Seleccioná una sugerencia con Tab y Enter o ingresá un correo nuevo. Máximo 50
+                cohosts.
               </small>
             </div>
             <div className="field">
@@ -477,7 +511,11 @@ export function SeriesManagement({
                   onClick={verifyCohosts}
                   disabled={checking || busy !== null || !hasManageableMeetings}
                 >
-                  {checking ? <LoaderCircle className="button-spinner" size={16} /> : <RefreshCw size={16} />}
+                  {checking ? (
+                    <LoaderCircle className="button-spinner" size={16} />
+                  ) : (
+                    <RefreshCw size={16} />
+                  )}
                   {checking ? "Consultando Google…" : "Verificar en Google"}
                 </button>
               </div>
@@ -493,7 +531,9 @@ export function SeriesManagement({
               ) : null}
               <ul className="series-cohost-items">
                 {[...selectedEmails].sort().map((email) => {
-                  const institutional = cohostOptions.find((option) => option.email.toLowerCase() === email);
+                  const institutional = cohostOptions.find(
+                    (option) => option.email.toLowerCase() === email,
+                  );
                   const status = verification.get(email);
                   const liveStatus = live.get(email);
                   const person = known.find((item) => item.email === email);
@@ -521,14 +561,15 @@ export function SeriesManagement({
                           </span>
                         ) : liveStatus?.rejected ? (
                           <span className="series-verification-status is-rejected">
-                            <CircleX size={17} /> <small>No confirmado ({liveStatus.rejected})</small>
+                            <CircleX size={17} />{" "}
+                            <small>No confirmado ({liveStatus.rejected})</small>
                           </span>
                         ) : liveStatus ? (
                           <span className="series-verification-status">
                             <CircleHelp size={17} />{" "}
                             <small>
-                              {liveStatus.confirmed}/{liveStatus.total} confirmados · {liveStatus.unknown} sin
-                              respuesta
+                              {liveStatus.confirmed}/{liveStatus.total} confirmados ·{" "}
+                              {liveStatus.unknown} sin respuesta
                             </small>
                           </span>
                         ) : status?.total && status.confirmed === status.total ? (
@@ -558,8 +599,8 @@ export function SeriesManagement({
                 })}
               </ul>
               <small>
-                Los estados corresponden a la última lectura registrada de Google Meet; los cambios sin
-                guardar todavía no se verificaron.
+                Los estados corresponden a la última lectura registrada de Google Meet; los cambios
+                sin guardar todavía no se verificaron.
               </small>
             </div>
 
@@ -585,8 +626,8 @@ export function SeriesManagement({
                 <div>
                   <strong>¿La asignación de coanfitriones sigue fallando?</strong>
                   <p>
-                    Podés sustituir el enlace de los encuentros futuros por otro espacio Meet. Se avisará a
-                    todos los coanfitriones e invitados por correo.
+                    Podés sustituir el enlace de los encuentros futuros por otro espacio Meet. Se
+                    avisará a todos los coanfitriones e invitados por correo.
                   </p>
                 </div>
                 {!recoveryVisible ? (
@@ -611,8 +652,8 @@ export function SeriesManagement({
                       disabled={busy !== null}
                     />
                     <small>
-                      Solo se modificarán los encuentros programados que aún no comenzaron. Los permisos del
-                      nuevo espacio deberán verificarse después del cambio.
+                      Solo se modificarán los encuentros programados que aún no comenzaron. Los
+                      permisos del nuevo espacio deberán verificarse después del cambio.
                     </small>
                     <div className="series-link-recovery-actions">
                       <button
@@ -641,7 +682,8 @@ export function SeriesManagement({
 
         <details className="series-management-tool-disclosure">
           <summary>
-            <UsersRound size={17} aria-hidden="true" /> Invitados <ChevronDown size={16} aria-hidden="true" />
+            <UsersRound size={17} aria-hidden="true" /> Invitados{" "}
+            <ChevronDown size={16} aria-hidden="true" />
           </summary>
           <article className="series-tool-card series-invited-manager">
             <header>
@@ -649,8 +691,8 @@ export function SeriesManagement({
               <div>
                 <h3>Invitados a la serie</h3>
                 <p>
-                  Participan de los encuentros futuros sin permisos de coanfitrión. Recibirán un correo con
-                  los datos y enlace de Meet.
+                  Participan de los encuentros futuros sin permisos de coanfitrión. Recibirán un
+                  correo con los datos y enlace de Meet.
                 </p>
               </div>
             </header>
@@ -688,7 +730,8 @@ export function SeriesManagement({
                 </button>
               </div>
               <small>
-                Máximo 100 invitados. Las cuentas anfitrionas y coanfitrionas se administran en otra sección.
+                Máximo 100 invitados. Las cuentas anfitrionas y coanfitrionas se administran en otra
+                sección.
               </small>
             </div>
             <strong>Invitados agregados ({guestCount})</strong>
@@ -714,7 +757,11 @@ export function SeriesManagement({
               onClick={saveGuests}
               disabled={busy !== null || !hasManageableMeetings}
             >
-              {busy === "guests" ? <LoaderCircle className="button-spinner" size={17} /> : <Save size={17} />}
+              {busy === "guests" ? (
+                <LoaderCircle className="button-spinner" size={17} />
+              ) : (
+                <Save size={17} />
+              )}
               {busy === "guests" ? "Guardando invitados…" : "Guardar invitados y enviar correos"}
             </button>
           </article>
@@ -730,13 +777,17 @@ export function SeriesManagement({
               <BellRing size={19} aria-hidden="true" />
               <div>
                 <h3>Reenviar aviso</h3>
-                <p>Vuelve a enviar las fechas y enlaces de Meet a las personas activas del programa.</p>
+                <p>
+                  Vuelve a enviar las fechas y enlaces de Meet a las personas activas del programa.
+                </p>
               </div>
             </header>
             <div className="series-notify-summary">
               <strong>{programPeopleCount}</strong>
               <span>
-                {programPeopleCount === 1 ? "persona recibirá el aviso" : "personas recibirán el aviso"}
+                {programPeopleCount === 1
+                  ? "persona recibirá el aviso"
+                  : "personas recibirán el aviso"}
               </span>
             </div>
             <button
@@ -745,7 +796,11 @@ export function SeriesManagement({
               disabled={loadingPreview || busy !== null}
               onClick={previewNotice}
             >
-              {loadingPreview ? <LoaderCircle className="button-spinner" size={16} /> : <Eye size={16} />}{" "}
+              {loadingPreview ? (
+                <LoaderCircle className="button-spinner" size={16} />
+              ) : (
+                <Eye size={16} />
+              )}{" "}
               Vista previa real
             </button>
             <button
@@ -795,8 +850,8 @@ export function SeriesManagement({
               </div>
             </dl>
             <p>
-              Los cambios de horario, modalidad y asistencia se realizan desde el cronograma, sin modificar
-              los encuentros ya ocurridos.
+              Los cambios de horario, modalidad y asistencia se realizan desde el cronograma, sin
+              modificar los encuentros ya ocurridos.
             </p>
             <a className="secondary-action" href="#encuentros">
               Ir al cronograma
@@ -841,7 +896,7 @@ function normalizeManualEmails(value: string): readonly string[] {
       value
         .split(/[\n,;]+/)
         .map((email) => email.trim().toLowerCase())
-        .filter(Boolean)
-    )
+        .filter(Boolean),
+    ),
   ];
 }

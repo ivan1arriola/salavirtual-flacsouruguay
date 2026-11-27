@@ -30,13 +30,19 @@ export function normalizarCodigoReunionBuscado(value: string): string {
 
 export function agruparEncuentrosPorSerie<T extends EncuentroAgrupable>(
   meetings: readonly T[],
-  esHistorial = false
-): readonly (readonly T[])[] {
-  const groups = meetings.reduce<Readonly<Record<string, readonly T[]>>>((result, meeting) => {
+  esHistorial = false,
+): readonly (readonly [T, ...T[]])[] {
+  const groups = new Map<string, [T, ...T[]]>();
+  for (const meeting of meetings) {
     const key = claveSerieReunion(meeting.solicitud);
-    return { ...result, [key]: [...(result[key] ?? []), meeting] };
-  }, {});
-  const grouped = Object.values(groups);
+    const group = groups.get(key);
+    if (group) {
+      group.push(meeting);
+    } else {
+      groups.set(key, [meeting]);
+    }
+  }
+  const grouped = [...groups.values()];
 
   if (!esHistorial) {
     return grouped;
@@ -46,11 +52,13 @@ export function agruparEncuentrosPorSerie<T extends EncuentroAgrupable>(
 }
 
 function ordenarPorRecencia<T extends EncuentroAgrupable>(
-  groups: readonly (readonly T[])[]
-): readonly (readonly T[])[] {
-  return groups.reduce<readonly (readonly T[])[]>((ordered, group) => {
+  groups: readonly (readonly [T, ...T[]])[],
+): readonly (readonly [T, ...T[]])[] {
+  return groups.reduce<readonly (readonly [T, ...T[]])[]>((ordered, group) => {
     const timestamp = fechaMasReciente(group);
-    const insertionIndex = ordered.findIndex((candidate) => fechaMasReciente(candidate) < timestamp);
+    const insertionIndex = ordered.findIndex(
+      (candidate) => fechaMasReciente(candidate) < timestamp,
+    );
 
     return insertionIndex < 0
       ? [...ordered, group]
@@ -77,21 +85,21 @@ export type InfoPaginacionAgenda = Readonly<{
 
 export function resolverPaginacionAgenda(
   pageParam: string | undefined,
-  pageSize = 50
+  pageSize = 50,
 ): Readonly<{ page: number; pageSize: number; skip: number }> {
   const parsed = Number.parseInt(pageParam ?? "1", 10);
   const page = Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
   return {
     page,
     pageSize,
-    skip: (page - 1) * pageSize
+    skip: (page - 1) * pageSize,
   };
 }
 
 export function calcularInfoPaginacion(
   totalElementos: number,
   paginaActual: number,
-  tamanoPagina = 50
+  tamanoPagina = 50,
 ): InfoPaginacionAgenda {
   const totalPaginas = Math.max(1, Math.ceil(totalElementos / tamanoPagina));
   const page = Math.min(Math.max(1, paginaActual), totalPaginas);
@@ -106,11 +114,14 @@ export function calcularInfoPaginacion(
     desdeElemento,
     hastaElemento,
     tieneAnterior: page > 1,
-    tieneSiguiente: page < totalPaginas
+    tieneSiguiente: page < totalPaginas,
   };
 }
 
-export function parsearFechaFiltro(dateString: string | undefined, isEnd = false): string | undefined {
+export function parsearFechaFiltro(
+  dateString: string | undefined,
+  isEnd = false,
+): string | undefined {
   if (!dateString) {
     return undefined;
   }

@@ -7,7 +7,7 @@ export function MeetingTypeSelector({
   onModeChange,
   pendingMode,
   onConfirm,
-  onCancel
+  onCancel,
 }: Readonly<{
   dateMode: MeetingDateMode;
   onModeChange: (mode: MeetingDateMode) => void;
@@ -28,8 +28,8 @@ export function MeetingTypeSelector({
   }, [pendingMode]);
 
   return (
-    <div className={styles.typeSection}>
-      <fieldset className={styles.typeSelector} ref={selectorRef}>
+    <div className={styles["typeSection"]}>
+      <fieldset className={styles["typeSelector"]} ref={selectorRef}>
         <legend>Tipo de reunión</legend>
         <label>
           <input
@@ -64,7 +64,7 @@ export function MeetingTypeSelector({
       </fieldset>
       {pendingMode ? (
         <div
-          className={styles.changeNotice}
+          className={styles["changeNotice"]}
           role="group"
           aria-labelledby="cambio-tipo-titulo"
           aria-describedby="cambio-tipo-detalle"

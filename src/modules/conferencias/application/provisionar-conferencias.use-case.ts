@@ -4,7 +4,7 @@ import {
   esErrorDeScopesInsuficientes,
   type ConferenceProvisionRequest,
   type ConferenceProvisionResult,
-  type ProvisionConferenciaResult
+  type ProvisionConferenciaResult,
 } from "../domain";
 import type {
   ClaimInfo,
@@ -12,7 +12,7 @@ import type {
   ConferenceProviderFactory,
   ConferenciasRepositoryPort,
   WorkspaceCredentialsResult,
-  ZoomCredentialsResult
+  ZoomCredentialsResult,
 } from "../ports";
 import {
   obtenerZoomAccessToken,
@@ -23,10 +23,13 @@ import {
   crearReunionZoomRecurrenteHttp,
   buscarReunionZoomPorMarcaHttp,
   actualizarOcurrenciaZoomHttp,
-  type ZoomMeetingResult
+  type ZoomMeetingResult,
 } from "@/src/integrations/zoom/zoom-client";
 import { debeEliminarseReunionCompartida } from "@/src/modules/reuniones/reunion-compartida.domain";
-import { calcularRecurrenciaZoom, detectarOcurrenciasAjustar } from "../domain/zoom-recurrence.domain";
+import {
+  calcularRecurrenciaZoom,
+  detectarOcurrenciasAjustar,
+} from "../domain/zoom-recurrence.domain";
 
 export class MeetSettingsScopeError extends Error {
   constructor(message: string) {
@@ -38,7 +41,7 @@ export class MeetSettingsScopeError extends Error {
 export async function sincronizarEventosPendientesUseCase(
   repository: ConferenciasRepositoryPort,
   providerFactory: ConferenceProviderFactory,
-  ids: readonly string[]
+  ids: readonly string[],
 ): Promise<readonly ProvisionConferenciaResult[]> {
   const uniqueIds = [...new Set(ids)];
   if (uniqueIds.length === 0) {
@@ -49,7 +52,9 @@ export async function sincronizarEventosPendientesUseCase(
   const byId = new Map(snapshots.map((item) => [item.id, item]));
   const pendingIds = uniqueIds.filter((id) => byId.get(id)?.operacionPendiente);
   const settled = await Promise.all(
-    uniqueIds.filter((id) => !pendingIds.includes(id)).map((id) => repository.obtenerEstadoActual(id))
+    uniqueIds
+      .filter((id) => !pendingIds.includes(id))
+      .map((id) => repository.obtenerEstadoActual(id)),
   );
 
   if (pendingIds.length === 0) {
@@ -71,7 +76,10 @@ export async function sincronizarEventosPendientesUseCase(
     const hostEmail = claim.event.organizerEmail;
     if (!hostEmail) {
       results.push(
-        await repository.registrarErrorReclamado(claim, "La cuenta host no tiene email organizador.")
+        await repository.registrarErrorReclamado(
+          claim,
+          "La cuenta host no tiene email organizador.",
+        ),
       );
       continue;
     }
@@ -83,13 +91,18 @@ export async function sincronizarEventosPendientesUseCase(
         zoomCreds = await repository.obtenerCredencialesZoom();
       }
 
-      if (!zoomCreds.disponible || !zoomCreds.accountId || !zoomCreds.clientId || !zoomCreds.clientSecret) {
+      if (
+        !zoomCreds.disponible ||
+        !zoomCreds.accountId ||
+        !zoomCreds.clientId ||
+        !zoomCreds.clientSecret
+      ) {
         results.push(
           await repository.registrarErrorReclamado(
             claim,
             zoomCreds.error ||
-              "Credenciales de Zoom Server-to-Server OAuth no configuradas en el sistema (Administración > Zoom)."
-          )
+              "Credenciales de Zoom Server-to-Server OAuth no configuradas en el sistema (Administración > Zoom).",
+          ),
         );
         continue;
       }
@@ -98,20 +111,25 @@ export async function sincronizarEventosPendientesUseCase(
         const token = await obtenerZoomAccessToken({
           accountId: zoomCreds.accountId,
           clientId: zoomCreds.clientId,
-          clientSecret: zoomCreds.clientSecret
+          clientSecret: zoomCreds.clientSecret,
         });
 
         const request = claim.event.request;
         const durationMinutes = Math.max(
           1,
-          Math.round((request.fin.getTime() - request.inicio.getTime()) / 60_000)
+          Math.round((request.fin.getTime() - request.inicio.getTime()) / 60_000),
         );
         let result: ConferenceProvisionResult | null = null;
 
         switch (claim.operacion) {
           case "PROVISIONAR": {
             if (claim.event.reunionProveedorId) {
-              const compartida = await provisionarReunionCompartida(repository, claim, token, hostEmail);
+              const compartida = await provisionarReunionCompartida(
+                repository,
+                claim,
+                token,
+                hostEmail,
+              );
               if (compartida.espera) {
                 // Otro encuentro de la serie está creando la reunión: se reintenta sin esperar al reclamo del evento.
                 await repository.liberarReclamoEvento?.(claim);
@@ -124,8 +142,8 @@ export async function sincronizarEventosPendientesUseCase(
                 joinUrl: compartida.meetingInfo.joinUrl,
                 payload: {
                   meetingId: compartida.meetingInfo.meetingId,
-                  joinUrl: compartida.meetingInfo.joinUrl
-                }
+                  joinUrl: compartida.meetingInfo.joinUrl,
+                },
               };
               await repository.persistirMeetDetectado(claim, result);
               break;
@@ -141,12 +159,12 @@ export async function sincronizarEventosPendientesUseCase(
                 durationMinutes,
                 timezone: request.timezone || "America/Montevideo",
                 agenda: request.descripcion,
-                requiereGrabacion: request.requiereGrabacion ?? false
+                requiereGrabacion: request.requiereGrabacion ?? false,
               });
               externalEventId = meetingInfo.meetingId;
               await repository.guardarExternalEventIdTemprano(claim, externalEventId, {
                 meetingId: meetingInfo.meetingId,
-                joinUrl: meetingInfo.joinUrl
+                joinUrl: meetingInfo.joinUrl,
               });
             } else {
               meetingInfo = await obtenerReunionZoomHttp(token, externalEventId);
@@ -156,7 +174,7 @@ export async function sincronizarEventosPendientesUseCase(
               externalEventId,
               codigoReunion: externalEventId,
               joinUrl: meetingInfo.joinUrl,
-              payload: { meetingId: meetingInfo.meetingId, joinUrl: meetingInfo.joinUrl }
+              payload: { meetingId: meetingInfo.meetingId, joinUrl: meetingInfo.joinUrl },
             };
             await repository.persistirMeetDetectado(claim, result);
             break;
@@ -173,7 +191,7 @@ export async function sincronizarEventosPendientesUseCase(
                 startTime: request.inicio,
                 durationMinutes,
                 timezone: request.timezone || "America/Montevideo",
-                agenda: request.descripcion
+                agenda: request.descripcion,
               });
             }
             const meetingInfo = await obtenerReunionZoomHttp(token, claim.event.externalEventId);
@@ -184,8 +202,8 @@ export async function sincronizarEventosPendientesUseCase(
               payload: {
                 meetingId: meetingInfo.meetingId,
                 joinUrl: meetingInfo.joinUrl,
-                reprogramadoAt: new Date().toISOString()
-              }
+                reprogramadoAt: new Date().toISOString(),
+              },
             };
             await repository.persistirMeetDetectado(claim, result);
             break;
@@ -203,8 +221,8 @@ export async function sincronizarEventosPendientesUseCase(
               payload: {
                 meetingId: meetingInfo.meetingId,
                 joinUrl: meetingInfo.joinUrl,
-                configuradoAt: new Date().toISOString()
-              }
+                configuradoAt: new Date().toISOString(),
+              },
             };
             break;
           }
@@ -224,7 +242,7 @@ export async function sincronizarEventosPendientesUseCase(
             const completed = await repository.finalizarOperacion(claim, null, true);
             results.push({
               eventoProveedorId: id,
-              estado: completed ? "SINCRONIZADA" : "EN_PROCESO"
+              estado: completed ? "SINCRONIZADA" : "EN_PROCESO",
             });
             continue;
           }
@@ -234,7 +252,7 @@ export async function sincronizarEventosPendientesUseCase(
         results.push({
           eventoProveedorId: id,
           estado: completed ? "SINCRONIZADA" : "EN_PROCESO",
-          ...(completed && result?.codigoReunion ? { codigoReunion: result.codigoReunion } : {})
+          ...(completed && result?.codigoReunion ? { codigoReunion: result.codigoReunion } : {}),
         });
       } catch (error) {
         const detail = error instanceof Error ? error.message : "Error desconocido de Zoom.";
@@ -247,12 +265,16 @@ export async function sincronizarEventosPendientesUseCase(
     if (!workspaceCreds) {
       workspaceCreds = await repository.obtenerCredencialesWorkspace();
     }
-    if (!workspaceCreds.disponible || !workspaceCreds.serviceAccountEmail || !workspaceCreds.privateKey) {
+    if (
+      !workspaceCreds.disponible ||
+      !workspaceCreds.serviceAccountEmail ||
+      !workspaceCreds.privateKey
+    ) {
       results.push(
         await repository.registrarErrorReclamado(
           claim,
-          workspaceCreds.error || "Credenciales de Google Workspace no configuradas."
-        )
+          workspaceCreds.error || "Credenciales de Google Workspace no configuradas.",
+        ),
       );
       continue;
     }
@@ -260,7 +282,7 @@ export async function sincronizarEventosPendientesUseCase(
     const provider = providerFactory({
       serviceAccountEmail: workspaceCreds.serviceAccountEmail,
       privateKey: workspaceCreds.privateKey,
-      subject: hostEmail
+      subject: hostEmail,
     });
 
     try {
@@ -273,17 +295,25 @@ export async function sincronizarEventosPendientesUseCase(
           if (!externalEventId) {
             const sharedConference = await repository.buscarConferenceDataCompartida(
               claim.event.solicitudSalaId,
-              claim.event.id
+              claim.event.id,
             );
             const created = await provider.crearEventoCalendar({
               ...request,
-              conferenceData: sharedConference
+              conferenceData: sharedConference,
             });
             externalEventId = created.externalEventId;
-            await repository.guardarExternalEventIdTemprano(claim, externalEventId, created.payload);
+            await repository.guardarExternalEventIdTemprano(
+              claim,
+              externalEventId,
+              created.payload,
+            );
           }
 
-          const obtained = await obtenerConReintentos(provider, request.calendarId, externalEventId);
+          const obtained = await obtenerConReintentos(
+            provider,
+            request.calendarId,
+            externalEventId,
+          );
           if (!obtained) {
             throw new Error("Google Calendar todavía no terminó de generar el enlace Meet.");
           }
@@ -298,8 +328,8 @@ export async function sincronizarEventosPendientesUseCase(
               obtained.codigoReunion,
               request.calendarId,
               request.cohostEmails ?? [],
-              new Date().toISOString()
-            )
+              new Date().toISOString(),
+            ),
           };
           break;
         }
@@ -312,7 +342,7 @@ export async function sincronizarEventosPendientesUseCase(
           const obtained = await obtenerConReintentos(
             provider,
             request.calendarId,
-            claim.event.externalEventId
+            claim.event.externalEventId,
           );
           if (!obtained) {
             throw new Error("Google Calendar no confirmó el evento reprogramado.");
@@ -331,8 +361,8 @@ export async function sincronizarEventosPendientesUseCase(
               obtained.codigoReunion,
               request.calendarId,
               request.cohostEmails ?? [],
-              new Date().toISOString()
-            )
+              new Date().toISOString(),
+            ),
           };
           break;
         }
@@ -344,7 +374,7 @@ export async function sincronizarEventosPendientesUseCase(
           const obtained = await obtenerConReintentos(
             provider,
             request.calendarId,
-            claim.event.externalEventId
+            claim.event.externalEventId,
           );
           if (!obtained) {
             throw new Error("Google Calendar todavía no confirmó el enlace Meet.");
@@ -360,8 +390,8 @@ export async function sincronizarEventosPendientesUseCase(
               obtained.codigoReunion,
               request.calendarId,
               request.cohostEmails ?? [],
-              new Date().toISOString()
-            )
+              new Date().toISOString(),
+            ),
           };
           break;
         }
@@ -379,7 +409,7 @@ export async function sincronizarEventosPendientesUseCase(
           const completed = await repository.finalizarOperacion(claim, null, true);
           results.push({
             eventoProveedorId: id,
-            estado: completed ? "SINCRONIZADA" : "EN_PROCESO"
+            estado: completed ? "SINCRONIZADA" : "EN_PROCESO",
           });
           continue;
         }
@@ -389,11 +419,12 @@ export async function sincronizarEventosPendientesUseCase(
       results.push({
         eventoProveedorId: id,
         estado: completed ? "SINCRONIZADA" : "EN_PROCESO",
-        ...(completed && result?.codigoReunion ? { codigoReunion: result.codigoReunion } : {})
+        ...(completed && result?.codigoReunion ? { codigoReunion: result.codigoReunion } : {}),
       });
     } catch (error) {
       const detail = error instanceof Error ? error.message : "Error desconocido de Google.";
-      const isScope = error instanceof MeetSettingsScopeError || esErrorDeScopesInsuficientes(detail);
+      const isScope =
+        error instanceof MeetSettingsScopeError || esErrorDeScopesInsuficientes(detail);
       results.push(await repository.registrarErrorReclamado(claim, detail, isScope));
     }
   }
@@ -404,12 +435,13 @@ export async function sincronizarEventosPendientesUseCase(
 async function configurarAjustesMeet(
   provider: ConferenceProvider,
   request: ConferenceProvisionRequest,
-  result: ConferenceProvisionResult
+  result: ConferenceProvisionResult,
 ): Promise<void> {
   try {
     await provider.configurarEventoMeet(request, result);
   } catch (error) {
-    const detail = error instanceof Error ? error.message : "No se pudo configurar el espacio de Meet.";
+    const detail =
+      error instanceof Error ? error.message : "No se pudo configurar el espacio de Meet.";
     if (esErrorDeScopesInsuficientes(detail)) {
       throw new MeetSettingsScopeError(detail);
     }
@@ -420,7 +452,7 @@ async function configurarAjustesMeet(
 async function obtenerConReintentos(
   provider: ConferenceProvider,
   calendarId: string,
-  externalEventId: string
+  externalEventId: string,
 ): Promise<ConferenceProvisionResult | null> {
   for (const delay of [0, 250, 500, 1000, 2000]) {
     if (delay) {
@@ -461,13 +493,13 @@ async function provisionarReunionCompartida(
   repository: ConferenciasRepositoryPort,
   claim: ClaimInfo,
   token: string,
-  hostEmail: string
+  hostEmail: string,
 ): Promise<ProvisionCompartida> {
   const {
     reclamarCreacionReunionCompartida,
     registrarExternalIdTemprano,
     guardarReunionCompartida,
-    vincularEventoReunionCompartida
+    vincularEventoReunionCompartida,
   } = repository;
   if (
     !reclamarCreacionReunionCompartida ||
@@ -498,7 +530,10 @@ async function provisionarReunionCompartida(
       ? { meetingId: reclamo.externalId, joinUrl: reclamo.joinUrl }
       : await obtenerReunionZoomHttp(token, reclamo.externalId);
     // Un encuentro agregado después de crear la reunión no recibió la copia del ID: se vincula ahora.
-    await vincularEventoReunionCompartida(claim, { externalId: info.meetingId, joinUrl: info.joinUrl });
+    await vincularEventoReunionCompartida(claim, {
+      externalId: info.meetingId,
+      joinUrl: info.joinUrl,
+    });
     return { espera: false, meetingInfo: info };
   }
 
@@ -527,7 +562,7 @@ async function provisionarReunionCompartida(
       timezone: tz,
       agenda: [request.descripcion, marca].filter(Boolean).join("\n"),
       requiereGrabacion: request.requiereGrabacion ?? false,
-      recurrence: recurrencia.recurrence
+      recurrence: recurrencia.recurrence,
     });
 
     // Se registra externalId inmediatamente para que cualquier reintento o falla reconozca la reunión
@@ -539,23 +574,23 @@ async function provisionarReunionCompartida(
         zoomRecurrente.occurrences,
         instancias.map((i) => ({
           inicio: i.inicio,
-          fin: i.fin ?? new Date(i.inicio.getTime() + recurrencia.durationMinutes * 60_000)
+          fin: i.fin ?? new Date(i.inicio.getTime() + recurrencia.durationMinutes * 60_000),
         })),
-        tz
+        tz,
       );
       for (const ajuste of aAjustar) {
         try {
           await actualizarOcurrenciaZoomHttp(token, zoomRecurrente.meetingId, ajuste.occurrenceId, {
             startTime: ajuste.startTime,
             durationMinutes: ajuste.durationMinutes,
-            timezone: tz
+            timezone: tz,
           });
         } catch {
           await new Promise((resolve) => setTimeout(resolve, 500));
           await actualizarOcurrenciaZoomHttp(token, zoomRecurrente.meetingId, ajuste.occurrenceId, {
             startTime: ajuste.startTime,
             durationMinutes: ajuste.durationMinutes,
-            timezone: tz
+            timezone: tz,
           }).catch(() => undefined);
         }
       }
@@ -566,9 +601,12 @@ async function provisionarReunionCompartida(
 
   await guardarReunionCompartida(reclamo.reunionId, claim.token, {
     externalId: info.meetingId,
-    joinUrl: info.joinUrl
+    joinUrl: info.joinUrl,
   });
-  await vincularEventoReunionCompartida(claim, { externalId: info.meetingId, joinUrl: info.joinUrl });
+  await vincularEventoReunionCompartida(claim, {
+    externalId: info.meetingId,
+    joinUrl: info.joinUrl,
+  });
   return { espera: false, meetingInfo: info };
 }
 
@@ -580,7 +618,7 @@ async function provisionarReunionCompartida(
 async function cancelarUsoReunionCompartida(
   repository: ConferenciasRepositoryPort,
   claim: ClaimInfo,
-  token: string
+  token: string,
 ): Promise<void> {
   const { usosDeReunionCompartida, marcarReunionCompartidaEliminada } = repository;
   const reunionId = claim.event.reunionProveedorId;
@@ -588,7 +626,10 @@ async function cancelarUsoReunionCompartida(
     throw new Error("El repositorio no soporta reuniones de Zoom compartidas.");
   }
   const estado = await usosDeReunionCompartida(reunionId);
-  if (estado.eliminada || !debeEliminarseReunionCompartida(estado.usos, claim.event.id, new Date())) {
+  if (
+    estado.eliminada ||
+    !debeEliminarseReunionCompartida(estado.usos, claim.event.id, new Date())
+  ) {
     return;
   }
 

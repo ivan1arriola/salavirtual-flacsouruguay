@@ -6,7 +6,7 @@ import { contarReunionesFuturasZoom } from "./zoom-grupo-sincronizacion.service"
 export async function obtenerDatosPaginaConfiguracion(
   db: PrismaClient,
   section: string,
-  ahora: Date = new Date()
+  ahora: Date = new Date(),
 ) {
   const [
     configuration,
@@ -15,7 +15,7 @@ export async function obtenerDatosPaginaConfiguracion(
     programCount,
     activeProgramCount,
     futureMeetingsByAccount,
-    zoomGrupo
+    zoomGrupo,
   ] = await Promise.all([
     obtenerCredencialPrincipalGoogleWorkspace(db, (k) => k, { requireActiva: false }),
     db.configuracionAsistenciaTecnica.findUnique({ where: { id: "principal" } }),
@@ -34,12 +34,14 @@ export async function obtenerDatosPaginaConfiguracion(
         origenGrupoZoom: true,
         fueraDelGrupoAt: true,
         proveedor: { select: { tipo: true, nombre: true } },
-        _count: { select: { eventosProveedor: true } }
-      }
+        _count: { select: { eventosProveedor: true } },
+      },
     }),
     db.programa.count(),
     db.programa.count({ where: { activo: true } }),
-    section === "salas" ? contarReunionesFuturasZoom(db, ahora) : Promise.resolve<Record<string, number>>({}),
+    section === "salas"
+      ? contarReunionesFuturasZoom(db, ahora)
+      : Promise.resolve<Record<string, number>>({}),
     section === "zoom"
       ? db.configuracionZoom.findUnique({
           where: { id: "principal" },
@@ -47,15 +49,15 @@ export async function obtenerDatosPaginaConfiguracion(
             grupoId: true,
             grupoNombre: true,
             ultimaSincronizacionAt: true,
-            ultimaSincronizacionResultado: true
-          }
+            ultimaSincronizacionResultado: true,
+          },
         })
-      : Promise.resolve(null)
+      : Promise.resolve(null),
   ]);
 
   const hosts = accounts.map((account) => ({
     ...account,
-    reunionesFuturas: futureMeetingsByAccount[account.id] ?? 0
+    reunionesFuturas: futureMeetingsByAccount[account.id] ?? 0,
   }));
 
   const adminReportRecipients =
@@ -63,13 +65,13 @@ export async function obtenerDatosPaginaConfiguracion(
       ? await db.usuario.findMany({
           where: { rol: "ADMINISTRACION", activo: true, emailPrincipal: { not: null } },
           orderBy: [{ apellidos: "asc" }, { nombres: "asc" }],
-          select: { emailPrincipal: true }
+          select: { emailPrincipal: true },
         })
       : [];
 
   const availableHosts = hosts.filter(esCuentaAsignable).length;
   const zoomAvailableHosts = hosts.filter(
-    (host) => host.proveedor?.tipo === "ZOOM" && esCuentaAsignable(host)
+    (host) => host.proveedor?.tipo === "ZOOM" && esCuentaAsignable(host),
   ).length;
 
   return {
@@ -81,6 +83,6 @@ export async function obtenerDatosPaginaConfiguracion(
     adminReportRecipients,
     availableHosts,
     zoomAvailableHosts,
-    zoomGrupo
+    zoomGrupo,
   };
 }

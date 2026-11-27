@@ -6,7 +6,7 @@ import { SettingsOverview } from "../src/components/settings-overview";
 describe("centro de configuración", () => {
   it("en el Resumen no repite el menú de áreas: las tarjetas ya navegan", () => {
     const html = renderToStaticMarkup(
-      <SettingsCenterShell activeSection="resumen">contenido</SettingsCenterShell>
+      <SettingsCenterShell activeSection="resumen">contenido</SettingsCenterShell>,
     );
     expect(html).not.toContain("Secciones de configuración");
     expect(html).toContain("settings-center__layout--solo");
@@ -15,7 +15,7 @@ describe("centro de configuración", () => {
 
   it("en las demás áreas muestra el menú lateral y el móvil", () => {
     const html = renderToStaticMarkup(
-      <SettingsCenterShell activeSection="salas">contenido</SettingsCenterShell>
+      <SettingsCenterShell activeSection="salas">contenido</SettingsCenterShell>,
     );
     expect(html.match(/Secciones de configuración/g)).toHaveLength(2);
     expect(html).not.toContain("settings-center__layout--solo");
@@ -23,7 +23,7 @@ describe("centro de configuración", () => {
 
   it("titula los grupos del menú en el lateral y en el móvil", () => {
     const html = renderToStaticMarkup(
-      <SettingsCenterShell activeSection="salas">contenido</SettingsCenterShell>
+      <SettingsCenterShell activeSection="salas">contenido</SettingsCenterShell>,
     );
     for (const grupo of ["Integraciones", "Operación", "Comunicación"]) {
       expect(html.match(new RegExp(`settings-nav-group">${grupo}<`, "g"))).toHaveLength(2);
@@ -32,7 +32,7 @@ describe("centro de configuración", () => {
 
   it("el menú no ofrece el histórico y el Inicio lo enlaza", () => {
     const menu = renderToStaticMarkup(
-      <SettingsCenterShell activeSection="salas">contenido</SettingsCenterShell>
+      <SettingsCenterShell activeSection="salas">contenido</SettingsCenterShell>,
     );
     expect(menu).not.toContain("Registros Zoom importados");
     const inicio = renderToStaticMarkup(
@@ -44,9 +44,9 @@ describe("centro de configuración", () => {
           integrationActive: true,
           totalHosts: 1,
           activePrograms: 0,
-          totalPrograms: 0
+          totalPrograms: 0,
         }}
-      />
+      />,
     );
     expect(inicio).toContain('href="/configuracion/historico"');
     expect(inicio).not.toContain("Meet");
@@ -62,9 +62,9 @@ describe("centro de configuración", () => {
           integrationActive: false,
           totalHosts: 2,
           activePrograms: 0,
-          totalPrograms: 0
+          totalPrograms: 0,
         }}
-      />
+      />,
     );
     const avisos = html.match(/<section class="settings-attention /g) ?? [];
     const iconos = html.match(/class="settings-attention__icon"/g) ?? [];

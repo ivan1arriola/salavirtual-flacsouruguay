@@ -9,7 +9,7 @@ export function NavegacionEncuentroZoom({
   reunion,
   rol,
   historica,
-  actualizarAutomaticamente
+  actualizarAutomaticamente,
 }: Readonly<{
   reunion: ReunionOperativaView;
   rol: "ADMINISTRACION" | "DOCENTE" | "ASISTENTE_TECNICO";
@@ -18,17 +18,20 @@ export function NavegacionEncuentroZoom({
 }>) {
   const asistente = rol === "ASISTENTE_TECNICO";
   return (
-    <nav className={styles.toolbar} aria-label="Navegación del encuentro">
-      <Link href={asistente ? "/mi-agenda" : "/reuniones?proveedor=zoom"} className={styles.back}>
+    <nav className={styles["toolbar"]} aria-label="Navegación del encuentro">
+      <Link
+        href={asistente ? "/mi-agenda" : "/reuniones?proveedor=zoom"}
+        className={styles["back"]}
+      >
         <ArrowLeft size={17} aria-hidden="true" /> Volver a reuniones
       </Link>
-      <div className={styles.refresh}>
-        <Link href={`/reuniones/${reunion.solicitudId}`} className={styles.back}>
+      <div className={styles["refresh"]}>
+        <Link href={`/reuniones/${reunion.solicitudId}`} className={styles["back"]}>
           <List size={16} aria-hidden="true" /> Ver serie y encuentros
         </Link>
         {historica ? (
           <>
-            <span className={styles.historyTag}>
+            <span className={styles["historyTag"]}>
               <History size={15} aria-hidden="true" /> Historial
             </span>
             <OperationalAutoRefresh enabled={actualizarAutomaticamente ?? false} />

@@ -3,7 +3,7 @@ import type { PeriodoMes, PeriodoReporteMensual, ResumenAsistencia } from "./liq
 const utc3PartsFormatter = new Intl.DateTimeFormat("en-CA", {
   timeZone: "America/Montevideo",
   year: "numeric",
-  month: "2-digit"
+  month: "2-digit",
 });
 
 function yearAndMonthUtc3(fecha: Date): Readonly<{ year: number; month: number }> {
@@ -16,7 +16,7 @@ export function rangoMesUtc3(fecha: Date): Readonly<{ desdeMs: number; hastaMs: 
   const { year, month } = yearAndMonthUtc3(fecha);
   return {
     desdeMs: Date.UTC(year, month - 1, 1, 3),
-    hastaMs: Date.UTC(year, month, 1, 3)
+    hastaMs: Date.UTC(year, month, 1, 3),
   };
 }
 
@@ -29,7 +29,7 @@ export function calcularMinutos(
   programado: Readonly<{ inicio: Date; fin: Date }>,
   confirmado: number | null,
   reportado: number | null,
-  real: Readonly<{ inicio: Date | null; fin: Date | null }>
+  real: Readonly<{ inicio: Date | null; fin: Date | null }>,
 ): number {
   if (confirmado !== null) {
     return Math.max(0, confirmado);
@@ -45,7 +45,7 @@ export function calcularMinutos(
 export function calcularMonto(
   montoConfirmado: number | null,
   tarifaHora: number | null,
-  minutos: number
+  minutos: number,
 ): number | null {
   if (montoConfirmado !== null) {
     return montoConfirmado;
@@ -56,13 +56,14 @@ export function calcularMonto(
 export function resolverPeriodoMes(valor: string | undefined, ahora: Date): PeriodoMes {
   const fallback = claveMesUtc3(ahora);
   const clave = valor && /^\d{4}-(0[1-9]|1[0-2])$/.test(valor) ? valor : fallback;
-  const [year, month] = clave.split("-").map(Number);
+  const year = Number(clave.slice(0, 4));
+  const month = Number(clave.slice(5, 7));
   return {
     clave,
     desdeMs: Date.UTC(year, month - 1, 1, 3),
     hastaMs: Date.UTC(year, month, 1, 3),
     anterior: claveDesdeUtc(year, month - 2),
-    siguiente: claveDesdeUtc(year, month)
+    siguiente: claveDesdeUtc(year, month),
   };
 }
 
@@ -75,7 +76,7 @@ export function periodoMesAnteriorUtc3(ahora: Date): PeriodoReporteMensual {
   return {
     clave: `${previousYear}-${String(previousMonth).padStart(2, "0")}`,
     desdeMs: Date.UTC(previousYear, previousMonth - 1, 1, 3),
-    hastaMs: Date.UTC(year, month - 1, 1, 3)
+    hastaMs: Date.UTC(year, month - 1, 1, 3),
   };
 }
 
@@ -107,7 +108,7 @@ export function etiquetaMes(periodo: string): string {
   return new Intl.DateTimeFormat("es-UY", {
     month: "long",
     year: "numeric",
-    timeZone: "America/Montevideo"
+    timeZone: "America/Montevideo",
   }).format(Date.UTC(year, month - 1, 15, 12));
 }
 

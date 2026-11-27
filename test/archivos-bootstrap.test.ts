@@ -4,21 +4,21 @@ vi.mock("server-only", () => ({}));
 vi.mock("@/src/lib/db", () => ({
   db: {
     configuracionGoogleWorkspace: {
-      findUnique: vi.fn().mockResolvedValue(null)
+      findUnique: vi.fn().mockResolvedValue(null),
     },
     eventoProveedor: {
       findMany: vi.fn().mockResolvedValue([]),
       findFirst: vi.fn().mockResolvedValue(null),
-      update: vi.fn().mockResolvedValue({})
+      update: vi.fn().mockResolvedValue({}),
     },
     archivoReunion: {
       findMany: vi.fn().mockResolvedValue([]),
-      upsert: vi.fn().mockResolvedValue({})
-    }
-  }
+      upsert: vi.fn().mockResolvedValue({}),
+    },
+  },
 }));
 vi.mock("@/src/lib/config/encryption", () => ({
-  descifrarConfiguracion: vi.fn().mockReturnValue("decrypted")
+  descifrarConfiguracion: vi.fn().mockReturnValue("decrypted"),
 }));
 
 import {
@@ -26,7 +26,7 @@ import {
   crearArtifactProvider,
   listarArchivosMeetVisibles,
   obtenerParticipantesActivosInstancia,
-  sincronizarArtefactos
+  sincronizarArtefactos,
 } from "@/src/bootstrap/archivos.server";
 
 describe("archivos: bootstrap server", () => {
@@ -36,8 +36,9 @@ describe("archivos: bootstrap server", () => {
 
     const provider = crearArtifactProvider({
       serviceAccountEmail: "sa@flacso.edu.uy",
-      privateKey: "-----BEGIN RSA PRIVATE KEY-----\nMIIEowIBAAKCAQEA0...\n-----END RSA PRIVATE KEY-----\n",
-      subject: "host@flacso.edu.uy"
+      privateKey:
+        "-----BEGIN RSA PRIVATE KEY-----\nMIIEowIBAAKCAQEA0...\n-----END RSA PRIVATE KEY-----\n",
+      subject: "host@flacso.edu.uy",
     });
     expect(provider).toBeDefined();
 

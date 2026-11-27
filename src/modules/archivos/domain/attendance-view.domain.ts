@@ -1,4 +1,7 @@
-import { conciliarMeetReports, type IndicadorConciliacion } from "./meet-reports-reconciliation.domain";
+import {
+  conciliarMeetReports,
+  type IndicadorConciliacion,
+} from "./meet-reports-reconciliation.domain";
 
 export type FilaVistaAsistencia = Readonly<{
   id: string;
@@ -37,7 +40,7 @@ function porcentaje(value: unknown): number {
   const amount = numero(raw.replace("%", ""));
   return Math.min(
     100,
-    Math.max(0, Math.round((raw.includes("%") || amount > 1 ? amount : amount * 100) * 100) / 100)
+    Math.max(0, Math.round((raw.includes("%") || amount > 1 ? amount : amount * 100) * 100) / 100),
   );
 }
 
@@ -49,7 +52,7 @@ function emailVerificado(value: unknown): string | null {
 function convertirFilaAntigua(
   row: readonly unknown[],
   index: number,
-  rol?: string
+  rol?: string,
 ): FilaVistaAsistencia | null {
   const nombre = texto(row[0]);
   const correo = emailVerificado(row[1]);
@@ -68,14 +71,14 @@ function convertirFilaAntigua(
     porcentaje: tieneRol ? 0 : porcentaje(row[5]),
     cumple: tieneRol ? false : texto(row[6]) === "CUMPLE",
     conexiones: Math.max(0, numero(row[tieneRol ? 6 : 7])),
-    ...(rol ? { rol } : {})
+    ...(rol ? { rol } : {}),
   };
 }
 
 export function construirVistaAsistencia(
   datos: DatosPlanillaAsistencia,
   inicio: Date,
-  fin: Date
+  fin: Date,
 ): Readonly<{
   participantes: readonly FilaVistaAsistencia[];
   responsables: readonly FilaVistaAsistencia[];
@@ -87,17 +90,24 @@ export function construirVistaAsistencia(
   const raw = datos.datosBrutos.slice(1);
   const meetRows = raw.filter((row) => texto(row[0]).toUpperCase() === "MEET");
   const auditRows = raw.filter(
-    (row) => texto(row[0]).toUpperCase() === "REPORTS" || texto(row[0]).toUpperCase() === "REPORTS_IDENTIDAD"
+    (row) =>
+      texto(row[0]).toUpperCase() === "REPORTS" ||
+      texto(row[0]).toUpperCase() === "REPORTS_IDENTIDAD",
   );
   const reconciled = conciliarMeetReports(
-    meetRows.map((row) => ({
-      nombre: texto(row[1]) || "Sin identificar",
-      inicio: texto(row[5]),
-      fin: texto(row[6]),
-      participanteId: texto(row[3]) || undefined,
-      sesionId: texto(row[9]) || undefined,
-      correoVerificado: emailVerificado(row[2]) ?? undefined
-    })),
+    meetRows.map((row) => {
+      const participanteId = texto(row[3]);
+      const sesionId = texto(row[9]);
+      const correoVerificado = emailVerificado(row[2]);
+      return {
+        nombre: texto(row[1]) || "Sin identificar",
+        inicio: texto(row[5]),
+        fin: texto(row[6]),
+        ...(participanteId ? { participanteId } : {}),
+        ...(sesionId ? { sesionId } : {}),
+        ...(correoVerificado ? { correoVerificado } : {}),
+      };
+    }),
     auditRows.map((row) => ({
       nombre: texto(row[1]),
       identificador: texto(row[3]),
@@ -106,10 +116,10 @@ export function construirVistaAsistencia(
       endpointId: texto(row[9]),
       inicio: texto(row[5]),
       fin: texto(row[6]),
-      timestamp: texto(row[12]) || texto(row[6])
+      timestamp: texto(row[12]) || texto(row[6]),
     })),
     inicio,
-    fin
+    fin,
   );
 
   const participantes: readonly FilaVistaAsistencia[] = reconciled.meet.map((person) => ({
@@ -125,7 +135,7 @@ export function construirVistaAsistencia(
     conexiones: person.sesiones,
     conciliacion: person.conciliacion,
     diferenciaMinutos: person.diferenciaMinutos,
-    diferenciaSesiones: person.diferenciaSesiones
+    diferenciaSesiones: person.diferenciaSesiones,
   }));
 
   const reportes: readonly FilaVistaAsistencia[] = reconciled.reports.map((p) => ({
@@ -139,7 +149,7 @@ export function construirVistaAsistencia(
     porcentaje: p.resumen.porcentaje,
     cumple: p.resumen.cumpleCincoSextos,
     conexiones: p.sesiones,
-    conciliacion: p.vinculada ? "VERIFICADA" : "SIN_VINCULO"
+    conciliacion: p.vinculada ? "VERIFICADA" : "SIN_VINCULO",
   }));
 
   return {
@@ -159,6 +169,6 @@ export function construirVistaAsistencia(
           })
         : [],
     indicador: reconciled.indicador,
-    origenPrincipal: meetRows.length > 0 ? "MEET" : "SIN_MEET"
+    origenPrincipal: meetRows.length > 0 ? "MEET" : "SIN_MEET",
   };
 }

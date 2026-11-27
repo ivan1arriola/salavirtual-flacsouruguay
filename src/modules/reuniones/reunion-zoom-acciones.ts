@@ -4,14 +4,14 @@ export type ResultadoAccionEncuentro = Readonly<{ ok: boolean; mensaje: string }
 export async function enviarAccionEncuentro(
   request: typeof fetch,
   url: string,
-  init: Readonly<{ method: "PATCH" | "DELETE" | "POST"; body?: unknown }>
+  init: Readonly<{ method: "PATCH" | "DELETE" | "POST"; body?: unknown }>,
 ): Promise<ResultadoAccionEncuentro> {
   try {
     const response = await request(url, {
       method: init.method,
       ...(init.body === undefined
         ? {}
-        : { headers: { "Content-Type": "application/json" }, body: JSON.stringify(init.body) })
+        : { headers: { "Content-Type": "application/json" }, body: JSON.stringify(init.body) }),
     });
     const result = (await response.json().catch(() => ({}))) as {
       error?: string;

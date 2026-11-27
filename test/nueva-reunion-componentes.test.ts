@@ -16,7 +16,7 @@ const fecha = {
   horaFin: "17:00",
   horaAsistenciaInicio: "09:30",
   horaAsistenciaFin: "17:30",
-  descripcion: ""
+  descripcion: "",
 };
 const resumen: Parameters<typeof MeetingSummary>[0] = {
   dates: [fecha],
@@ -28,7 +28,7 @@ const resumen: Parameters<typeof MeetingSummary>[0] = {
   requiresRecording: false,
   meetingMode: "VIRTUAL",
   canAssignAssistant: false,
-  assistanceMode: "OPEN"
+  assistanceMode: "OPEN",
 };
 
 describe("datos académicos y resumen", () => {
@@ -37,13 +37,13 @@ describe("datos académicos y resumen", () => {
       createElement(AcademicDetails, {
         programs: [
           { id: "uno", label: "Programa uno", teacher: "Ana" },
-          { id: "dos", label: "Programa dos", teacher: "Luis" }
+          { id: "dos", label: "Programa dos", teacher: "Luis" },
         ],
         selectedProgramId: "uno",
         title: "Seminario",
         onTitleChange: sinCambios,
-        onProgramChange: sinCambios
-      })
+        onProgramChange: sinCambios,
+      }),
     );
     expect(html).toMatch(/<input(?=[^>]*name="titulo")(?=[^>]*minLength="3")[^>]*>/);
     expect(html).toContain('name="docenteProgramaId"');
@@ -57,7 +57,7 @@ describe("datos académicos y resumen", () => {
     [{ isReady: true }, "Listo para crear"],
     [{ selectedProgram: undefined, academicReady: false }, "Elegí un programa"],
     [{ academicReady: false }, "Completá el título"],
-    [{}, "Revisá fechas y horarios"]
+    [{}, "Revisá fechas y horarios"],
   ])("comunica el estado del formulario: %s", (cambios, texto) => {
     const html = renderToStaticMarkup(createElement(MeetingSummary, { ...resumen, ...cambios }));
     expect(html).toContain(texto);
@@ -70,8 +70,8 @@ describe("datos académicos y resumen", () => {
         ...resumen,
         dates: [fecha, { ...fecha, id: 2 }],
         requiresAssistance: true,
-        requiresRecording: true
-      })
+        requiresRecording: true,
+      }),
     );
     expect(uno).toContain("1 encuentro");
     expect(uno).toContain("Sin monitoreo · Sin grabación");
@@ -87,7 +87,7 @@ const recurrencia = {
   horaInicio: "10:00",
   horaFin: "17:00",
   horaAsistenciaInicio: "09:45",
-  horaAsistenciaFin: "17:00"
+  horaAsistenciaFin: "17:00",
 };
 
 function renderizarFechas(cambios: Partial<Parameters<typeof MeetingScheduleEditor>[0]> = {}) {
@@ -110,8 +110,8 @@ function renderizarFechas(cambios: Partial<Parameters<typeof MeetingScheduleEdit
       onAdd: sinCambios,
       onDuplicate: sinCambios,
       onModeChange: sinCambios,
-      ...cambios
-    })
+      ...cambios,
+    }),
   );
 }
 
@@ -150,8 +150,12 @@ describe("editores de fechas", () => {
   });
   it("permite editar la cobertura híbrida y calcula la virtual fija", () => {
     const hibrida = renderizarFechas({ requiresAssistance: true, meetingMode: "HIBRIDA" });
-    expect(hibrida).toMatch(/Llegada del asistente<\/span><input type="time" required="" value="09:30"/);
-    expect(hibrida).toMatch(/Salida del asistente<\/span><input type="time" required="" value="17:30"/);
+    expect(hibrida).toMatch(
+      /Llegada del asistente<\/span><input type="time" required="" value="09:30"/,
+    );
+    expect(hibrida).toMatch(
+      /Salida del asistente<\/span><input type="time" required="" value="17:30"/,
+    );
     const virtual = renderizarFechas({ requiresAssistance: true });
     expect(virtual).toContain('class="meeting-assistance-fields is-virtual"');
     expect(virtual).toContain("Llegada del asistente</span><strong>09:45</strong>");
@@ -161,13 +165,13 @@ describe("editores de fechas", () => {
     const html = renderizarFechas({
       requiresAssistance: true,
       meetingMode: "HIBRIDA",
-      dates: [{ ...fecha, horaAsistenciaInicio: "09:45" }]
+      dates: [{ ...fecha, horaAsistenciaInicio: "09:45" }],
     });
     expect(html).toContain('role="alert">El asistente debe llegar al menos 30 minutos antes');
     const regla = renderizarFechas({
       requiresAssistance: true,
       meetingMode: "HIBRIDA",
-      dateMode: "RECURRENT"
+      dateMode: "RECURRENT",
     });
     expect(regla).toContain('role="alert">La llegada debe ser al menos 30 min antes');
   });
@@ -186,8 +190,8 @@ function renderizarOpciones(cambios: Partial<Parameters<typeof MeetingOptions>[0
       onRequiresRecordingChange: sinCambios,
       onModeChange: sinCambios,
       onAssistanceModeChange: sinCambios,
-      ...cambios
-    })
+      ...cambios,
+    }),
   );
 }
 
@@ -202,7 +206,7 @@ describe("opciones de monitoreo y grabación", () => {
     const html = renderizarOpciones({
       requiresAssistance: true,
       assistanceMode: "ASSIGN",
-      assistants: [{ id: "uno", label: "Ana" }]
+      assistants: [{ id: "uno", label: "Ana" }],
     });
     expect(html).toContain("Abierta a postulaciones");
     expect(html).toContain('name="modalidad"');
@@ -216,8 +220,8 @@ describe("opciones de monitoreo y grabación", () => {
       assistanceMode: "ASSIGN",
       assistants: [
         { id: "uno", label: "Ana" },
-        { id: "dos", label: "Luis" }
-      ]
+        { id: "dos", label: "Luis" },
+      ],
     });
     expect(html).toMatch(/<select[^>]*name="asistenteTecnicoId"/);
     expect(html).toContain('<option value="uno">Ana</option>');

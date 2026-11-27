@@ -27,7 +27,7 @@ export type ResultadoNotificacionAsignadas = Readonly<{
  */
 export async function renotificarReunionesSinAsignar(
   db: PrismaClient,
-  actor: SessionActor
+  actor: SessionActor,
 ): Promise<ResultadoNotificacionSinAsignar> {
   if (!actor.activo || actor.rol !== "ADMINISTRACION") {
     throw new ForbiddenApiError("Solo Administración puede renotificar reuniones sin asignar.");
@@ -41,9 +41,9 @@ export async function renotificarReunionesSinAsignar(
       finProgramadoAt: { gte: now },
       asignaciones: {
         none: {
-          estado: { in: [...ACTIVE_ASSIGNMENTS] }
-        }
-      }
+          estado: { in: [...ACTIVE_ASSIGNMENTS] },
+        },
+      },
     },
     orderBy: [{ inicioProgramadoAt: "asc" }, { id: "asc" }],
     include: {
@@ -52,19 +52,19 @@ export async function renotificarReunionesSinAsignar(
           docentePrograma: {
             include: {
               programa: true,
-              docente: { include: { usuario: true } }
-            }
-          }
-        }
-      }
-    }
+              docente: { include: { usuario: true } },
+            },
+          },
+        },
+      },
+    },
   });
 
   if (meetings.length === 0) {
     return {
       reunionesCount: 0,
       asistentesCount: 0,
-      message: "No hay reuniones pendientes de asignación hasta la fecha."
+      message: "No hay reuniones pendientes de asignación hasta la fecha.",
     };
   }
 
@@ -72,19 +72,19 @@ export async function renotificarReunionesSinAsignar(
     where: {
       disponibleGeneral: true,
       cesadoHastaProximoInicioSesion: false,
-      usuario: { activo: true, rol: "ASISTENTE_TECNICO" }
+      usuario: { activo: true, rol: "ASISTENTE_TECNICO" },
     },
     select: {
       id: true,
-      usuario: { select: { id: true, emailPrincipal: true, nombres: true, apellidos: true } }
-    }
+      usuario: { select: { id: true, emailPrincipal: true, nombres: true, apellidos: true } },
+    },
   });
 
   const recipients = assistants
     .filter((a) => Boolean(a.usuario.emailPrincipal))
     .map((a) => ({
       usuarioId: a.usuario.id,
-      email: a.usuario.emailPrincipal
+      email: a.usuario.emailPrincipal,
     }));
 
   if (recipients.length === 0) {
@@ -92,7 +92,7 @@ export async function renotificarReunionesSinAsignar(
       reunionesCount: meetings.length,
       asistentesCount: 0,
       message:
-        "Hay reuniones sin asignar, pero no se encontraron asistentes de monitoreo disponibles para notificar."
+        "Hay reuniones sin asignar, pero no se encontraron asistentes de monitoreo disponibles para notificar.",
     };
   }
 
@@ -105,17 +105,18 @@ export async function renotificarReunionesSinAsignar(
         `${m.solicitud.docentePrograma.docente.usuario.nombres} ${m.solicitud.docentePrograma.docente.usuario.apellidos ?? ""}`.trim();
       const inicio = m.inicioAsistenciaTecnicaAt ?? m.inicioProgramadoAt;
       const fin = m.finAsistenciaTecnicaAt ?? m.finProgramadoAt;
-      const mod = (m.modalidadOverride ?? m.solicitud.modalidad) === "HIBRIDA" ? "Híbrida" : "Virtual";
+      const mod =
+        (m.modalidadOverride ?? m.solicitud.modalidad) === "HIBRIDA" ? "Híbrida" : "Virtual";
       return [
         `${i + 1}. ${formatDate(inicio)} · Horario técnico: ${formatTime(inicio)}–${formatTime(fin)} h (${mod})`,
         `   Reunión: ${m.solicitud.titulo}`,
         `   Programa: ${prog}`,
-        `   Docente: ${doc}`
+        `   Docente: ${doc}`,
       ].join("\n");
     }),
     "",
     "Podés postularte ingresando en Agenda Abierta:",
-    "https://salavirtual.flacso.edu.uy/agenda-abierta"
+    "https://salavirtual.flacso.edu.uy/agenda-abierta",
   ].join("\n");
 
   const message: NotificationMessage = {
@@ -140,16 +141,16 @@ export async function renotificarReunionesSinAsignar(
           finClase: formatTime(m.finProgramadoAt),
           modalidad: modalidad === "HIBRIDA" ? "Híbrida" : "Virtual",
           programa: m.solicitud.docentePrograma.programa.nombre,
-          docente: (docente.nombres + " " + (docente.apellidos ?? "")).trim()
+          docente: (docente.nombres + " " + (docente.apellidos ?? "")).trim(),
         };
-      })
+      }),
     }),
     emailActionLabel: "Ver reuniones en Agenda Abierta",
     href: "/agenda-abierta",
     metadata: {
       totalReuniones: meetings.length,
-      tipoNotificacion: "MASIVA_SIN_ASIGNAR"
-    }
+      tipoNotificacion: "MASIVA_SIN_ASIGNAR",
+    },
   };
 
   await notificarUsuarios(db, recipients, message);
@@ -162,15 +163,15 @@ export async function renotificarReunionesSinAsignar(
       entidadId: "MASIVO",
       valorNuevo: {
         totalReuniones: meetings.length,
-        destinatarios: recipients.length
-      }
-    }
+        destinatarios: recipients.length,
+      },
+    },
   });
 
   return {
     reunionesCount: meetings.length,
     asistentesCount: recipients.length,
-    message: `Se notificaron ${meetings.length} ${meetings.length === 1 ? "reunión sin asignar" : "reuniones sin asignar"} a ${recipients.length} asistentes de monitoreo.`
+    message: `Se notificaron ${meetings.length} ${meetings.length === 1 ? "reunión sin asignar" : "reuniones sin asignar"} a ${recipients.length} asistentes de monitoreo.`,
   };
 }
 
@@ -180,7 +181,7 @@ export async function renotificarReunionesSinAsignar(
  */
 export async function notificarReunionesAsignadas(
   db: PrismaClient,
-  actor: SessionActor
+  actor: SessionActor,
 ): Promise<ResultadoNotificacionAsignadas> {
   if (!actor.activo || actor.rol !== "ADMINISTRACION") {
     throw new ForbiddenApiError("Solo Administración puede notificar reuniones asignadas.");
@@ -193,19 +194,19 @@ export async function notificarReunionesAsignadas(
       instancia: {
         requiereAsistenciaTecnica: true,
         estado: "PROGRAMADA",
-        finProgramadoAt: { gte: now }
+        finProgramadoAt: { gte: now },
       },
       asistenteTecnico: {
         cesadoHastaProximoInicioSesion: false,
-        usuario: { activo: true, rol: "ASISTENTE_TECNICO" }
-      }
+        usuario: { activo: true, rol: "ASISTENTE_TECNICO" },
+      },
     },
     orderBy: [{ instancia: { inicioProgramadoAt: "asc" } }, { id: "asc" }],
     include: {
       asistenteTecnico: {
         include: {
-          usuario: { select: { id: true, emailPrincipal: true, nombres: true, apellidos: true } }
-        }
+          usuario: { select: { id: true, emailPrincipal: true, nombres: true, apellidos: true } },
+        },
       },
       instancia: {
         include: {
@@ -214,22 +215,22 @@ export async function notificarReunionesAsignadas(
               docentePrograma: {
                 include: {
                   programa: true,
-                  docente: { include: { usuario: true } }
-                }
-              }
-            }
+                  docente: { include: { usuario: true } },
+                },
+              },
+            },
           },
-          eventosProveedor: { include: { proveedor: { select: { tipo: true } } } }
-        }
-      }
-    }
+          eventosProveedor: { include: { proveedor: { select: { tipo: true } } } },
+        },
+      },
+    },
   });
 
   if (assignments.length === 0) {
     return {
       asignacionesCount: 0,
       asistentesCount: 0,
-      message: "No hay reuniones asignadas programadas hasta la fecha."
+      message: "No hay reuniones asignadas programadas hasta la fecha.",
     };
   }
 
@@ -246,8 +247,13 @@ export async function notificarReunionesAsignadas(
     const usr = asg.asistenteTecnico.usuario;
     if (!porAsistente.has(usr.id)) {
       porAsistente.set(usr.id, {
-        asistente: { id: usr.id, email: usr.emailPrincipal, nombres: usr.nombres, apellidos: usr.apellidos },
-        items: []
+        asistente: {
+          id: usr.id,
+          email: usr.emailPrincipal,
+          nombres: usr.nombres,
+          apellidos: usr.apellidos,
+        },
+        items: [],
       });
     }
     porAsistente.get(usr.id)!.items.push(asg);
@@ -269,22 +275,26 @@ export async function notificarReunionesAsignadas(
         const inicioTecnico = inst.inicioAsistenciaTecnicaAt ?? inst.inicioProgramadoAt;
         const finTecnico = inst.finAsistenciaTecnicaAt ?? inst.finProgramadoAt;
         const mod =
-          (inst.modalidadOverride ?? inst.solicitud.modalidad) === "HIBRIDA" ? "Híbrida" : "Virtual";
+          (inst.modalidadOverride ?? inst.solicitud.modalidad) === "HIBRIDA"
+            ? "Híbrida"
+            : "Virtual";
         const meet = seleccionarEventoProveedorActivo(inst);
         const lineas = [
           `${i + 1}. ${formatDate(inicioTecnico)} · Horario de monitoreo: ${formatTime(inicioTecnico)}–${formatTime(finTecnico)} h (${mod})`,
           `   Reunión: ${inst.solicitud.titulo}`,
           `   Programa: ${prog}`,
-          `   Docente: ${doc}`
+          `   Docente: ${doc}`,
         ];
         if (meet?.joinUrl) {
-          lineas.push(`   Enlace de ${meet.proveedor.tipo === "ZOOM" ? "Zoom" : "Meet"}: ${meet.joinUrl}`);
+          lineas.push(
+            `   Enlace de ${meet.proveedor.tipo === "ZOOM" ? "Zoom" : "Meet"}: ${meet.joinUrl}`,
+          );
         }
         return lineas.join("\n");
       }),
       "",
       "Podés consultar tus reuniones asignadas y gestionar el monitoreo en:",
-      "https://salavirtual.flacso.edu.uy/mi-agenda"
+      "https://salavirtual.flacso.edu.uy/mi-agenda",
     ].join("\n");
 
     const message: NotificationMessage = {
@@ -314,16 +324,18 @@ export async function notificarReunionesAsignadas(
             docente: (docente.nombres + " " + (docente.apellidos ?? "")).trim(),
             meetUrl: seleccionarEventoProveedorActivo(inst)?.joinUrl,
             proveedor:
-              seleccionarEventoProveedorActivo(inst)?.proveedor.tipo === "ZOOM" ? "ZOOM" : "GOOGLE_MEET"
+              seleccionarEventoProveedorActivo(inst)?.proveedor.tipo === "ZOOM"
+                ? "ZOOM"
+                : "GOOGLE_MEET",
           };
-        })
+        }),
       }),
       emailActionLabel: "Ver mis reuniones en Mi Agenda",
       href: "/mi-agenda",
       metadata: {
         totalAsignaciones: items.length,
-        tipoNotificacion: "MASIVA_ASIGNADAS"
-      }
+        tipoNotificacion: "MASIVA_ASIGNADAS",
+      },
     };
 
     await notificarUsuario(db, { usuarioId: asistente.id, email: asistente.email }, message);
@@ -337,14 +349,14 @@ export async function notificarReunionesAsignadas(
       entidadId: "MASIVO",
       valorNuevo: {
         totalAsignaciones: assignments.length,
-        asistentesNotificados: porAsistente.size
-      }
-    }
+        asistentesNotificados: porAsistente.size,
+      },
+    },
   });
 
   return {
     asignacionesCount: assignments.length,
     asistentesCount: porAsistente.size,
-    message: `Se notificaron ${assignments.length} ${assignments.length === 1 ? "reunión asignada" : "reuniones asignadas"} a ${porAsistente.size} asistentes de monitoreo.`
+    message: `Se notificaron ${assignments.length} ${assignments.length === 1 ? "reunión asignada" : "reuniones asignadas"} a ${porAsistente.size} asistentes de monitoreo.`,
   };
 }

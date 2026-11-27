@@ -23,7 +23,8 @@ export type ConferenceProvisionResult = Readonly<{
 
 export type EstadoIntegracionConferencia = "PENDIENTE" | "SINCRONIZADA" | "ERROR" | "HISTORICA";
 
-export type OperacionPendienteConferencia = "PROVISIONAR" | "REPROGRAMAR" | "CONFIGURAR_MEET" | "CANCELAR";
+export type OperacionPendienteConferencia =
+  "PROVISIONAR" | "REPROGRAMAR" | "CONFIGURAR_MEET" | "CANCELAR";
 
 export type IntegracionConferenciaHealth = Readonly<{
   estadoIntegracion: EstadoIntegracionConferencia;

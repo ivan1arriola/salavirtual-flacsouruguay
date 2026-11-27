@@ -2,11 +2,11 @@ import { describe, expect, it } from "vitest";
 import {
   clasificarTipoArchivoZoom,
   nombreArchivoZoom,
-  normalizarInventarioZoom
+  normalizarInventarioZoom,
 } from "../src/modules/archivos/domain/zoom-archivos.domain";
 import type {
   ArchivoOrigenZoom,
-  ReferenciaOcurrenciaZoom
+  ReferenciaOcurrenciaZoom,
 } from "../src/modules/archivos/domain/zoom-archivos.types";
 
 const hash = (texto: string) => `h(${texto})`;
@@ -16,7 +16,7 @@ const ocurrencia: ReferenciaOcurrenciaZoom = {
   meetingId: "123",
   anfitrionZoomId: "host-1",
   inicioRealAt: new Date("2026-03-05T14:00:00Z"),
-  titulo: "Clase 1"
+  titulo: "Clase 1",
 };
 const base = {
   recording_start: "2026-03-05T14:00:00Z",
@@ -25,7 +25,7 @@ const base = {
   file_extension: "MP4",
   file_size: 1234,
   status: "completed",
-  download_url: "https://zoom.us/rec/download/OPACO1?access_token=secreto"
+  download_url: "https://zoom.us/rec/download/OPACO1?access_token=secreto",
 };
 
 describe("normalizarInventarioZoom", () => {
@@ -34,16 +34,22 @@ describe("normalizarInventarioZoom", () => {
       ocurrencia,
       {
         recording_files: [
-          { ...base, id: "f1", file_type: "HOLOGRAMA", file_extension: "holo", recording_type: "vista_x" }
-        ]
+          {
+            ...base,
+            id: "f1",
+            file_type: "HOLOGRAMA",
+            file_extension: "holo",
+            recording_type: "vista_x",
+          },
+        ],
       },
-      hash
+      hash,
     );
     expect(r.recursos).toHaveLength(1);
     expect(r.recursos[0]).toMatchObject({
       tipoOriginal: "HOLOGRAMA",
       variante: "vista_x",
-      extension: "holo"
+      extension: "holo",
     });
     expect(clasificarTipoArchivoZoom("HOLOGRAMA")).toBe("OTRO");
     expect(clasificarTipoArchivoZoom("mp4")).toBe("MP4");
@@ -55,10 +61,10 @@ describe("normalizarInventarioZoom", () => {
       {
         recording_files: [
           { ...base, recording_type: "gallery_view" },
-          { ...base, recording_type: "shared_screen" }
-        ]
+          { ...base, recording_type: "shared_screen" },
+        ],
       },
-      hash
+      hash,
     );
     expect(r.recursos).toHaveLength(2);
     expect(new Set(r.recursos.map((x) => x.claveOrigen)).size).toBe(2);
@@ -73,14 +79,14 @@ describe("normalizarInventarioZoom", () => {
         participant_audio_files: [{ ...base, id: "b", file_type: "M4A", file_name: "Ana" }],
         otra_coleccion: [{ ...base, id: "c", file_type: "CHAT" }],
         host_id: "x",
-        topic: "t"
+        topic: "t",
       },
-      hash
+      hash,
     );
     expect(r.recursos.map((x) => [x.coleccion, x.archivoZoomId]).sort()).toEqual([
       ["otra_coleccion", "c"],
       ["participant_audio_files", "b"],
-      ["recording_files", "a"]
+      ["recording_files", "a"],
     ]);
   });
 
@@ -88,9 +94,11 @@ describe("normalizarInventarioZoom", () => {
     const r = normalizarInventarioZoom(
       ocurrencia,
       {
-        recording_files: [{ id: "f1", file_type: "CHAT", file_size: "grande", recording_start: "no-fecha" }]
+        recording_files: [
+          { id: "f1", file_type: "CHAT", file_size: "grande", recording_start: "no-fecha" },
+        ],
       },
-      hash
+      hash,
     );
     expect(r.recursos).toHaveLength(1);
     expect(r.recursos[0]).toMatchObject({
@@ -98,7 +106,7 @@ describe("normalizarInventarioZoom", () => {
       tamanoBytes: null,
       inicioAt: null,
       finAt: null,
-      descargable: false
+      descargable: false,
     });
     expect(r.observaciones.length).toBeGreaterThan(0);
   });
@@ -107,7 +115,7 @@ describe("normalizarInventarioZoom", () => {
     const r = normalizarInventarioZoom(
       ocurrencia,
       { recording_files: [null, 5, { ...base, id: "ok" }] },
-      hash
+      hash,
     );
     expect(r.recursos).toHaveLength(1);
     expect(r.observaciones.filter((o) => o.tipo === "ELEMENTO_INVALIDO")).toHaveLength(2);
@@ -122,13 +130,17 @@ describe("normalizarInventarioZoom", () => {
     const r = normalizarInventarioZoom(
       ocurrencia,
       { recording_files: [{ ...base, id: "f1" }], download_access_token: "tok" },
-      hash
+      hash,
     );
     const texto = JSON.stringify(r, (_k, v) => (typeof v === "bigint" ? v.toString() : v));
     expect(texto).not.toContain("OPACO1");
     expect(texto).not.toContain("secreto");
     expect(texto).not.toContain("tok");
-    expect(r.recursos[0]).toMatchObject({ descargable: true, tamanoBytes: 1234n, estadoOrigen: "completed" });
+    expect(r.recursos[0]).toMatchObject({
+      descargable: true,
+      tamanoBytes: 1234n,
+      estadoOrigen: "completed",
+    });
   });
 
   it("con ID la identidad no depende de tiempos, orden ni URL", () => {
@@ -137,22 +149,23 @@ describe("normalizarInventarioZoom", () => {
       {
         recording_files: [
           { ...base, id: "f1" },
-          { ...base, id: "f2" }
-        ]
+          { ...base, id: "f2" },
+        ],
       },
-      hash
+      hash,
     );
     const b = normalizarInventarioZoom(
       ocurrencia,
       {
         recording_files: [
           { ...base, id: "f2", download_url: "https://zoom.us/otro" },
-          { ...base, id: "f1", recording_end: "", status: "processing" }
-        ]
+          { ...base, id: "f1", recording_end: "", status: "processing" },
+        ],
       },
-      hash
+      hash,
     );
-    const clave = (r: typeof a, id: string) => r.recursos.find((x) => x.archivoZoomId === id)?.claveOrigen;
+    const clave = (r: typeof a, id: string) =>
+      r.recursos.find((x) => x.archivoZoomId === id)?.claveOrigen;
     expect(clave(a, "f1")).toBe(clave(b, "f1"));
     expect(clave(a, "f2")).toBe(clave(b, "f2"));
     expect(clave(a, "f1")).not.toBe(clave(a, "f2"));
@@ -161,9 +174,10 @@ describe("normalizarInventarioZoom", () => {
   it("la clave incluye cuenta y UUID de la ocurrencia", () => {
     const f = { recording_files: [{ ...base, id: "f1" }] };
     const a = normalizarInventarioZoom(ocurrencia, f, hash).recursos[0].claveOrigen;
-    const b = normalizarInventarioZoom({ ...ocurrencia, uuid: "otro" }, f, hash).recursos[0].claveOrigen;
-    const c = normalizarInventarioZoom({ ...ocurrencia, cuentaZoomId: "cta-2" }, f, hash).recursos[0]
+    const b = normalizarInventarioZoom({ ...ocurrencia, uuid: "otro" }, f, hash).recursos[0]
       .claveOrigen;
+    const c = normalizarInventarioZoom({ ...ocurrencia, cuentaZoomId: "cta-2" }, f, hash)
+      .recursos[0].claveOrigen;
     expect(new Set([a, b, c]).size).toBe(3);
   });
 
@@ -172,14 +186,14 @@ describe("normalizarInventarioZoom", () => {
       recording_start: base.recording_start,
       file_type: "MP4",
       file_extension: "MP4",
-      recording_type: "gallery_view"
+      recording_type: "gallery_view",
     };
     const antes = normalizarInventarioZoom(
       ocurrencia,
       {
-        recording_files: [{ ...sinId, recording_end: "", status: "processing" }]
+        recording_files: [{ ...sinId, recording_end: "", status: "processing" }],
       },
-      hash
+      hash,
     );
     const despues = normalizarInventarioZoom(
       ocurrencia,
@@ -190,11 +204,11 @@ describe("normalizarInventarioZoom", () => {
             recording_end: base.recording_end,
             status: "completed",
             download_url: base.download_url,
-            file_size: 9
-          }
-        ]
+            file_size: 9,
+          },
+        ],
       },
-      hash
+      hash,
     );
     expect(antes.recursos).toEqual([]);
     expect(antes.procesamientoPendiente).toBe(true);
@@ -208,11 +222,11 @@ describe("normalizarInventarioZoom", () => {
             ...sinId,
             recording_end: base.recording_end,
             status: "completed",
-            download_url: "https://zoom.us/rec/download/DISTINTO"
-          }
-        ]
+            download_url: "https://zoom.us/rec/download/DISTINTO",
+          },
+        ],
       },
-      hash
+      hash,
     );
     expect(otraConsulta.recursos[0].claveOrigen).toBe(despues.recursos[0].claveOrigen);
   });
@@ -222,17 +236,19 @@ describe("normalizarInventarioZoom", () => {
       recording_start: base.recording_start,
       file_type: "MP4",
       recording_type: "gallery_view",
-      status: "completed"
+      status: "completed",
     };
     const y = {
       recording_start: base.recording_start,
       file_type: "MP4",
       recording_type: "shared_screen",
-      status: "completed"
+      status: "completed",
     };
     const a = normalizarInventarioZoom(ocurrencia, { recording_files: [x, y] }, hash);
     const b = normalizarInventarioZoom(ocurrencia, { recording_files: [y, x] }, hash);
-    expect(a.recursos.map((r) => r.claveOrigen).sort()).toEqual(b.recursos.map((r) => r.claveOrigen).sort());
+    expect(a.recursos.map((r) => r.claveOrigen).sort()).toEqual(
+      b.recursos.map((r) => r.claveOrigen).sort(),
+    );
   });
 
   it("dos candidatos sin ID indistinguibles requieren revision con multiplicidad", () => {
@@ -240,7 +256,7 @@ describe("normalizarInventarioZoom", () => {
       recording_start: base.recording_start,
       file_type: "MP4",
       recording_type: "gallery_view",
-      status: "completed"
+      status: "completed",
     };
     const r = normalizarInventarioZoom(ocurrencia, { recording_files: [x, { ...x }] }, hash);
     expect(r.recursos).toHaveLength(1);
@@ -248,8 +264,8 @@ describe("normalizarInventarioZoom", () => {
       expect.objectContaining({
         tipo: "IDENTIDAD_AMBIGUA",
         claveOrigen: r.recursos[0].claveOrigen,
-        multiplicidad: 2
-      })
+        multiplicidad: 2,
+      }),
     ]);
   });
 
@@ -259,10 +275,10 @@ describe("normalizarInventarioZoom", () => {
       {
         recording_files: [
           { ...base, id: "f1" },
-          { ...base, id: "f1" }
-        ]
+          { ...base, id: "f1" },
+        ],
       },
-      hash
+      hash,
     );
     expect(r.recursos).toHaveLength(1);
     expect(r.observaciones).toEqual([]);
@@ -272,9 +288,13 @@ describe("normalizarInventarioZoom", () => {
     const r = normalizarInventarioZoom(
       ocurrencia,
       { recording_files: [{ ...base, id: "f1", status: "processing", recording_end: "" }] },
-      hash
+      hash,
     );
-    expect(r.recursos[0]).toMatchObject({ estadoOrigen: "processing", descargable: false, finAt: null });
+    expect(r.recursos[0]).toMatchObject({
+      estadoOrigen: "processing",
+      descargable: false,
+      finAt: null,
+    });
   });
 });
 
@@ -291,7 +311,7 @@ describe("nombreArchivoZoom", () => {
     tamanoBytes: null,
     estadoOrigen: "completed",
     descargable: true,
-    ...extra
+    ...extra,
   });
 
   it("incluye fecha, tipo, variante, id estable y extension", () => {
@@ -301,7 +321,7 @@ describe("nombreArchivoZoom", () => {
   it("neutraliza separadores de ruta y caracteres reservados conservando Unicode", () => {
     const n = nombreArchivoZoom(
       ocurrencia,
-      archivo({ variante: "../Ñandú/éxito\\x:y*?", archivoZoomId: "a/b\\c" })
+      archivo({ variante: "../Ñandú/éxito\\x:y*?", archivoZoomId: "a/b\\c" }),
     );
     expect(n).not.toMatch(/[\\/:*?"<>|]/);
     expect(n).not.toContain("..");
@@ -312,17 +332,20 @@ describe("nombreArchivoZoom", () => {
   it("sin ID usa la clave de origen y distingue archivos", () => {
     const a = nombreArchivoZoom(
       ocurrencia,
-      archivo({ archivoZoomId: null, claveOrigen: "k1", variante: "x" })
+      archivo({ archivoZoomId: null, claveOrigen: "k1", variante: "x" }),
     );
     const b = nombreArchivoZoom(
       ocurrencia,
-      archivo({ archivoZoomId: null, claveOrigen: "k2", variante: "x" })
+      archivo({ archivoZoomId: null, claveOrigen: "k2", variante: "x" }),
     );
     expect(a).not.toBe(b);
   });
 
   it("acota la longitud y omite extension ausente", () => {
-    const n = nombreArchivoZoom(ocurrencia, archivo({ variante: "v".repeat(500), extension: null }));
+    const n = nombreArchivoZoom(
+      ocurrencia,
+      archivo({ variante: "v".repeat(500), extension: null }),
+    );
     expect(n.length).toBeLessThanOrEqual(200);
     expect(n).not.toMatch(/\.$/);
   });

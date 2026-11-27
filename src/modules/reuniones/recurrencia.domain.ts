@@ -39,7 +39,7 @@ export function generarFechasRecurrentes(regla: ReglaRecurrencia): readonly Fech
     .map((timestamp) => ({
       fecha: timestampAFechaIso(timestamp),
       horaInicio: regla.horaInicio,
-      horaFin: regla.horaFin
+      horaFin: regla.horaFin,
     }));
 }
 
@@ -57,8 +57,9 @@ function timestampAFechaIso(timestamp: number): string {
     timeZone: "UTC",
     year: "numeric",
     month: "2-digit",
-    day: "2-digit"
+    day: "2-digit",
   }).formatToParts(timestamp);
-  const value = (type: Intl.DateTimeFormatPartTypes) => parts.find((part) => part.type === type)?.value ?? "";
+  const value = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((part) => part.type === type)?.value ?? "";
   return `${value("year")}-${value("month")}-${value("day")}`;
 }

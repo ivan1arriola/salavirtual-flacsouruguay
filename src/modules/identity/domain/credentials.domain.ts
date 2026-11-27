@@ -3,7 +3,7 @@ import type { UsuarioAutenticado, UsuarioCredenciales } from "./identity.types";
 
 export const credencialesLoginSchema = z.object({
   usuario: z.string().trim().min(1).transform(normalizarIdentificadorAcceso),
-  password: z.string().min(1)
+  password: z.string().min(1),
 });
 
 export function normalizarIdentificadorAcceso(valor: string): string {
@@ -17,7 +17,7 @@ export function esCorreoAcceso(valor: string): boolean {
 
 export function evaluarAccesoLocal(
   usuario: UsuarioCredenciales | null,
-  passwordValida: boolean
+  passwordValida: boolean,
 ): UsuarioAutenticado | null {
   if (!usuario || !passwordValida || !usuario.activo || usuario.fusionadoEnId) {
     return null;
@@ -28,6 +28,6 @@ export function evaluarAccesoLocal(
     rol: usuario.rol,
     nombre: usuario.nombre,
     email: usuario.email,
-    debeCambiarPassword: usuario.debeCambiarPassword
+    debeCambiarPassword: usuario.debeCambiarPassword,
   };
 }

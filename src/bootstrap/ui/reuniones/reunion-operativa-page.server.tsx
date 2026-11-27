@@ -9,7 +9,7 @@ import {
   Radio,
   Split,
   Users,
-  Video
+  Video,
 } from "lucide-react";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
@@ -18,12 +18,15 @@ import { RefreshButton } from "@/src/components/refresh-button";
 import { leerAsistenciaZoomFicha } from "@/src/bootstrap/zoom-asistencia-lectura.server";
 import {
   obtenerParticipantesZoomEnVivoHttp,
-  type EstadoAsistenciaZoomEnVivo
+  type EstadoAsistenciaZoomEnVivo,
 } from "@/src/integrations/zoom/zoom-live-participants.client";
-import { obtenerEstadoActualZoomHttp, obtenerZoomAccessToken } from "@/src/integrations/zoom/zoom-client";
+import {
+  obtenerEstadoActualZoomHttp,
+  obtenerZoomAccessToken,
+} from "@/src/integrations/zoom/zoom-client";
 import {
   consultarInscriptosZoom,
-  elegirAmbitoInscriptos
+  elegirAmbitoInscriptos,
 } from "@/src/integrations/zoom/zoom-registrants.client";
 import { leerEjecucionesZoomActuales } from "@/src/bootstrap/zoom-estado-actual.server";
 import { resolverEstadoActualZoom } from "@/src/modules/reuniones/presentation/estado-actual-zoom";
@@ -39,7 +42,7 @@ import { OperationalAutoRefresh } from "@/src/components/operational-auto-refres
 import { OperationalAssistanceClosureForm } from "@/src/components/operational-assistance-closure-form";
 import {
   OperationalAttendeeDatabaseManager,
-  OperationalRemoteControlPanel
+  OperationalRemoteControlPanel,
 } from "@/src/components/operational-remote-control";
 import { AssistantSelfUnassignButton } from "@/src/modules/asistencia/presentation/components/assistant-self-unassign-button";
 import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
@@ -49,7 +52,7 @@ import { obtenerReunionOperativa } from "@/src/bootstrap/reunion-operativa.serve
 
 export default async function ReunionOperativaPage({
   params,
-  searchParams
+  searchParams,
 }: Readonly<{
   params: Promise<{ instanciaId: string }>;
   searchParams?: Promise<{ seccion?: string; vista?: string }>;
@@ -61,7 +64,7 @@ export default async function ReunionOperativaPage({
 
   const actor = await resolveSessionActor(db, {
     id: session.user.id,
-    email: session.user.email
+    email: session.user.email,
   });
   if (!actor?.activo) {
     redirect("/acceso");
@@ -114,7 +117,10 @@ export default async function ReunionOperativaPage({
       actual.tipo === "INICIO_SIN_VERIFICAR" ||
       (reunion.estado === "PROGRAMADA" && ahora < reunion.inicioProgramadoAt.getTime());
     if (!mostrarOperativa || vista === "historial") {
-      const asistencia = await leerAsistenciaZoomFicha(reunion.id, { id: actor.id, rol: actor.rol });
+      const asistencia = await leerAsistenciaZoomFicha(reunion.id, {
+        id: actor.id,
+        rol: actor.rol,
+      });
       const actividad = reunion.zoom.eventoProveedorId
         ? await leerActividadEncuentroZoom(reunion.zoom.eventoProveedorId)
         : [];
@@ -124,7 +130,11 @@ export default async function ReunionOperativaPage({
               token,
               meetingId: reunion.zoom.id,
               habilitada: api?.configuracion.inscripcion ?? null,
-              ambito: elegirAmbitoInscriptos(api?.tipoReunion, api?.ocurrencias, reunion.inicioProgramadoAt)
+              ambito: elegirAmbitoInscriptos(
+                api?.tipoReunion,
+                api?.ocurrencias,
+                reunion.inicioProgramadoAt,
+              ),
             })
           : undefined;
       return (
@@ -142,7 +152,10 @@ export default async function ReunionOperativaPage({
         />
       );
     }
-    let asistenciaEnVivo: EstadoAsistenciaZoomEnVivo = { estado: "NO_DISPONIBLE", motivo: "SIN_DATOS" };
+    let asistenciaEnVivo: EstadoAsistenciaZoomEnVivo = {
+      estado: "NO_DISPONIBLE",
+      motivo: "SIN_DATOS",
+    };
     const activa = actual.tipo === "ACTIVA" || actual.tipo === "INICIO_SIN_VERIFICAR";
     const ejecucionActiva = activa ? actual.ejecucion : null;
     if (token && ejecucionActiva) {
@@ -156,7 +169,11 @@ export default async function ReunionOperativaPage({
       token,
       meetingId: reunion.zoom.id,
       habilitada: api?.configuracion.inscripcion ?? null,
-      ambito: elegirAmbitoInscriptos(api?.tipoReunion, api?.ocurrencias, reunion.inicioProgramadoAt)
+      ambito: elegirAmbitoInscriptos(
+        api?.tipoReunion,
+        api?.ocurrencias,
+        reunion.inicioProgramadoAt,
+      ),
     });
     let estado = reunion.estado;
     if (activa) {
@@ -184,7 +201,8 @@ export default async function ReunionOperativaPage({
   const hostsYCohosts = reunion.conferencia.hostsYCohosts;
   const hostsConectados = hostsYCohosts.filter((h) => h.conectado);
   const backHref = actor.rol === "ASISTENTE_TECNICO" ? "/mi-agenda" : "/";
-  const backLabel = actor.rol === "ASISTENTE_TECNICO" ? "Volver a mi agenda" : "Volver al dashboard";
+  const backLabel =
+    actor.rol === "ASISTENTE_TECNICO" ? "Volver a mi agenda" : "Volver al dashboard";
   const canSelfUnassign =
     actor.rol === "ASISTENTE_TECNICO" &&
     Boolean(reunion.asistencia.asignacionId) &&
@@ -216,20 +234,28 @@ export default async function ReunionOperativaPage({
         <div className="operational-hero-copy">
           <div className="operational-hero-topline">
             <p className="page-eyebrow">{reunion.programa}</p>
-            <span className={`status ${statusClass(reunion.estado)}`}>{estadoLabel(reunion.estado)}</span>
+            <span className={`status ${statusClass(reunion.estado)}`}>
+              {estadoLabel(reunion.estado)}
+            </span>
             <span
               className={`operational-mini-pill ${reunion.requiereGrabacion ? "is-req-yes" : "is-req-no"}`}
               title="Define si la solicitud del encuentro exige grabación"
             >
-              {reunion.requiereGrabacion ? "Solicitud: Grabación requerida" : "Solicitud: Sin grabación"}
+              {reunion.requiereGrabacion
+                ? "Solicitud: Grabación requerida"
+                : "Solicitud: Sin grabación"}
             </span>
             {reunion.grabacion.grabandoEnVivo ? (
               <span className="operational-mini-pill is-live-rec">● Meet: Grabando en vivo</span>
             ) : grabacionFaltanteEnCurso ? (
-              <span className="operational-mini-pill is-not-rec-warn">⚠ Meet: No se está grabando</span>
+              <span className="operational-mini-pill is-not-rec-warn">
+                ⚠ Meet: No se está grabando
+              </span>
             ) : null}
             {reunion.transcripcion.transcribiendoEnVivo ? (
-              <span className="operational-mini-pill is-live-rec">● Meet: Transcribiendo en vivo</span>
+              <span className="operational-mini-pill is-live-rec">
+                ● Meet: Transcribiendo en vivo
+              </span>
             ) : null}
             {reunion.conferencia.enGruposPequenos ? (
               <span className="status status-warning">
@@ -246,7 +272,8 @@ export default async function ReunionOperativaPage({
             </span>
             <span>{formatDate(reunion.inicioProgramadoAt)}</span>
             <span>
-              Encuentro: {formatTime(reunion.inicioProgramadoAt)}–{formatTime(reunion.finProgramadoAt)}
+              Encuentro: {formatTime(reunion.inicioProgramadoAt)}–
+              {formatTime(reunion.finProgramadoAt)}
             </span>
             <span>{reunion.modalidad === "HIBRIDA" ? "Híbrida" : "Virtual"}</span>
           </div>
@@ -303,15 +330,22 @@ export default async function ReunionOperativaPage({
           <div>
             <AlertTriangle size={20} aria-hidden="true" />
             <div>
-              <strong>Grabación requerida por solicitud, pero NO se está grabando en Google Meet</strong>
+              <strong>
+                Grabación requerida por solicitud, pero NO se está grabando en Google Meet
+              </strong>
               <small>
-                Que la grabación sea requerida no inicia la grabación automáticamente. Un host o cohost debe
-                iniciar la grabación dentro de Google Meet.
+                Que la grabación sea requerida no inicia la grabación automáticamente. Un host o
+                cohost debe iniciar la grabación dentro de Google Meet.
               </small>
             </div>
           </div>
           {reunion.meet.joinUrl ? (
-            <a className="secondary-action" href={reunion.meet.joinUrl} target="_blank" rel="noreferrer">
+            <a
+              className="secondary-action"
+              href={reunion.meet.joinUrl}
+              target="_blank"
+              rel="noreferrer"
+            >
               <Video size={15} aria-hidden="true" />
               Abrir Meet para grabar
             </a>
@@ -517,7 +551,8 @@ export default async function ReunionOperativaPage({
           <div className="is-wide">
             <dt>Monitoreo</dt>
             <dd>
-              {reunion.asistencia.asistente ?? (reunion.asistencia.requerida ? "Pendiente" : "No requiere")}
+              {reunion.asistencia.asistente ??
+                (reunion.asistencia.requerida ? "Pendiente" : "No requiere")}
             </dd>
             {reunion.asistencia.requerida ? (
               <small>
@@ -534,7 +569,8 @@ export default async function ReunionOperativaPage({
               eventoProveedorId={reunion.meet.eventoProveedorId}
               label={repairLabel(reunion.meet.operacionPendiente, Boolean(reunion.meet.joinUrl))}
               operacion={
-                reunion.meet.operacionPendiente ?? (reunion.meet.joinUrl ? "CONFIGURAR_MEET" : "PROVISIONAR")
+                reunion.meet.operacionPendiente ??
+                (reunion.meet.joinUrl ? "CONFIGURAR_MEET" : "PROVISIONAR")
               }
             />
           </div>
@@ -553,7 +589,10 @@ export default async function ReunionOperativaPage({
         ) : null}
       </section>
 
-      <details className="content-section operational-disclosure" open={reunion.incidencias.length > 0}>
+      <details
+        className="content-section operational-disclosure"
+        open={reunion.incidencias.length > 0}
+      >
         <summary>
           <div>
             <h2>Incidencias</h2>
@@ -561,8 +600,9 @@ export default async function ReunionOperativaPage({
           </div>
           <span className="badge-tag">
             {
-              reunion.incidencias.filter(({ estado }) => estado === "ABIERTA" || estado === "EN_ANALISIS")
-                .length
+              reunion.incidencias.filter(
+                ({ estado }) => estado === "ABIERTA" || estado === "EN_ANALISIS",
+              ).length
             }
           </span>
         </summary>
@@ -760,7 +800,7 @@ function disponibilidadLabel(estado: string): string {
 
 function repairLabel(
   operacion: "PROVISIONAR" | "REPROGRAMAR" | "CONFIGURAR_MEET" | "CANCELAR" | null,
-  hasMeet: boolean
+  hasMeet: boolean,
 ): string {
   if (operacion === "REPROGRAMAR") {
     return "Reintentar reprogramación";

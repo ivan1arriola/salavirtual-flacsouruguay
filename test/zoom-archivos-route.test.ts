@@ -5,11 +5,13 @@ const mocks = vi.hoisted(() => ({
   auth: vi.fn(),
   resolveSessionActor: vi.fn(),
   meet: vi.fn(),
-  zoom: vi.fn()
+  zoom: vi.fn(),
 }));
 
 vi.mock("@/auth", () => ({ auth: mocks.auth }));
-vi.mock("@/src/lib/auth/session-actor.adapter", () => ({ resolveSessionActor: mocks.resolveSessionActor }));
+vi.mock("@/src/lib/auth/session-actor.adapter", () => ({
+  resolveSessionActor: mocks.resolveSessionActor,
+}));
 vi.mock("@/src/lib/db", () => ({ db: {} }));
 vi.mock("@/src/bootstrap/archivos.server", () => ({ sincronizarArtefactosOperativos: mocks.meet }));
 vi.mock("@/src/bootstrap/zoom-historico.server", () => ({ estadoZoomArchivos: mocks.zoom }));
@@ -19,7 +21,7 @@ import { GET, POST } from "../app/api/v1/reuniones/sincronizar-archivos/route";
 const meetOk = {
   resultados: [{ estado: "SINCRONIZADO", grabacion: "PENDIENTE", archivos: 2 }],
   timestamp: "t",
-  ventanas: 1
+  ventanas: 1,
 };
 const zoomOk = { disponible: true, pendientes: 3 };
 const get = (secret?: string) =>
@@ -27,7 +29,7 @@ const get = (secret?: string) =>
 
 beforeEach(() => {
   vi.clearAllMocks();
-  process.env.CRON_SECRET = "s";
+  process.env["CRON_SECRET"] = "s";
   mocks.auth.mockResolvedValue({ user: { id: "u", email: "a@x.com" } });
   mocks.resolveSessionActor.mockResolvedValue({ id: "u", rol: "ADMINISTRACION", activo: true });
   mocks.meet.mockResolvedValue(meetOk);
@@ -49,7 +51,7 @@ describe("sincronizar-archivos con estado de Zoom", () => {
       sincronizadas: 1,
       grabacionesPendientes: 1,
       archivos: 2,
-      zoom: zoomOk
+      zoom: zoomOk,
     });
   });
 
@@ -87,7 +89,11 @@ describe("sincronizar-archivos con estado de Zoom", () => {
   });
 
   it("POST con sesión de un docente sin permiso: 403 y no se ejecuta nada", async () => {
-    mocks.resolveSessionActor.mockResolvedValue({ id: "u", rol: "ASISTENTE_TECNICO", activo: true });
+    mocks.resolveSessionActor.mockResolvedValue({
+      id: "u",
+      rol: "ASISTENTE_TECNICO",
+      activo: true,
+    });
     expect((await POST()).status).toBe(403);
     expect(mocks.meet).not.toHaveBeenCalled();
     expect(mocks.zoom).not.toHaveBeenCalled();
@@ -101,7 +107,7 @@ describe("consultarEstadoZoomArchivosUseCase", () => {
     pendienteMasViejoAt: new Date("2026-11-10T11:00:00Z"),
     fallosCapacidad: 1,
     ultimaActividadAt: new Date("2026-11-10T11:59:00Z"),
-    barridosActivos: 1
+    barridosActivos: 1,
   };
 
   it("calcula la antigüedad del pendiente más viejo y la inactividad del worker", async () => {
@@ -112,14 +118,14 @@ describe("consultarEstadoZoomArchivosUseCase", () => {
       antiguedadPendienteSegundos: 3600,
       segundosDesdeUltimaActividad: 60,
       fallosCapacidad: 1,
-      barridosActivos: 1
+      barridosActivos: 1,
     });
   });
 
   it("sin pendientes la antigüedad es null", async () => {
     const r = await consultarEstadoZoomArchivosUseCase(
       { leerEstado: async () => ({ ...base, pendienteMasViejoAt: null, porEstado: {} }) },
-      ahora
+      ahora,
     );
     expect(r.antiguedadPendienteSegundos).toBeNull();
     expect(r.pendientes).toBe(0);

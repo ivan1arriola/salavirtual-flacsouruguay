@@ -17,7 +17,7 @@ export type DepsColaZoom = Readonly<{
  */
 export async function procesarColaZoomUseCase(
   deps: DepsColaZoom,
-  opciones: Readonly<{ signal: AbortSignal; concurrencia: number; unaVez?: boolean }>
+  opciones: Readonly<{ signal: AbortSignal; concurrencia: number; unaVez?: boolean }>,
 ): Promise<void> {
   const carril = async (): Promise<void> => {
     while (!opciones.signal.aborted) {

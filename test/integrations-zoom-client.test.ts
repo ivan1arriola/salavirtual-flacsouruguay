@@ -3,7 +3,7 @@ import {
   crearReunionZoomHttp,
   eliminarReunionZoomHttp,
   obtenerReunionZoomHttp,
-  obtenerZoomAccessToken
+  obtenerZoomAccessToken,
 } from "../src/integrations/zoom/zoom-client";
 
 describe("Zoom Client", () => {
@@ -14,14 +14,14 @@ describe("Zoom Client", () => {
   it("obtiene un access token y lo cachea", async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
-      json: async () => ({ access_token: "test-token-123", expires_in: 3600 })
+      json: async () => ({ access_token: "test-token-123", expires_in: 3600 }),
     });
     vi.stubGlobal("fetch", fetchMock);
 
     const token1 = await obtenerZoomAccessToken({
       accountId: "acc-1",
       clientId: "client-1",
-      clientSecret: "secret-1"
+      clientSecret: "secret-1",
     });
     expect(token1).toBe("test-token-123");
     expect(fetchMock).toHaveBeenCalledTimes(1);
@@ -30,7 +30,7 @@ describe("Zoom Client", () => {
     const token2 = await obtenerZoomAccessToken({
       accountId: "acc-1",
       clientId: "client-1",
-      clientSecret: "secret-1"
+      clientSecret: "secret-1",
     });
     expect(token2).toBe("test-token-123");
     expect(fetchMock).toHaveBeenCalledTimes(1);
@@ -43,8 +43,8 @@ describe("Zoom Client", () => {
         id: 98765432100,
         join_url: "https://flacso.zoom.us/j/98765432100?pwd=xyz",
         start_url: "https://flacso.zoom.us/s/98765432100?zak=abc",
-        password: "xyz"
-      })
+        password: "xyz",
+      }),
     });
     vi.stubGlobal("fetch", fetchMock);
 
@@ -53,7 +53,7 @@ describe("Zoom Client", () => {
       startTime: new Date("2026-11-02T14:00:00Z"),
       durationMinutes: 90,
       timezone: "America/Montevideo",
-      requiereGrabacion: true
+      requiereGrabacion: true,
     });
 
     expect(result.meetingId).toBe("98765432100");
@@ -63,16 +63,16 @@ describe("Zoom Client", () => {
       expect.objectContaining({
         method: "POST",
         headers: expect.objectContaining({
-          Authorization: "Bearer bearer-token"
-        })
-      })
+          Authorization: "Bearer bearer-token",
+        }),
+      }),
     );
   });
 
   it("elimina una reunión de Zoom de forma idempotente", async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: false,
-      status: 404
+      status: 404,
     });
     vi.stubGlobal("fetch", fetchMock);
 
@@ -86,8 +86,8 @@ describe("Zoom Client", () => {
         id: 98765432100,
         join_url: "https://flacso.zoom.us/j/98765432100?pwd=xyz",
         start_url: "https://flacso.zoom.us/s/98765432100?zak=abc",
-        password: "xyz"
-      })
+        password: "xyz",
+      }),
     });
     vi.stubGlobal("fetch", fetchMock);
 
@@ -97,7 +97,7 @@ describe("Zoom Client", () => {
     expect(result.startUrl).toContain("zak=abc");
     expect(fetchMock).toHaveBeenCalledWith(
       "https://api.zoom.us/v2/meetings/98765432100",
-      expect.objectContaining({ headers: { Authorization: "Bearer bearer-token" } })
+      expect.objectContaining({ headers: { Authorization: "Bearer bearer-token" } }),
     );
   });
 });

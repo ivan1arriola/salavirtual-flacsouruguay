@@ -16,7 +16,7 @@ export type LecturaAsistenciaZoom = LecturaPlanillaAsistenciaZoomPort &
 const rolComprobado = (esHostOCohost: boolean): "HOST" | null => (esHostOCohost ? "HOST" : null);
 
 export function crearPrismaLecturaPlanillaZoomAdapter(
-  deps: Readonly<{ db: PrismaClient }>
+  deps: Readonly<{ db: PrismaClient }>,
 ): LecturaAsistenciaZoom {
   const { db } = deps;
 
@@ -35,7 +35,8 @@ export function crearPrismaLecturaPlanillaZoomAdapter(
     nombre: r.nombre,
     emailObservado: r.emailObservado,
     // Solo un vínculo CONCILIADO confirma el correo: una sugerencia no.
-    emailConfirmado: r.estadoConciliacion === "CONCILIADO" ? (r.invitadoReunion?.email ?? null) : null,
+    emailConfirmado:
+      r.estadoConciliacion === "CONCILIADO" ? (r.invitadoReunion?.email ?? null) : null,
     primeraEntradaAt: r.primeraEntradaAt,
     ultimaSalidaAt: r.ultimaSalidaAt,
     minutos: Number(r.minutos),
@@ -43,7 +44,7 @@ export function crearPrismaLecturaPlanillaZoomAdapter(
     sesiones: r.sesiones,
     estadoConciliacion: r.estadoConciliacion,
     // El reporte de participantes no comprueba roles: el marcador solo viene de una verificación explícita.
-    rolComprobado: rolComprobado(r.esHostOCohost)
+    rolComprobado: rolComprobado(r.esHostOCohost),
   });
   const aSesion = (s: {
     nombre: string;
@@ -58,7 +59,7 @@ export function crearPrismaLecturaPlanillaZoomAdapter(
     entradaAt: s.entradaAt,
     salidaAt: s.salidaAt,
     status: s.status,
-    participanteId: s.participanteId
+    participanteId: s.participanteId,
   });
   const seleccionRegistro = {
     nombre: true,
@@ -70,7 +71,7 @@ export function crearPrismaLecturaPlanillaZoomAdapter(
     sesiones: true,
     esHostOCohost: true,
     estadoConciliacion: true,
-    invitadoReunion: { select: { email: true } }
+    invitadoReunion: { select: { email: true } },
   } as const;
   const seleccionSesion = {
     nombre: true,
@@ -78,7 +79,7 @@ export function crearPrismaLecturaPlanillaZoomAdapter(
     entradaAt: true,
     salidaAt: true,
     status: true,
-    participanteId: true
+    participanteId: true,
   } as const;
 
   return {
@@ -91,23 +92,25 @@ export function crearPrismaLecturaPlanillaZoomAdapter(
           titulo: true,
           driveFolderId: true,
           eventoProveedorId: true,
-          sesionesAsistencia: { select: seleccionSesion, orderBy: { entradaAt: "asc" } }
-        }
+          sesionesAsistencia: { select: seleccionSesion, orderBy: { entradaAt: "asc" } },
+        },
       });
       if (!o) {
         return null;
       }
       const registros = await db.registroAsistenciaZoom.findMany({
-        where: o.eventoProveedorId ? { eventoProveedorId: o.eventoProveedorId } : { ocurrenciaId: o.id },
+        where: o.eventoProveedorId
+          ? { eventoProveedorId: o.eventoProveedorId }
+          : { ocurrenciaId: o.id },
         select: seleccionRegistro,
-        orderBy: [{ primeraEntradaAt: "asc" }, { nombre: "asc" }]
+        orderBy: [{ primeraEntradaAt: "asc" }, { nombre: "asc" }],
       });
       return {
         titulo: `Asistencia Zoom · ${o.titulo}`,
         carpetaId: o.driveFolderId,
         marcador: o.eventoProveedorId ? `evento:${o.eventoProveedorId}` : `ocurrencia:${o.id}`,
         registros: registros.map(aRegistro),
-        sesiones: o.sesionesAsistencia.map(aSesion)
+        sesiones: o.sesionesAsistencia.map(aSesion),
       };
     },
 
@@ -117,9 +120,11 @@ export function crearPrismaLecturaPlanillaZoomAdapter(
         select: {
           id: true,
           ocurrenciasArchivoZoom: {
-            select: { sesionesAsistencia: { select: seleccionSesion, orderBy: { entradaAt: "asc" } } }
-          }
-        }
+            select: {
+              sesionesAsistencia: { select: seleccionSesion, orderBy: { entradaAt: "asc" } },
+            },
+          },
+        },
       });
       if (!evento) {
         return null;
@@ -127,12 +132,12 @@ export function crearPrismaLecturaPlanillaZoomAdapter(
       const registros = await db.registroAsistenciaZoom.findMany({
         where: { eventoProveedorId: evento.id },
         select: seleccionRegistro,
-        orderBy: [{ primeraEntradaAt: "asc" }, { nombre: "asc" }]
+        orderBy: [{ primeraEntradaAt: "asc" }, { nombre: "asc" }],
       });
       return {
         registros: registros.map(aRegistro),
-        sesiones: evento.ocurrenciasArchivoZoom.flatMap((o) => o.sesionesAsistencia.map(aSesion))
+        sesiones: evento.ocurrenciasArchivoZoom.flatMap((o) => o.sesionesAsistencia.map(aSesion)),
       };
-    }
+    },
   };
 }

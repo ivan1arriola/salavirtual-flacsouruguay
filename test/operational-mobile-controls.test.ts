@@ -3,7 +3,7 @@ import postcss, { type Declaration, type Rule } from "postcss";
 import { describe, expect, it } from "vitest";
 
 const stylesheet = postcss.parse(
-  readFileSync(new URL("../app/(gestion)/meeting-detail-v2.css", import.meta.url), "utf8")
+  readFileSync(new URL("../app/(gestion)/meeting-detail-v2.css", import.meta.url), "utf8"),
 );
 
 function declarationsInMedia(selector: string, maxWidth: number): Map<string, string> {
@@ -16,7 +16,7 @@ function declarationsInMedia(selector: string, maxWidth: number): Map<string, st
       values = new Map(
         rule.nodes
           .filter((node): node is Declaration => node.type === "decl")
-          .map(({ prop, value }) => [prop, value])
+          .map(({ prop, value }) => [prop, value]),
       );
     });
   });
@@ -25,12 +25,12 @@ function declarationsInMedia(selector: string, maxWidth: number): Map<string, st
 
 function declarationsFor(selector: string): Map<string, string> {
   const rule = stylesheet.nodes.find(
-    (node): node is Rule => node.type === "rule" && node.selector === selector
+    (node): node is Rule => node.type === "rule" && node.selector === selector,
   );
   return new Map(
     rule?.nodes
       .filter((node): node is Declaration => node.type === "decl")
-      .map(({ prop, value }) => [prop, value])
+      .map(({ prop, value }) => [prop, value]),
   );
 }
 
@@ -43,7 +43,11 @@ describe("controles de la operación de reunión en móvil", () => {
 
   it("agranda el botón para quitar cohosts y permite leer correos largos en chips", () => {
     expect(declarationsFor(".operational-cohost-chip button").get("min-height")).toBe("32px");
-    expect(declarationsInMedia(".operational-cohost-chip button", 760).get("min-height")).toBe("44px");
-    expect(declarationsInMedia(".operational-cohost-chip > span", 760).get("overflow-wrap")).toBe("anywhere");
+    expect(declarationsInMedia(".operational-cohost-chip button", 760).get("min-height")).toBe(
+      "44px",
+    );
+    expect(declarationsInMedia(".operational-cohost-chip > span", 760).get("overflow-wrap")).toBe(
+      "anywhere",
+    );
   });
 });

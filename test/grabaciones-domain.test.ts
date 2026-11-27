@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   obtenerAlcanceGrabaciones,
-  puedeSincronizarGrabaciones
+  puedeSincronizarGrabaciones,
 } from "../src/modules/meet/grabaciones.domain";
 
 describe("alcance funcional de grabaciones", () => {

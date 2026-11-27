@@ -1,0 +1,27 @@
+name: "Seguridad · Configuración de GitHub Actions"
+on:
+  pull_request:
+    paths:
+      - ".github/**"
+  push:
+    branches: [main]
+    paths:
+      - ".github/**"
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: workflow-security-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  actionlint:
+    name: "Validación estática de workflows"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Validar workflows con actionlint
+        run: |
+          go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.7 -color

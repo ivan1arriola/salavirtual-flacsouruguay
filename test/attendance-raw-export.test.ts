@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   seleccionarRegistrosBrutos,
   serializarExportacionCsv,
-  serializarExportacionJson
+  serializarExportacionJson,
 } from "../src/modules/archivos/domain/attendance-raw-export.domain";
 
 const brutos = [
@@ -20,7 +20,7 @@ const brutos = [
     "Código Meet original",
     "Tipo identificador",
     "Timestamp auditoría",
-    "Parámetros originales"
+    "Parámetros originales",
   ],
   [
     "MEET",
@@ -36,7 +36,7 @@ const brutos = [
     "",
     "CUENTA_GOOGLE",
     "2026-10-21T12:00:00Z",
-    ""
+    "",
   ],
   [
     "REPORTS",
@@ -52,7 +52,7 @@ const brutos = [
     "aaa-bbb-ccc",
     "email_address",
     "2026-10-21T12:30:00Z",
-    '{"param":"valor"}'
+    '{"param":"valor"}',
   ],
   [
     "REPORTS_IDENTIDAD",
@@ -68,7 +68,7 @@ const brutos = [
     "",
     "email_address",
     "2026-10-21T12:30:00Z",
-    ""
+    "",
   ],
   [
     "MEET",
@@ -84,8 +84,8 @@ const brutos = [
     "",
     "ANONIMO",
     "2026-10-21T12:40:00Z",
-    ""
-  ]
+    "",
+  ],
 ];
 
 describe("exportación de datos brutos por fuente", () => {
@@ -120,7 +120,7 @@ describe("exportación de datos brutos por fuente", () => {
       codigoMeet: "aaa-bbb-ccc",
       inicioProgramadoAt: "2026-10-21T12:00:00.000Z",
       finProgramadoAt: "2026-10-21T13:00:00.000Z",
-      exportadoAt: "2026-10-21T14:00:00.000Z"
+      exportadoAt: "2026-10-21T14:00:00.000Z",
     });
     const json = JSON.parse(texto);
     expect(json.origenDatos).toBe("ultima_planilla_sincronizada");

@@ -6,11 +6,13 @@ export async function sincronizarCalendariosAsistenteUsuarioUseCase(
   repository: AssistantCalendarRepositoryPort,
   provider: AssistantCalendarProvider,
   usuarioId: string,
-  now = new Date()
+  now = new Date(),
 ): Promise<readonly ResultadoSincronizacionCalendarioAsistente[]> {
   const instances = await repository.obtenerInstanciasDeAsistente(usuarioId);
   const results = await Promise.all(
-    instances.map((id) => sincronizarCalendarioAsistenteInstanciaUseCase(repository, provider, id, now))
+    instances.map((id) =>
+      sincronizarCalendarioAsistenteInstanciaUseCase(repository, provider, id, now),
+    ),
   );
   return results.flat();
 }

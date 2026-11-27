@@ -3,7 +3,7 @@ import {
   buscarRolAnterior,
   esRolUsuario,
   mapearRolAnterior,
-  puedeAdministrar
+  puedeAdministrar,
 } from "../src/modules/usuarios/roles";
 import { vincularCuentaGoogleSchema } from "../src/modules/usuarios/types";
 
@@ -50,7 +50,7 @@ describe("cuentas Google FLACSO", () => {
       usuarioId: "docente.1",
       email: "DOCENTE@FLACSO.EDU.UY",
       providerAccountId: "google-subject",
-      dominio: "flacso.edu.uy"
+      dominio: "flacso.edu.uy",
     });
 
     expect(resultado.email).toBe("docente@flacso.edu.uy");
@@ -62,8 +62,8 @@ describe("cuentas Google FLACSO", () => {
         usuarioId: "docente.1",
         email: "docente@gmail.com",
         providerAccountId: "google-subject",
-        dominio: "flacso.edu.uy"
-      })
+        dominio: "flacso.edu.uy",
+      }),
     ).toThrow();
   });
 });

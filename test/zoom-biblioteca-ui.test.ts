@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ refresh: () => undefined, push: () => undefined })
+  useRouter: () => ({ refresh: () => undefined, push: () => undefined }),
 }));
 
 import { RecordingsLibrary } from "../src/components/recordings-library";
@@ -32,7 +32,7 @@ function grupoZoom(over: Partial<GrupoEncuentroConArchivos> = {}): GrupoEncuentr
         tamanoBytes: 1048576,
         mimeType: "video/mp4",
         etiquetaZoom: "Video",
-        pendienteZoom: false
+        pendienteZoom: false,
       },
       {
         id: "az2",
@@ -43,7 +43,7 @@ function grupoZoom(over: Partial<GrupoEncuentroConArchivos> = {}): GrupoEncuentr
         mimeType: null,
         etiquetaZoom: "Audio",
         pendienteZoom: true,
-        estadoZoomEtiqueta: "Pendiente de copia"
+        estadoZoomEtiqueta: "Pendiente de copia",
       },
       {
         id: "az3",
@@ -55,10 +55,10 @@ function grupoZoom(over: Partial<GrupoEncuentroConArchivos> = {}): GrupoEncuentr
         etiquetaZoom: "Chat",
         pendienteZoom: true,
         estadoZoomEtiqueta: "Error, se reintentará",
-        errorCodigo: "TOPE_DIARIO"
-      }
+        errorCodigo: "TOPE_DIARIO",
+      },
     ],
-    ...over
+    ...over,
   };
 }
 
@@ -72,15 +72,17 @@ function html(grupo: GrupoEncuentroConArchivos, esAdmin = false): string {
       filtro: "TODOS",
       conteos: CONTEOS,
       totalEncuentros: 1,
-      esAdmin
-    })
+      esAdmin,
+    }),
   );
 }
 
 describe("biblioteca de grabaciones con encuentros Zoom", () => {
   it("la tarjeta muestra el proveedor real en lugar del sello fijo de Google Meet", () => {
     expect(html(grupoZoom())).toContain(">Zoom<");
-    expect(html(grupoZoom({ proveedor: "GOOGLE_MEET", asistenciaHref: null }))).toContain(">Google Meet<");
+    expect(html(grupoZoom({ proveedor: "GOOGLE_MEET", asistenciaHref: null }))).toContain(
+      ">Google Meet<",
+    );
   });
 
   it("el video conservado enlaza a Drive; audio y chat aparecen con su etiqueta propia", () => {
@@ -108,7 +110,7 @@ describe("biblioteca de grabaciones con encuentros Zoom", () => {
   it("las acciones de planillas de Meet no se ofrecen en encuentros Zoom ni siquiera a administración", () => {
     expect(html(grupoZoom(), true)).not.toContain("planilla Sheets");
     expect(html(grupoZoom({ proveedor: "GOOGLE_MEET", asistenciaHref: null }), true)).toContain(
-      "planilla Sheets"
+      "planilla Sheets",
     );
   });
 
@@ -124,10 +126,10 @@ describe("biblioteca de grabaciones con encuentros Zoom", () => {
             nombre: "meet.mp4",
             webViewUrl: null,
             tamanoBytes: 5,
-            mimeType: "video/mp4"
-          }
-        ]
-      })
+            mimeType: "video/mp4",
+          },
+        ],
+      }),
     );
     expect(h).toContain("https://drive.google.com/open?id=drive-1");
   });
@@ -144,7 +146,7 @@ describe("biblioteca de grabaciones con encuentros Zoom", () => {
         etiquetaZoom: "Video",
         descripcionZoom: "Pantalla compartida con orador",
         secundarioZoom: false,
-        pendienteZoom: false
+        pendienteZoom: false,
       },
       {
         id: "a0",
@@ -156,7 +158,7 @@ describe("biblioteca de grabaciones con encuentros Zoom", () => {
         etiquetaZoom: "Audio",
         descripcionZoom: "Audio general de la reunión",
         secundarioZoom: false,
-        pendienteZoom: false
+        pendienteZoom: false,
       },
       ...Array.from({ length: 6 }, (_, i) => ({
         id: `p${i}`,
@@ -168,8 +170,8 @@ describe("biblioteca de grabaciones con encuentros Zoom", () => {
         etiquetaZoom: "Audio",
         descripcionZoom: `Pista de participante · Persona ${i}`,
         secundarioZoom: true,
-        pendienteZoom: false
-      }))
+        pendienteZoom: false,
+      })),
     ];
     const h = html(grupoZoom({ archivos }));
     expect(h).toContain("Pantalla compartida con orador");

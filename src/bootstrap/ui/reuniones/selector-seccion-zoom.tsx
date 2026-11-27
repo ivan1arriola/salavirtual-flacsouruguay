@@ -5,14 +5,14 @@ import styles from "./reunion-zoom-operativa.module.css";
 
 export function SelectorSeccionZoom({
   seccion,
-  opciones
+  opciones,
 }: Readonly<{
   seccion: string;
   opciones: readonly { id: string; nombre: string }[];
 }>) {
   const router = useRouter();
   return (
-    <label className={styles.sectionSelector}>
+    <label className={styles["sectionSelector"]}>
       Sección de la reunión
       <select
         value={seccion}

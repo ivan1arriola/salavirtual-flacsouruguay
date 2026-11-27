@@ -4,7 +4,7 @@ import {
   normalizeCohostEmails,
   sincronizarEventosPendientesUseCase,
   type ConferenceProvider,
-  type GoogleCalendarCredentials
+  type GoogleCalendarCredentials,
 } from "@/src/modules/conferencias/api";
 
 export type ResyncCohostFailure = Readonly<{
@@ -47,7 +47,7 @@ export type ResyncCohostDependencies = Readonly<{
  * para espacios históricos cuando la API de Members devuelve PERMISSION_DENIED.
  */
 export async function resincronizarCohostsReunionesExistentes(
-  dependencies: ResyncCohostDependencies
+  dependencies: ResyncCohostDependencies,
 ): Promise<ResyncCohostResult> {
   const { db } = dependencies;
   const emit = (level: ResyncCohostLogEvent["level"], message: string) =>
@@ -56,7 +56,7 @@ export async function resincronizarCohostsReunionesExistentes(
   const meetings = await db.instanciaSala.findMany({
     where: {
       estado: { in: ["PROGRAMADA", "EN_CURSO"] },
-      finProgramadoAt: { gt: new Date() }
+      finProgramadoAt: { gt: new Date() },
     },
     orderBy: { inicioProgramadoAt: "asc" },
     select: {
@@ -72,14 +72,14 @@ export async function resincronizarCohostsReunionesExistentes(
                   usuario: {
                     select: {
                       emailPrincipal: true,
-                      cuentasGoogle: { select: { id: true, email: true } }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
+                      cuentasGoogle: { select: { id: true, email: true } },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
       },
       asignaciones: {
         where: { estado: { in: ["ASIGNADO", "ACEPTADO"] } },
@@ -89,12 +89,12 @@ export async function resincronizarCohostsReunionesExistentes(
               usuario: {
                 select: {
                   emailPrincipal: true,
-                  cuentasGoogle: { select: { id: true, email: true } }
-                }
-              }
-            }
-          }
-        }
+                  cuentasGoogle: { select: { id: true, email: true } },
+                },
+              },
+            },
+          },
+        },
       },
       eventosProveedor: {
         where: { proveedor: { tipo: "GOOGLE_MEET" } },
@@ -102,11 +102,11 @@ export async function resincronizarCohostsReunionesExistentes(
           id: true,
           externalEventId: true,
           codigoReunion: true,
-          cuentaProveedor: { select: { emailOrganizador: true } }
+          cuentaProveedor: { select: { emailOrganizador: true } },
         },
-        take: 1
-      }
-    }
+        take: 1,
+      },
+    },
   });
 
   emit("INFO", `Inicio de resincronización: ${meetings.length} reuniones activas/futuras.`);
@@ -131,26 +131,26 @@ export async function resincronizarCohostsReunionesExistentes(
     const operation = event.externalEventId ? "CONFIGURAR_MEET" : "PROVISIONAR";
     const users = [
       meeting.solicitud.docentePrograma.docente.usuario,
-      ...meeting.asignaciones.map(({ asistenteTecnico }) => asistenteTecnico.usuario)
+      ...meeting.asignaciones.map(({ asistenteTecnico }) => asistenteTecnico.usuario),
     ];
     const accountIds = [
       ...new Set(
         users.flatMap((user) =>
           user.cuentasGoogle
             .filter(({ email }) => email.trim().toLowerCase() !== organizer)
-            .map(({ id }) => id)
-        )
-      )
+            .map(({ id }) => id),
+        ),
+      ),
     ];
     const fallbackEmails = normalizeCohostEmails(
       users.flatMap((user) =>
-        user.cuentasGoogle.length === 0 && user.emailPrincipal ? [user.emailPrincipal] : []
-      )
+        user.cuentasGoogle.length === 0 && user.emailPrincipal ? [user.emailPrincipal] : [],
+      ),
     ).filter((email) => email !== organizer);
 
     emit(
       "INFO",
-      `PROCESANDO ${meetingLabel} | host=${organizer} | cuentasGoogle=${accountIds.length} | emailsFallback=${fallbackEmails.length}.`
+      `PROCESANDO ${meetingLabel} | host=${organizer} | cuentasGoogle=${accountIds.length} | emailsFallback=${fallbackEmails.length}.`,
     );
 
     try {
@@ -159,13 +159,13 @@ export async function resincronizarCohostsReunionesExistentes(
           where: {
             id: event.id,
             reclamoIntegracionAt: null,
-            OR: [{ operacionPendiente: null }, { operacionPendiente: operation }]
+            OR: [{ operacionPendiente: null }, { operacionPendiente: operation }],
           },
           data: {
             operacionPendiente: operation,
             estadoIntegracion: "PENDIENTE",
-            errorIntegracion: null
-          }
+            errorIntegracion: null,
+          },
         });
         if (queued.count !== 1) {
           return null;
@@ -175,15 +175,15 @@ export async function resincronizarCohostsReunionesExistentes(
           ? await tx.cohostReunion.createMany({
               data: accountIds.map((cuentaGoogleId) => ({
                 instanciaSalaId: meeting.id,
-                cuentaGoogleId
+                cuentaGoogleId,
               })),
-              skipDuplicates: true
+              skipDuplicates: true,
             })
           : { count: 0 };
         const manual = fallbackEmails.length
           ? await tx.cohostEmailReunion.createMany({
               data: fallbackEmails.map((email) => ({ instanciaSalaId: meeting.id, email })),
-              skipDuplicates: true
+              skipDuplicates: true,
             })
           : { count: 0 };
 
@@ -198,31 +198,38 @@ export async function resincronizarCohostsReunionesExistentes(
 
       candidatas += 1;
       cohostsAgregados += added;
-      emit("INFO", `GOOGLE ${meetingLabel} | iniciando verificación Principal -> Legacy si corresponde.`);
+      emit(
+        "INFO",
+        `GOOGLE ${meetingLabel} | iniciando verificación Principal -> Legacy si corresponde.`,
+      );
 
       const repository = crearPrismaConferenciasRepository({
         db,
-        descifrarConfiguracion: dependencies.descifrar
+        descifrarConfiguracion: dependencies.descifrar,
       });
-      const [outcome] = await sincronizarEventosPendientesUseCase(repository, dependencies.crearProvider, [
-        event.id
-      ]);
+      const [outcome] = await sincronizarEventosPendientesUseCase(
+        repository,
+        dependencies.crearProvider,
+        [event.id],
+      );
 
       if (outcome?.estado !== "SINCRONIZADA") {
         throw new Error(
-          outcome?.error ?? "La configuración de los cohosts sigue pendiente de confirmación en Google."
+          outcome?.error ??
+            "La configuración de los cohosts sigue pendiente de confirmación en Google.",
         );
       }
       sincronizadas += 1;
       emit("INFO", `OK ${meetingLabel} | cohostsNuevos=${added}.`);
     } catch (error) {
-      const detail = error instanceof Error ? error.message : "No se pudo verificar el rol en Google Meet.";
+      const detail =
+        error instanceof Error ? error.message : "No se pudo verificar el rol en Google Meet.";
       emit("ERROR", `ERROR ${meetingLabel} | ${detail}`);
       errores.push({
         instanciaSalaId: meeting.id,
         titulo: meeting.solicitud.titulo,
         inicio: meeting.inicioProgramadoAt.toISOString(),
-        error: detail
+        error: detail,
       });
     }
   }
@@ -230,7 +237,7 @@ export async function resincronizarCohostsReunionesExistentes(
   const fallidas = errores.length;
   emit(
     fallidas > 0 ? "WARN" : "INFO",
-    `Fin de resincronización: sincronizadas=${sincronizadas}, errores=${fallidas}, omitidas=${omitidas}, cohostsAgregados=${cohostsAgregados}.`
+    `Fin de resincronización: sincronizadas=${sincronizadas}, errores=${fallidas}, omitidas=${omitidas}, cohostsAgregados=${cohostsAgregados}.`,
   );
 
   return {
@@ -244,6 +251,6 @@ export async function resincronizarCohostsReunionesExistentes(
     reunionesConExternos: 0,
     externos: [],
     errores,
-    message: `Cohosts verificados en ${sincronizadas} reuniones; ${fallidas} con error y ${omitidas} omitidas o con otra operación pendiente.`
+    message: `Cohosts verificados en ${sincronizadas} reuniones; ${fallidas} con error y ${omitidas} omitidas o con otra operación pendiente.`,
   };
 }

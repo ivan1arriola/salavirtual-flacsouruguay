@@ -4,7 +4,7 @@ import {
   type ReferenciaOcurrenciaZoom,
   type ResultadoInventarioZoom,
   type ResultadoPagina,
-  type VentanaZoom
+  type VentanaZoom,
 } from "../domain";
 import type { ResumenInventarioGuardado, ZoomArchivoRepositoryPort } from "../ports";
 
@@ -26,7 +26,7 @@ export interface InventarioOrigenZoomPort {
   listarOcurrencias(
     anfitrion: AnfitrionInventarioZoom,
     ventana: VentanaZoom,
-    cursor: string | null
+    cursor: string | null,
   ): Promise<ResultadoPagina<ReferenciaOcurrenciaZoom>>;
 }
 
@@ -34,7 +34,7 @@ export interface InventarioOrigenZoomPort {
 export function proximoInventarioZoom(
   inicioRealAt: Date,
   ahora: Date,
-  opciones: Readonly<{ procesamientoPendiente: boolean; corteDias: number }>
+  opciones: Readonly<{ procesamientoPendiente: boolean; corteDias: number }>,
 ): Date | null {
   const edad = ahora.getTime() - inicioRealAt.getTime();
   const intervalo = edad < 48 * HORA ? 10 * MIN : edad <= 30 * DIA ? HORA : DIA;
@@ -49,7 +49,8 @@ export function proximoInventarioZoom(
 }
 
 export type ResultadoInventariarZoom =
-  Readonly<{ tipo: "GUARDADO"; resumen: ResumenInventarioGuardado }> | Readonly<{ tipo: "NO_ENCONTRADA" }>;
+  | Readonly<{ tipo: "GUARDADO"; resumen: ResumenInventarioGuardado }>
+  | Readonly<{ tipo: "NO_ENCONTRADA" }>;
 
 export async function inventariarZoomUseCase(
   repo: Pick<ZoomArchivoRepositoryPort, "guardarInventario">,
@@ -59,7 +60,7 @@ export async function inventariarZoomUseCase(
     cuentaProveedorId: string | null;
     ahora: Date;
     corteDias: number;
-  }>
+  }>,
 ): Promise<ResultadoInventariarZoom> {
   const inventario = await origen.obtenerInventario(entrada.referencia);
   // 404 nunca equivale a "sin archivos": no se registra un inventario vacío exitoso.
@@ -73,10 +74,10 @@ export async function inventariarZoomUseCase(
       inventariadoAt: entrada.ahora,
       proximoInventarioAt: proximoInventarioZoom(entrada.referencia.inicioRealAt, entrada.ahora, {
         procesamientoPendiente: inventario.procesamientoPendiente,
-        corteDias: entrada.corteDias
-      })
+        corteDias: entrada.corteDias,
+      }),
     },
-    inventario
+    inventario,
   );
   return { tipo: "GUARDADO", resumen };
 }
@@ -90,7 +91,7 @@ export type ResumenMantenimientoInventarioZoom = Readonly<{
 export async function inventariarOcurrenciasVencidasZoomUseCase(
   repo: Pick<ZoomArchivoRepositoryPort, "guardarInventario" | "listarOcurrenciasPorInventariar">,
   origen: Pick<InventarioOrigenZoomPort, "obtenerInventario">,
-  entrada: Readonly<{ ahora: Date; limite: number; corteDias: number }>
+  entrada: Readonly<{ ahora: Date; limite: number; corteDias: number }>,
 ): Promise<ResumenMantenimientoInventarioZoom> {
   const vencidas = await repo.listarOcurrenciasPorInventariar(entrada.ahora, entrada.limite);
   let guardadas = 0;
@@ -101,7 +102,7 @@ export async function inventariarOcurrenciasVencidasZoomUseCase(
       const r = await inventariarZoomUseCase(repo, origen, {
         ...v,
         ahora: entrada.ahora,
-        corteDias: entrada.corteDias
+        corteDias: entrada.corteDias,
       });
       if (r.tipo === "GUARDADO") {
         guardadas++;
@@ -122,7 +123,7 @@ function fechaMontevideo(fecha: Date): string {
     timeZone: ZONA_NEGOCIO,
     year: "numeric",
     month: "2-digit",
-    day: "2-digit"
+    day: "2-digit",
   }).format(fecha);
 }
 
@@ -157,7 +158,12 @@ export type ResumenBarridoZoom = Readonly<{
 
 /** Código diagnosticable sin datos sensibles: `CODIGO:estado[:zNNN]` para errores de Zoom (NNN = código numérico de Zoom), o el nombre de la clase. */
 export function codigoDeError(error: unknown): string {
-  const e = error as { name?: unknown; code?: unknown; status?: unknown; codigoZoom?: unknown } | null;
+  const e = error as {
+    name?: unknown;
+    code?: unknown;
+    status?: unknown;
+    codigoZoom?: unknown;
+  } | null;
   if (e?.name === "ZoomApiError" && typeof e.code === "string") {
     const base = typeof e.status === "number" ? `${e.code}:${e.status}` : e.code;
     return typeof e.codigoZoom === "number" ? `${base}:z${e.codigoZoom}` : base;
@@ -178,7 +184,7 @@ export async function barrerAnfitrionesZoomUseCase(
     ahora: Date;
     diasAtras: number;
     corteDias: number;
-  }>
+  }>,
 ): Promise<ResumenBarridoZoom> {
   const hasta = fechaMontevideo(entrada.ahora);
   const desde = fechaMontevideo(new Date(entrada.ahora.getTime() - entrada.diasAtras * DIA));
@@ -198,11 +204,12 @@ export async function barrerAnfitrionesZoomUseCase(
           let cursor: string | null = null;
           const vistos = new Set<string>();
           do {
-            const pagina: ResultadoPagina<ReferenciaOcurrenciaZoom> = await origen.listarOcurrencias(
-              anfitrion,
-              papelera ? { ...ventana, papelera: true } : ventana,
-              cursor
-            );
+            const pagina: ResultadoPagina<ReferenciaOcurrenciaZoom> =
+              await origen.listarOcurrencias(
+                anfitrion,
+                papelera ? { ...ventana, papelera: true } : ventana,
+                cursor,
+              );
             for (const referencia of pagina.elementos) {
               ocurrencias++;
               if (papelera) {
@@ -213,7 +220,7 @@ export async function barrerAnfitrionesZoomUseCase(
                   referencia,
                   cuentaProveedorId: anfitrion.cuentaProveedorId,
                   ahora: entrada.ahora,
-                  corteDias: entrada.corteDias
+                  corteDias: entrada.corteDias,
                 });
               } catch {
                 ocurrenciasConError++;
@@ -247,6 +254,6 @@ export async function barrerAnfitrionesZoomUseCase(
     anfitrionesConError,
     anfitrionesInexistentes,
     ocurrenciasConError,
-    errores
+    errores,
   };
 }

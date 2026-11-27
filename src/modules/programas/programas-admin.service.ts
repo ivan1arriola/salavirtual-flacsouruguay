@@ -5,7 +5,7 @@ import { programaAdminSchema, puedeAdministrarProgramas } from "./programas-admi
 export async function crearPrograma(
   db: PrismaClient,
   actor: SessionActor,
-  rawInput: unknown
+  rawInput: unknown,
 ): Promise<string> {
   if (!puedeAdministrarProgramas(actor)) {
     throw new Error("Solo Administración puede crear programas.");
@@ -15,7 +15,7 @@ export async function crearPrograma(
   return db.$transaction(async (tx) => {
     const admin = await tx.usuario.findUnique({
       where: { id: actor.id },
-      select: { id: true, rol: true, activo: true }
+      select: { id: true, rol: true, activo: true },
     });
     if (!admin || !puedeAdministrarProgramas(admin)) {
       throw new Error("La sesión ya no tiene permisos de Administración.");
@@ -25,7 +25,7 @@ export async function crearPrograma(
 
     const programa = await tx.programa.create({
       data: input,
-      select: { id: true, nombre: true, codigo: true, unidadAcademicaId: true, activo: true }
+      select: { id: true, nombre: true, codigo: true, unidadAcademicaId: true, activo: true },
     });
     await tx.auditoria.create({
       data: {
@@ -33,8 +33,8 @@ export async function crearPrograma(
         accion: "PROGRAMA_CREADO",
         entidadTipo: "Programa",
         entidadId: programa.id,
-        valorNuevo: programa
-      }
+        valorNuevo: programa,
+      },
     });
     return programa.id;
   });
@@ -44,7 +44,7 @@ export async function actualizarPrograma(
   db: PrismaClient,
   actor: SessionActor,
   programaId: string,
-  rawInput: unknown
+  rawInput: unknown,
 ): Promise<void> {
   if (!puedeAdministrarProgramas(actor)) {
     throw new Error("Solo Administración puede editar programas.");
@@ -55,12 +55,12 @@ export async function actualizarPrograma(
     const [admin, anterior] = await Promise.all([
       tx.usuario.findUnique({
         where: { id: actor.id },
-        select: { id: true, rol: true, activo: true }
+        select: { id: true, rol: true, activo: true },
       }),
       tx.programa.findUnique({
         where: { id: programaId },
-        select: { id: true, nombre: true, codigo: true, unidadAcademicaId: true, activo: true }
-      })
+        select: { id: true, nombre: true, codigo: true, unidadAcademicaId: true, activo: true },
+      }),
     ]);
     if (!admin || !puedeAdministrarProgramas(admin)) {
       throw new Error("La sesión ya no tiene permisos de Administración.");
@@ -75,7 +75,7 @@ export async function actualizarPrograma(
     const actualizado = await tx.programa.update({
       where: { id: programaId },
       data: input,
-      select: { id: true, nombre: true, codigo: true, unidadAcademicaId: true, activo: true }
+      select: { id: true, nombre: true, codigo: true, unidadAcademicaId: true, activo: true },
     });
     await tx.auditoria.create({
       data: {
@@ -84,8 +84,8 @@ export async function actualizarPrograma(
         entidadTipo: "Programa",
         entidadId: programaId,
         valorAnterior: anterior,
-        valorNuevo: actualizado
-      }
+        valorNuevo: actualizado,
+      },
     });
   });
 }
@@ -94,7 +94,7 @@ export async function eliminarPrograma(
   db: PrismaClient,
   actor: SessionActor,
   programaId: string,
-  confirmacion: string
+  confirmacion: string,
 ): Promise<void> {
   if (!puedeAdministrarProgramas(actor)) {
     throw new Error("Solo Administración puede eliminar programas.");
@@ -107,7 +107,7 @@ export async function eliminarPrograma(
     const [admin, programa, reuniones] = await Promise.all([
       tx.usuario.findUnique({
         where: { id: actor.id },
-        select: { id: true, rol: true, activo: true }
+        select: { id: true, rol: true, activo: true },
       }),
       tx.programa.findUnique({
         where: { id: programaId },
@@ -118,12 +118,12 @@ export async function eliminarPrograma(
           unidadAcademicaId: true,
           activo: true,
           legacyZoomProgramaId: true,
-          _count: { select: { docentes: true } }
-        }
+          _count: { select: { docentes: true } },
+        },
       }),
       tx.solicitudSala.count({
-        where: { docentePrograma: { programaId } }
-      })
+        where: { docentePrograma: { programaId } },
+      }),
     ]);
     if (!admin || !puedeAdministrarProgramas(admin)) {
       throw new Error("La sesión ya no tiene permisos de Administración.");
@@ -133,7 +133,7 @@ export async function eliminarPrograma(
     }
     if (reuniones > 0) {
       throw new Error(
-        "Este programa tiene reuniones asociadas y no puede eliminarse sin perder historial. Marcá el programa como inactivo."
+        "Este programa tiene reuniones asociadas y no puede eliminarse sin perder historial. Marcá el programa como inactivo.",
       );
     }
 
@@ -146,8 +146,8 @@ export async function eliminarPrograma(
         entidadTipo: "Programa",
         entidadId: programaId,
         valorAnterior: programa,
-        valorNuevo: { eliminado: true }
-      }
+        valorNuevo: { eliminado: true },
+      },
     });
   });
 }
@@ -155,14 +155,14 @@ export async function eliminarPrograma(
 async function validarNombreDisponible(
   tx: Prisma.TransactionClient,
   nombre: string,
-  excluirId?: string
+  excluirId?: string,
 ): Promise<void> {
   const existente = await tx.programa.findFirst({
     where: {
       nombre: { equals: nombre, mode: "insensitive" },
-      ...(excluirId ? { id: { not: excluirId } } : {})
+      ...(excluirId ? { id: { not: excluirId } } : {}),
     },
-    select: { id: true }
+    select: { id: true },
   });
   if (existente) {
     throw new Error("Ya existe un programa con ese nombre.");
@@ -171,14 +171,14 @@ async function validarNombreDisponible(
 
 async function validarUnidadAcademica(
   tx: Prisma.TransactionClient,
-  unidadAcademicaId: string | null | undefined
+  unidadAcademicaId: string | null | undefined,
 ): Promise<void> {
   if (!unidadAcademicaId) {
     return;
   }
   const unidad = await tx.unidadAcademica.findUnique({
     where: { id: unidadAcademicaId },
-    select: { id: true }
+    select: { id: true },
   });
   if (!unidad) {
     throw new Error("La unidad académica seleccionada no existe.");

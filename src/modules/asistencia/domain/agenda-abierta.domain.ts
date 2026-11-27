@@ -1,11 +1,11 @@
 import {
   cumpleSeparacionMinimaAsistencias,
-  SEPARACION_MINIMA_ASISTENCIAS_MINUTOS
+  SEPARACION_MINIMA_ASISTENCIAS_MINUTOS,
 } from "./asistencia.domain";
 import type {
   AsignacionExistente,
   ConflictoAsistenciaResultado,
-  PeriodoAsistencia
+  PeriodoAsistencia,
 } from "./asistencia.types";
 
 /**
@@ -14,7 +14,7 @@ import type {
  */
 export function evaluarConflictoAsistencia(
   candidata: PeriodoAsistencia,
-  asignadas: readonly AsignacionExistente[]
+  asignadas: readonly AsignacionExistente[],
 ): ConflictoAsistenciaResultado {
   const candStart = candidata.inicio.getTime();
   const candEnd = candidata.fin.getTime();
@@ -32,12 +32,14 @@ export function evaluarConflictoAsistencia(
       etiqueta: "Conflicto de horario",
       detalle: `Se superpone con: ${solapada.titulo}`,
       tone: "red",
-      reunionConflicto: solapada
+      reunionConflicto: solapada,
     };
   }
 
   // 2. Verificar separación mínima (muy próximo < 30 min)
-  const proxima = asignadas.find((asignada) => !cumpleSeparacionMinimaAsistencias(candidata, asignada));
+  const proxima = asignadas.find(
+    (asignada) => !cumpleSeparacionMinimaAsistencias(candidata, asignada),
+  );
 
   if (proxima) {
     const asigStart = proxima.inicio.getTime();
@@ -53,33 +55,40 @@ export function evaluarConflictoAsistencia(
       detalle: `A ${minutos} min de: ${proxima.titulo} (mínimo ${SEPARACION_MINIMA_ASISTENCIAS_MINUTOS} min)`,
       minutosSeparacion: minutos,
       tone: "amber",
-      reunionConflicto: proxima
+      reunionConflicto: proxima,
     };
   }
 
   return {
     estado: "DISPONIBLE",
     etiqueta: "Disponible",
-    tone: "green"
+    tone: "green",
   };
 }
 
-export function parseDateParts(date: Date, timezone: string): { year: number; month: number; day: number } {
+export function parseDateParts(
+  date: Date,
+  timezone: string,
+): { year: number; month: number; day: number } {
   const parts = new Intl.DateTimeFormat("en-CA", {
     timeZone: timezone || "America/Montevideo",
     year: "numeric",
     month: "2-digit",
-    day: "2-digit"
+    day: "2-digit",
   }).formatToParts(date);
 
   return {
     year: Number(parts.find((p) => p.type === "year")?.value),
     month: Number(parts.find((p) => p.type === "month")?.value),
-    day: Number(parts.find((p) => p.type === "day")?.value)
+    day: Number(parts.find((p) => p.type === "day")?.value),
   };
 }
 
-export function formatearDiasRestantes(fecha: Date, ahora: Date, timezone = "America/Montevideo"): string {
+export function formatearDiasRestantes(
+  fecha: Date,
+  ahora: Date,
+  timezone = "America/Montevideo",
+): string {
   const f = parseDateParts(fecha, timezone);
   const a = parseDateParts(ahora, timezone);
 
@@ -111,7 +120,7 @@ export function formatearDiasRestantes(fecha: Date, ahora: Date, timezone = "Ame
 export function agruparPorFecha<T extends { inicioProgramadoAt: Date }>(
   items: readonly T[],
   ahora: Date,
-  timezone = "America/Montevideo"
+  timezone = "America/Montevideo",
 ): ReadonlyArray<{
   claveFecha: string;
   etiquetaFecha: string;
@@ -120,15 +129,23 @@ export function agruparPorFecha<T extends { inicioProgramadoAt: Date }>(
 }> {
   const claves = [...new Set(items.map((item) => dateKey(item.inicioProgramadoAt, timezone)))];
 
-  return claves.map((claveFecha) => {
-    const groupItems = items.filter((item) => dateKey(item.inicioProgramadoAt, timezone) === claveFecha);
-    const primeraFecha = groupItems[0].inicioProgramadoAt;
-    return {
-      claveFecha,
-      etiquetaFecha: formatFechaGrupo(primeraFecha, timezone),
-      etiquetaRelativa: formatearDiasRestantes(primeraFecha, ahora, timezone),
-      items: groupItems
-    };
+  return claves.flatMap((claveFecha) => {
+    const groupItems = items.filter(
+      (item) => dateKey(item.inicioProgramadoAt, timezone) === claveFecha,
+    );
+    const primero = groupItems[0];
+    if (!primero) {
+      return [];
+    }
+    const primeraFecha = primero.inicioProgramadoAt;
+    return [
+      {
+        claveFecha,
+        etiquetaFecha: formatFechaGrupo(primeraFecha, timezone),
+        etiquetaRelativa: formatearDiasRestantes(primeraFecha, ahora, timezone),
+        items: groupItems,
+      },
+    ];
   });
 }
 
@@ -142,18 +159,19 @@ export type PostulanteEvaluado = Readonly<{
 }>;
 
 export function ordenarPostulantesParaAdministracion(
-  postulantes: readonly PostulanteEvaluado[]
+  postulantes: readonly PostulanteEvaluado[],
 ): readonly PostulanteEvaluado[] {
   const prioridadEstado = {
     DISPONIBLE: 0,
     MUY_PROXIMO: 1,
-    CONFLICTO: 2
+    CONFLICTO: 2,
   } as const;
 
   return postulantes.reduce<readonly PostulanteEvaluado[]>((ordered, candidate) => {
     const insertionIndex = ordered.findIndex((item) => {
       const diffEstado =
-        prioridadEstado[candidate.estadoDisponibilidad] - prioridadEstado[item.estadoDisponibilidad];
+        prioridadEstado[candidate.estadoDisponibilidad] -
+        prioridadEstado[item.estadoDisponibilidad];
       if (diffEstado !== 0) {
         return diffEstado < 0;
       }
@@ -177,7 +195,7 @@ function dateKey(date: Date, timezone: string): string {
     timeZone: timezone || "America/Montevideo",
     year: "numeric",
     month: "2-digit",
-    day: "2-digit"
+    day: "2-digit",
   }).format(date);
 }
 
@@ -187,7 +205,7 @@ function formatFechaGrupo(date: Date, timezone: string): string {
     weekday: "long",
     year: "numeric",
     month: "long",
-    day: "numeric"
+    day: "numeric",
   }).format(date);
 
   return text.charAt(0).toUpperCase() + text.slice(1);

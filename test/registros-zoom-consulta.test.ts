@@ -13,9 +13,14 @@ describe("consulta de registros Zoom importados", () => {
     const findMany = vi.fn().mockResolvedValue([{ id: "registro-51" }]);
     const resultado = await consultarRegistrosZoomImportados(
       { $queryRaw: queryRaw, eventoProveedor: { findMany } } as never,
-      { busqueda: "  Educación%_  ", pagina: "2" }
+      { busqueda: "  Educación%_  ", pagina: "2" },
     );
-    expect(resultado).toMatchObject({ pagina: 2, totalPaginas: 3, total: 125, busqueda: "Educación%_" });
+    expect(resultado).toMatchObject({
+      pagina: 2,
+      totalPaginas: 3,
+      total: 125,
+      busqueda: "Educación%_",
+    });
     const conteo = queryRaw.mock.calls[0][0];
     const pagina = queryRaw.mock.calls[1][0];
     expect(conteo.text).toContain("normalize(");
@@ -34,10 +39,15 @@ describe("consulta de registros Zoom importados", () => {
     const findMany = vi.fn().mockResolvedValue([{ id: "registro-51" }]);
     const resultado = await consultarRegistrosZoomImportados(
       { $queryRaw: queryRaw, eventoProveedor: { findMany } } as never,
-      { busqueda: "  educación  ", pagina: "2" }
+      { busqueda: "  educación  ", pagina: "2" },
     );
 
-    expect(resultado).toMatchObject({ pagina: 2, totalPaginas: 3, total: 125, busqueda: "educación" });
+    expect(resultado).toMatchObject({
+      pagina: 2,
+      totalPaginas: 3,
+      total: 125,
+      busqueda: "educación",
+    });
     expect(resultado.registros).toEqual([{ id: "registro-51" }]);
     expect(queryRaw.mock.calls[0][0].text).toContain("ZOOM_HISTORICO");
     expect(queryRaw.mock.calls[1][0].values).toContain(50);
@@ -51,7 +61,9 @@ describe("consulta de registros Zoom importados", () => {
     expect((await consultarRegistrosZoomImportados(db, { pagina: "999" })).pagina).toBe(2);
     expect(findMany.mock.calls[0][0].skip).toBe(50);
     expect((await consultarRegistrosZoomImportados(db, { pagina: "1.5" })).pagina).toBe(1);
-    expect((await consultarRegistrosZoomImportados(db, { busqueda: ["uno", "dos"] })).busqueda).toBe("");
+    expect(
+      (await consultarRegistrosZoomImportados(db, { busqueda: ["uno", "dos"] })).busqueda,
+    ).toBe("");
   });
 
   it("mantiene la búsqueda al navegar y permite limpiarla", () => {
@@ -61,8 +73,8 @@ describe("consulta de registros Zoom importados", () => {
         busqueda: "Zoom & clase",
         pagina: 2,
         totalPaginas: 3,
-        total: 101
-      })
+        total: 101,
+      }),
     );
     expect(html).toContain('action="/configuracion/historico"');
     expect(html).toContain("Zoom+%26+clase");
@@ -77,8 +89,8 @@ describe("consulta de registros Zoom importados", () => {
         busqueda: "",
         pagina: 1,
         totalPaginas: 1,
-        total: 0
-      })
+        total: 0,
+      }),
     );
     const sinCoincidencias = renderToStaticMarkup(
       createElement(HistoricalMeetingsTable, {
@@ -86,8 +98,8 @@ describe("consulta de registros Zoom importados", () => {
         busqueda: "seminario",
         pagina: 1,
         totalPaginas: 1,
-        total: 0
-      })
+        total: 0,
+      }),
     );
     expect(vacio).toContain("Todavía no hay registros Zoom importados.");
     expect(vacio).not.toContain("Probá con otro título");

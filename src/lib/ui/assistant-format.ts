@@ -1,7 +1,7 @@
 const monthFormatter = new Intl.DateTimeFormat("es-UY", {
   timeZone: "America/Montevideo",
   month: "long",
-  year: "numeric"
+  year: "numeric",
 });
 
 export function formatMinutes(total: number): string {
@@ -13,7 +13,7 @@ export function formatMoney(amount: number, currency = "UYU"): string {
   return new Intl.NumberFormat("es-UY", {
     style: "currency",
     currency,
-    maximumFractionDigits: 2
+    maximumFractionDigits: 2,
   }).format(amount);
 }
 

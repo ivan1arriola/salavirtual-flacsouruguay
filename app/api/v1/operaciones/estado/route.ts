@@ -8,7 +8,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
-  const secret = process.env.CRON_SECRET;
+  const secret = process.env["CRON_SECRET"];
   const isCron = Boolean(secret && request.headers.get("authorization") === "Bearer " + secret);
   if (!isCron) {
     const session = await auth();
@@ -22,34 +22,44 @@ export async function GET(request: Request) {
   }
 
   const now = new Date();
-  const pendiente = { proveedor: { tipo: "GOOGLE_MEET" as const }, operacionPendiente: { not: null } };
-  const [pendingGoogle, googleErrors, staleClaims, oldest, uncertainPosts, stuckPosts, reservedPosts] =
-    await Promise.all([
-      db.eventoProveedor.count({ where: pendiente }),
-      db.eventoProveedor.count({ where: { ...pendiente, estadoIntegracion: "ERROR" } }),
-      db.eventoProveedor.count({
-        where: { ...pendiente, reclamoIntegracionAt: { lt: new Date(now.getTime() - 10 * 60_000) } }
-      }),
-      db.eventoProveedor.findFirst({
-        where: pendiente,
-        orderBy: { updatedAt: "asc" },
-        select: { updatedAt: true }
-      }),
-      db.googleOperacionExterna.count({ where: { estado: "INCIERTA" } }),
-      db.googleOperacionExterna.count({
-        where: { estado: "ENVIANDO", iniciadaAt: { lt: new Date(now.getTime() - 2 * 60_000) } }
-      }),
-      db.googleOperacionExterna.count({
-        where: { estado: "RESERVADA", createdAt: { lt: new Date(now.getTime() - 15 * 60_000) } }
-      })
-    ]);
+  const pendiente = {
+    proveedor: { tipo: "GOOGLE_MEET" as const },
+    operacionPendiente: { not: null },
+  };
+  const [
+    pendingGoogle,
+    googleErrors,
+    staleClaims,
+    oldest,
+    uncertainPosts,
+    stuckPosts,
+    reservedPosts,
+  ] = await Promise.all([
+    db.eventoProveedor.count({ where: pendiente }),
+    db.eventoProveedor.count({ where: { ...pendiente, estadoIntegracion: "ERROR" } }),
+    db.eventoProveedor.count({
+      where: { ...pendiente, reclamoIntegracionAt: { lt: new Date(now.getTime() - 10 * 60_000) } },
+    }),
+    db.eventoProveedor.findFirst({
+      where: pendiente,
+      orderBy: { updatedAt: "asc" },
+      select: { updatedAt: true },
+    }),
+    db.googleOperacionExterna.count({ where: { estado: "INCIERTA" } }),
+    db.googleOperacionExterna.count({
+      where: { estado: "ENVIANDO", iniciadaAt: { lt: new Date(now.getTime() - 2 * 60_000) } },
+    }),
+    db.googleOperacionExterna.count({
+      where: { estado: "RESERVADA", createdAt: { lt: new Date(now.getTime() - 15 * 60_000) } },
+    }),
+  ]);
   const health = evaluarSaludOperativa({
     pendingGoogle,
     googleErrors,
     staleClaims,
     oldestPendingMinutes: oldest
       ? Math.max(0, Math.floor((now.getTime() - oldest.updatedAt.getTime()) / 60_000))
-      : null
+      : null,
   });
 
   const status =
@@ -66,14 +76,14 @@ export async function GET(request: Request) {
       googlePost: {
         inciertas: uncertainPosts,
         enviandoObsoletas: stuckPosts,
-        reservadasAtrasadas: reservedPosts
+        reservadasAtrasadas: reservedPosts,
       },
       checkedAt: now.toISOString(),
-      note: "Antigüedad aproximada desde el último cambio del evento; no desde su creación."
+      note: "Antigüedad aproximada desde el último cambio del evento; no desde su creación.",
     },
     {
       status: status === "critico" ? 503 : 200,
-      headers: { "Cache-Control": "no-store" }
-    }
+      headers: { "Cache-Control": "no-store" },
+    },
   );
 }

@@ -19,7 +19,7 @@ async function enviar(url: string, cuerpo: unknown, exito: string): Promise<Resu
     const r = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(cuerpo)
+      body: JSON.stringify(cuerpo),
     });
     return r.ok ? { ok: true, mensaje: exito } : { ok: false, mensaje: mensajeErrorZoom(r.status) };
   } catch {
@@ -31,12 +31,12 @@ export const desvincularOcurrenciaZoomCliente = (ocurrenciaId: string, eventoId:
   enviar(
     `/api/v1/archivos/zoom/ocurrencias/${encodeURIComponent(ocurrenciaId)}/desvincular`,
     { eventoId },
-    "Vínculo deshecho."
+    "Vínculo deshecho.",
   );
 
 export const reintentarAsistenciaZoomCliente = (instanciaId: string) =>
   enviar(
     `/api/v1/reuniones/instancias/${encodeURIComponent(instanciaId)}/asistencia/regenerar`,
     {},
-    "Asistencia recalculada."
+    "Asistencia recalculada.",
   );

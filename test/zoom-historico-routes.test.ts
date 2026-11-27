@@ -5,16 +5,18 @@ const mocks = vi.hoisted(() => ({
   resolveSessionActor: vi.fn(),
   solicitar: vi.fn(),
   consultar: vi.fn(),
-  vincular: vi.fn()
+  vincular: vi.fn(),
 }));
 
 vi.mock("@/auth", () => ({ auth: mocks.auth }));
-vi.mock("@/src/lib/auth/session-actor.adapter", () => ({ resolveSessionActor: mocks.resolveSessionActor }));
+vi.mock("@/src/lib/auth/session-actor.adapter", () => ({
+  resolveSessionActor: mocks.resolveSessionActor,
+}));
 vi.mock("@/src/lib/db", () => ({ db: {} }));
 vi.mock("@/src/bootstrap/zoom-historico.server", () => ({
   solicitarRecuperacionZoom: mocks.solicitar,
   consultarRecuperacionZoom: mocks.consultar,
-  vincularOcurrenciaZoomAdmin: mocks.vincular
+  vincularOcurrenciaZoomAdmin: mocks.vincular,
 }));
 
 import { POST as crear } from "../app/api/v1/archivos/zoom/recuperaciones/route";
@@ -54,7 +56,7 @@ describe("POST recuperaciones", () => {
       { desde: 1, hasta: "x" },
       { ...valido, anfitrionIds: "h1" },
       { ...valido, anfitrionIds: [3] },
-      { ...valido, dryRun: "no" }
+      { ...valido, dryRun: "no" },
     ]) {
       expect((await crear(post(c))).status).toBe(400);
     }
@@ -66,7 +68,7 @@ describe("POST recuperaciones", () => {
     expect(r.status).toBe(200);
     expect(mocks.solicitar).toHaveBeenCalledWith(
       { id: "u", rol: "ADMINISTRACION" },
-      { anfitrionIds: [], ...valido, dryRun: true }
+      { anfitrionIds: [], ...valido, dryRun: true },
     );
   });
 
@@ -78,7 +80,10 @@ describe("POST recuperaciones", () => {
   });
 
   it("peticiones rechazadas por el caso de uso → 400; Zoom sin configurar → 409; fallo interno → 500 sin detalle", async () => {
-    mocks.solicitar.mockResolvedValueOnce({ tipo: "PETICION_INVALIDA", motivo: "PERIODO_INVERTIDO" });
+    mocks.solicitar.mockResolvedValueOnce({
+      tipo: "PETICION_INVALIDA",
+      motivo: "PERIODO_INVERTIDO",
+    });
     expect((await crear(post(valido))).status).toBe(400);
     mocks.solicitar.mockResolvedValueOnce({ tipo: "ZOOM_NO_CONFIGURADO" });
     expect((await crear(post(valido))).status).toBe(409);
@@ -135,7 +140,7 @@ describe("POST ocurrencias/[ocurrenciaId]/vincular", () => {
       [{ tipo: "VINCULADA_A_OTRO", eventoProveedorId: "e9" }, 409],
       [{ tipo: "CONFLICTO_DRIVE" }, 409],
       [{ tipo: "EVENTO_NO_ZOOM" }, 422],
-      [{ tipo: "NO_ENCONTRADA", recurso: "OCURRENCIA" }, 404]
+      [{ tipo: "NO_ENCONTRADA", recurso: "OCURRENCIA" }, 404],
     ];
     for (const [resultado, status] of casos) {
       mocks.vincular.mockResolvedValueOnce(resultado);

@@ -4,21 +4,21 @@ const dateTimeFormatter = new Intl.DateTimeFormat("es-UY", {
   month: "short",
   hour: "2-digit",
   minute: "2-digit",
-  hourCycle: "h23"
+  hourCycle: "h23",
 });
 
 const shortDateFormatter = new Intl.DateTimeFormat("es-UY", {
   timeZone: "America/Montevideo",
   weekday: "long",
   day: "numeric",
-  month: "long"
+  month: "long",
 });
 
 const dateFormatter = new Intl.DateTimeFormat("es-UY", {
   timeZone: "America/Montevideo",
   weekday: "short",
   day: "2-digit",
-  month: "short"
+  month: "short",
 });
 
 const longDateFormatter = new Intl.DateTimeFormat("es-UY", {
@@ -26,14 +26,14 @@ const longDateFormatter = new Intl.DateTimeFormat("es-UY", {
   weekday: "long",
   day: "numeric",
   month: "long",
-  year: "numeric"
+  year: "numeric",
 });
 
 const timeFormatter = new Intl.DateTimeFormat("es-UY", {
   timeZone: "America/Montevideo",
   hour: "2-digit",
   minute: "2-digit",
-  hourCycle: "h23"
+  hourCycle: "h23",
 });
 
 export function formatDateTime(date: Date): string {

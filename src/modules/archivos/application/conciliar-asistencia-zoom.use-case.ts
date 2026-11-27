@@ -1,7 +1,7 @@
 import {
   calcularCambioConciliacionZoom,
   puedeConciliarAsistenciaZoom,
-  type ActorConciliacionZoom
+  type ActorConciliacionZoom,
 } from "../domain";
 import type { ConciliacionAsistenciaZoomRepositoryPort } from "../ports";
 
@@ -25,7 +25,7 @@ export type EntradaConciliacionZoom = Readonly<{
 export async function conciliarAsistenciaZoomUseCase(
   deps: Readonly<{ repo: ConciliacionAsistenciaZoomRepositoryPort }>,
   actor: ActorConciliacionZoom,
-  entrada: EntradaConciliacionZoom
+  entrada: EntradaConciliacionZoom,
 ): Promise<ResultadoConciliacionZoom> {
   const contexto = await deps.repo.obtenerContexto(entrada.registroId);
   if (!contexto) {

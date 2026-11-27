@@ -4,26 +4,28 @@ const state = vi.hoisted(() => ({
   session: null as null | { user: { id: string; email: string; role: string } },
   actor: null as null | { id: string; rol: string; activo: boolean },
   preview: vi.fn(),
-  update: vi.fn()
+  update: vi.fn(),
 }));
 
 vi.mock("next/server", () => ({
   NextResponse: class {
     constructor(
       public body: unknown,
-      public status = 200
+      public status = 200,
     ) {}
     static json(body: unknown, init?: { status?: number }) {
       return new this(body, init?.status ?? 200);
     }
-  }
+  },
 }));
 vi.mock("@/auth", () => ({ auth: async () => state.session }));
-vi.mock("@/src/lib/auth/session-actor.adapter", () => ({ resolveSessionActor: async () => state.actor }));
+vi.mock("@/src/lib/auth/session-actor.adapter", () => ({
+  resolveSessionActor: async () => state.actor,
+}));
 vi.mock("@/src/lib/db", () => ({ db: {} }));
 vi.mock("@/src/modules/reuniones/migracion-zoom.service", () => ({
   obtenerVistaPreviaMigracionZoom: state.preview,
-  actualizarExcepcionGoogleMeet: state.update
+  actualizarExcepcionGoogleMeet: state.update,
 }));
 
 import { GET } from "../app/api/v1/reuniones/migracion-zoom/vista-previa/route";
@@ -44,7 +46,9 @@ describe("rutas de migración a Zoom", () => {
   it("responden 401 sin sesión o con usuario inactivo, sin invocar el servicio", async () => {
     state.session = null;
     expect(((await GET()) as any).status).toBe(401);
-    expect(((await PATCH(patch({ conservar: true, motivo: "x" }), context)) as any).status).toBe(401);
+    expect(((await PATCH(patch({ conservar: true, motivo: "x" }), context)) as any).status).toBe(
+      401,
+    );
 
     state.session = { user: { id: "u", email: "a@flacso.edu.uy", role: "ADMINISTRACION" } };
     state.actor = { id: "u", rol: "ADMINISTRACION", activo: false };
@@ -59,7 +63,9 @@ describe("rutas de migración a Zoom", () => {
     state.preview.mockRejectedValue(new ForbiddenApiError("No"));
     state.update.mockRejectedValue(new ForbiddenApiError("No"));
     expect(((await GET()) as any).status).toBe(403);
-    expect(((await PATCH(patch({ conservar: true, motivo: "Motivo" }), context)) as any).status).toBe(403);
+    expect(
+      ((await PATCH(patch({ conservar: true, motivo: "Motivo" }), context)) as any).status,
+    ).toBe(403);
     expect(state.preview).toHaveBeenCalledWith({}, { id: "u", rol: "DOCENTE" });
   });
 
@@ -72,7 +78,7 @@ describe("rutas de migración a Zoom", () => {
     expect(state.update).toHaveBeenCalledWith(
       {},
       { id: "u", rol: "ADMINISTRACION" },
-      { instanciaId: "i1", conservar: true, motivo: "Motivo" }
+      { instanciaId: "i1", conservar: true, motivo: "Motivo" },
     );
   });
 });

@@ -9,22 +9,26 @@ const solicitud = (serieReunionId: string | null) => ({
   serieReunionId,
   docenteProgramaId: "dp",
   titulo: "Seminario",
-  createdAt: new Date("2026-10-01T00:00:00Z")
+  createdAt: new Date("2026-10-01T00:00:00Z"),
 });
 const evento = (tipo = "GOOGLE_MEET", n = 1) => ({
   proveedor: { tipo },
   joinUrl: tipo === "ZOOM" ? `https://zoom.us/j/${n}` : "https://meet.google.com/abc",
   externalEventId: `ext-${n}`,
   cuentaProveedorId: tipo === "ZOOM" ? "zoom-host" : "meet-host",
-  reunionProveedorId: null as string | null
+  reunionProveedorId: null as string | null,
 });
-const instancia = (id: string, serie: string | null, proveedorActivoTipo: string | null = "GOOGLE_MEET") => ({
+const instancia = (
+  id: string,
+  serie: string | null,
+  proveedorActivoTipo: string | null = "GOOGLE_MEET",
+) => ({
   id,
   estado: "PROGRAMADA",
   inicioProgramadoAt: new Date("2026-11-10T12:00:00Z"),
   proveedorActivoTipo,
   solicitud: solicitud(serie),
-  eventosProveedor: [evento()]
+  eventosProveedor: [evento()],
 });
 const reunion = (serieClave: string, estadoCreacion = "CREADA") => ({
   serieClave,
@@ -32,19 +36,19 @@ const reunion = (serieClave: string, estadoCreacion = "CREADA") => ({
   estadoCreacion,
   externalId: "1",
   joinUrl: "https://zoom.us/j/1",
-  cuentaProveedorId: "zoom-host"
+  cuentaProveedorId: "zoom-host",
 });
 const aviso = (serieClave: string, estado = "ACEPTADO") => ({
   serieClave,
   email: "ana@flacso.edu.uy",
   tipo: "MIGRACION_SERIE",
-  estado
+  estado,
 });
 
 function base(
   instancias: ReturnType<typeof instancia>[] = [],
   reuniones: ReturnType<typeof reunion>[] = [],
-  avisos: ReturnType<typeof aviso>[] = []
+  avisos: ReturnType<typeof aviso>[] = [],
 ) {
   const escritura = vi.fn(() => {
     throw new Error("El diagnóstico no puede escribir");
@@ -56,7 +60,7 @@ function base(
     updateMany: escritura,
     upsert: escritura,
     delete: escritura,
-    deleteMany: escritura
+    deleteMany: escritura,
   };
   const db = {
     instanciaSala: { findMany: vi.fn(async () => instancias), ...operaciones },
@@ -65,7 +69,7 @@ function base(
     eventoProveedor: operaciones,
     $transaction: escritura,
     $executeRaw: escritura,
-    $executeRawUnsafe: escritura
+    $executeRawUnsafe: escritura,
   };
   return { db, cliente: db as unknown as PrismaClient, escritura };
 }
@@ -75,14 +79,16 @@ describe("obtenerDiagnosticosSeriesZoom", () => {
     "rechaza el rol %s con 403 antes de leer",
     async (rol) => {
       const { db, cliente, escritura } = base();
-      await expect(obtenerDiagnosticosSeriesZoom(cliente, { id: "u", rol }, ahora)).rejects.toMatchObject({
-        status: 403
+      await expect(
+        obtenerDiagnosticosSeriesZoom(cliente, { id: "u", rol }, ahora),
+      ).rejects.toMatchObject({
+        status: 403,
       });
       expect(db.instanciaSala.findMany).not.toHaveBeenCalled();
       expect(db.reunionProveedor.findMany).not.toHaveBeenCalled();
       expect(db.avisoEnlaceSerie.findMany).not.toHaveBeenCalled();
       expect(escritura).not.toHaveBeenCalled();
-    }
+    },
   );
 
   it("agrupa por la clave explícita y la clave legada vigente sin mezclar series", async () => {
@@ -92,14 +98,14 @@ describe("obtenerDiagnosticosSeriesZoom", () => {
       instancia("i3", "s2"),
       instancia("i4", null),
       instancia("i5", null),
-      { ...instancia("i6", null), solicitud: { ...solicitud(null), titulo: "Otro" } }
+      { ...instancia("i6", null), solicitud: { ...solicitud(null), titulo: "Otro" } },
     ]);
     const resultado = await obtenerDiagnosticosSeriesZoom(cliente, admin, ahora);
     expect([...resultado.keys()]).toEqual([
       "serie:s1",
       "serie:s2",
       claveSerieReunion(solicitud(null)),
-      claveSerieReunion({ ...solicitud(null), titulo: "Otro" })
+      claveSerieReunion({ ...solicitud(null), titulo: "Otro" }),
     ]);
     expect([...resultado.values()].map(({ conteos }) => conteos.total)).toEqual([2, 1, 2, 1]);
   });
@@ -108,37 +114,37 @@ describe("obtenerDiagnosticosSeriesZoom", () => {
     const { db, cliente, escritura } = base(
       [instancia("i1", "s1"), instancia("i2", "s2"), instancia("i3", "s1")],
       [reunion("serie:s1")],
-      [aviso("serie:s2"), aviso("serie:s1", "RESERVADO")]
+      [aviso("serie:s2"), aviso("serie:s1", "RESERVADO")],
     );
     const resultado = await obtenerDiagnosticosSeriesZoom(cliente, admin, ahora);
     expect(db.instanciaSala.findMany).toHaveBeenCalledTimes(1);
     expect(db.instanciaSala.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { estado: "PROGRAMADA", inicioProgramadoAt: { gt: ahora } }
-      })
+        where: { estado: "PROGRAMADA", inicioProgramadoAt: { gt: ahora } },
+      }),
     );
     expect(db.reunionProveedor.findMany).toHaveBeenCalledTimes(1);
     expect(db.reunionProveedor.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { serieClave: { in: ["serie:s1", "serie:s2"] }, proveedor: { tipo: "ZOOM" } }
-      })
+        where: { serieClave: { in: ["serie:s1", "serie:s2"] }, proveedor: { tipo: "ZOOM" } },
+      }),
     );
     expect(db.avisoEnlaceSerie.findMany).toHaveBeenCalledTimes(1);
     expect(db.avisoEnlaceSerie.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { serieClave: { in: ["serie:s1", "serie:s2"] } }
-      })
+        where: { serieClave: { in: ["serie:s1", "serie:s2"] } },
+      }),
     );
     expect(resultado.get("serie:s1")).toMatchObject({
       clasificacion: "RETOMABLE",
       acciones: ["REANUDAR", "VER_DETALLE"],
       conteos: { total: 2, reunionesZoomDistintas: 1 },
-      avisos: { enviados: 0, pendientes: 1 }
+      avisos: { enviados: 0, pendientes: 1 },
     });
     expect(resultado.get("serie:s2")).toMatchObject({
       clasificacion: "MIGRABLE",
       acciones: ["MIGRAR"],
-      avisos: { enviados: 1, pendientes: 0 }
+      avisos: { enviados: 1, pendientes: 0 },
     });
     expect(escritura).not.toHaveBeenCalled();
   });
@@ -148,32 +154,34 @@ describe("obtenerDiagnosticosSeriesZoom", () => {
     const { cliente } = base([
       { ...instancia("i1", "s1", "ZOOM"), eventosProveedor: [evento(), zoom] },
       { ...instancia("i2", "s2", null), eventosProveedor: [zoom, evento()] },
-      { ...instancia("i3", "s3", null), eventosProveedor: [zoom] }
+      { ...instancia("i3", "s3", null), eventosProveedor: [zoom] },
     ]);
     const resultado = await obtenerDiagnosticosSeriesZoom(cliente, admin, ahora);
     expect(resultado.get("serie:s1")).toMatchObject({
       clasificacion: "SANA",
-      conteos: { enZoom: 1, enMeet: 0, enlacesDistintos: 1 }
+      conteos: { enZoom: 1, enMeet: 0, enlacesDistintos: 1 },
     });
     expect(resultado.get("serie:s2")).toMatchObject({
       clasificacion: "MIGRABLE",
-      conteos: { enZoom: 0, enMeet: 1, enlacesDistintos: 0 }
+      conteos: { enZoom: 0, enMeet: 1, enlacesDistintos: 0 },
     });
     expect(resultado.get("serie:s3")).toMatchObject({
       clasificacion: "SANA",
-      conteos: { enZoom: 1, enMeet: 0 }
+      conteos: { enZoom: 1, enMeet: 0 },
     });
   });
 
   it("alimenta el dominio con los enlaces y referencias de los eventos Zoom", async () => {
     const { cliente } = base([
       { ...instancia("i1", "s1", "ZOOM"), eventosProveedor: [evento("ZOOM", 1)] },
-      { ...instancia("i2", "s1", "ZOOM"), eventosProveedor: [evento("ZOOM", 2)] }
+      { ...instancia("i2", "s1", "ZOOM"), eventosProveedor: [evento("ZOOM", 2)] },
     ]);
-    expect((await obtenerDiagnosticosSeriesZoom(cliente, admin, ahora)).get("serie:s1")).toMatchObject({
+    expect(
+      (await obtenerDiagnosticosSeriesZoom(cliente, admin, ahora)).get("serie:s1"),
+    ).toMatchObject({
       clasificacion: "ENLACES_DISTINTOS",
       conteos: { enlacesDistintos: 2 },
-      acciones: ["UNIFICAR_ENLACE", "VER_DETALLE"]
+      acciones: ["UNIFICAR_ENLACE", "VER_DETALLE"],
     });
   });
 
@@ -191,8 +199,8 @@ describe("obtenerDiagnosticosSeriesZoom", () => {
       await obtenerDiagnosticosSeriesZoom(cliente, admin);
       expect(db.instanciaSala.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: { estado: "PROGRAMADA", inicioProgramadoAt: { gt: ahora } }
-        })
+          where: { estado: "PROGRAMADA", inicioProgramadoAt: { gt: ahora } },
+        }),
       );
     } finally {
       vi.useRealTimers();
@@ -201,13 +209,16 @@ describe("obtenerDiagnosticosSeriesZoom", () => {
 
   describe("series huérfanas", () => {
     it("por defecto no las busca: solo diagnostica las series con encuentros futuros", async () => {
-      const { db, cliente } = base([instancia("i1", "s1")], [reunion("serie:s1"), reunion("serie:vieja")]);
+      const { db, cliente } = base(
+        [instancia("i1", "s1")],
+        [reunion("serie:s1"), reunion("serie:vieja")],
+      );
       const resultado = await obtenerDiagnosticosSeriesZoom(cliente, admin, ahora);
       expect([...resultado.keys()]).toEqual(["serie:s1"]);
       expect(db.reunionProveedor.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: { serieClave: { in: ["serie:s1"] }, proveedor: { tipo: "ZOOM" } }
-        })
+          where: { serieClave: { in: ["serie:s1"] }, proveedor: { tipo: "ZOOM" } },
+        }),
       );
     });
 
@@ -215,17 +226,17 @@ describe("obtenerDiagnosticosSeriesZoom", () => {
       const { db, cliente, escritura } = base(
         [instancia("i1", "s1")],
         [reunion("serie:s1"), reunion("serie:vieja"), reunion("legacy:dp|x|y")],
-        [aviso("serie:vieja")]
+        [aviso("serie:vieja")],
       );
       const resultado = await obtenerDiagnosticosSeriesZoom(cliente, admin, ahora, {
-        incluirHuerfanas: true
+        incluirHuerfanas: true,
       });
       expect([...resultado.keys()].sort()).toEqual(["legacy:dp|x|y", "serie:s1", "serie:vieja"]);
       expect(resultado.get("serie:vieja")).toMatchObject({
         clasificacion: "HUERFANA",
         acciones: ["VER_DETALLE"],
         conteos: { total: 0, enZoom: 0, enMeet: 0 },
-        avisos: { enviados: 1 }
+        avisos: { enviados: 1 },
       });
       expect(db.reunionProveedor.findMany).toHaveBeenCalledTimes(1);
       expect(db.reunionProveedor.findMany).toHaveBeenCalledWith(
@@ -236,17 +247,21 @@ describe("obtenerDiagnosticosSeriesZoom", () => {
               { serieClave: { in: ["serie:s1"] } },
               {
                 serieClave: { notIn: ["serie:s1"] },
-                estadoCreacion: { in: ["PENDIENTE", "CREANDO", "CREADA"] }
-              }
-            ]
-          }
-        })
+                estadoCreacion: { in: ["PENDIENTE", "CREANDO", "CREADA"] },
+              },
+            ],
+          },
+        }),
       );
       expect(db.avisoEnlaceSerie.findMany).toHaveBeenCalledTimes(1);
       expect(db.avisoEnlaceSerie.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: { serieClave: { in: expect.arrayContaining(["serie:s1", "serie:vieja", "legacy:dp|x|y"]) } }
-        })
+          where: {
+            serieClave: {
+              in: expect.arrayContaining(["serie:s1", "serie:vieja", "legacy:dp|x|y"]),
+            },
+          },
+        }),
       );
       expect(escritura).not.toHaveBeenCalled();
     });

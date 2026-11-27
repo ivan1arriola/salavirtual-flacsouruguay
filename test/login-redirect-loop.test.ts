@@ -17,12 +17,12 @@ describe("acceso: JWT antiguo no debe provocar bucle de redirecciones", () => {
     expect(
       await puedeRedirigirAlPanel(db, {
         id: "id-eliminado",
-        email: "reutilizado@flacso.edu.uy"
-      })
+        email: "reutilizado@flacso.edu.uy",
+      }),
     ).toBe(false);
     expect(findUnique).toHaveBeenCalledWith({
       where: { id: "id-eliminado" },
-      select: { id: true, rol: true, activo: true }
+      select: { id: true, rol: true, activo: true },
     });
     expect(findFirst).not.toHaveBeenCalled();
   });
@@ -31,7 +31,7 @@ describe("acceso: JWT antiguo no debe provocar bucle de redirecciones", () => {
     const findUnique = vi.fn().mockResolvedValue({
       id: "desactivado",
       rol: "DOCENTE",
-      activo: false
+      activo: false,
     });
     const db = { usuario: { findUnique } } as unknown as PrismaClient;
     expect(await puedeRedirigirAlPanel(db, { id: "desactivado" })).toBe(false);
@@ -41,7 +41,7 @@ describe("acceso: JWT antiguo no debe provocar bucle de redirecciones", () => {
     const findUnique = vi.fn().mockResolvedValue({
       id: "vigente",
       rol: "ADMINISTRACION",
-      activo: true
+      activo: true,
     });
     const db = { usuario: { findUnique } } as unknown as PrismaClient;
     expect(await puedeRedirigirAlPanel(db, { id: "vigente" })).toBe(true);

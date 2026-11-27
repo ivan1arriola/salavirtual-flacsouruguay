@@ -9,7 +9,7 @@ const MEET_API = "https://meet.googleapis.com/v2";
 const MEET_SCOPES = [
   "https://www.googleapis.com/auth/meetings.space.created",
   "https://www.googleapis.com/auth/meetings.space.settings",
-  "https://www.googleapis.com/auth/meetings.space.readonly"
+  "https://www.googleapis.com/auth/meetings.space.readonly",
 ] as const;
 
 function argValue(name: string): string | undefined {
@@ -44,7 +44,7 @@ async function main(): Promise<void> {
     where: {
       ...(meetingFilter ? { id: meetingFilter } : { inicioProgramadoAt: { gte: now } }),
       estado: { in: ["PROGRAMADA", "EN_CURSO"] },
-      eventosProveedor: { some: { proveedor: { tipo: "GOOGLE_MEET" } } }
+      eventosProveedor: { some: { proveedor: { tipo: "GOOGLE_MEET" } } },
     },
     orderBy: { inicioProgramadoAt: "asc" },
     select: {
@@ -56,10 +56,10 @@ async function main(): Promise<void> {
           creadaPor: {
             select: {
               emailPrincipal: true,
-              cuentasGoogle: { select: { email: true } }
-            }
-          }
-        }
+              cuentasGoogle: { select: { email: true } },
+            },
+          },
+        },
       },
       asignaciones: {
         where: { estado: { in: ["ASIGNADO", "ACEPTADO"] } },
@@ -69,30 +69,32 @@ async function main(): Promise<void> {
               usuario: {
                 select: {
                   emailPrincipal: true,
-                  cuentasGoogle: { select: { email: true } }
-                }
-              }
-            }
-          }
-        }
+                  cuentasGoogle: { select: { email: true } },
+                },
+              },
+            },
+          },
+        },
       },
       cohosts: {
-        select: { cuentaGoogle: { select: { email: true } } }
+        select: { cuentaGoogle: { select: { email: true } } },
       },
       cohostEmails: { select: { email: true } },
       eventosProveedor: {
         where: { proveedor: { tipo: "GOOGLE_MEET" } },
         select: {
           codigoReunion: true,
-          cuentaProveedor: { select: { emailOrganizador: true } }
+          cuentaProveedor: { select: { emailOrganizador: true } },
         },
-        take: 1
-      }
-    }
+        take: 1,
+      },
+    },
   });
 
   if (meetingFilter && meetings.length === 0) {
-    throw new Error(`No se encontró una reunión activa con Google Meet para --meeting=${meetingFilter}.`);
+    throw new Error(
+      `No se encontró una reunión activa con Google Meet para --meeting=${meetingFilter}.`,
+    );
   }
 
   const plan = meetings.flatMap((meeting) => {
@@ -109,11 +111,15 @@ async function main(): Promise<void> {
       ...meeting.cohosts.map(({ cuentaGoogle }) => cuentaGoogle.email),
       ...meeting.cohostEmails.map(({ email }) => email),
       ...requester.cuentasGoogle.map(({ email }) => email),
-      ...(requester.cuentasGoogle.length === 0 && requester.emailPrincipal ? [requester.emailPrincipal] : []),
+      ...(requester.cuentasGoogle.length === 0 && requester.emailPrincipal
+        ? [requester.emailPrincipal]
+        : []),
       ...assistants.flatMap((assistant) => assistant.cuentasGoogle.map(({ email }) => email)),
       ...assistants.flatMap((assistant) =>
-        assistant.cuentasGoogle.length === 0 && assistant.emailPrincipal ? [assistant.emailPrincipal] : []
-      )
+        assistant.cuentasGoogle.length === 0 && assistant.emailPrincipal
+          ? [assistant.emailPrincipal]
+          : [],
+      ),
     ]).filter((email) => email !== organizer);
 
     return desired.length > 0
@@ -124,8 +130,8 @@ async function main(): Promise<void> {
             start: meeting.inicioProgramadoAt,
             organizer,
             code,
-            desired
-          }
+            desired,
+          },
         ]
       : [];
   });
@@ -146,12 +152,12 @@ async function main(): Promise<void> {
           inicio: item.start.toISOString(),
           organizador: item.organizer,
           codigoReunion: item.code,
-          cohosts: item.desired
-        }))
+          cohosts: item.desired,
+        })),
       },
       null,
-      2
-    )
+      2,
+    ),
   );
 
   if (!applyChanges) {
@@ -166,7 +172,7 @@ async function main(): Promise<void> {
     const credentials = {
       serviceAccountEmail,
       privateKey,
-      subject: item.organizer
+      subject: item.organizer,
     };
 
     try {
@@ -176,12 +182,12 @@ async function main(): Promise<void> {
         email: serviceAccountEmail,
         key: privateKey,
         scopes: [...MEET_SCOPES],
-        subject: item.organizer
+        subject: item.organizer,
       });
       const space = await auth.request<{ name?: string }>({
         url: `https://meet.googleapis.com/v2/spaces/${encodeURIComponent(item.code)}`,
         method: "GET",
-        timeout: 30_000
+        timeout: 30_000,
       });
       if (!space.data.name) {
         throw new Error("Google Meet no devolvió el recurso canónico del espacio.");
@@ -189,12 +195,12 @@ async function main(): Promise<void> {
       const members = await auth.request<{ members?: Array<{ email?: string; role?: string }> }>({
         url: `${MEET_API}/${space.data.name}/members?pageSize=100`,
         method: "GET",
-        timeout: 30_000
+        timeout: 30_000,
       });
       const existingCohosts = new Set(
         (members.data.members ?? [])
           .filter(({ role }) => role === "COHOST")
-          .flatMap(({ email }) => (email ? [email.trim().toLowerCase()] : []))
+          .flatMap(({ email }) => (email ? [email.trim().toLowerCase()] : [])),
       );
       const missing = item.desired.filter((email) => !existingCohosts.has(email));
       if (missing.length > 0) {
@@ -206,7 +212,7 @@ async function main(): Promise<void> {
       failures.push({
         instanciaSalaId: item.id,
         titulo: item.title,
-        error: error instanceof Error ? error.message : String(error)
+        error: error instanceof Error ? error.message : String(error),
       });
     }
   }
@@ -218,11 +224,11 @@ async function main(): Promise<void> {
         failed: failures.length,
         verificationFailed: verificationFailures.length,
         failures: failures.slice(0, 50),
-        verificationFailures: verificationFailures.slice(0, 50)
+        verificationFailures: verificationFailures.slice(0, 50),
       },
       null,
-      2
-    )
+      2,
+    ),
   );
 
   if (failures.length > 0 || verificationFailures.length > 0) {

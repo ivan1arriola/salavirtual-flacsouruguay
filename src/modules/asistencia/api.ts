@@ -13,17 +13,17 @@ import {
   sincronizarCalendarioAsistenteInstanciaUseCase,
   sincronizarCalendariosAsistenteSolicitudUseCase,
   sincronizarCalendariosAsistenteUsuarioUseCase,
-  type SessionActor
+  type SessionActor,
 } from "./application";
 import type {
   IntentoSincronizacionCalendarioAsistente,
-  ResultadoSincronizacionCalendarioAsistente
+  ResultadoSincronizacionCalendarioAsistente,
 } from "./domain";
 import { crearGoogleAssistantCalendarProvider } from "./infrastructure/google/google-assistant-calendar-provider.adapter";
 import type {
   AsistenciaRepositoryPort,
   AssistantCalendarProvider,
-  AssistantCalendarRepositoryPort
+  AssistantCalendarRepositoryPort,
 } from "./ports";
 
 export * from "./domain";
@@ -32,48 +32,60 @@ export * from "./application";
 export {
   crearGoogleAssistantCalendarProvider,
   publicarEventoCalendarioAsistente,
-  eliminarEventoCalendarioAsistente
+  eliminarEventoCalendarioAsistente,
 } from "./infrastructure/google/google-assistant-calendar-provider.adapter";
 export {
   crearPrismaAssistantCalendarRepository,
-  type PrismaAssistantCalendarRepositoryOptions
+  type PrismaAssistantCalendarRepositoryOptions,
 } from "./infrastructure/prisma/prisma-assistant-calendar-repository.adapter";
 export { crearPrismaAsistenciaRepositoryAdapter } from "./infrastructure/prisma/prisma-asistencia-repository.adapter";
 
 export type ServicioCalendarioAsistente = Readonly<{
   sincronizarInstancia: (
     instanciaSalaId: string,
-    now?: Date
+    now?: Date,
   ) => Promise<readonly ResultadoSincronizacionCalendarioAsistente[]>;
 
   sincronizarSolicitud: (
     solicitudSalaId: string,
-    now?: Date
+    now?: Date,
   ) => Promise<readonly ResultadoSincronizacionCalendarioAsistente[]>;
 
   sincronizarUsuario: (
     usuarioId: string,
-    now?: Date
+    now?: Date,
   ) => Promise<readonly ResultadoSincronizacionCalendarioAsistente[]>;
 
-  reconciliarFuturas: (now?: Date) => Promise<readonly ResultadoSincronizacionCalendarioAsistente[]>;
+  reconciliarFuturas: (
+    now?: Date,
+  ) => Promise<readonly ResultadoSincronizacionCalendarioAsistente[]>;
 
   intentarSincronizacion: (
-    operation: () => Promise<readonly ResultadoSincronizacionCalendarioAsistente[]>
+    operation: () => Promise<readonly ResultadoSincronizacionCalendarioAsistente[]>,
   ) => Promise<IntentoSincronizacionCalendarioAsistente>;
 }>;
 
 export function crearServicioCalendarioAsistente(
   repository: AssistantCalendarRepositoryPort,
-  provider: AssistantCalendarProvider = crearGoogleAssistantCalendarProvider()
+  provider: AssistantCalendarProvider = crearGoogleAssistantCalendarProvider(),
 ): ServicioCalendarioAsistente {
   return {
     sincronizarInstancia(instanciaSalaId, now) {
-      return sincronizarCalendarioAsistenteInstanciaUseCase(repository, provider, instanciaSalaId, now);
+      return sincronizarCalendarioAsistenteInstanciaUseCase(
+        repository,
+        provider,
+        instanciaSalaId,
+        now,
+      );
     },
 
     sincronizarSolicitud(solicitudSalaId, now) {
-      return sincronizarCalendariosAsistenteSolicitudUseCase(repository, provider, solicitudSalaId, now);
+      return sincronizarCalendariosAsistenteSolicitudUseCase(
+        repository,
+        provider,
+        solicitudSalaId,
+        now,
+      );
     },
 
     sincronizarUsuario(usuarioId, now) {
@@ -86,7 +98,7 @@ export function crearServicioCalendarioAsistente(
 
     intentarSincronizacion(operation) {
       return intentarSincronizacionCalendarioAsistente(operation);
-    }
+    },
   };
 }
 
@@ -97,7 +109,7 @@ export type ServicioAsistenciaDeps = Readonly<{
       usuarioIds: readonly string[];
       asunto: string;
       mensaje: string;
-    }>
+    }>,
   ) => Promise<unknown>;
 }>;
 
@@ -122,21 +134,31 @@ export function crearServicioAsistencia(deps: ServicioAsistenciaDeps) {
       return renotificarAsistentesUseCase(
         {
           repo: deps.repo,
-          notificarUsuarios: deps.notificarUsuarios ?? (async () => {})
+          notificarUsuarios: deps.notificarUsuarios ?? (async () => {}),
         },
         actor,
-        rawInput
+        rawInput,
       );
     },
-    consultarAsistenciasPersonales(usuarioId: string, periodo: "MES_ACTUAL" | "HISTORICO", ahora?: Date) {
+    consultarAsistenciasPersonales(
+      usuarioId: string,
+      periodo: "MES_ACTUAL" | "HISTORICO",
+      ahora?: Date,
+    ) {
       return consultarAsistenciasPersonalesUseCase({ repo: deps.repo }, usuarioId, periodo, ahora);
     },
     consultarHistorialAsistente(usuarioId: string, desde: Date, hasta: Date, limite?: number) {
-      return consultarHistorialAsistenteUseCase({ repo: deps.repo }, usuarioId, desde, hasta, limite);
+      return consultarHistorialAsistenteUseCase(
+        { repo: deps.repo },
+        usuarioId,
+        desde,
+        hasta,
+        limite,
+      );
     },
     consultarSlugAsistente(usuarioId: string) {
       return consultarSlugAsistenteUseCase({ repo: deps.repo }, usuarioId);
-    }
+    },
   };
 }
 

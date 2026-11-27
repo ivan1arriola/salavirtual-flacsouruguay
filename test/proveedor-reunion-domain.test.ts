@@ -3,7 +3,7 @@ import {
   elegirProveedorDetalle,
   filtroProveedorActivo,
   proveedorActivoDeInstancia,
-  resolverProveedorReunion
+  resolverProveedorReunion,
 } from "../src/modules/reuniones/proveedor-reunion.domain";
 
 const evento = (tipo: string) => ({ proveedor: { tipo } });
@@ -20,14 +20,14 @@ describe("proveedor de una reunión", () => {
     expect(
       proveedorActivoDeInstancia({
         proveedorActivoTipo: "ZOOM",
-        eventosProveedor: [evento("GOOGLE_MEET"), evento("ZOOM")]
-      })
+        eventosProveedor: [evento("GOOGLE_MEET"), evento("ZOOM")],
+      }),
     ).toBe("ZOOM");
     expect(
       proveedorActivoDeInstancia({
         proveedorActivoTipo: "GOOGLE_MEET",
-        eventosProveedor: [evento("ZOOM"), evento("GOOGLE_MEET")]
-      })
+        eventosProveedor: [evento("ZOOM"), evento("GOOGLE_MEET")],
+      }),
     ).toBe("GOOGLE_MEET");
   });
 
@@ -35,16 +35,18 @@ describe("proveedor de una reunión", () => {
     expect(
       proveedorActivoDeInstancia({
         proveedorActivoTipo: null,
-        eventosProveedor: [evento("ZOOM"), evento("GOOGLE_MEET")]
-      })
+        eventosProveedor: [evento("ZOOM"), evento("GOOGLE_MEET")],
+      }),
     ).toBe("GOOGLE_MEET");
   });
 
   it("sin proveedor activo y sin evento Meet, o sin eventos, es de Zoom", () => {
     expect(
-      proveedorActivoDeInstancia({ proveedorActivoTipo: null, eventosProveedor: [evento("ZOOM")] })
+      proveedorActivoDeInstancia({ proveedorActivoTipo: null, eventosProveedor: [evento("ZOOM")] }),
     ).toBe("ZOOM");
-    expect(proveedorActivoDeInstancia({ proveedorActivoTipo: null, eventosProveedor: [] })).toBe("ZOOM");
+    expect(proveedorActivoDeInstancia({ proveedorActivoTipo: null, eventosProveedor: [] })).toBe(
+      "ZOOM",
+    );
   });
 });
 
@@ -67,17 +69,25 @@ describe("qué panel abre el detalle de una reunión", () => {
     estado,
     inicioProgramadoAt: dia(n),
     finProgramadoAt: new Date(dia(n).getTime() + 60 * 60 * 1000),
-    proveedor
+    proveedor,
   });
 
   it("abre el proveedor del próximo encuentro y avisa que hay otro", () => {
-    const r = elegirProveedorDetalle([enc(-3, "GOOGLE_MEET"), enc(2, "ZOOM"), enc(9, "ZOOM")], ahora, null);
+    const r = elegirProveedorDetalle(
+      [enc(-3, "GOOGLE_MEET"), enc(2, "ZOOM"), enc(9, "ZOOM")],
+      ahora,
+      null,
+    );
     expect(r.proveedor).toBe("ZOOM");
     expect(r.otro).toEqual({ proveedor: "GOOGLE_MEET", cantidad: 1 });
   });
 
   it("respeta el proveedor pedido si tiene encuentros", () => {
-    const r = elegirProveedorDetalle([enc(-3, "GOOGLE_MEET"), enc(2, "ZOOM")], ahora, "GOOGLE_MEET");
+    const r = elegirProveedorDetalle(
+      [enc(-3, "GOOGLE_MEET"), enc(2, "ZOOM")],
+      ahora,
+      "GOOGLE_MEET",
+    );
     expect(r.proveedor).toBe("GOOGLE_MEET");
     expect(r.otro).toEqual({ proveedor: "ZOOM", cantidad: 1 });
   });
@@ -94,7 +104,11 @@ describe("qué panel abre el detalle de una reunión", () => {
   });
 
   it("no cuenta los encuentros cancelados", () => {
-    const r = elegirProveedorDetalle([enc(2, "ZOOM"), enc(4, "GOOGLE_MEET", "CANCELADA")], ahora, null);
+    const r = elegirProveedorDetalle(
+      [enc(2, "ZOOM"), enc(4, "GOOGLE_MEET", "CANCELADA")],
+      ahora,
+      null,
+    );
     expect(r.proveedor).toBe("ZOOM");
     expect(r.otro).toBeNull();
   });

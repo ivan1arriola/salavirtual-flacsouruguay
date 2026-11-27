@@ -1,4 +1,8 @@
-import type { ArchivosRepositoryPort, ArtifactProviderFactory, PlanillaAsistenciaCandidata } from "../ports";
+import type {
+  ArchivosRepositoryPort,
+  ArtifactProviderFactory,
+  PlanillaAsistenciaCandidata,
+} from "../ports";
 import { sincronizarArtefactosUseCase } from "./sincronizar-artefactos.use-case";
 
 type Inspeccion = Readonly<{
@@ -20,7 +24,7 @@ export async function repararPlanillasAsistenciaVaciasUseCase(
   repositorio: ArchivosRepositoryPort,
   providerFactory: ArtifactProviderFactory,
   descifrar: (cifrado: string) => string,
-  eventoProveedorIds?: readonly string[]
+  eventoProveedorIds?: readonly string[],
 ): Promise<ResultadoReparacionPlanillasVacias> {
   if (!repositorio.listarPlanillasAsistenciaCandidatas) {
     throw new Error("El repositorio no permite buscar planillas de asistencia registradas.");
@@ -48,17 +52,23 @@ export async function repararPlanillasAsistenciaVaciasUseCase(
         serviceAccountEmail: configuracion.serviceAccountEmail!,
         privateKey,
         subject: candidata.emailOrganizador,
-        adminEmail: configuracion.serviceAccountSubject ?? null
+        adminEmail: configuracion.serviceAccountSubject ?? null,
       });
       if (!provider.planillaAsistenciaGoogleVacia) {
         throw new Error("El proveedor de Google no permite comprobar el contenido de la planilla.");
       }
-      return { candidata, vacia: await provider.planillaAsistenciaGoogleVacia(candidata.spreadsheetId) };
+      return {
+        candidata,
+        vacia: await provider.planillaAsistenciaGoogleVacia(candidata.spreadsheetId),
+      };
     } catch (error) {
       return {
         candidata,
         vacia: false,
-        error: error instanceof Error ? error.message : "No se pudo revisar la planilla en Google Sheets."
+        error:
+          error instanceof Error
+            ? error.message
+            : "No se pudo revisar la planilla en Google Sheets.",
       };
     }
   });
@@ -70,23 +80,30 @@ export async function repararPlanillasAsistenciaVaciasUseCase(
   let reparadas = 0;
   for (const item of vacias) {
     try {
-      const [resultado] = await sincronizarArtefactosUseCase(repositorio, providerFactory, descifrar, {
-        eventoProveedorIds: [item.candidata.eventoProveedorId],
-        regenerarAsistencia: true,
-        asistenciaDriveFileIds: { [item.candidata.eventoProveedorId]: item.candidata.spreadsheetId }
-      });
+      const [resultado] = await sincronizarArtefactosUseCase(
+        repositorio,
+        providerFactory,
+        descifrar,
+        {
+          eventoProveedorIds: [item.candidata.eventoProveedorId],
+          regenerarAsistencia: true,
+          asistenciaDriveFileIds: {
+            [item.candidata.eventoProveedorId]: item.candidata.spreadsheetId,
+          },
+        },
+      );
       if (resultado && resultado.estado !== "ERROR" && resultado.archivos > 0) {
         reparadas += 1;
       } else {
         errores.push({
           eventoProveedorId: item.candidata.eventoProveedorId,
-          detalle: resultado?.error ?? "La sincronización no llegó a escribir la planilla."
+          detalle: resultado?.error ?? "La sincronización no llegó a escribir la planilla.",
         });
       }
     } catch (error) {
       errores.push({
         eventoProveedorId: item.candidata.eventoProveedorId,
-        detalle: error instanceof Error ? error.message : "No se pudo reconstruir la planilla."
+        detalle: error instanceof Error ? error.message : "No se pudo reconstruir la planilla.",
       });
     }
   }
@@ -97,14 +114,14 @@ export async function repararPlanillasAsistenciaVaciasUseCase(
     reparadas,
     omitidas: inspections.filter((item) => !item.vacia && !item.error).length,
     fallidas: errores.length,
-    errores
+    errores,
   };
 }
 
 async function mapConLimit<T, R>(
   items: readonly T[],
   limit: number,
-  operation: (item: T) => Promise<R>
+  operation: (item: T) => Promise<R>,
 ): Promise<R[]> {
   const results = new Array<R>(items.length);
   let next = 0;
@@ -114,7 +131,7 @@ async function mapConLimit<T, R>(
         const index = next++;
         results[index] = await operation(items[index]!);
       }
-    })
+    }),
   );
   return results;
 }

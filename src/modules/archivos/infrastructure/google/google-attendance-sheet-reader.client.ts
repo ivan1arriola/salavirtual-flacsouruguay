@@ -8,7 +8,7 @@ type SheetsResponse = Readonly<{ valueRanges?: ValueRange[] }>;
 /** Read-only query for the spreadsheet already registered against this encounter. */
 export async function leerPlanillaAsistenciaGoogle(
   auth: JWT,
-  spreadsheetId: string
+  spreadsheetId: string,
 ): Promise<DatosPlanillaAsistencia> {
   const params = new URLSearchParams({ valueRenderOption: "UNFORMATTED_VALUE" });
   for (const name of ["Asistencia", "Host y cohosts", "Datos brutos"]) {
@@ -19,8 +19,8 @@ export async function leerPlanillaAsistenciaGoogle(
     auth.request<SheetsResponse>({
       url: `https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(spreadsheetId)}/values:batchGet?${params}`,
       method: "GET",
-      timeout: 20_000
-    })
+      timeout: 20_000,
+    }),
   );
   const ranges = response.data.valueRanges;
   if (!ranges || ranges.length !== 3) {
@@ -29,6 +29,6 @@ export async function leerPlanillaAsistenciaGoogle(
   return {
     asistencia: ranges[0]?.values ?? [],
     responsables: ranges[1]?.values ?? [],
-    datosBrutos: ranges[2]?.values ?? []
+    datosBrutos: ranges[2]?.values ?? [],
   };
 }

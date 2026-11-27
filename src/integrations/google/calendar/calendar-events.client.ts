@@ -60,15 +60,15 @@ export async function obtenerEventoCalendar(
   auth: JWT,
   calendarId: string,
   eventId: string,
-  options?: CalendarRequestOptions
+  options?: CalendarRequestOptions,
 ): Promise<GoogleCalendarEvent> {
   const url = buildCalendarUrl(calendarEventUrl(calendarId, eventId), options);
   const response = await conReintentosGoogleLectura(() =>
     auth.request<GoogleCalendarEvent>({
       url,
       method: "GET",
-      timeout: GOOGLE_HTTP_READ_TIMEOUT_MS
-    })
+      timeout: GOOGLE_HTTP_READ_TIMEOUT_MS,
+    }),
   );
   return response.data;
 }
@@ -77,7 +77,7 @@ export async function obtenerEventoCalendarSiExiste(
   auth: JWT,
   calendarId: string,
   eventId: string,
-  options?: CalendarRequestOptions
+  options?: CalendarRequestOptions,
 ): Promise<GoogleCalendarEvent | null> {
   try {
     return await obtenerEventoCalendar(auth, calendarId, eventId, options);
@@ -93,14 +93,14 @@ export async function crearEventoCalendarHttp(
   auth: JWT,
   calendarId: string,
   eventData: GoogleCalendarEvent,
-  options?: CalendarRequestOptions
+  options?: CalendarRequestOptions,
 ): Promise<GoogleCalendarEvent> {
   const url = buildCalendarUrl(calendarEventsUrl(calendarId), options);
   const response = await auth.request<GoogleCalendarEvent>({
     url,
     method: "POST",
     timeout: GOOGLE_HTTP_TIMEOUT_MS,
-    data: eventData
+    data: eventData,
   });
   return response.data;
 }
@@ -110,14 +110,14 @@ export async function actualizarEventoCalendarHttp(
   calendarId: string,
   eventId: string,
   patchData: Partial<GoogleCalendarEvent>,
-  options?: CalendarRequestOptions
+  options?: CalendarRequestOptions,
 ): Promise<GoogleCalendarEvent> {
   const url = buildCalendarUrl(calendarEventUrl(calendarId, eventId), options);
   const response = await auth.request<GoogleCalendarEvent>({
     url,
     method: "PATCH",
     timeout: GOOGLE_HTTP_TIMEOUT_MS,
-    data: patchData
+    data: patchData,
   });
   return response.data;
 }
@@ -126,13 +126,13 @@ export async function eliminarEventoCalendarHttp(
   auth: JWT,
   calendarId: string,
   eventId: string,
-  options?: CalendarRequestOptions
+  options?: CalendarRequestOptions,
 ): Promise<void> {
   const url = buildCalendarUrl(calendarEventUrl(calendarId, eventId), options);
   await auth.request({
     url,
     method: "DELETE",
-    timeout: GOOGLE_HTTP_TIMEOUT_MS
+    timeout: GOOGLE_HTTP_TIMEOUT_MS,
   });
 }
 

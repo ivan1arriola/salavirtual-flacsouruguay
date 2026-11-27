@@ -8,7 +8,7 @@ import {
   formatRange,
   fullName,
   passwordSala,
-  type MeetingEmailCard
+  type MeetingEmailCard,
 } from "./email-message-helpers";
 
 const db = new PrismaClient();
@@ -24,8 +24,8 @@ async function main(): Promise<void> {
       asistenteTecnico: { cesadoHastaProximoInicioSesion: false },
       instancia: {
         inicioProgramadoAt: { gte: now },
-        estado: { in: ["PROGRAMADA", "EN_CURSO"] }
-      }
+        estado: { in: ["PROGRAMADA", "EN_CURSO"] },
+      },
     },
     orderBy: [{ instancia: { inicioProgramadoAt: "asc" } }, { id: "asc" }],
     select: {
@@ -37,10 +37,10 @@ async function main(): Promise<void> {
               id: true,
               nombres: true,
               apellidos: true,
-              emailPrincipal: true
-            }
-          }
-        }
+              emailPrincipal: true,
+            },
+          },
+        },
       },
       instancia: {
         select: {
@@ -59,25 +59,27 @@ async function main(): Promise<void> {
                   docente: {
                     select: {
                       usuario: {
-                        select: { nombres: true, apellidos: true, emailPrincipal: true }
-                      }
-                    }
-                  }
-                }
-              }
-            }
+                        select: { nombres: true, apellidos: true, emailPrincipal: true },
+                      },
+                    },
+                  },
+                },
+              },
+            },
           },
           eventosProveedor: {
             where: { proveedor: { tipo: "GOOGLE_MEET" } },
             select: {
               joinUrl: true,
               codigoReunion: true,
-              cuentaProveedor: { select: { nombre: true, emailOrganizador: true, secretRef: true } }
-            }
-          }
-        }
-      }
-    }
+              cuentaProveedor: {
+                select: { nombre: true, emailOrganizador: true, secretRef: true },
+              },
+            },
+          },
+        },
+      },
+    },
   });
 
   const byAssistant = new Map<string, typeof assignments>();
@@ -120,14 +122,14 @@ async function main(): Promise<void> {
       const fecha = formatRange(meeting.inicioProgramadoAt, meeting.finProgramadoAt);
       const observaciones = [
         meeting.requiereAsistenciaTecnica ? "requiere asistencia" : null,
-        meeting.requiereGrabacion ? "requiere grabación" : null
+        meeting.requiereGrabacion ? "requiere grabación" : null,
       ].filter((item): item is string => Boolean(item));
 
       if (current) {
         cardsByRequest.set(request.id, {
           ...current,
           fechas: [...current.fechas, fecha],
-          estadoAsignacion: mergeAssignmentState(current.estadoAsignacion, assignment.estado)
+          estadoAsignacion: mergeAssignmentState(current.estadoAsignacion, assignment.estado),
         });
         continue;
       }
@@ -143,7 +145,7 @@ async function main(): Promise<void> {
         usuarioSala: cuenta?.emailOrganizador,
         passwordSala: passwordSala(cuenta, descifrarConfiguracion),
         observaciones,
-        estadoAsignacion: assignment.estado === "ACEPTADO" ? "Confirmada" : "Asignada"
+        estadoAsignacion: assignment.estado === "ACEPTADO" ? "Confirmada" : "Asignada",
       });
     }
 
@@ -153,7 +155,7 @@ async function main(): Promise<void> {
       greetingName: firstName(assistant),
       intro:
         "Te compartimos el detalle de tus próximas asistencias asignadas. Cada bloque corresponde a una reunión; si tiene varias fechas, todas usan el mismo acceso Meet.",
-      cards
+      cards,
     });
     const name = fullName(assistant);
 
@@ -162,8 +164,8 @@ async function main(): Promise<void> {
         `PARA: ${name} <${assistant.emailPrincipal ?? "sin email"}>`,
         `ASUNTO: ${subject}`,
         "",
-        message.text
-      ].join("\n")
+        message.text,
+      ].join("\n"),
     );
 
     if (outDir && assistant.emailPrincipal) {
@@ -181,7 +183,7 @@ async function main(): Promise<void> {
         text_file: textFile,
         html_file: htmlFile,
         meetings: cards.length,
-        instances: items.length
+        instances: items.length,
       });
     }
   }

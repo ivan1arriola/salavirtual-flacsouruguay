@@ -5,17 +5,17 @@ vi.mock("@/src/lib/db", () => ({
   db: {
     instanciaSala: { findUnique: vi.fn(), findMany: vi.fn() },
     asistenteTecnico: { findUnique: vi.fn() },
-    configuracionGoogleWorkspace: { findUnique: vi.fn() }
-  }
+    configuracionGoogleWorkspace: { findUnique: vi.fn() },
+  },
 }));
 vi.mock("@/src/lib/config/encryption", () => ({
-  descifrarConfiguracion: vi.fn((val: string) => val)
+  descifrarConfiguracion: vi.fn((val: string) => val),
 }));
 
 import {
   crearAsistenciaRepository,
   obtenerServicioAsistencia,
-  obtenerServicioCalendarioAsistente
+  obtenerServicioCalendarioAsistente,
 } from "@/src/bootstrap/asistencia.server";
 
 describe("bootstrap asistencia.server", () => {

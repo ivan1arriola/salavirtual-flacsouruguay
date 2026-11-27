@@ -1,11 +1,25 @@
 "use client";
 
-import { CheckCircle2, KeyRound, Pencil, Save, Search, Trash2, TriangleAlert, Video, X } from "lucide-react";
+import {
+  CheckCircle2,
+  KeyRound,
+  Pencil,
+  Save,
+  Search,
+  Trash2,
+  TriangleAlert,
+  Video,
+  X,
+} from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { esCuentaAsignable } from "@/src/modules/reuniones/cuenta-asignable.domain";
-import { avisoFueraDelGrupo, filterMeetHosts, formatoLimiteConcurrente } from "./meet-hosts-config.domain";
+import {
+  avisoFueraDelGrupo,
+  filterMeetHosts,
+  formatoLimiteConcurrente,
+} from "./meet-hosts-config.domain";
 
 export type MeetHostVisible = Readonly<{
   id: string;
@@ -43,8 +57,8 @@ export function MeetHostsConfig({ hosts }: Readonly<{ hosts: readonly MeetHostVi
         : {
             id: host.id,
             ...payloadFromForm(formData),
-            notificarCambioPassword: formData.get("notificarCambioPassword") === "on"
-          }
+            notificarCambioPassword: formData.get("notificarCambioPassword") === "on",
+          },
     );
     setSuccess(result.ok);
     setMessage(result.message);
@@ -124,9 +138,14 @@ export function MeetHostsConfig({ hosts }: Readonly<{ hosts: readonly MeetHostVi
               const available = esCuentaAsignable(host);
               const outsideGroup = avisoFueraDelGrupo(host);
               return (
-                <article className={`settings-room-row${isEditing ? " is-editing" : ""}`} key={host.id}>
+                <article
+                  className={`settings-room-row${isEditing ? " is-editing" : ""}`}
+                  key={host.id}
+                >
                   <div className="settings-room-row__summary">
-                    <span className={`settings-room-row__icon${available ? " is-ready" : " is-warning"}`}>
+                    <span
+                      className={`settings-room-row__icon${available ? " is-ready" : " is-warning"}`}
+                    >
                       {available ? <CheckCircle2 size={19} /> : <TriangleAlert size={19} />}
                     </span>
                     <div className="settings-room-row__identity">
@@ -134,7 +153,9 @@ export function MeetHostsConfig({ hosts }: Readonly<{ hosts: readonly MeetHostVi
                       <span>{host.emailOrganizador ?? "Sin correo organizador"}</span>
                     </div>
                     <div className="settings-room-row__facts">
-                      <span className={`settings-mini-status ${available ? "is-ok" : "is-warning"}`}>
+                      <span
+                        className={`settings-mini-status ${available ? "is-ok" : "is-warning"}`}
+                      >
                         {available ? "Disponible" : "No disponible"}
                       </span>
                       <span className="settings-mini-status is-neutral">Zoom</span>
@@ -189,7 +210,7 @@ export function HostEditForm({
   message,
   success,
   onSubmit,
-  onDelete
+  onDelete,
 }: Readonly<{
   host: MeetHostVisible;
   hostsCount: number;
@@ -260,11 +281,21 @@ function ZoomHostFields({ host }: Readonly<{ host: MeetHostVisible }>) {
       </label>
       <label className="field">
         <span>Licencia de Zoom</span>
-        <input value={host.tieneLicencia ? "Con licencia" : "Sin licencia: no aloja reuniones"} readOnly />
+        <input
+          value={host.tieneLicencia ? "Con licencia" : "Sin licencia: no aloja reuniones"}
+          readOnly
+        />
       </label>
       <label className="field">
         <span>Prioridad</span>
-        <input type="number" name="prioridad" min={1} max={1000} defaultValue={host.prioridad} required />
+        <input
+          type="number"
+          name="prioridad"
+          min={1}
+          max={1000}
+          defaultValue={host.prioridad}
+          required
+        />
       </label>
       <p className="field">Límite de reuniones simultáneas: 1 por cuenta Zoom.</p>
       <label className="check-field">
@@ -276,7 +307,10 @@ function ZoomHostFields({ host }: Readonly<{ host: MeetHostVisible }>) {
 }
 
 /** Campos de una sala Meet. «Agregar sala» solo crea cuentas Meet: las de Zoom vienen del grupo. */
-export function HostFields({ host, hostsCount }: Readonly<{ host?: MeetHostVisible; hostsCount: number }>) {
+export function HostFields({
+  host,
+  hostsCount,
+}: Readonly<{ host?: MeetHostVisible; hostsCount: number }>) {
   return (
     <div className="form-grid">
       <label className="field">
@@ -313,7 +347,9 @@ export function HostFields({ host, hostsCount }: Readonly<{ host?: MeetHostVisib
           name="password"
           minLength={8}
           autoComplete="new-password"
-          placeholder={host?.passwordConfigurada ? "Dejar vacío para conservarla" : "Configurar contraseña"}
+          placeholder={
+            host?.passwordConfigurada ? "Dejar vacío para conservarla" : "Configurar contraseña"
+          }
           required={!host}
         />
         {host ? <small>Dejala vacía para conservar la contraseña actual.</small> : null}
@@ -340,8 +376,8 @@ export function HostFields({ host, hostsCount }: Readonly<{ host?: MeetHostVisib
           placeholder="1 (predeterminado)"
         />
         <small>
-          Cantidad máxima de reuniones que esta sala puede alojar al mismo tiempo (ej: 2 para permitir
-          reuniones simultáneas).
+          Cantidad máxima de reuniones que esta sala puede alojar al mismo tiempo (ej: 2 para
+          permitir reuniones simultáneas).
         </small>
       </label>
       <label className="check-field">
@@ -355,7 +391,9 @@ export function HostFields({ host, hostsCount }: Readonly<{ host?: MeetHostVisib
       {host?.proveedorTipo === "GOOGLE_MEET" ? (
         <label className="check-field field-wide">
           <input type="checkbox" name="notificarCambioPassword" defaultChecked />
-          <span>Si cambia la contraseña, avisar a las personas con reuniones futuras en esta cuenta.</span>
+          <span>
+            Si cambia la contraseña, avisar a las personas con reuniones futuras en esta cuenta.
+          </span>
         </label>
       ) : null}
     </div>
@@ -373,7 +411,7 @@ function payloadFromForm(formData: FormData) {
     limiteConcurrente: limitRaw ? Number(limitRaw) : null,
     tieneLicencia: formData.get("tieneLicencia") === "on",
     activa: formData.get("activa") === "on",
-    ...(password ? { password } : {})
+    ...(password ? { password } : {}),
   };
 }
 
@@ -383,7 +421,7 @@ function zoomPayloadFromForm(host: MeetHostVisible, formData: FormData) {
     id: host.id,
     proveedorTipo: "ZOOM",
     prioridad: Number(formData.get("prioridad")),
-    activa: formData.get("activa") === "on"
+    activa: formData.get("activa") === "on",
   };
 }
 
@@ -392,14 +430,14 @@ async function request(method: "POST" | "PUT" | "DELETE", payload: Record<string
     const response = await fetch("/api/v1/configuracion/salas-meet", {
       method,
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
     });
     const result = await response.json().catch(() => ({}));
     return {
       ok: response.ok,
       message: response.ok
         ? (result.message ?? "Cambios guardados.")
-        : (result.error ?? "No se pudieron guardar los cambios.")
+        : (result.error ?? "No se pudieron guardar los cambios."),
     };
   } catch {
     return { ok: false, message: "No se pudo conectar con el servidor." };

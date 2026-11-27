@@ -9,7 +9,7 @@ export type ActualizarDisponibilidadDeps = Readonly<{
 export async function actualizarDisponibilidadUseCase(
   deps: ActualizarDisponibilidadDeps,
   actor: SessionActor,
-  rawInput: unknown
+  rawInput: unknown,
 ) {
   if (!puedeGestionarPostulacion(actor.rol) || !actor.activo) {
     throw new Error("Solo un asistente de monitoreo puede configurar su disponibilidad.");

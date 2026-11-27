@@ -11,7 +11,7 @@ export const PALETA_CUENTAS_ZOOM: readonly Readonly<{ fuerte: string; palido: st
   { fuerte: "#ea580c", palido: "#fff2ea" },
   { fuerte: "#0f766e", palido: "#ebf8f6" },
   { fuerte: "#475569", palido: "#f1f5f9" },
-  { fuerte: "#92400e", palido: "#fbf3ec" }
+  { fuerte: "#92400e", palido: "#fbf3ec" },
 ];
 
 export const TAMANO_PALETA_CUENTAS = PALETA_CUENTAS_ZOOM.length;
@@ -23,14 +23,14 @@ const partesDiaMontevideo = new Intl.DateTimeFormat("en-CA", {
   timeZone: ZONA_MONTEVIDEO,
   year: "numeric",
   month: "2-digit",
-  day: "2-digit"
+  day: "2-digit",
 });
 
 const etiquetaDiaMontevideo = new Intl.DateTimeFormat("es-UY", {
   timeZone: ZONA_MONTEVIDEO,
   weekday: "long",
   day: "numeric",
-  month: "long"
+  month: "long",
 });
 
 export type RelativoDiaZoom = "HOY" | "MANANA" | null;
@@ -49,7 +49,10 @@ export type CuentaPresenteZoom = Readonly<{
 }>;
 
 function hashEstable(texto: string): number {
-  return [...texto].reduce((acumulado, caracter) => (acumulado * 31 + caracter.charCodeAt(0)) >>> 0, 7);
+  return [...texto].reduce(
+    (acumulado, caracter) => (acumulado * 31 + caracter.charCodeAt(0)) >>> 0,
+    7,
+  );
 }
 
 /** Nombre corto de una cuenta anfitriona (parte local del correo, p. ej. `sala02`). */
@@ -68,7 +71,7 @@ export function colorCuentaZoom(correo: string | null | undefined): number | nul
 
   const coincidenciaSala = PATRON_SALA.exec(normalizado);
   if (coincidenciaSala) {
-    const numero = Number.parseInt(coincidenciaSala[1], 10);
+    const numero = Number.parseInt(coincidenciaSala[1] ?? "", 10);
     if (Number.isFinite(numero) && numero >= 1) {
       return (numero - 1) % TAMANO_PALETA_CUENTAS;
     }
@@ -94,7 +97,7 @@ function extraerPartesDia(instante: Date): Readonly<{
     anio: Number.parseInt(anioTexto, 10),
     mes: Number.parseInt(mesTexto, 10),
     dia: Number.parseInt(diaTexto, 10),
-    clave: `${anioTexto}-${mesTexto}-${diaTexto}`
+    clave: `${anioTexto}-${mesTexto}-${diaTexto}`,
   };
 }
 
@@ -106,7 +109,7 @@ function claveDiaSiguiente(partes: Readonly<{ anio: number; mes: number; dia: nu
 export function agruparPorDia<T>(
   items: readonly T[],
   fecha: (item: T) => Date,
-  ahora: Date
+  ahora: Date,
 ): readonly GrupoDiaZoom<T>[] {
   const hoy = extraerPartesDia(ahora);
   const claveManana = claveDiaSiguiente(hoy);
@@ -120,7 +123,8 @@ export function agruparPorDia<T>(
       return [...grupos.slice(0, -1), { ...ultimo, items: [...ultimo.items, item] }];
     }
 
-    const relativo: RelativoDiaZoom = clave === hoy.clave ? "HOY" : clave === claveManana ? "MANANA" : null;
+    const relativo: RelativoDiaZoom =
+      clave === hoy.clave ? "HOY" : clave === claveManana ? "MANANA" : null;
 
     return [
       ...grupos,
@@ -128,8 +132,8 @@ export function agruparPorDia<T>(
         clave,
         etiqueta: etiquetaDiaMontevideo.format(instante),
         relativo,
-        items: [item]
-      }
+        items: [item],
+      },
     ];
   }, []);
 }
@@ -137,14 +141,14 @@ export function agruparPorDia<T>(
 function compararCuentas(a: CuentaPresenteZoom, b: CuentaPresenteZoom): number {
   const porNombre = a.nombre.localeCompare(b.nombre, "es-UY", {
     numeric: true,
-    sensitivity: "base"
+    sensitivity: "base",
   });
   return porNombre !== 0 ? porNombre : a.correo.localeCompare(b.correo, "es-UY");
 }
 
 function insertarOrdenada(
   ordenadas: readonly CuentaPresenteZoom[],
-  nueva: CuentaPresenteZoom
+  nueva: CuentaPresenteZoom,
 ): readonly CuentaPresenteZoom[] {
   const indice = ordenadas.findIndex((actual) => compararCuentas(nueva, actual) < 0);
   return indice < 0
@@ -154,7 +158,7 @@ function insertarOrdenada(
 
 /** Cuentas únicas presentes en la página, ordenadas por nombre local, con su índice de color. */
 export function cuentasPresentes(
-  correos: readonly (string | null | undefined)[]
+  correos: readonly (string | null | undefined)[],
 ): readonly CuentaPresenteZoom[] {
   const unicas = correos.reduce<readonly CuentaPresenteZoom[]>((acumulado, valor) => {
     const limpio = valor?.trim() ?? "";
@@ -178,8 +182,8 @@ export function cuentasPresentes(
       {
         correo,
         nombre: nombreCuentaZoom(correo),
-        color
-      }
+        color,
+      },
     ];
   }, []);
 
@@ -193,7 +197,7 @@ export type ResumenCuentasAnfitrionas = Readonly<{
 
 /** Cuentas anfitrionas distintas de una serie, en orden de aparición. */
 export function resumenCuentasAnfitrionas(
-  correos: readonly (string | null | undefined)[]
+  correos: readonly (string | null | undefined)[],
 ): ResumenCuentasAnfitrionas {
   const distintas = correos.reduce<readonly string[]>((acumulado, valor) => {
     const limpio = valor?.trim() ?? "";
@@ -201,6 +205,6 @@ export function resumenCuentasAnfitrionas(
   }, []);
   return {
     tipo: distintas.length === 0 ? "NINGUNA" : distintas.length === 1 ? "UNA" : "VARIAS",
-    correos: distintas
+    correos: distintas,
   };
 }

@@ -6,7 +6,7 @@ import { db } from "@/src/lib/db";
 import { renotificarAsistentesDisponibles } from "@/src/modules/asistencia/asistencia.service";
 import {
   notificarReunionesAsignadas,
-  renotificarReunionesSinAsignar
+  renotificarReunionesSinAsignar,
 } from "@/src/modules/asistencia/notificaciones-masivas.service";
 
 export async function POST(request: Request) {
@@ -33,7 +33,9 @@ export async function POST(request: Request) {
     }
 
     const notified = await renotificarAsistentesDisponibles(db, actor, body);
-    return NextResponse.json({ message: `Se volvió a notificar a ${notified} asistentes de monitoreo.` });
+    return NextResponse.json({
+      message: `Se volvió a notificar a ${notified} asistentes de monitoreo.`,
+    });
   } catch (error) {
     const mapped = toHttpError(error);
     return NextResponse.json({ error: mapped.message }, { status: mapped.status });

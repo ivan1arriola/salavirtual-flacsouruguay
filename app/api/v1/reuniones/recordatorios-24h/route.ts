@@ -10,7 +10,7 @@ export const runtime = "nodejs";
 export const maxDuration = 300;
 
 export async function GET(request: Request) {
-  const secreto = process.env.CRON_SECRET;
+  const secreto = process.env["CRON_SECRET"];
   if (!secreto || request.headers.get("authorization") !== "Bearer " + secreto) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -21,7 +21,9 @@ export async function GET(request: Request) {
   try {
     credenciales = await obtenerCredencialesWorkspaceActivas(db, descifrarConfiguracion);
   } catch {
-    console.warn("Recordatorios: no se pudieron cargar credenciales Meet para verificar coanfitriones.");
+    console.warn(
+      "Recordatorios: no se pudieron cargar credenciales Meet para verificar coanfitriones.",
+    );
   }
 
   try {
@@ -35,29 +37,32 @@ export async function GET(request: Request) {
             serviceAccountEmail: credenciales.principal.serviceAccountEmail,
             privateKey: credenciales.principal.privateKey,
             subject: organizador,
-            origen: "PRINCIPAL" as const
+            origen: "PRINCIPAL" as const,
           },
           ...credenciales.legacy.map((legacy) => ({
             serviceAccountEmail: legacy.serviceAccountEmail,
             privateKey: legacy.privateKey,
             subject: organizador,
-            origen: "LEGACY" as const
-          }))
+            origen: "LEGACY" as const,
+          })),
         ];
         const resultadoMeet = await consultarCohostsEspacioMeet(candidatos, codigoReunion);
         return resultadoMeet.cohosts;
       },
-      enviarCorreo: (input) => enviarCorreoConfigurado(db, input)
+      enviarCorreo: (input) => enviarCorreoConfigurado(db, input),
     });
     return NextResponse.json(resultado, {
       status: resultado.errores ? 502 : 200,
-      headers: { "Cache-Control": "no-store" }
+      headers: { "Cache-Control": "no-store" },
     });
   } catch (error) {
     console.error(
       "Error al procesar recordatorios de reunión:",
-      error instanceof Error ? error.name : "Error"
+      error instanceof Error ? error.name : "Error",
     );
-    return NextResponse.json({ error: "No fue posible procesar los recordatorios." }, { status: 500 });
+    return NextResponse.json(
+      { error: "No fue posible procesar los recordatorios." },
+      { status: 500 },
+    );
   }
 }

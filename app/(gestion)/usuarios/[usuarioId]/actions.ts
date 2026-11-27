@@ -16,7 +16,7 @@ export async function guardarProgramasUsuario(formData: FormData): Promise<void>
   }
   const actor = await resolveSessionActor(db, {
     id: session.user.id,
-    email: session.user.email
+    email: session.user.email,
   });
   if (!actor?.activo || actor.rol !== "ADMINISTRACION") {
     redirect("/");
@@ -26,7 +26,7 @@ export async function guardarProgramasUsuario(formData: FormData): Promise<void>
   let estado = "programas-guardados";
   try {
     await actualizarProgramasDocente(db, actor, usuarioId, {
-      programaIds: formData.getAll("programaIds")
+      programaIds: formData.getAll("programaIds"),
     });
   } catch {
     estado = "error-programas";
@@ -44,7 +44,7 @@ export async function cesarAsistenteUsuario(formData: FormData): Promise<void> {
   }
   const actor = await resolveSessionActor(db, {
     id: session.user.id,
-    email: session.user.email
+    email: session.user.email,
   });
   if (!actor?.activo || actor.rol !== "ADMINISTRACION") {
     redirect("/");
@@ -74,7 +74,7 @@ export async function eliminarUsuario(formData: FormData): Promise<void> {
   }
   const actor = await resolveSessionActor(db, {
     id: session.user.id,
-    email: session.user.email
+    email: session.user.email,
   });
   if (!actor?.activo || actor.rol !== "ADMINISTRACION") {
     redirect("/");
@@ -88,7 +88,7 @@ export async function eliminarUsuario(formData: FormData): Promise<void> {
   } catch (error) {
     const message = error instanceof Error ? error.message : "No se pudo eliminar el usuario.";
     redirect(
-      `/usuarios/${encodeURIComponent(usuarioId)}?estado=error-eliminar&error=${encodeURIComponent(message)}`
+      `/usuarios/${encodeURIComponent(usuarioId)}?estado=error-eliminar&error=${encodeURIComponent(message)}`,
     );
   }
 

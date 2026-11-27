@@ -6,7 +6,7 @@ import { useState } from "react";
 
 export function AssistantUnassignButton({
   assignmentId,
-  title
+  title,
 }: Readonly<{
   assignmentId: string;
   title: string;
@@ -17,7 +17,7 @@ export function AssistantUnassignButton({
 
   async function unassign() {
     const confirmed = window.confirm(
-      `¿Quitar la asignación de “${title}”?\n\nLa reunión seguirá existiendo y el cambio quedará registrado en el historial.`
+      `¿Quitar la asignación de “${title}”?\n\nLa reunión seguirá existiendo y el cambio quedará registrado en el historial.`,
     );
     if (!confirmed) {
       return;
@@ -29,7 +29,7 @@ export function AssistantUnassignButton({
       const response = await fetch("/api/v1/asistencia/asignaciones/desvincular", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ asignacionId: assignmentId })
+        body: JSON.stringify({ asignacionId: assignmentId }),
       });
       const result = (await response.json().catch(() => ({}))) as Readonly<{
         error?: string;

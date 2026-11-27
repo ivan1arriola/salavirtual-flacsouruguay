@@ -10,12 +10,15 @@ const fila = {
   estado: "ASIGNADO",
   asistenteUsuarioId: "u-1",
   asistenteEmail: "ana@flacso.edu.uy",
-  googleAccountIds: []
+  googleAccountIds: [],
 };
 
 function crear(repo: Partial<AsistenciaRepositoryPort>) {
   const sincronizar = vi.fn().mockResolvedValue({ calendarioAsistente: [], warning: null });
-  const controlador = crearControladorAsignaciones({ repo: repo as AsistenciaRepositoryPort, sincronizar });
+  const controlador = crearControladorAsignaciones({
+    repo: repo as AsistenciaRepositoryPort,
+    sincronizar,
+  });
   return { controlador, sincronizar };
 }
 
@@ -26,7 +29,7 @@ describe("controlador de asignaciones", () => {
 
     const res = await controlador.asignar(admin, {
       instanciaSalaId: "inst-1",
-      asistenteTecnicoId: "asist-1"
+      asistenteTecnicoId: "asist-1",
     });
 
     expect(res).toBe(fila);
@@ -52,8 +55,8 @@ describe("controlador de asignaciones", () => {
     await expect(
       controlador.asignar(
         { id: "d-1", rol: "DOCENTE", activo: true },
-        { instanciaSalaId: "i", asistenteTecnicoId: "a" }
-      )
+        { instanciaSalaId: "i", asistenteTecnicoId: "a" },
+      ),
     ).rejects.toThrow("Solo Administración puede asignar asistentes de monitoreo.");
     expect(reservarYAsignarAsistente).not.toHaveBeenCalled();
   });
@@ -78,12 +81,14 @@ describe("adaptador Prisma: reasignación", () => {
       id: "asig-1",
       instanciaSalaId: "inst-1",
       asistenteTecnicoId: "asist-1",
-      estado: "ASIGNADO"
+      estado: "ASIGNADO",
     });
     const tx = {
       $executeRaw: vi.fn(),
       usuario: {
-        findUnique: vi.fn().mockResolvedValue({ id: "admin-1", activo: true, rol: "ADMINISTRACION" })
+        findUnique: vi
+          .fn()
+          .mockResolvedValue({ id: "admin-1", activo: true, rol: "ADMINISTRACION" }),
       },
       instanciaSala: {
         findUnique: vi.fn().mockResolvedValue({
@@ -96,8 +101,8 @@ describe("adaptador Prisma: reasignación", () => {
           inicioAsistenciaTecnicaAt: null,
           finAsistenciaTecnicaAt: null,
           solicitud: { id: "s-1", titulo: "Clase", modalidad: "VIRTUAL" },
-          asignaciones: [{ id: "asig-2", asistenteTecnicoId: "asist-2" }]
-        })
+          asignaciones: [{ id: "asig-2", asistenteTecnicoId: "asist-2" }],
+        }),
       },
       asistenteTecnico: {
         findUnique: vi.fn().mockResolvedValue({
@@ -108,35 +113,44 @@ describe("adaptador Prisma: reasignación", () => {
             activo: true,
             rol: "ASISTENTE_TECNICO",
             emailPrincipal: "ana@flacso.edu.uy",
-            cuentasGoogle: []
-          }
-        })
+            cuentasGoogle: [],
+          },
+        }),
       },
-      asignacionAsistenciaTecnica: { findMany: vi.fn().mockResolvedValue([]), update: vi.fn(), upsert },
+      asignacionAsistenciaTecnica: {
+        findMany: vi.fn().mockResolvedValue([]),
+        update: vi.fn(),
+        upsert,
+      },
       tarifaAsistenciaTecnica: {
-        findFirst: vi.fn().mockResolvedValue({ id: "t-1", valorHora: { toNumber: () => 100 }, moneda: "UYU" })
+        findFirst: vi
+          .fn()
+          .mockResolvedValue({ id: "t-1", valorHora: { toNumber: () => 100 }, moneda: "UYU" }),
       },
-      auditoria: { create: vi.fn() }
+      auditoria: { create: vi.fn() },
     };
     const db = { $transaction: (fn: (t: typeof tx) => unknown) => fn(tx) };
 
     await crearPrismaAsistenciaRepositoryAdapter(db as never).reservarYAsignarAsistente(
       "inst-1",
       "asist-1",
-      "admin-1"
+      "admin-1",
     );
 
     expect(upsert).toHaveBeenCalledWith(
       expect.objectContaining({
         where: {
-          instanciaSalaId_asistenteTecnicoId: { instanciaSalaId: "inst-1", asistenteTecnicoId: "asist-1" }
+          instanciaSalaId_asistenteTecnicoId: {
+            instanciaSalaId: "inst-1",
+            asistenteTecnicoId: "asist-1",
+          },
         },
         update: expect.objectContaining({
           estado: "ASIGNADO",
           minutosConfirmados: null,
-          montoConfirmado: null
-        })
-      })
+          montoConfirmado: null,
+        }),
+      }),
     );
   });
 });

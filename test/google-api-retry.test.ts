@@ -13,8 +13,8 @@ describe("reintentos por límites de Google", () => {
     await expect(
       conReintentosPorLimiteGoogle(operation, {
         demoraBaseMs: 100,
-        esperar
-      })
+        esperar,
+      }),
     ).resolves.toBe("ok");
     expect(operation).toHaveBeenCalledTimes(3);
     expect(esperar.mock.calls.map(([milliseconds]) => milliseconds)).toEqual([100, 200]);
@@ -25,9 +25,9 @@ describe("reintentos por límites de Google", () => {
       esLimiteTemporalGoogle({
         response: {
           status: 403,
-          data: { error: { errors: [{ reason: "rateLimitExceeded" }] } }
-        }
-      })
+          data: { error: { errors: [{ reason: "rateLimitExceeded" }] } },
+        },
+      }),
     ).toBe(true);
   });
 
@@ -44,12 +44,15 @@ describe("reintentos por límites de Google", () => {
 
 import {
   conReintentosGoogleLectura,
-  esFalloTemporalGoogle
+  esFalloTemporalGoogle,
 } from "../src/integrations/google/retry/google-api-retry";
 describe("reintentos seguros de lecturas Google", () => {
   it("no reintenta 403 de permisos y sí clasifica 429, 5xx y timeouts", async () => {
     const denied = {
-      response: { status: 403, data: { error: { errors: [{ reason: "insufficientPermissions" }] } } }
+      response: {
+        status: 403,
+        data: { error: { errors: [{ reason: "insufficientPermissions" }] } },
+      },
     };
     const operation = vi.fn().mockRejectedValue(denied);
     await expect(conReintentosGoogleLectura(operation, { esperar: vi.fn() })).rejects.toBe(denied);
@@ -65,7 +68,10 @@ describe("reintentos seguros de lecturas Google", () => {
       .mockRejectedValueOnce({ code: "ETIMEDOUT" })
       .mockResolvedValue("ok");
     await expect(
-      conReintentosGoogleLectura(op, { esperar: vi.fn().mockResolvedValue(undefined), aleatorio: () => 0 })
+      conReintentosGoogleLectura(op, {
+        esperar: vi.fn().mockResolvedValue(undefined),
+        aleatorio: () => 0,
+      }),
     ).resolves.toBe("ok");
     expect(op).toHaveBeenCalledTimes(3);
   });

@@ -3,7 +3,7 @@ import type {
   AnfitrionBarridoZoom,
   BarridoZoom,
   BarridoZoomRepositoryPort,
-  EstadoBarridoZoom
+  EstadoBarridoZoom,
 } from "../../ports";
 
 export type PrismaZoomBarridoRepositoryDeps = Readonly<{
@@ -28,15 +28,15 @@ function anfitrionesDe(json: Prisma.JsonValue): readonly AnfitrionBarridoZoom[] 
       ? [
           {
             anfitrionZoomId: o.anfitrionZoomId,
-            cuentaProveedorId: typeof o.cuentaProveedorId === "string" ? o.cuentaProveedorId : null
-          }
+            cuentaProveedorId: typeof o.cuentaProveedorId === "string" ? o.cuentaProveedorId : null,
+          },
         ]
       : [];
   });
 }
 
 export function crearPrismaZoomBarridoRepositoryAdapter(
-  deps: PrismaZoomBarridoRepositoryDeps
+  deps: PrismaZoomBarridoRepositoryDeps,
 ): BarridoZoomRepositoryPort {
   const { db } = deps;
   const aBarrido = (f: Fila): BarridoZoom => ({
@@ -49,15 +49,15 @@ export function crearPrismaZoomBarridoRepositoryAdapter(
       anfitrionIndice: f.anfitrionIndice,
       fuente: f.fuenteListado === "PAPELERA" ? "PAPELERA" : "ACTIVAS",
       ventanaDesde: f.ventanaDesde ? deFecha(f.ventanaDesde) : null,
-      cursor: f.nextPageTokenCifrado ? deps.descifrar(f.nextPageTokenCifrado) : null
+      cursor: f.nextPageTokenCifrado ? deps.descifrar(f.nextPageTokenCifrado) : null,
     },
-    estado: f.estado as EstadoBarridoZoom,
+    estado: f.estado,
     paginasProcesadas: f.paginasProcesadas,
     ocurrenciasEncontradas: f.ocurrenciasEncontradas,
     intentos: f.intentos,
     errorCodigo: f.errorCodigo,
     omisiones: f.errorDetalle ? f.errorDetalle.split("\n").filter(Boolean) : [],
-    completadoAt: f.completadoAt
+    completadoAt: f.completadoAt,
   });
   function deLaFecha(d: Date): string {
     return deFecha(d);
@@ -70,13 +70,13 @@ export function crearPrismaZoomBarridoRepositoryAdapter(
           cuentaZoomId: n.cuentaZoomId,
           anfitrionesSnapshot: n.anfitriones.map((a) => ({
             anfitrionZoomId: a.anfitrionZoomId,
-            cuentaProveedorId: a.cuentaProveedorId
+            cuentaProveedorId: a.cuentaProveedorId,
           })),
           desde: aFecha(n.desde),
           hasta: aFecha(n.hasta),
-          solicitanteId: n.solicitanteId
+          solicitanteId: n.solicitanteId,
         },
-        select: { id: true }
+        select: { id: true },
       });
       await db.auditoria.create({
         data: {
@@ -84,8 +84,8 @@ export function crearPrismaZoomBarridoRepositoryAdapter(
           accion: "ZOOM_RECUPERACION_CREADA",
           entidadTipo: "BarridoArchivoZoom",
           entidadId: fila.id,
-          valorNuevo: { desde: n.desde, hasta: n.hasta, anfitriones: n.anfitriones.length }
-        }
+          valorNuevo: { desde: n.desde, hasta: n.hasta, anfitriones: n.anfitriones.length },
+        },
       });
       return fila;
     },
@@ -103,14 +103,14 @@ export function crearPrismaZoomBarridoRepositoryAdapter(
             estado: { in: ["PENDIENTE", "EN_CURSO", "ERROR_REINTENTABLE"] },
             AND: [
               { OR: [{ proximoIntentoAt: null }, { proximoIntentoAt: { lte: ahora } }] },
-              { OR: [{ leaseHasta: null }, { leaseHasta: { lt: ahora } }] }
-            ]
+              { OR: [{ leaseHasta: null }, { leaseHasta: { lt: ahora } }] },
+            ],
           },
           data: {
             estado: "EN_CURSO",
             leaseVersion: { increment: 1 },
-            leaseHasta: new Date(ahora.getTime() + duracionMs)
-          }
+            leaseHasta: new Date(ahora.getTime() + duracionMs),
+          },
         });
         if (count === 0) {
           return null;
@@ -118,7 +118,7 @@ export function crearPrismaZoomBarridoRepositoryAdapter(
         const fila = await tx.barridoArchivoZoom.findUniqueOrThrow({ where: { id: barridoId } });
         return {
           lease: { barridoId, version: fila.leaseVersion, venceAt: fila.leaseHasta! },
-          barrido: aBarrido(fila)
+          barrido: aBarrido(fila),
         };
       });
     },
@@ -128,7 +128,7 @@ export function crearPrismaZoomBarridoRepositoryAdapter(
       return db.$transaction(async (tx) => {
         const actual = await tx.barridoArchivoZoom.findFirst({
           where: { id: lease.barridoId, leaseVersion: lease.version, estado: "EN_CURSO" },
-          select: { errorDetalle: true }
+          select: { errorDetalle: true },
         });
         if (!actual) {
           return false;
@@ -136,7 +136,7 @@ export function crearPrismaZoomBarridoRepositoryAdapter(
         // Las omisiones se acumulan (anfitrión:código, sin mensajes ni URLs) y acotan el detalle persistido.
         const omisiones = [
           ...(actual.errorDetalle ? actual.errorDetalle.split("\n").filter(Boolean) : []),
-          ...(avance.omision ? [`${avance.omision.anfitrionZoomId}:${avance.omision.codigo}`] : [])
+          ...(avance.omision ? [`${avance.omision.anfitrionZoomId}:${avance.omision.codigo}`] : []),
         ].slice(0, 50);
         const { count } = await tx.barridoArchivoZoom.updateMany({
           where: { id: lease.barridoId, leaseVersion: lease.version, estado: "EN_CURSO" },
@@ -145,8 +145,12 @@ export function crearPrismaZoomBarridoRepositoryAdapter(
               ? {
                   anfitrionIndice: avance.siguiente.anfitrionIndice,
                   fuenteListado: avance.siguiente.fuente,
-                  ventanaDesde: avance.siguiente.ventanaDesde ? aFecha(avance.siguiente.ventanaDesde) : null,
-                  nextPageTokenCifrado: avance.siguiente.cursor ? deps.cifrar(avance.siguiente.cursor) : null
+                  ventanaDesde: avance.siguiente.ventanaDesde
+                    ? aFecha(avance.siguiente.ventanaDesde)
+                    : null,
+                  nextPageTokenCifrado: avance.siguiente.cursor
+                    ? deps.cifrar(avance.siguiente.cursor)
+                    : null,
                 }
               : { nextPageTokenCifrado: null }),
             paginasProcesadas: { increment: 1 },
@@ -155,11 +159,15 @@ export function crearPrismaZoomBarridoRepositoryAdapter(
             proximoIntentoAt: null,
             leaseHasta: null,
             // Con anfitriones omitidos el barrido no se declara completo: exige revisión de la administración.
-            estado: termina ? (omisiones.length > 0 ? "REQUIERE_REVISION" : "COMPLETADO") : "PENDIENTE",
+            estado: termina
+              ? omisiones.length > 0
+                ? "REQUIERE_REVISION"
+                : "COMPLETADO"
+              : "PENDIENTE",
             completadoAt: termina ? ahora : null,
             errorDetalle: omisiones.length > 0 ? omisiones.join("\n") : null,
-            ...(avance.omision ? { errorCodigo: avance.omision.codigo.slice(0, 120) } : {})
-          }
+            ...(avance.omision ? { errorCodigo: avance.omision.codigo.slice(0, 120) } : {}),
+          },
         });
         return count === 1;
       });
@@ -169,14 +177,15 @@ export function crearPrismaZoomBarridoRepositoryAdapter(
       return db.$transaction(async (tx) => {
         const fila = await tx.barridoArchivoZoom.findFirst({
           where: { id: lease.barridoId, leaseVersion: lease.version, estado: "EN_CURSO" },
-          select: { intentos: true }
+          select: { intentos: true },
         });
         if (!fila) {
           return false;
         }
         const intentos = fila.intentos + 1;
         const revision =
-          fallo.tipo === "REVISION" || (fallo.limiteIntentos != null && intentos >= fallo.limiteIntentos);
+          fallo.tipo === "REVISION" ||
+          (fallo.limiteIntentos != null && intentos >= fallo.limiteIntentos);
         const { count } = await tx.barridoArchivoZoom.updateMany({
           where: { id: lease.barridoId, leaseVersion: lease.version, estado: "EN_CURSO" },
           data: {
@@ -185,8 +194,8 @@ export function crearPrismaZoomBarridoRepositoryAdapter(
             estado: revision ? "REQUIERE_REVISION" : "ERROR_REINTENTABLE",
             proximoIntentoAt: revision ? null : fallo.proximoIntentoAt,
             leaseHasta: null,
-            ...(fallo.reiniciarCursor ? { nextPageTokenCifrado: null } : {})
-          }
+            ...(fallo.reiniciarCursor ? { nextPageTokenCifrado: null } : {}),
+          },
         });
         return count === 1;
       });
@@ -199,16 +208,16 @@ export function crearPrismaZoomBarridoRepositoryAdapter(
             { estado: "PENDIENTE" },
             {
               estado: "ERROR_REINTENTABLE",
-              OR: [{ proximoIntentoAt: null }, { proximoIntentoAt: { lte: ahora } }]
+              OR: [{ proximoIntentoAt: null }, { proximoIntentoAt: { lte: ahora } }],
             },
-            { estado: "EN_CURSO", OR: [{ leaseHasta: null }, { leaseHasta: { lt: ahora } }] }
-          ]
+            { estado: "EN_CURSO", OR: [{ leaseHasta: null }, { leaseHasta: { lt: ahora } }] },
+          ],
         },
         orderBy: { createdAt: "asc" },
         take: limite,
-        select: { id: true }
+        select: { id: true },
       });
       return filas.map((f) => f.id);
-    }
+    },
   };
 }

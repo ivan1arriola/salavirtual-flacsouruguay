@@ -14,13 +14,13 @@ import {
   restablecerPasswordSchema,
   solicitudRecuperacionPasswordSchema,
   tokenRecuperacionVigente,
-  usuarioIdDesdeIdentifierRecuperacion
+  usuarioIdDesdeIdentifierRecuperacion,
 } from "./recuperacion-password.domain";
 
 export async function solicitarRecuperacionPassword(
   db: PrismaClient,
   rawInput: unknown,
-  ahora = new Date()
+  ahora = new Date(),
 ): Promise<void> {
   const input = solicitudRecuperacionPasswordSchema.parse(rawInput);
   const usuario = await db.usuario.findFirst({
@@ -30,10 +30,10 @@ export async function solicitarRecuperacionPassword(
       OR: [
         { emailPrincipal: { equals: input.email, mode: "insensitive" } },
         { emailAliases: { some: { email: { equals: input.email, mode: "insensitive" } } } },
-        { cuentasGoogle: { some: { email: { equals: input.email, mode: "insensitive" } } } }
-      ]
+        { cuentasGoogle: { some: { email: { equals: input.email, mode: "insensitive" } } } },
+      ],
     },
-    select: { id: true, nombres: true, emailPrincipal: true }
+    select: { id: true, nombres: true, emailPrincipal: true },
   });
 
   // La respuesta pública siempre es la misma, exista o no la cuenta.
@@ -43,11 +43,11 @@ export async function solicitarRecuperacionPassword(
 
   const identifier = identifierRecuperacionPassword(usuario.id);
   const limiteReenvio = new Date(
-    ahora.getTime() + RECUPERACION_PASSWORD_TTL_MS - RECUPERACION_PASSWORD_REENVIO_MS
+    ahora.getTime() + RECUPERACION_PASSWORD_TTL_MS - RECUPERACION_PASSWORD_REENVIO_MS,
   );
   const solicitudReciente = await db.tokenVerificacion.findFirst({
     where: { identifier, expires: { gt: limiteReenvio } },
-    select: { identifier: true }
+    select: { identifier: true },
   });
   if (solicitudReciente) {
     return;
@@ -60,7 +60,7 @@ export async function solicitarRecuperacionPassword(
   await db.$transaction(async (tx) => {
     await tx.tokenVerificacion.deleteMany({ where: { identifier } });
     await tx.tokenVerificacion.create({
-      data: { identifier, token: tokenHash, expires }
+      data: { identifier, token: tokenHash, expires },
     });
   });
 
@@ -80,10 +80,10 @@ export async function solicitarRecuperacionPassword(
         ".</p>" +
         panelCorreo(
           '<p style="margin:0;color:#192b44;font-size:14px;line-height:21px"><strong>El enlace vence en 30 minutos</strong> y solo puede utilizarse una vez.</p>',
-          "Acceso temporal"
+          "Acceso temporal",
         ),
       accion: { texto: "Elegir nueva contraseña", url: url.toString() },
-      nota: "Si no solicitaste este cambio, ignorá este correo. Tu contraseña actual continuará funcionando."
+      nota: "Si no solicitaste este cambio, ignorá este correo. Tu contraseña actual continuará funcionando.",
     });
     const resultado = await enviarCorreoConfigurado(db, {
       to: [destino],
@@ -96,16 +96,18 @@ export async function solicitarRecuperacionPassword(
         `Abrí este enlace para elegir una nueva contraseña: ${url.toString()}`,
         "",
         "El enlace vence en 30 minutos y solo puede utilizarse una vez.",
-        "Si no solicitaste este cambio, podés ignorar este correo."
+        "Si no solicitaste este cambio, podés ignorar este correo.",
       ].join("\n"),
-      html
+      html,
     });
 
     if (!resultado.sent) {
       await db.tokenVerificacion.deleteMany({ where: { identifier, token: tokenHash } });
     }
   } catch (error) {
-    await db.tokenVerificacion.deleteMany({ where: { identifier, token: tokenHash } }).catch(() => undefined);
+    await db.tokenVerificacion
+      .deleteMany({ where: { identifier, token: tokenHash } })
+      .catch(() => undefined);
     console.warn("No se pudo enviar el correo de recuperación de contraseña", error);
   }
 }
@@ -113,18 +115,20 @@ export async function solicitarRecuperacionPassword(
 export async function restablecerPassword(
   db: PrismaClient,
   rawInput: unknown,
-  ahora = new Date()
+  ahora = new Date(),
 ): Promise<void> {
   const input = restablecerPasswordSchema.parse(rawInput);
   const tokenHash = hashTokenRecuperacion(input.token);
   const recuperacion = await db.tokenVerificacion.findFirst({
     where: {
       token: tokenHash,
-      identifier: { startsWith: RECUPERACION_PASSWORD_IDENTIFIER_PREFIX }
+      identifier: { startsWith: RECUPERACION_PASSWORD_IDENTIFIER_PREFIX },
     },
-    select: { identifier: true, token: true, expires: true }
+    select: { identifier: true, token: true, expires: true },
   });
-  const usuarioId = recuperacion ? usuarioIdDesdeIdentifierRecuperacion(recuperacion.identifier) : null;
+  const usuarioId = recuperacion
+    ? usuarioIdDesdeIdentifierRecuperacion(recuperacion.identifier)
+    : null;
 
   if (!recuperacion || !usuarioId || !tokenRecuperacionVigente(recuperacion, ahora)) {
     throw new Error("El enlace de recuperación no es válido o ya venció.");
@@ -136,8 +140,8 @@ export async function restablecerPassword(
       where: {
         identifier: recuperacion.identifier,
         token: recuperacion.token,
-        expires: { gt: ahora }
-      }
+        expires: { gt: ahora },
+      },
     });
     if (consumido.count !== 1) {
       throw new Error("El enlace de recuperación no es válido o ya venció.");
@@ -148,23 +152,25 @@ export async function restablecerPassword(
       data: {
         passwordHash,
         passwordInicialCifrada: null,
-        debeCambiarPassword: false
-      }
+        debeCambiarPassword: false,
+      },
     });
     if (actualizado.count !== 1) {
       throw new Error("La cuenta ya no está disponible.");
     }
 
     await tx.tokenVerificacion.deleteMany({ where: { identifier: recuperacion.identifier } });
-    await tx.tokenVerificacion.deleteMany({ where: { identifier: mobileSessionIdentifier(usuarioId) } });
+    await tx.tokenVerificacion.deleteMany({
+      where: { identifier: mobileSessionIdentifier(usuarioId) },
+    });
     await tx.auditoria.create({
       data: {
         actorUsuarioId: null,
         accion: "PASSWORD_RECUPERADA",
         entidadTipo: "Usuario",
         entidadId: usuarioId,
-        valorNuevo: { metodo: "TOKEN_EMAIL" }
-      }
+        valorNuevo: { metodo: "TOKEN_EMAIL" },
+      },
     });
   });
 }

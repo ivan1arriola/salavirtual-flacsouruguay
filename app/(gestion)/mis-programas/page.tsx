@@ -9,11 +9,11 @@ import { guardarProgramas } from "./actions";
 
 const messages: Readonly<Record<string, string>> = {
   "programas-guardados": "Tus programas fueron actualizados.",
-  "error-programas": "No se pudieron actualizar tus programas."
+  "error-programas": "No se pudieron actualizar tus programas.",
 };
 
 export default async function MisProgramasPage({
-  searchParams
+  searchParams,
 }: Readonly<{ searchParams: Promise<{ estado?: string }> }>) {
   const session = await auth();
   if (!session?.user) {
@@ -21,7 +21,7 @@ export default async function MisProgramasPage({
   }
   const actor = await resolveSessionActor(db, {
     id: session.user.id,
-    email: session.user.email
+    email: session.user.email,
   });
   if (!actor?.activo) {
     redirect("/acceso");
@@ -38,17 +38,17 @@ export default async function MisProgramasPage({
           select: {
             programas: {
               where: { activo: true },
-              select: { programaId: true }
-            }
-          }
-        }
-      }
+              select: { programaId: true },
+            },
+          },
+        },
+      },
     }),
     db.programa.findMany({
       where: { activo: true },
       orderBy: { nombre: "asc" },
-      select: { id: true, nombre: true }
-    })
+      select: { id: true, nombre: true },
+    }),
   ]);
   if (!user) {
     redirect("/acceso");

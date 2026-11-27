@@ -16,14 +16,14 @@ describe("estilos de notificaciones", () => {
     const page = readFileSync(path("app/(gestion)/notificaciones/page.tsx"), "utf8");
     const globalCss = [
       readFileSync(path("app/(gestion)/gestion.css"), "utf8"),
-      readFileSync(path("app/(gestion)/brand-refresh.css"), "utf8")
+      readFileSync(path("app/(gestion)/brand-refresh.css"), "utf8"),
     ].join("\n");
 
     expect(moduleCss).toContain(".page");
     expect(moduleCss).toContain(".actionWrap");
     expect(moduleCss).toContain("min-height: 44px");
-    expect(page).toContain("className={styles.page}");
-    expect(page).toContain("className={styles.actionWrap}");
+    expect(page).toMatch(/className=\{styles(?:\.page|\["page"\])\}/);
+    expect(page).toMatch(/className=\{styles(?:\.actionWrap|\["actionWrap"\])\}/);
     expect(globalCss).not.toContain(".notification-filter");
     expect(globalCss).not.toContain(".notification-item");
     expect(globalCss).not.toContain(".notification-actions");

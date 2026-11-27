@@ -9,15 +9,19 @@ import {
   puedeCambiarAsistenciaEncuentro,
   puedeCorregirModalidadHistorica,
   puedeGestionarEncuentros,
-  resolverEstadoSolicitudPorIntegraciones
+  resolverEstadoSolicitudPorIntegraciones,
 } from "../src/modules/reuniones/encuentros.domain";
 
 describe("gestión funcional de encuentros", () => {
   it("deriva el estado general desde la integración de todos los eventos", () => {
     expect(resolverEstadoSolicitudPorIntegraciones([])).toBe("REGISTRADA");
     expect(resolverEstadoSolicitudPorIntegraciones(["PENDIENTE"])).toBe("PROVISIONANDO");
-    expect(resolverEstadoSolicitudPorIntegraciones(["SINCRONIZADA", "HISTORICA"])).toBe("PROVISIONADA");
-    expect(resolverEstadoSolicitudPorIntegraciones(["SINCRONIZADA", "ERROR"])).toBe("REQUIERE_REVISION");
+    expect(resolverEstadoSolicitudPorIntegraciones(["SINCRONIZADA", "HISTORICA"])).toBe(
+      "PROVISIONADA",
+    );
+    expect(resolverEstadoSolicitudPorIntegraciones(["SINCRONIZADA", "ERROR"])).toBe(
+      "REQUIERE_REVISION",
+    );
   });
 
   it("permite Administracion y al docente titular", () => {
@@ -36,13 +40,15 @@ describe("gestión funcional de encuentros", () => {
   it("permite cambiar asistencia antes y durante el encuentro, pero no después", () => {
     const ahora = new Date("2026-08-18T21:25:00Z");
 
-    expect(puedeCambiarAsistenciaEncuentro("PROGRAMADA", new Date("2026-08-18T22:00:00Z"), ahora)).toBe(true);
-    expect(puedeCambiarAsistenciaEncuentro("PROGRAMADA", new Date("2026-08-18T21:25:00Z"), ahora)).toBe(
-      false
-    );
-    expect(puedeCambiarAsistenciaEncuentro("FINALIZADA", new Date("2026-08-18T22:00:00Z"), ahora)).toBe(
-      false
-    );
+    expect(
+      puedeCambiarAsistenciaEncuentro("PROGRAMADA", new Date("2026-08-18T22:00:00Z"), ahora),
+    ).toBe(true);
+    expect(
+      puedeCambiarAsistenciaEncuentro("PROGRAMADA", new Date("2026-08-18T21:25:00Z"), ahora),
+    ).toBe(false);
+    expect(
+      puedeCambiarAsistenciaEncuentro("FINALIZADA", new Date("2026-08-18T22:00:00Z"), ahora),
+    ).toBe(false);
   });
 
   it("conserva la sala de la serie cuando está disponible", () => {
@@ -51,10 +57,10 @@ describe("gestión funcional de encuentros", () => {
         "s2",
         [
           { id: "s1", prioridad: 1 },
-          { id: "s2", prioridad: 2 }
+          { id: "s2", prioridad: 2 },
         ],
-        []
-      )
+        [],
+      ),
     ).toBe("s2");
   });
 
@@ -64,10 +70,10 @@ describe("gestión funcional de encuentros", () => {
         "s2",
         [
           { id: "s2", prioridad: 2 },
-          { id: "s1", prioridad: 1 }
+          { id: "s1", prioridad: 1 },
         ],
-        ["s2"]
-      )
+        ["s2"],
+      ),
     ).toBe("s1");
   });
 
@@ -76,8 +82,8 @@ describe("gestión funcional de encuentros", () => {
       actualizarEncuentroSchema.safeParse({
         accion: "EDITAR_FECHA",
         inicio: "2026-08-03T23:00:00-03:00",
-        fin: "2026-08-04T00:30:00-03:00"
-      }).success
+        fin: "2026-08-04T00:30:00-03:00",
+      }).success,
     ).toBe(true);
   });
 
@@ -86,24 +92,26 @@ describe("gestión funcional de encuentros", () => {
       accion: "EDITAR_ENCUENTRO",
       inicio: "2026-08-03T13:00:00Z",
       fin: "2026-08-03T14:00:00Z",
-      descripcion: "Tema específico de esta fecha"
+      descripcion: "Tema específico de esta fecha",
     });
 
-    expect("descripcion" in result ? result.descripcion : null).toBe("Tema específico de esta fecha");
+    expect("descripcion" in result ? result.descripcion : null).toBe(
+      "Tema específico de esta fecha",
+    );
   });
 
   it("acepta cambiar la modalidad de una única reunión y restablecer la serie", () => {
     expect(
       actualizarEncuentroSchema.safeParse({
         accion: "CAMBIAR_MODALIDAD",
-        modalidad: "HIBRIDA"
-      }).success
+        modalidad: "HIBRIDA",
+      }).success,
     ).toBe(true);
     expect(
       actualizarEncuentroSchema.safeParse({
         accion: "CAMBIAR_MODALIDAD",
-        modalidad: null
-      }).success
+        modalidad: null,
+      }).success,
     ).toBe(true);
     expect(modalidadEfectivaEncuentro("VIRTUAL", "HIBRIDA")).toBe("HIBRIDA");
     expect(modalidadEfectivaEncuentro("VIRTUAL", null)).toBe("VIRTUAL");
@@ -113,7 +121,7 @@ describe("gestión funcional de encuentros", () => {
     const result = actualizarEncuentroSchema.safeParse({
       accion: "EDITAR_HORARIO_ASISTENCIA",
       inicioAsistenciaTecnica: "2026-10-10T09:00:00-03:00",
-      finAsistenciaTecnica: "2026-10-10T14:00:00-03:00"
+      finAsistenciaTecnica: "2026-10-10T14:00:00-03:00",
     });
     expect(result.success).toBe(true);
     expect(
@@ -121,43 +129,43 @@ describe("gestión funcional de encuentros", () => {
         inicioProgramadoAt: new Date("2026-10-10T14:00:00Z"),
         finProgramadoAt: new Date("2026-10-10T16:30:00Z"),
         inicioAsistenciaTecnicaAt: new Date("2026-10-10T12:00:00Z"),
-        finAsistenciaTecnicaAt: new Date("2026-10-10T17:00:00Z")
-      })
+        finAsistenciaTecnicaAt: new Date("2026-10-10T17:00:00Z"),
+      }),
     ).toMatchObject({
       inicio: new Date("2026-10-10T12:00:00Z"),
       fin: new Date("2026-10-10T17:00:00Z"),
-      personalizado: true
+      personalizado: true,
     });
   });
 
   it("acepta restablecer el horario técnico a la configuración de la serie", () => {
     expect(
       actualizarEncuentroSchema.safeParse({
-        accion: "RESTABLECER_HORARIO_ASISTENCIA"
-      }).success
+        accion: "RESTABLECER_HORARIO_ASISTENCIA",
+      }).success,
     ).toBe(true);
   });
 
   it("respeta el limite concurrente configurado de una sala", () => {
     const periodo = {
       inicio: new Date("2026-08-03T13:00:00Z"),
-      fin: new Date("2026-08-03T15:00:00Z")
+      fin: new Date("2026-08-03T15:00:00Z"),
     };
     expect(
       elegirCuentaHostParaPeriodos(
         null,
         [{ id: "s1", prioridad: 1, limiteConcurrente: 2 }],
         [{ cuentaProveedorId: "s1", ...periodo }],
-        [periodo]
-      )
+        [periodo],
+      ),
     ).toBe("s1");
     expect(
       elegirCuentaHostParaPeriodos(
         null,
         [{ id: "s1", prioridad: 1, limiteConcurrente: 1 }],
         [{ cuentaProveedorId: "s1", ...periodo }],
-        [periodo]
-      )
+        [periodo],
+      ),
     ).toBeNull();
   });
   it("reintenta solo cancelaciones pendientes de Google y Zoom sin reencolar eventos completados", () => {
@@ -167,22 +175,24 @@ describe("gestión funcional de encuentros", () => {
           eventosProveedor: [
             { id: "pendiente", proveedor: { tipo: "GOOGLE_MEET" }, operacionPendiente: "CANCELAR" },
             { id: "completo", proveedor: { tipo: "GOOGLE_MEET" }, operacionPendiente: null },
-            { id: "zoom", proveedor: { tipo: "ZOOM" }, operacionPendiente: "CANCELAR" }
-          ]
+            { id: "zoom", proveedor: { tipo: "ZOOM" }, operacionPendiente: "CANCELAR" },
+          ],
         },
         {
           eventosProveedor: [
-            { id: "otro", proveedor: { tipo: "GOOGLE_MEET" }, operacionPendiente: "CANCELAR" }
-          ]
-        }
-      ])
+            { id: "otro", proveedor: { tipo: "GOOGLE_MEET" }, operacionPendiente: "CANCELAR" },
+          ],
+        },
+      ]),
     ).toEqual(["pendiente", "zoom", "otro"]);
     expect(
       idsCancelacionesGooglePendientes([
         {
-          eventosProveedor: [{ id: "completo", proveedor: { tipo: "GOOGLE_MEET" }, operacionPendiente: null }]
-        }
-      ])
+          eventosProveedor: [
+            { id: "completo", proveedor: { tipo: "GOOGLE_MEET" }, operacionPendiente: null },
+          ],
+        },
+      ]),
     ).toEqual([]);
   });
 
@@ -191,10 +201,12 @@ describe("gestión funcional de encuentros", () => {
     const host = [{ id: "sala01", prioridad: 1, limiteConcurrente: 2 }];
     const existentes = [
       { cuentaProveedorId: "sala01", inicio: fecha("09:00"), fin: fecha("10:00") },
-      { cuentaProveedorId: "sala01", inicio: fecha("10:00"), fin: fecha("11:00") }
+      { cuentaProveedorId: "sala01", inicio: fecha("10:00"), fin: fecha("11:00") },
     ];
     expect(
-      elegirCuentaHostParaPeriodos(null, host, existentes, [{ inicio: fecha("09:00"), fin: fecha("11:00") }])
+      elegirCuentaHostParaPeriodos(null, host, existentes, [
+        { inicio: fecha("09:00"), fin: fecha("11:00") },
+      ]),
     ).toBe("sala01");
   });
 
@@ -208,9 +220,9 @@ describe("gestión funcional de encuentros", () => {
         [{ cuentaProveedorId: "sala01", inicio: fecha("09:00"), fin: fecha("10:30") }],
         [
           { inicio: fecha("09:30"), fin: fecha("10:30") },
-          { inicio: fecha("10:00"), fin: fecha("11:00") }
-        ]
-      )
+          { inicio: fecha("10:00"), fin: fecha("11:00") },
+        ],
+      ),
     ).toBeNull();
   });
 
@@ -221,8 +233,8 @@ describe("gestión funcional de encuentros", () => {
         null,
         [{ id: "sala01", prioridad: 1, limiteConcurrente: 1 }],
         [{ cuentaProveedorId: "sala01", inicio: fecha("09:00"), fin: fecha("10:00") }],
-        [{ inicio: fecha("10:00"), fin: fecha("11:00") }]
-      )
+        [{ inicio: fecha("10:00"), fin: fecha("11:00") }],
+      ),
     ).toBe("sala01");
   });
 
@@ -234,10 +246,10 @@ describe("gestión funcional de encuentros", () => {
         [{ id: "sala01", prioridad: 1, limiteConcurrente: 1 }],
         [
           { cuentaProveedorId: "sala01", inicio: fecha("09:00"), fin: fecha("10:00") },
-          { cuentaProveedorId: "sala01", inicio: fecha("09:30"), fin: fecha("10:30") }
+          { cuentaProveedorId: "sala01", inicio: fecha("09:30"), fin: fecha("10:30") },
         ],
-        [{ inicio: fecha("11:00"), fin: fecha("12:00") }]
-      )
+        [{ inicio: fecha("11:00"), fin: fecha("12:00") }],
+      ),
     ).toBe("sala01");
   });
 
@@ -248,8 +260,8 @@ describe("gestión funcional de encuentros", () => {
         null,
         [{ id: "sala01", prioridad: 1, limiteConcurrente: 0 }],
         [],
-        [{ inicio: fecha("09:00"), fin: fecha("10:00") }]
-      )
+        [{ inicio: fecha("09:00"), fin: fecha("10:00") }],
+      ),
     ).toBeNull();
   });
 });

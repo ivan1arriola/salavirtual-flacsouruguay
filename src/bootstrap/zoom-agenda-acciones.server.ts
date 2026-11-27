@@ -3,7 +3,7 @@ import {
   actualizarOcurrenciaZoomHttp,
   actualizarReunionZoomHttp,
   crearReunionZoomHttp,
-  obtenerZoomAccessToken
+  obtenerZoomAccessToken,
 } from "../integrations/zoom/zoom-client";
 import { descifrarConfiguracion } from "../lib/config/encryption";
 import { db } from "../lib/db";
@@ -14,9 +14,12 @@ import {
   corregirHorarioEnZoom,
   ignorarReunionExterna,
   recrearReunionEnZoom,
-  type DependenciasAccionesAgendaZoom
+  type DependenciasAccionesAgendaZoom,
 } from "../modules/operaciones/zoom-agenda-acciones.service";
-import { actualizarEncuentro, eliminarEncuentro } from "../modules/reuniones/gestionar-encuentros.service";
+import {
+  actualizarEncuentro,
+  eliminarEncuentro,
+} from "../modules/reuniones/gestionar-encuentros.service";
 import type { SessionActor } from "../lib/auth/session-actor.adapter";
 import { leerDiagnosticoZoom } from "./zoom-diagnostico.server";
 
@@ -35,7 +38,7 @@ async function tokenZoom(): Promise<string> {
   return obtenerZoomAccessToken({
     accountId: creds.accountId,
     clientId: creds.clientId,
-    clientSecret: creds.clientSecret
+    clientSecret: creds.clientSecret,
   });
 }
 
@@ -51,12 +54,12 @@ const dependencias: DependenciasAccionesAgendaZoom = {
     },
     async crearReunion(hostEmail, input) {
       return crearReunionZoomHttp(await tokenZoom(), hostEmail, input);
-    }
+    },
   },
   reprogramarEncuentro: (actor, solicitudId, instanciaId, input) =>
     actualizarEncuentro({ db }, actor, solicitudId, instanciaId, input),
   eliminarEncuentro: (actor, solicitudId, instanciaId) =>
-    eliminarEncuentro({ db }, actor, solicitudId, instanciaId)
+    eliminarEncuentro({ db }, actor, solicitudId, instanciaId),
 };
 
 export function ejecutarAccionAgendaZoom(actor: SessionActor, entrada: AccionAgendaZoom) {
@@ -73,7 +76,7 @@ export function ejecutarAccionAgendaZoom(actor: SessionActor, entrada: AccionAge
     case "DEJAR_DE_IGNORAR":
       return ignorarReunionExterna(db, actor, {
         observadaId: entrada.observadaId,
-        ignorar: entrada.accion === "IGNORAR"
+        ignorar: entrada.accion === "IGNORAR",
       });
   }
 }

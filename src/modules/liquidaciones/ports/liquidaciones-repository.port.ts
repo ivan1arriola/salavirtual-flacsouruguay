@@ -3,7 +3,7 @@ import type {
   FilaResumenAsistente,
   PeriodoMes,
   PeriodoReporteMensual,
-  ResumenAsistencia
+  ResumenAsistencia,
 } from "../domain";
 
 export type CandidatoReporteMensual = Readonly<{
@@ -28,7 +28,7 @@ export type LiquidacionesRepositoryPort = Readonly<{
   obtenerResumenAsistentes(periodo: PeriodoMes): Promise<readonly FilaResumenAsistente[]>;
   obtenerCandidatosReporteMensual(
     periodo: PeriodoReporteMensual,
-    ahora: Date
+    ahora: Date,
   ): Promise<readonly CandidatoReporteMensual[]>;
   obtenerCopiasAdministracion(): Promise<readonly string[]>;
   reservarEnvioReporte(input: ReservaEnvioReporteInput): Promise<Readonly<{ id: string }> | null>;

@@ -6,7 +6,7 @@ vi.mock("@/auth", () => ({ auth: mocks.auth }));
 vi.mock("@/src/lib/auth/session-actor.adapter", () => ({ resolveSessionActor: mocks.resolve }));
 vi.mock("@/src/lib/db", () => ({ db: {} }));
 vi.mock("@/src/bootstrap/zoom-historico.server", () => ({
-  desvincularOcurrenciaZoomAdmin: mocks.desvincular
+  desvincularOcurrenciaZoomAdmin: mocks.desvincular,
 }));
 
 import { POST } from "../app/api/v1/archivos/zoom/ocurrencias/[ocurrenciaId]/desvincular/route";
@@ -47,8 +47,10 @@ describe("POST desvincular", () => {
 describe("caso de uso desvincularOcurrenciaZoom", () => {
   it("rechaza a quien no administra sin tocar el repositorio", async () => {
     const repo = { desvincularOcurrencia: vi.fn() };
-    expect(await desvincularOcurrenciaZoom({ repo }, { id: "u", rol: "DOCENTE" }, "o", "e")).toEqual({
-      tipo: "PROHIBIDO"
+    expect(
+      await desvincularOcurrenciaZoom({ repo }, { id: "u", rol: "DOCENTE" }, "o", "e"),
+    ).toEqual({
+      tipo: "PROHIBIDO",
     });
     expect(repo.desvincularOcurrencia).not.toHaveBeenCalled();
   });
@@ -70,6 +72,8 @@ describe("conciliación en la vista pasadas (fuente)", () => {
     expect(pagina).not.toMatch(/Esta página es de\s+solo lectura/);
   });
   it("los controles miden 44px", () => {
-    expect(leer("app/(gestion)/centro-operaciones/zoom/zoom.module.css")).toMatch(/min-height: 44px/);
+    expect(leer("app/(gestion)/centro-operaciones/zoom/zoom.module.css")).toMatch(
+      /min-height: 44px/,
+    );
   });
 });

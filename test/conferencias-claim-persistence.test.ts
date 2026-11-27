@@ -16,12 +16,12 @@ const claim: ClaimInfo = {
       fin: new Date("2026-10-12T14:00:00Z"),
       timezone: "America/Montevideo",
       calendarId: "sala01@flacso.edu.uy",
-      calendarEventId: "evt-1"
-    }
+      calendarEventId: "evt-1",
+    },
   },
   operacion: "PROVISIONAR",
   token: "claim-actual",
-  at: new Date("2026-10-12T11:00:00Z")
+  at: new Date("2026-10-12T11:00:00Z"),
 };
 
 describe("conferencias: protección de escrituras bajo claim", () => {
@@ -31,7 +31,7 @@ describe("conferencias: protección de escrituras bajo claim", () => {
     const repository = crearPrismaConferenciasRepository({ db, descifrarConfiguracion: (v) => v });
 
     await expect(
-      repository.guardarExternalEventIdTemprano(claim, "google-1", { id: "google-1" })
+      repository.guardarExternalEventIdTemprano(claim, "google-1", { id: "google-1" }),
     ).rejects.toThrow(/claim/);
 
     expect(updateMany).toHaveBeenCalledWith(
@@ -40,9 +40,9 @@ describe("conferencias: protección de escrituras bajo claim", () => {
           reclamoIntegracionToken: "claim-actual",
           reclamoIntegracionAt: claim.at,
           operacionPendiente: "PROVISIONAR",
-          externalEventId: null
-        })
-      })
+          externalEventId: null,
+        }),
+      }),
     );
   });
 
@@ -55,16 +55,16 @@ describe("conferencias: protección de escrituras bajo claim", () => {
         externalEventId: "google-1",
         codigoReunion: "abc-defg-hij",
         joinUrl: "https://meet.google.com/abc-defg-hij",
-        payload: {}
-      })
+        payload: {},
+      }),
     ).rejects.toThrow(/claim/);
     expect(updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
           reclamoIntegracionToken: "claim-actual",
-          externalEventId: "google-1"
-        })
-      })
+          externalEventId: "google-1",
+        }),
+      }),
     );
   });
 });

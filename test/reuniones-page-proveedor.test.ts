@@ -7,25 +7,30 @@ const admin = { id: "a", rol: "ADMINISTRACION" as const, activo: true };
 
 function fakeDb(solicitudesDeSerie: readonly { id: string }[] = []) {
   const db = {
-    instanciaSala: { count: vi.fn(async (_arg: unknown) => 0), findMany: vi.fn(async (_arg: unknown) => []) },
+    instanciaSala: {
+      count: vi.fn(async (_arg: unknown) => 0),
+      findMany: vi.fn(async (_arg: unknown) => []),
+    },
     solicitudSala: {
       count: vi.fn(async (_arg: unknown) => solicitudesDeSerie.length),
-      findMany: vi.fn(async (_arg: unknown) => solicitudesDeSerie)
+      findMany: vi.fn(async (_arg: unknown) => solicitudesDeSerie),
     },
-    programa: { findMany: vi.fn(async (_arg: unknown) => []) }
+    programa: { findMany: vi.fn(async (_arg: unknown) => []) },
   };
   return { db, cliente: db as unknown as PrismaClient };
 }
 
-const incluye = (valor: unknown, filtro: unknown) => JSON.stringify(valor).includes(JSON.stringify(filtro));
-const donde = (llamada: readonly unknown[] | undefined) => (llamada?.[0] as { where: unknown }).where;
+const incluye = (valor: unknown, filtro: unknown) =>
+  JSON.stringify(valor).includes(JSON.stringify(filtro));
+const donde = (llamada: readonly unknown[] | undefined) =>
+  (llamada?.[0] as { where: unknown }).where;
 
 describe("lista de reuniones filtrada por proveedor", () => {
   it("la vista por encuentros filtra los encuentros y sus conteos por el proveedor pedido", async () => {
     const { db, cliente } = fakeDb();
     const datos = await obtenerDatosPaginaReuniones(cliente, admin, {
       vista: "encuentros",
-      proveedor: "zoom"
+      proveedor: "zoom",
     });
     const filtro = filtroProveedorActivo("ZOOM");
     expect(datos.proveedor).toBe("ZOOM");
@@ -42,7 +47,7 @@ describe("lista de reuniones filtrada por proveedor", () => {
     const filtro = filtroProveedorActivo("GOOGLE_MEET");
     expect(incluye(donde(db.solicitudSala.findMany.mock.calls[0]), filtro)).toBe(true);
     const traeEncuentros = db.instanciaSala.findMany.mock.calls.find((llamada) =>
-      JSON.stringify(donde(llamada)).includes('"solicitudSalaId"')
+      JSON.stringify(donde(llamada)).includes('"solicitudSalaId"'),
     );
     expect(traeEncuentros).toBeDefined();
     expect(incluye(donde(traeEncuentros), filtro)).toBe(true);
@@ -53,7 +58,7 @@ describe("lista de reuniones filtrada por proveedor", () => {
     const datos = await obtenerDatosPaginaReuniones(cliente, admin, { vista: "encuentros" });
     expect(datos.proveedor).toBeNull();
     expect(JSON.stringify(donde(db.instanciaSala.findMany.mock.calls[0]))).not.toContain(
-      "proveedorActivoTipo"
+      "proveedorActivoTipo",
     );
   });
 });
@@ -67,7 +72,9 @@ describe("límite diario de la agenda en Uruguay", () => {
       await obtenerDatosPaginaReuniones(cliente, admin, { vista: "encuentros", periodo });
       const medianoche = new Date("2026-11-24T03:00:00Z");
       const filtro = periodo === "proximas" ? { gte: medianoche } : { lt: medianoche };
-      expect(donde(db.instanciaSala.findMany.mock.calls[0])).toMatchObject({ finProgramadoAt: filtro });
+      expect(donde(db.instanciaSala.findMany.mock.calls[0])).toMatchObject({
+        finProgramadoAt: filtro,
+      });
     } finally {
       vi.useRealTimers();
     }
@@ -81,9 +88,11 @@ describe("límite diario de la agenda en Uruguay", () => {
       await obtenerDatosPaginaReuniones(cliente, admin, { vista: "series" });
       const filtro = { gte: new Date("2026-11-25T03:00:00Z") };
       expect(donde(db.solicitudSala.findMany.mock.calls[0])).toMatchObject({
-        instancias: { some: { finProgramadoAt: filtro } }
+        instancias: { some: { finProgramadoAt: filtro } },
       });
-      expect(donde(db.instanciaSala.findMany.mock.calls[0])).toMatchObject({ finProgramadoAt: filtro });
+      expect(donde(db.instanciaSala.findMany.mock.calls[0])).toMatchObject({
+        finProgramadoAt: filtro,
+      });
     } finally {
       vi.useRealTimers();
     }

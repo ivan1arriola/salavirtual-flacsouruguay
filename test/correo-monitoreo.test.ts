@@ -11,7 +11,7 @@ const reunion = {
   modalidad: "Virtual",
   programa: "Género & Sociedad",
   docente: "Florencia Quartino",
-  meetUrl: "https://meet.google.com/abc-defg-hij"
+  meetUrl: "https://meet.google.com/abc-defg-hij",
 };
 
 describe("resúmenes HTML de monitoreo", () => {
@@ -19,7 +19,7 @@ describe("resúmenes HTML de monitoreo", () => {
     const html = construirHtmlResumenMonitoreo({
       variante: "asignadas",
       nombre: "Iván",
-      reuniones: [reunion, { ...reunion, titulo: "Segundo encuentro", meetUrl: null }]
+      reuniones: [reunion, { ...reunion, titulo: "Segundo encuentro", meetUrl: null }],
     });
 
     expect(html).toContain("Tus monitoreos asignados");
@@ -41,7 +41,7 @@ describe("resúmenes HTML de monitoreo", () => {
   it("muestra las oportunidades sin entregar enlaces de reunión antes de asignar", () => {
     const html = construirHtmlResumenMonitoreo({
       variante: "disponibles",
-      reuniones: [reunion]
+      reuniones: [reunion],
     });
 
     expect(html).toContain("Hay 1 reunión disponible para postularte.");
@@ -56,8 +56,8 @@ describe("resúmenes HTML de monitoreo", () => {
       variante: "asignadas",
       reuniones: [
         { ...reunion, meetUrl: "javascript:alert(1)" },
-        { ...reunion, meetUrl: "https://meet.google.com.ejemplo.com/abc" }
-      ]
+        { ...reunion, meetUrl: "https://meet.google.com.ejemplo.com/abc" },
+      ],
     });
 
     expect(html).not.toContain("javascript:");

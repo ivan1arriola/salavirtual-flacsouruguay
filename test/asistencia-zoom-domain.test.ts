@@ -4,14 +4,16 @@ import {
   consolidarAsistenciaOcurrenciasZoom,
   consolidarAsistenciaZoom,
   resumirAsistenciaZoom,
-  type SesionObservadaZoom
+  type SesionObservadaZoom,
 } from "../src/modules/archivos/domain/asistencia-zoom.domain";
 
 const t = (hhmm: string) => new Date(`2026-11-09T${hhmm}:00Z`);
 const VENTANA = { inicioAt: t("10:00"), finAt: t("11:00") };
 const hash = (x: string) => `h:${x}`;
 
-function ses(extra: Partial<SesionObservadaZoom> & { entra: string; sale: string }): SesionObservadaZoom {
+function ses(
+  extra: Partial<SesionObservadaZoom> & { entra: string; sale: string },
+): SesionObservadaZoom {
   const { entra, sale, ...resto } = extra;
   return {
     claveSesion: `s-${entra}-${sale}-${resto.participanteId ?? resto.nombre ?? "x"}`,
@@ -23,7 +25,7 @@ function ses(extra: Partial<SesionObservadaZoom> & { entra: string; sale: string
     salidaAt: t(sale),
     status: "in_meeting",
     rol: null,
-    ...resto
+    ...resto,
   };
 }
 
@@ -31,7 +33,7 @@ describe("consolidarAsistenciaZoom: unión de intervalos", () => {
   it("[10:00–10:40] y [10:20–11:00] suman 60 minutos, no 80", () => {
     const [r] = consolidarAsistenciaZoom(
       [ses({ entra: "10:00", sale: "10:40" }), ses({ entra: "10:20", sale: "11:00" })],
-      VENTANA
+      VENTANA,
     );
     expect(r!.minutos).toBe(60);
     expect(r!.porcentaje).toBe(100);
@@ -40,7 +42,7 @@ describe("consolidarAsistenciaZoom: unión de intervalos", () => {
   it("reconexiones separadas se suman sin solapamiento y cuentan las sesiones", () => {
     const [r] = consolidarAsistenciaZoom(
       [ses({ entra: "10:00", sale: "10:10" }), ses({ entra: "10:30", sale: "10:45" })],
-      VENTANA
+      VENTANA,
     );
     expect(r!.minutos).toBe(25);
     expect(r!.sesiones).toBe(2);
@@ -51,7 +53,7 @@ describe("consolidarAsistenciaZoom: unión de intervalos", () => {
   it("recorta al horario: antes del inicio y después del fin no cuenta", () => {
     const [r] = consolidarAsistenciaZoom(
       [ses({ entra: "09:30", sale: "10:15" }), ses({ entra: "10:50", sale: "11:30" })],
-      VENTANA
+      VENTANA,
     );
     expect(r!.minutos).toBe(25);
     expect(r!.porcentaje).toBeCloseTo(41.67, 2);
@@ -60,7 +62,7 @@ describe("consolidarAsistenciaZoom: unión de intervalos", () => {
   it("precisión decimal con segundos y porcentaje nunca mayor a 100", () => {
     const [r] = consolidarAsistenciaZoom(
       [{ ...ses({ entra: "10:00", sale: "10:01" }), salidaAt: new Date("2026-11-09T10:01:20Z") }],
-      VENTANA
+      VENTANA,
     );
     expect(r!.minutos).toBe(1.33);
     expect(r!.porcentaje).toBe(2.22);
@@ -73,9 +75,9 @@ describe("consolidarAsistenciaZoom: unión de intervalos", () => {
       [
         { ...ses({ entra: "10:00", sale: "10:30" }), entradaAt: new Date("no-fecha") },
         ses({ entra: "10:40", sale: "10:30" }),
-        ses({ entra: "10:00", sale: "10:10" })
+        ses({ entra: "10:00", sale: "10:10" }),
       ],
-      VENTANA
+      VENTANA,
     );
     expect(rs).toHaveLength(1);
     expect(rs[0]!.minutos).toBe(10);
@@ -84,11 +86,11 @@ describe("consolidarAsistenciaZoom: unión de intervalos", () => {
 
   it("una ventana inválida es un error de programación, no un NaN silencioso", () => {
     expect(() => consolidarAsistenciaZoom([], { inicioAt: t("11:00"), finAt: t("10:00") })).toThrow(
-      RangeError
+      RangeError,
     );
-    expect(() => consolidarAsistenciaZoom([], { inicioAt: new Date("x"), finAt: t("10:00") })).toThrow(
-      RangeError
-    );
+    expect(() =>
+      consolidarAsistenciaZoom([], { inicioAt: new Date("x"), finAt: t("10:00") }),
+    ).toThrow(RangeError);
   });
 });
 
@@ -97,9 +99,9 @@ describe("consolidarAsistenciaZoom: identidad", () => {
     const rs = consolidarAsistenciaZoom(
       [
         ses({ entra: "10:00", sale: "10:30", participanteId: "a", nombre: "Juan Pérez" }),
-        ses({ entra: "10:00", sale: "10:30", participanteId: "b", nombre: "Juan Pérez" })
+        ses({ entra: "10:00", sale: "10:30", participanteId: "b", nombre: "Juan Pérez" }),
       ],
-      VENTANA
+      VENTANA,
     );
     expect(rs).toHaveLength(2);
   });
@@ -108,9 +110,9 @@ describe("consolidarAsistenciaZoom: identidad", () => {
     const rs = consolidarAsistenciaZoom(
       [
         ses({ entra: "10:00", sale: "10:10", userId: "u1" }),
-        ses({ entra: "10:20", sale: "10:30", userId: "u2" })
+        ses({ entra: "10:20", sale: "10:30", userId: "u2" }),
       ],
-      VENTANA
+      VENTANA,
     );
     expect(rs).toHaveLength(1);
     expect(rs[0]!.minutos).toBe(20);
@@ -120,9 +122,9 @@ describe("consolidarAsistenciaZoom: identidad", () => {
     const rs = consolidarAsistenciaZoom(
       [
         ses({ entra: "10:00", sale: "10:10", participanteId: null, nombre: "Invitado" }),
-        ses({ entra: "10:20", sale: "10:30", participanteId: null, nombre: "Invitado" })
+        ses({ entra: "10:20", sale: "10:30", participanteId: null, nombre: "Invitado" }),
       ],
-      VENTANA
+      VENTANA,
     );
     expect(rs).toHaveLength(2);
     expect(rs.every((r) => r.estadoConciliacion === "SIN_CONCILIAR")).toBe(true);
@@ -132,7 +134,7 @@ describe("consolidarAsistenciaZoom: identidad", () => {
   it("el correo informado por Zoom es observado, nunca identidad institucional confirmada", () => {
     const [r] = consolidarAsistenciaZoom(
       [ses({ entra: "10:00", sale: "10:30", email: "ana@gmail.com" })],
-      VENTANA
+      VENTANA,
     );
     expect(r!.emailObservado).toBe("ana@gmail.com");
     expect(r!.estadoConciliacion).toBe("SIN_CONCILIAR");
@@ -144,7 +146,7 @@ describe("consolidarAsistenciaZoom: sala de espera", () => {
   it("espera sin admisión suma 0 minutos pero se conserva como traza", () => {
     const [r] = consolidarAsistenciaZoom(
       [ses({ entra: "10:00", sale: "10:30", status: "in_waiting_room" })],
-      VENTANA
+      VENTANA,
     );
     expect(r!.minutos).toBe(0);
     expect(r!.porcentaje).toBe(0);
@@ -156,16 +158,19 @@ describe("consolidarAsistenciaZoom: sala de espera", () => {
     const [r] = consolidarAsistenciaZoom(
       [
         ses({ entra: "10:00", sale: "10:10", status: "in_waiting_room" }),
-        ses({ entra: "10:10", sale: "10:40", status: "in_meeting" })
+        ses({ entra: "10:10", sale: "10:40", status: "in_meeting" }),
       ],
-      VENTANA
+      VENTANA,
     );
     expect(r!.minutos).toBe(30);
     expect(r!.primeraEntradaAt).toEqual(t("10:10"));
   });
 
   it("estado desconocido (reportes antiguos) se trata como dentro de la reunión", () => {
-    const [r] = consolidarAsistenciaZoom([ses({ entra: "10:00", sale: "10:30", status: null })], VENTANA);
+    const [r] = consolidarAsistenciaZoom(
+      [ses({ entra: "10:00", sale: "10:30", status: null })],
+      VENTANA,
+    );
     expect(r!.minutos).toBe(30);
   });
 });
@@ -180,11 +185,17 @@ describe("resumen sin veredicto", () => {
     const rs = consolidarAsistenciaZoom(
       [
         ses({ entra: "10:00", sale: "11:00", participanteId: "d", nombre: "Docente", rol: "HOST" }),
-        ses({ entra: "10:00", sale: "11:00", participanteId: "c", nombre: "Asistente", rol: "COHOST" }),
+        ses({
+          entra: "10:00",
+          sale: "11:00",
+          participanteId: "c",
+          nombre: "Asistente",
+          rol: "COHOST",
+        }),
         ses({ entra: "10:00", sale: "10:50", participanteId: "e1", nombre: "Est 1" }),
-        ses({ entra: "10:10", sale: "10:50", participanteId: "e2", nombre: "Est 2" })
+        ses({ entra: "10:10", sale: "10:50", participanteId: "e2", nombre: "Est 2" }),
       ],
-      VENTANA
+      VENTANA,
     );
     expect(resumirAsistenciaZoom(rs)).toEqual({ participantes: 4, estudiantes: 2, anfitriones: 2 });
   });
@@ -192,7 +203,7 @@ describe("resumen sin veredicto", () => {
   it("un rol sugerido (no comprobado) no excluye a nadie", () => {
     const rs = consolidarAsistenciaZoom(
       [ses({ entra: "10:00", sale: "10:50", rol: null, nombre: "Docente" })],
-      VENTANA
+      VENTANA,
     );
     expect(resumirAsistenciaZoom(rs).estudiantes).toBe(1);
   });
@@ -203,12 +214,12 @@ describe("varias ocurrencias de un mismo encuentro", () => {
     const rs = consolidarAsistenciaOcurrenciasZoom([
       {
         sesiones: [ses({ entra: "10:00", sale: "10:30" })],
-        ventana: { inicioAt: t("10:00"), finAt: t("10:40") }
+        ventana: { inicioAt: t("10:00"), finAt: t("10:40") },
       },
       {
         sesiones: [ses({ entra: "10:30", sale: "11:30", participanteId: "p1" })],
-        ventana: { inicioAt: t("11:00"), finAt: t("11:20") }
-      }
+        ventana: { inicioAt: t("11:00"), finAt: t("11:20") },
+      },
     ]);
     expect(rs).toHaveLength(1);
     // 30 min en la primera + 20 recortados en la segunda (11:00–11:20) = 50 de 60.
@@ -224,13 +235,15 @@ describe("claveSesionZoom", () => {
     userId: "u",
     nombre: "Ana",
     entradaAt: t("10:00"),
-    salidaAt: t("10:10")
+    salidaAt: t("10:10"),
   };
   it("es estable ante reintentos y distinta entre ocurrencias, entradas o salidas", () => {
-    expect(claveSesionZoom(hash, "uuid-1", base)).toBe(claveSesionZoom(hash, "uuid-1", { ...base }));
+    expect(claveSesionZoom(hash, "uuid-1", base)).toBe(
+      claveSesionZoom(hash, "uuid-1", { ...base }),
+    );
     expect(claveSesionZoom(hash, "uuid-1", base)).not.toBe(claveSesionZoom(hash, "uuid-2", base));
     expect(claveSesionZoom(hash, "uuid-1", base)).not.toBe(
-      claveSesionZoom(hash, "uuid-1", { ...base, salidaAt: t("10:11") })
+      claveSesionZoom(hash, "uuid-1", { ...base, salidaAt: t("10:11") }),
     );
   });
 });
@@ -241,9 +254,9 @@ describe("reingresos, identidades ambiguas y reintentos", () => {
       [
         ses({ entra: "10:00", sale: "10:10", participanteId: "a", email: "Ana@x.com" }),
         ses({ entra: "10:20", sale: "10:30", participanteId: "b", email: "ana@x.com" }),
-        ses({ entra: "10:40", sale: "10:50", participanteId: null, email: " ANA@x.com " })
+        ses({ entra: "10:40", sale: "10:50", participanteId: null, email: " ANA@x.com " }),
       ],
-      VENTANA
+      VENTANA,
     );
     expect(rs).toHaveLength(1);
     expect(rs[0]).toMatchObject({ minutos: 30, sesiones: 3, claveParticipante: "id:a" });
@@ -254,9 +267,9 @@ describe("reingresos, identidades ambiguas y reintentos", () => {
       [
         ses({ entra: "10:00", sale: "10:10", participanteId: "a", email: "a@x.com" }),
         ses({ entra: "10:20", sale: "10:30", participanteId: "a", email: null }),
-        ses({ entra: "10:40", sale: "10:50", participanteId: "z", email: "a@x.com" })
+        ses({ entra: "10:40", sale: "10:50", participanteId: "z", email: "a@x.com" }),
       ],
-      VENTANA
+      VENTANA,
     );
     expect(rs).toHaveLength(1);
     expect(rs[0]!.minutos).toBe(30);
@@ -267,10 +280,22 @@ describe("reingresos, identidades ambiguas y reintentos", () => {
       [
         ses({ entra: "10:00", sale: "10:10", participanteId: null, nombre: "Ana Pérez" }),
         ses({ entra: "10:20", sale: "10:30", participanteId: null, nombre: "Ana Perez" }),
-        ses({ entra: "10:40", sale: "10:50", participanteId: "q", nombre: "Ana Pérez", email: "o@x.com" }),
-        ses({ entra: "10:40", sale: "10:50", participanteId: "r", nombre: "Ana Pérez", email: "p@x.com" })
+        ses({
+          entra: "10:40",
+          sale: "10:50",
+          participanteId: "q",
+          nombre: "Ana Pérez",
+          email: "o@x.com",
+        }),
+        ses({
+          entra: "10:40",
+          sale: "10:50",
+          participanteId: "r",
+          nombre: "Ana Pérez",
+          email: "p@x.com",
+        }),
       ],
-      VENTANA
+      VENTANA,
     );
     expect(rs).toHaveLength(4);
   });
@@ -279,9 +304,9 @@ describe("reingresos, identidades ambiguas y reintentos", () => {
     const rs = consolidarAsistenciaZoom(
       [
         ses({ entra: "10:00", sale: "10:10", participanteId: "a", email: "a@x.com" }),
-        ses({ entra: "10:20", sale: "10:30", participanteId: "a", email: "otro@x.com" })
+        ses({ entra: "10:20", sale: "10:30", participanteId: "a", email: "otro@x.com" }),
       ],
-      VENTANA
+      VENTANA,
     );
     expect(rs).toHaveLength(1);
   });
@@ -290,9 +315,9 @@ describe("reingresos, identidades ambiguas y reintentos", () => {
     const [r] = consolidarAsistenciaZoom(
       [
         ses({ entra: "10:00", sale: "10:30", participanteId: "a", email: "a@x.com" }),
-        ses({ entra: "10:10", sale: "10:40", participanteId: "b", email: "a@x.com" })
+        ses({ entra: "10:10", sale: "10:40", participanteId: "b", email: "a@x.com" }),
       ],
-      VENTANA
+      VENTANA,
     );
     expect(r!.minutos).toBe(40);
     expect(r!.sesiones).toBe(2);
@@ -302,9 +327,9 @@ describe("reingresos, identidades ambiguas y reintentos", () => {
     const [r] = consolidarAsistenciaZoom(
       [
         ses({ entra: "09:50", sale: "10:05", status: "in_waiting_room" }),
-        ses({ entra: "10:05", sale: "10:15" })
+        ses({ entra: "10:05", sale: "10:15" }),
       ],
-      VENTANA
+      VENTANA,
     );
     expect(r!.minutos).toBe(10);
     expect(r!.primeraEntradaAt).toEqual(t("10:05"));

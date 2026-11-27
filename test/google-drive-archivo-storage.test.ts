@@ -11,7 +11,7 @@ function crear(...respuestas: Array<Record<string, unknown>>) {
   const adapter = new GoogleDriveArchivoStorageAdapter({
     auth: { request } as unknown as JWT,
     cifrar: (v) => `enc(${v})`,
-    descifrar: (v) => v.slice(4, -1)
+    descifrar: (v) => v.slice(4, -1),
   });
   return { adapter, request };
 }
@@ -20,16 +20,16 @@ describe("GoogleDriveArchivoStorageAdapter", () => {
   it("devuelve la sesión cifrada y la descifra solo al usarla", async () => {
     const { adapter, request } = crear(
       { status: 200, headers: { location: "https://www.googleapis.com/upload?id=1" }, data: "" },
-      { status: 308, headers: { range: "bytes=0-262143" }, data: "" }
+      { status: 308, headers: { range: "bytes=0-262143" }, data: "" },
     );
     const sesion = await adapter.iniciarSubida(
       { fileId: "f", nombre: "n", carpetaId: "c", mimeType: "video/mp4", tamanoTotal: null },
-      H
+      H,
     );
     expect(sesion).toBe("enc(https://www.googleapis.com/upload?id=1)");
     expect(await adapter.consultarSubida(sesion, null)).toEqual({
       estado: "PARCIAL",
-      bytesConfirmados: 262144n
+      bytesConfirmados: 262144n,
     });
     expect(request.mock.calls[1][0].url).toBe("https://www.googleapis.com/upload?id=1");
   });
@@ -37,7 +37,7 @@ describe("GoogleDriveArchivoStorageAdapter", () => {
   it("reconcilia primero por ID y solo después por marca de origen", async () => {
     const { adapter, request } = crear({
       status: 200,
-      data: { id: "f", name: "n", size: "7", trashed: false }
+      data: { id: "f", name: "n", size: "7", trashed: false },
     });
     const r = await adapter.buscarConservado(H, "f");
     expect(r).toMatchObject({ tipo: "UNO", destino: { id: "f", tamanoBytes: 7n } });
@@ -54,11 +54,11 @@ describe("GoogleDriveArchivoStorageAdapter", () => {
   it("nunca solicita permisos por enlace", async () => {
     const { adapter, request } = crear(
       { status: 200, headers: { location: "https://x" }, data: "" },
-      { status: 200, data: { id: "f", size: "1" } }
+      { status: 200, data: { id: "f", size: "1" } },
     );
     await adapter.iniciarSubida(
       { fileId: "f", nombre: "n", carpetaId: "c", mimeType: "video/mp4", tamanoTotal: 1n },
-      H
+      H,
     );
     await adapter.verificarArchivo("f");
     expect(request.mock.calls.some(([c]) => String(c.url).includes("/permissions"))).toBe(false);

@@ -12,7 +12,7 @@ import {
   LayoutDashboard,
   Settings,
   UserRoundCheck,
-  Users
+  Users,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { RolUsuario } from "@/src/modules/usuarios/roles";
@@ -23,7 +23,7 @@ export type NavigationItem = Readonly<{
   icon: LucideIcon;
   shortLabel?: string;
   emphasis?: "primary";
-  search?: Readonly<{ key: string; value: string; defaultActive?: boolean }>;
+  search?: Readonly<{ key: string; value: string; defaultActive?: boolean }> | undefined;
 }>;
 
 export type NavigationGroup = Readonly<{
@@ -44,10 +44,10 @@ const createMeeting: NavigationItem = {
   label: "Nueva reunión",
   shortLabel: "Nueva",
   emphasis: "primary",
-  icon: CalendarPlus
+  icon: CalendarPlus,
 };
 
-const adminGroups: readonly NavigationGroup[] = [
+const adminGroups = [
   {
     label: "Operaciones",
     items: [
@@ -56,38 +56,38 @@ const adminGroups: readonly NavigationGroup[] = [
         href: "/reuniones?vista=encuentros",
         label: "Agenda",
         icon: CalendarDays,
-        search: { key: "vista", value: "encuentros" }
+        search: { key: "vista", value: "encuentros" },
       },
       {
         href: "/reuniones?vista=series",
         label: "Series y reuniones",
         shortLabel: "Series",
         icon: CalendarCheck2,
-        search: { key: "vista", value: "series", defaultActive: true }
+        search: { key: "vista", value: "series", defaultActive: true },
       },
       { href: "/monitoreo", label: "Monitoreo", icon: Hand },
       { href: "/centro-operaciones", label: "Centro de operaciones", icon: Activity },
-      createMeeting
-    ]
+      createMeeting,
+    ],
   },
   {
     label: "Administración",
     items: [
       { href: "/asistentes", label: "Equipo de monitoreo", icon: UserRoundCheck },
       { href: "/usuarios", label: "Personas y programas", icon: Users },
-      { href: "/grabaciones", label: "Grabaciones y archivos", icon: FileVideo2 }
-    ]
+      { href: "/grabaciones", label: "Grabaciones y archivos", icon: FileVideo2 },
+    ],
   },
   {
     label: "Sistema",
     items: [
       { href: "/configuracion", label: "Configuración", icon: Settings },
-      { href: "/notificaciones", label: "Notificaciones", icon: Bell }
-    ]
-  }
-];
+      { href: "/notificaciones", label: "Notificaciones", icon: Bell },
+    ],
+  },
+] as const satisfies readonly NavigationGroup[];
 
-const teacherGroups: readonly NavigationGroup[] = [
+const teacherGroups = [
   {
     label: "Actividad académica",
     items: [
@@ -95,16 +95,16 @@ const teacherGroups: readonly NavigationGroup[] = [
       { href: "/mis-clases", label: "Mis clases", icon: CalendarDays },
       { href: "/mis-programas", label: "Mis programas", icon: BookOpen },
       { href: "/grabaciones", label: "Grabaciones", icon: FileVideo2 },
-      createMeeting
-    ]
+      createMeeting,
+    ],
   },
   {
     label: "Personal",
-    items: [{ href: "/notificaciones", label: "Notificaciones", icon: Bell }]
-  }
-];
+    items: [{ href: "/notificaciones", label: "Notificaciones", icon: Bell }],
+  },
+] as const satisfies readonly NavigationGroup[];
 
-const assistantGroups: readonly NavigationGroup[] = [
+const assistantGroups = [
   {
     label: "Trabajo diario",
     items: [
@@ -113,23 +113,23 @@ const assistantGroups: readonly NavigationGroup[] = [
         href: ASSISTANT_MONITORINGS_HREF,
         label: "Mi agenda",
         icon: CalendarDays,
-        search: { key: "tab", value: "proximas", defaultActive: true }
+        search: { key: "tab", value: "proximas", defaultActive: true },
       },
       {
         href: "/agenda-abierta",
         label: "Agenda abierta",
         shortLabel: "Abierta",
         icon: Hand,
-        search: { key: "vista", value: "todas", defaultActive: true }
+        search: { key: "vista", value: "todas", defaultActive: true },
       },
       {
         href: "/agenda-abierta?vista=postulaciones",
         label: "Mis postulaciones",
         shortLabel: "Postulaciones",
         icon: ClipboardList,
-        search: { key: "vista", value: "postulaciones" }
-      }
-    ]
+        search: { key: "vista", value: "postulaciones" },
+      },
+    ],
   },
   {
     label: "Registros",
@@ -138,21 +138,31 @@ const assistantGroups: readonly NavigationGroup[] = [
         href: "/mi-agenda?tab=historico",
         label: "Horas e historial",
         icon: History,
-        search: { key: "tab", value: "historico" }
+        search: { key: "tab", value: "historico" },
       },
-      { href: "/grabaciones", label: "Grabaciones", icon: FileVideo2 }
-    ]
+      { href: "/grabaciones", label: "Grabaciones", icon: FileVideo2 },
+    ],
   },
   {
     label: "Personal",
-    items: [{ href: "/notificaciones", label: "Notificaciones", icon: Bell }]
-  }
-];
+    items: [{ href: "/notificaciones", label: "Notificaciones", icon: Bell }],
+  },
+] as const satisfies readonly NavigationGroup[];
 
 const mobilePrimary: Readonly<Record<RolUsuario, readonly NavigationItem[]>> = {
-  ADMINISTRACION: [adminGroups[0].items[0], adminGroups[0].items[1], createMeeting, adminGroups[0].items[3]],
-  DOCENTE: [teacherGroups[0].items[0], teacherGroups[0].items[1], createMeeting, teacherGroups[0].items[3]],
-  ASISTENTE_TECNICO: assistantGroups[0].items
+  ADMINISTRACION: [
+    adminGroups[0].items[0],
+    adminGroups[0].items[1],
+    createMeeting,
+    adminGroups[0].items[3],
+  ],
+  DOCENTE: [
+    teacherGroups[0].items[0],
+    teacherGroups[0].items[1],
+    createMeeting,
+    teacherGroups[0].items[3],
+  ],
+  ASISTENTE_TECNICO: assistantGroups[0].items,
 };
 
 export function getNavigationForRole(role: RolUsuario): RoleNavigation {
@@ -167,7 +177,7 @@ export function getSecondaryNavigation(navigation: RoleNavigation): readonly Nav
   return navigation.groups
     .map(({ label, items }) => ({
       label,
-      items: items.filter(({ href }) => !primaryHrefs.has(href))
+      items: items.filter(({ href }) => !primaryHrefs.has(href)),
     }))
     .filter(({ items }) => items.length > 0);
 }
@@ -176,7 +186,7 @@ export function isNavigationItemActive(
   item: Pick<NavigationItem, "href" | "search">,
   pathname: string,
   searchParams: Pick<URLSearchParams, "get">,
-  exact = false
+  exact = false,
 ): boolean {
   const route = item.href.split("?")[0];
   if (route === "/mi-agenda" && pathname === route && searchParams.get("tab") === "mes") {
@@ -191,11 +201,14 @@ export function isNavigationItemActive(
   if (route === "/mis-clases" && pathname.startsWith("/reuniones/")) {
     return !pathname.startsWith("/reuniones/nueva");
   }
-  const routeActive = pathname === route || (!exact && route !== "/" && pathname.startsWith(`${route}/`));
+  const routeActive =
+    pathname === route || (!exact && route !== "/" && pathname.startsWith(`${route}/`));
   if (!routeActive || !item.search) {
     return routeActive;
   }
 
   const queryValue = searchParams.get(item.search.key);
-  return queryValue === item.search.value || (queryValue === null && item.search.defaultActive === true);
+  return (
+    queryValue === item.search.value || (queryValue === null && item.search.defaultActive === true)
+  );
 }

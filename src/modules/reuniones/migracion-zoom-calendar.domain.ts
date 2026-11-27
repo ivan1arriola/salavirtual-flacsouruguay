@@ -6,7 +6,7 @@ export type CambioEnlaceCalendarZoom = Readonly<{
 
 /** Prepara un cambio repetible de enlace sin borrar la ubicación de una reunión híbrida. */
 export function prepararCambioEnlaceCalendarZoom<
-  T extends Readonly<{ description?: string; location?: string }>
+  T extends Readonly<{ description?: string; location?: string }>,
 >(actual: T, meetJoinUrl: string, zoomJoinUrl: string): CambioEnlaceCalendarZoom {
   if (!meetJoinUrl || !zoomJoinUrl) {
     throw new Error("Los enlaces Meet y Zoom son obligatorios.");
@@ -21,7 +21,7 @@ export function prepararCambioEnlaceCalendarZoom<
   return {
     conferenceData: null,
     description,
-    ...(actual.location === meetJoinUrl ? { location: zoomJoinUrl } : {})
+    ...(actual.location === meetJoinUrl ? { location: zoomJoinUrl } : {}),
   };
 }
 
@@ -33,7 +33,7 @@ const ENLACE_ZOOM = /https?:\/\/[a-z0-9.-]*zoom\.(?:us|com)\/[^\s<>"')]+/gi;
  * solo y no toca otros campos. Repetible: aplicarlo dos veces da el mismo resultado.
  */
 export function prepararCambioEnlaceZoomACalendar<
-  T extends Readonly<{ description?: string; location?: string }>
+  T extends Readonly<{ description?: string; location?: string }>,
 >(actual: T, enlaceAnterior: string | null, enlaceNuevo: string): CambioEnlaceCalendarZoom {
   if (!enlaceNuevo) {
     throw new Error("El enlace de Zoom nuevo es obligatorio.");
@@ -46,7 +46,7 @@ export function prepararCambioEnlaceZoomACalendar<
       .reduce(
         (acumulado, parte, indice) =>
           indice === 0 ? parte : `${acumulado}${indice === 1 ? enlaceNuevo : ""}${parte}`,
-        ""
+        "",
       );
 
   const unificada = unificar(actual.description ?? "");
@@ -62,6 +62,6 @@ export function prepararCambioEnlaceZoomACalendar<
   return {
     conferenceData: null,
     description,
-    ...(ubicacionZoom ? { location: enlaceNuevo } : {})
+    ...(ubicacionZoom ? { location: enlaceNuevo } : {}),
   };
 }

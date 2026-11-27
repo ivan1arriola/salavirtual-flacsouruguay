@@ -8,7 +8,7 @@ describe("reparar planillas de asistencia vacías", () => {
       buscarConferencia: vi.fn().mockResolvedValue({
         name: "conferenceRecords/meet-api",
         startTime: "2026-10-10T12:00:00Z",
-        endTime: "2026-10-10T13:00:00Z"
+        endTime: "2026-10-10T13:00:00Z",
       }),
       obtenerConferencia: vi.fn(),
       obtenerArtefactos: vi.fn().mockResolvedValue({
@@ -16,14 +16,14 @@ describe("reparar planillas de asistencia vacías", () => {
         transcripts: [],
         notes: [],
         estadoGrabacion: "AUSENTE",
-        pendientes: 0
+        pendientes: 0,
       }),
       obtenerDocumentoAsistencia: vi.fn().mockResolvedValue({
         html: "<html></html>",
         completa: false,
         participantes: 0,
         sesiones: 0,
-        planilla: { sesionesMeet: [], correosAuditados: [], eventosAuditoria: [] }
+        planilla: { sesionesMeet: [], correosAuditados: [], eventosAuditoria: [] },
       }),
       obtenerOCrearCarpeta: vi.fn().mockResolvedValue("folder-for-this-meeting"),
       moverArchivo: vi.fn(),
@@ -31,29 +31,29 @@ describe("reparar planillas de asistencia vacías", () => {
       subirPlanillaAsistencia: vi.fn().mockResolvedValue({
         id: "blank-sheet",
         name: "asistencia",
-        mimeType: "application/vnd.google-apps.spreadsheet"
+        mimeType: "application/vnd.google-apps.spreadsheet",
       }),
       planillaAsistenciaGoogleVacia: vi.fn(async (id: string) => id === "blank-sheet"),
-      obtenerParticipantesActivos: vi.fn()
+      obtenerParticipantesActivos: vi.fn(),
     };
     const repository: ArchivosRepositoryPort = {
       obtenerConfiguracionWorkspacePrincipal: vi.fn().mockResolvedValue({
         activa: true,
         serviceAccountEmail: "service@flacso.edu.uy",
         privateKeyCifrada: "encrypted",
-        driveDestinationId: "root"
+        driveDestinationId: "root",
       }),
       listarPlanillasAsistenciaCandidatas: vi.fn().mockResolvedValue([
         {
           eventoProveedorId: "event-1",
           spreadsheetId: "blank-sheet",
-          emailOrganizador: "host@flacso.edu.uy"
+          emailOrganizador: "host@flacso.edu.uy",
         },
         {
           eventoProveedorId: "event-filled",
           spreadsheetId: "filled-sheet",
-          emailOrganizador: "host@flacso.edu.uy"
-        }
+          emailOrganizador: "host@flacso.edu.uy",
+        },
       ]),
       obtenerEventosParaSincronizar: vi.fn().mockResolvedValue([
         {
@@ -69,33 +69,33 @@ describe("reparar planillas de asistencia vacías", () => {
               driveFileId: "blank-sheet",
               externalResourceName: "conferenceRecords/meet-api/attendance",
               tipo: "LISTA_ASISTENCIA",
-              mimeType: "application/vnd.google-apps.spreadsheet"
-            }
+              mimeType: "application/vnd.google-apps.spreadsheet",
+            },
           ],
           asistenciaDriveFileId: "blank-sheet",
           inicioProgramadoAt: new Date("2026-10-10T12:00:00Z"),
           finProgramadoAt: new Date("2026-10-10T13:00:00Z"),
           timezone: "America/Montevideo",
           requiereGrabacion: false,
-          tituloSolicitud: "Clase"
-        }
+          tituloSolicitud: "Clase",
+        },
       ]),
       registrarArchivoSincronizado: vi.fn(),
       actualizarEstadoSincronizacion: vi.fn(),
       registrarErrorSincronizacion: vi.fn(),
       obtenerDatosInstanciaParaParticipantes: vi.fn(),
-      listarArchivosVisibles: vi.fn()
+      listarArchivosVisibles: vi.fn(),
     };
 
     const result = await repararPlanillasAsistenciaVaciasUseCase(
       repository,
       () => provider,
-      (value) => value
+      (value) => value,
     );
 
     expect(provider.obtenerDocumentoAsistencia).toHaveBeenCalledWith(
       "conferenceRecords/meet-api",
-      "meet-code"
+      "meet-code",
     );
     expect(provider.subirPlanillaAsistencia).toHaveBeenCalledWith(
       "folder-for-this-meeting",
@@ -105,23 +105,29 @@ describe("reparar planillas de asistencia vacías", () => {
       expect.any(Date),
       "host@flacso.edu.uy",
       [],
-      "blank-sheet"
+      "blank-sheet",
     );
     expect(provider.subirDocumentoGoogle).not.toHaveBeenCalled();
     expect(provider.obtenerOCrearCarpeta).not.toHaveBeenCalled();
-    expect(result).toMatchObject({ revisadas: 2, vacias: 1, reparadas: 1, omitidas: 1, fallidas: 0 });
+    expect(result).toMatchObject({
+      revisadas: 2,
+      vacias: 1,
+      reparadas: 1,
+      omitidas: 1,
+      fallidas: 0,
+    });
     const retryOnlyFailed = await repararPlanillasAsistenciaVaciasUseCase(
       repository,
       () => provider,
       (value) => value,
-      ["event-filled"]
+      ["event-filled"],
     );
     expect(retryOnlyFailed).toMatchObject({
       revisadas: 1,
       vacias: 0,
       reparadas: 0,
       omitidas: 1,
-      fallidas: 0
+      fallidas: 0,
     });
   });
 });

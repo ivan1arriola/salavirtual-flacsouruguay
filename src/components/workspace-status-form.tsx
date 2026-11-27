@@ -12,7 +12,7 @@ export function WorkspaceStatusForm({ active }: Readonly<{ active: boolean }>) {
     setMessage("Guardando…");
     const result = await saveWorkspaceSection({
       seccion: "ESTADO",
-      activa: formData.get("activa") === "on"
+      activa: formData.get("activa") === "on",
     });
     setSuccess(result.ok);
     setMessage(result.message);

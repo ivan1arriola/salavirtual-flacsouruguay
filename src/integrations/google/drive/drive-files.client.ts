@@ -20,7 +20,7 @@ export async function buscarCarpetaDrive(
   auth: JWT,
   parentId: string,
   name: string,
-  requireUnique = false
+  requireUnique = false,
 ): Promise<string | null> {
   const escaped = name.replaceAll("'", "\\'");
   const query = `mimeType = '${DRIVE_FOLDER_MIME}' and name = '${escaped}' and '${parentId}' in parents and trashed = false`;
@@ -30,7 +30,7 @@ export async function buscarCarpetaDrive(
     auth.request<{
       files?: readonly { id: string }[];
       nextPageToken?: string;
-    }>({ url, method: "GET", timeout: GOOGLE_HTTP_READ_TIMEOUT_MS })
+    }>({ url, method: "GET", timeout: GOOGLE_HTTP_READ_TIMEOUT_MS }),
   );
   // Ambiguous folder names are not proof of a successful CREATE.
   if (requireUnique && (listed.data.nextPageToken || listed.data.files?.length !== 1)) {
@@ -49,7 +49,7 @@ export async function buscarRecursoDrivePorOperacion(
   parentId: string,
   name: string,
   mimeType: string,
-  operationId: string
+  operationId: string,
 ): Promise<MovedDriveFile | null> {
   if (!/^[a-f0-9]{64}$/.test(operationId)) {
     throw new Error("Identificador de operación Drive inválido.");
@@ -60,14 +60,14 @@ export async function buscarRecursoDrivePorOperacion(
     `name = '${escaped(name)}'`,
     `mimeType = '${escaped(mimeType)}'`,
     "trashed = false",
-    `appProperties has { key='${DRIVE_OPERATION_PROPERTY}' and value='${operationId}' }`
+    `appProperties has { key='${DRIVE_OPERATION_PROPERTY}' and value='${operationId}' }`,
   ].join(" and ");
   const url = `${DRIVE_API_BASE_URL}/files?q=${encodeURIComponent(query)}&fields=nextPageToken,files(id,name,mimeType,webViewLink,appProperties)&pageSize=2&includeItemsFromAllDrives=true&supportsAllDrives=true`;
   const response = await conReintentosGoogleLectura(() =>
     auth.request<{
       nextPageToken?: string;
       files?: readonly (MovedDriveFile & { appProperties?: Record<string, string> })[];
-    }>({ url, method: "GET", timeout: GOOGLE_HTTP_READ_TIMEOUT_MS })
+    }>({ url, method: "GET", timeout: GOOGLE_HTTP_READ_TIMEOUT_MS }),
   );
   if (response.data.nextPageToken || response.data.files?.length !== 1) {
     return null;
@@ -88,7 +88,7 @@ export async function obtenerOCrearCarpetaDrive(
   auth: JWT,
   parentId: string,
   name: string,
-  operationId?: string
+  operationId?: string,
 ): Promise<string> {
   const existing = await buscarCarpetaDrive(auth, parentId, name);
   if (existing) {
@@ -103,8 +103,8 @@ export async function obtenerOCrearCarpetaDrive(
       name,
       mimeType: DRIVE_FOLDER_MIME,
       parents: [parentId],
-      ...(operationId ? { appProperties: { [DRIVE_OPERATION_PROPERTY]: operationId } } : {})
-    }
+      ...(operationId ? { appProperties: { [DRIVE_OPERATION_PROPERTY]: operationId } } : {}),
+    },
   });
   if (!created.data.id) {
     throw new Error("Drive no devolvió el ID de la carpeta creada.");
@@ -116,21 +116,21 @@ export async function moverArchivoDrive(
   auth: JWT,
   fileId: string,
   folderId: string,
-  name: string
+  name: string,
 ): Promise<MovedDriveFile> {
   const current = await conReintentosGoogleLectura(() =>
     auth.request<MovedDriveFile & Readonly<{ parents?: readonly string[] }>>({
       url: `${DRIVE_API_BASE_URL}/files/${encodeURIComponent(fileId)}?fields=id,name,mimeType,size,webViewLink,parents&supportsAllDrives=true`,
       method: "GET",
-      timeout: GOOGLE_HTTP_READ_TIMEOUT_MS
-    })
+      timeout: GOOGLE_HTTP_READ_TIMEOUT_MS,
+    }),
   );
 
   const removeParents = (current.data.parents ?? []).filter((id) => id !== folderId).join(",");
   const params = new URLSearchParams({
     addParents: folderId,
     fields: "id,name,mimeType,size,webViewLink",
-    supportsAllDrives: "true"
+    supportsAllDrives: "true",
   });
   if (removeParents) {
     params.set("removeParents", removeParents);
@@ -140,7 +140,7 @@ export async function moverArchivoDrive(
     url: `${DRIVE_API_BASE_URL}/files/${encodeURIComponent(fileId)}?${params.toString()}`,
     method: "PATCH",
     timeout: GOOGLE_HTTP_TIMEOUT_MS,
-    data: { name }
+    data: { name },
   });
 
   return moved.data;
@@ -151,14 +151,14 @@ export async function subirDocumentoGoogleDrive(
   folderId: string,
   name: string,
   html: string,
-  operationId?: string
+  operationId?: string,
 ): Promise<MovedDriveFile> {
   const boundary = "gestor_flacso_meet_boundary";
   const metadata = JSON.stringify({
     name,
     mimeType: DRIVE_GOOGLE_DOC_MIME,
     parents: [folderId],
-    ...(operationId ? { appProperties: { [DRIVE_OPERATION_PROPERTY]: operationId } } : {})
+    ...(operationId ? { appProperties: { [DRIVE_OPERATION_PROPERTY]: operationId } } : {}),
   });
   const body = `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${metadata}\r\n--${boundary}\r\nContent-Type: text/html; charset=UTF-8\r\n\r\n${html}\r\n--${boundary}--`;
 
@@ -167,7 +167,7 @@ export async function subirDocumentoGoogleDrive(
     method: "POST",
     timeout: GOOGLE_HTTP_TIMEOUT_MS,
     headers: { "Content-Type": `multipart/related; boundary=${boundary}` },
-    data: body
+    data: body,
   });
 
   return response.data;
@@ -184,14 +184,14 @@ export async function moverElementoDriveACarpeta(
   auth: JWT,
   elementoId: string,
   nuevoPadreId: string,
-  opciones: Readonly<{ signal?: AbortSignal }> = {}
+  opciones: Readonly<{ signal?: AbortSignal }> = {},
 ): Promise<ResultadoMoverDrive> {
   const actual = await auth.request<{ id?: string; parents?: readonly string[] }>({
     url: `${DRIVE_API_BASE_URL}/files/${encodeURIComponent(elementoId)}?fields=id,parents&supportsAllDrives=true`,
     method: "GET",
     timeout: GOOGLE_HTTP_READ_TIMEOUT_MS,
     validateStatus: () => true,
-    signal: opciones.signal
+    signal: opciones.signal,
   });
   if (actual.status === 404) {
     return "NO_ENCONTRADO";
@@ -218,7 +218,7 @@ export async function moverElementoDriveACarpeta(
     data: {},
     timeout: GOOGLE_HTTP_TIMEOUT_MS,
     validateStatus: () => true,
-    signal: opciones.signal
+    signal: opciones.signal,
   });
   if (movido.status < 200 || movido.status >= 300) {
     throw new Error(`Drive rechazó mover el elemento (HTTP ${movido.status}).`);
@@ -233,7 +233,7 @@ export async function renombrarElementoDrive(
   auth: JWT,
   elementoId: string,
   nombre: string,
-  opciones: Readonly<{ signal?: AbortSignal }> = {}
+  opciones: Readonly<{ signal?: AbortSignal }> = {},
 ): Promise<ResultadoRenombrarDrive> {
   const url = `${DRIVE_API_BASE_URL}/files/${encodeURIComponent(elementoId)}?fields=id,name&supportsAllDrives=true`;
   const actual = await auth.request<{ id?: string; name?: string }>({
@@ -241,7 +241,7 @@ export async function renombrarElementoDrive(
     method: "GET",
     timeout: GOOGLE_HTTP_READ_TIMEOUT_MS,
     validateStatus: () => true,
-    signal: opciones.signal
+    signal: opciones.signal,
   });
   if (actual.status === 404) {
     return "NO_ENCONTRADO";
@@ -258,7 +258,7 @@ export async function renombrarElementoDrive(
     data: { name: nombre },
     timeout: GOOGLE_HTTP_TIMEOUT_MS,
     validateStatus: () => true,
-    signal: opciones.signal
+    signal: opciones.signal,
   });
   if (respuesta.status < 200 || respuesta.status >= 300) {
     throw new Error(`Drive rechazó renombrar el elemento (HTTP ${respuesta.status}).`);

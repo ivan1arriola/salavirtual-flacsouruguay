@@ -10,7 +10,7 @@ import { db } from "@/src/lib/db";
 import { obtenerDashboardAdministracion } from "@/src/modules/dashboard/admin-dashboard.adapter";
 
 export async function AdminDashboard({
-  user
+  user,
 }: Readonly<{
   user: Session["user"];
 }>) {

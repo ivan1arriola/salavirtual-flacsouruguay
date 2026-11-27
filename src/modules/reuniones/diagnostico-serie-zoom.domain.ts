@@ -1,4 +1,7 @@
-import { evaluarEnlacesDeSerie, type EncuentroEnlaceSerie } from "./series-enlaces-distintos.domain";
+import {
+  evaluarEnlacesDeSerie,
+  type EncuentroEnlaceSerie,
+} from "./series-enlaces-distintos.domain";
 
 export type ClasificacionSerieZoom =
   "SANA" | "MIGRABLE" | "MEZCLADA" | "ENLACES_DISTINTOS" | "RETOMABLE" | "HUERFANA" | "SIN_FUTUROS";
@@ -32,20 +35,24 @@ export type DiagnosticoSerieZoom = Readonly<{
   acciones: readonly AccionSerieZoom[];
 }>;
 
-const accionesPorClasificacion: Readonly<Record<ClasificacionSerieZoom, readonly AccionSerieZoom[]>> = {
+const accionesPorClasificacion: Readonly<
+  Record<ClasificacionSerieZoom, readonly AccionSerieZoom[]>
+> = {
   SANA: ["VER_DETALLE"],
   MIGRABLE: ["MIGRAR"],
   MEZCLADA: ["MIGRAR", "VER_DETALLE"],
   ENLACES_DISTINTOS: ["UNIFICAR_ENLACE", "VER_DETALLE"],
   RETOMABLE: ["REANUDAR", "VER_DETALLE"],
   HUERFANA: ["VER_DETALLE"],
-  SIN_FUTUROS: ["VER_DETALLE"]
+  SIN_FUTUROS: ["VER_DETALLE"],
 };
 
 /** Deriva el estado y las acciones de la serie sin modificar sus datos ni consultar proveedores. */
 export function diagnosticarSerieZoom(entrada: EntradaDiagnosticoSerie): DiagnosticoSerieZoom {
   const { serieClave, ahora, encuentros, reuniones, avisos } = entrada;
-  const futuros = encuentros.filter(({ estado, inicio }) => estado === "PROGRAMADA" && inicio > ahora);
+  const futuros = encuentros.filter(
+    ({ estado, inicio }) => estado === "PROGRAMADA" && inicio > ahora,
+  );
   const activas = reuniones.filter(({ estadoCreacion }) => estadoCreacion !== "ELIMINADA");
   const zoom = futuros.filter(({ proveedor }) => proveedor === "ZOOM");
   const enMeet = futuros.length - zoom.length;
@@ -59,7 +66,9 @@ export function diagnosticarSerieZoom(entrada: EntradaDiagnosticoSerie): Diagnos
       return "MEZCLADA";
     }
     if (
-      activas.some(({ estadoCreacion }) => estadoCreacion === "PENDIENTE" || estadoCreacion === "CREANDO") ||
+      activas.some(
+        ({ estadoCreacion }) => estadoCreacion === "PENDIENTE" || estadoCreacion === "CREANDO",
+      ) ||
       (activas.length > 0 && enMeet === futuros.length)
     ) {
       return "RETOMABLE";
@@ -71,19 +80,20 @@ export function diagnosticarSerieZoom(entrada: EntradaDiagnosticoSerie): Diagnos
   })();
 
   const eliminadas = new Set(
-    reuniones.filter(({ estadoCreacion }) => estadoCreacion === "ELIMINADA").map(({ id }) => id)
+    reuniones.filter(({ estadoCreacion }) => estadoCreacion === "ELIMINADA").map(({ id }) => id),
   );
   const reunionesDistintas = new Set([
     ...activas.map(({ id }) => id),
     ...zoom
       .map(({ reunionProveedorId }) => reunionProveedorId)
-      .filter((id): id is string => id !== null && !eliminadas.has(id))
+      .filter((id): id is string => id !== null && !eliminadas.has(id)),
   ]);
   const resumenAvisos = {
     enviados: avisos.filter(({ estado }) => estado === "ACEPTADO").length,
     pendientes: avisos.filter(({ estado }) => estado === "RESERVADO").length,
     conError: avisos.filter(({ estado }) => estado !== "ACEPTADO" && estado !== "RESERVADO").length,
-    repetidos: avisos.length - new Set(avisos.map(({ email, tipo }) => JSON.stringify([email, tipo]))).size
+    repetidos:
+      avisos.length - new Set(avisos.map(({ email, tipo }) => JSON.stringify([email, tipo]))).size,
   };
 
   return {
@@ -94,7 +104,7 @@ export function diagnosticarSerieZoom(entrada: EntradaDiagnosticoSerie): Diagnos
       enZoom: zoom.length,
       enMeet,
       reunionesZoomDistintas: reunionesDistintas.size,
-      enlacesDistintos: evaluacion.enlacesDistintos
+      enlacesDistintos: evaluacion.enlacesDistintos,
     },
     avisos: resumenAvisos,
     // Una serie mixta se resuelve en dos pasos: primero unificar los encuentros que ya están en Zoom y
@@ -102,6 +112,6 @@ export function diagnosticarSerieZoom(entrada: EntradaDiagnosticoSerie): Diagnos
     acciones:
       clasificacion === "MEZCLADA" && evaluacion.mixtaSinUnificar
         ? ["UNIFICAR_ENLACE", "VER_DETALLE"]
-        : accionesPorClasificacion[clasificacion]
+        : accionesPorClasificacion[clasificacion],
   };
 }

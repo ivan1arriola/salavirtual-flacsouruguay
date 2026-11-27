@@ -19,7 +19,10 @@ export async function GET() {
     if (!actor?.activo) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    const vistaPrevia = await obtenerVistaPreviaMigracionZoomPorSerie(db, { id: actor.id, rol: actor.rol });
+    const vistaPrevia = await obtenerVistaPreviaMigracionZoomPorSerie(db, {
+      id: actor.id,
+      rol: actor.rol,
+    });
     return NextResponse.json({ vistaPrevia }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     const mapped = toHttpError(error);

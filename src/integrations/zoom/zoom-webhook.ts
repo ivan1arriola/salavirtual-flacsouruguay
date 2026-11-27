@@ -4,7 +4,7 @@ export const EVENTOS_ZOOM = [
   "meeting.started",
   "meeting.ended",
   "recording.completed",
-  "recording.transcript_completed"
+  "recording.transcript_completed",
 ] as const;
 
 /** Eventos en vivo que se asocian a una ejecución por cuenta + UUID (nunca solo por Meeting ID). */
@@ -26,7 +26,7 @@ export const EVENTOS_EN_VIVO: ReadonlySet<string> = new Set([
   "recording.resumed",
   "meeting.sharing_started",
   "meeting.sharing_ended",
-  "meeting.alert"
+  "meeting.alert",
 ]);
 
 export type AvisoZoom = Readonly<{
@@ -47,9 +47,15 @@ export function verificarFirmaWebhookZoom(
   cuerpo: string,
   timestamp: string | null,
   firma: string | null,
-  ahora: Date
+  ahora: Date,
 ): boolean {
-  if (!secreto || !timestamp || !/^\d{10}$/.test(timestamp) || !firma || !/^v0=[a-f0-9]{64}$/i.test(firma)) {
+  if (
+    !secreto ||
+    !timestamp ||
+    !/^\d{10}$/.test(timestamp) ||
+    !firma ||
+    !/^v0=[a-f0-9]{64}$/i.test(firma)
+  ) {
     return false;
   }
   const tiempo = Number(timestamp) * 1000;
@@ -64,7 +70,7 @@ export function verificarFirmaWebhookZoom(
 export function respuestaValidacionZoom(secreto: string, plainToken: string) {
   return {
     plainToken,
-    encryptedToken: createHmac("sha256", secreto).update(plainToken).digest("hex")
+    encryptedToken: createHmac("sha256", secreto).update(plainToken).digest("hex"),
   };
 }
 
@@ -81,20 +87,20 @@ const fecha = (valor: unknown): Date | null => {
 /** Solo los metadatos necesarios salen del cuerpo; no se guardan archivos, URLs ni personas. */
 export function interpretarAvisoZoom(cuerpo: string): AvisoZoom | null {
   const raiz = objeto(JSON.parse(cuerpo) as unknown);
-  const tipo = raiz?.event;
+  const tipo = raiz?.["event"];
   if (!EVENTOS_ZOOM.some((evento) => evento === tipo)) {
     return null;
   }
-  const payload = objeto(raiz?.payload);
-  const reunion = objeto(payload?.object);
-  const id = reunion?.id;
+  const payload = objeto(raiz?.["payload"]);
+  const reunion = objeto(payload?.["object"]);
+  const id = reunion?.["id"];
   const meetingId = typeof id === "number" && Number.isSafeInteger(id) ? String(id) : texto(id);
-  const inicioRealAt = fecha(reunion?.start_time);
-  const finRealAt = fecha(reunion?.end_time);
-  const ocurridoAt = typeof raiz?.event_ts === "number" ? new Date(raiz.event_ts) : null;
-  const cuentaZoomId = texto(payload?.account_id);
-  const uuid = texto(reunion?.uuid);
-  const anfitrionZoomId = texto(reunion?.host_id);
+  const inicioRealAt = fecha(reunion?.["start_time"]);
+  const finRealAt = fecha(reunion?.["end_time"]);
+  const ocurridoAt = typeof raiz?.["event_ts"] === "number" ? new Date(raiz["event_ts"]) : null;
+  const cuentaZoomId = texto(payload?.["account_id"]);
+  const uuid = texto(reunion?.["uuid"]);
+  const anfitrionZoomId = texto(reunion?.["host_id"]);
   if (
     !cuentaZoomId ||
     !meetingId ||
@@ -116,29 +122,31 @@ export function interpretarAvisoZoom(cuerpo: string): AvisoZoom | null {
     anfitrionZoomId,
     inicioRealAt,
     finRealAt,
-    titulo: texto(reunion?.topic)?.slice(0, 250) ?? "Reunión Zoom",
-    ocurridoAt
+    titulo: texto(reunion?.["topic"])?.slice(0, 250) ?? "Reunión Zoom",
+    ocurridoAt,
   };
 }
 
 /** Extrae identidad y metadatos operativos seleccionados, sin conservar el cuerpo completo. */
 export function interpretarAvisoAdicionalZoom(cuerpo: string) {
   const raiz = objeto(JSON.parse(cuerpo) as unknown);
-  const tipo = texto(raiz?.event);
+  const tipo = texto(raiz?.["event"]);
   if (!tipo || !/^(meeting|recording|group)\.[a-z0-9_]{1,100}$/.test(tipo)) {
     return null;
   }
-  const payload = objeto(raiz?.payload);
-  const recurso = objeto(payload?.object);
-  const cuentaZoomId = texto(payload?.account_id);
-  const valorId = recurso?.id ?? recurso?.meeting_number ?? recurso?.meeting_id;
+  const payload = objeto(raiz?.["payload"]);
+  const recurso = objeto(payload?.["object"]);
+  const cuentaZoomId = texto(payload?.["account_id"]);
+  const valorId = recurso?.["id"] ?? recurso?.["meeting_number"] ?? recurso?.["meeting_id"];
   const recursoId =
     typeof valorId === "number" && Number.isSafeInteger(valorId) ? String(valorId) : texto(valorId);
-  const ocurridoAt = typeof raiz?.event_ts === "number" ? new Date(raiz.event_ts) : null;
-  const uuid = texto(recurso?.uuid) ?? texto(recurso?.meeting_uuid);
+  const ocurridoAt = typeof raiz?.["event_ts"] === "number" ? new Date(raiz["event_ts"]) : null;
+  const uuid = texto(recurso?.["uuid"]) ?? texto(recurso?.["meeting_uuid"]);
   const idsLote = [
-    ...(Array.isArray(recurso?.meeting_uuids) ? recurso.meeting_uuids : []),
-    ...(Array.isArray(recurso?.meetings) ? recurso.meetings.map((valor) => objeto(valor)?.meeting_uuid) : [])
+    ...(Array.isArray(recurso?.["meeting_uuids"]) ? recurso["meeting_uuids"] : []),
+    ...(Array.isArray(recurso?.["meetings"])
+      ? recurso["meetings"].map((valor) => objeto(valor)?.["meeting_uuid"])
+      : []),
   ];
   const uuids = [...new Set(idsLote.map(texto).filter((valor): valor is string => valor !== null))];
   if (
@@ -152,27 +160,32 @@ export function interpretarAvisoAdicionalZoom(cuerpo: string) {
   ) {
     return null;
   }
-  const participante = objeto(recurso?.participant);
-  const registrante = tipo.startsWith("meeting.registration_") ? objeto(recurso?.registrant) : null;
+  const participante = objeto(recurso?.["participant"]);
+  const registrante = tipo.startsWith("meeting.registration_")
+    ? objeto(recurso?.["registrant"])
+    : null;
   const identidad = participante ?? registrante;
   const limitado = (v: unknown) => texto(v)?.slice(0, 255) ?? null;
   const participanteNombre =
-    limitado(identidad?.user_name ?? identidad?.name) ??
-    limitado([texto(identidad?.first_name), texto(identidad?.last_name)].filter(Boolean).join(" "));
-  const participanteEmail = limitado(identidad?.email);
-  const registranteId = limitado(participante?.registrant_id ?? registrante?.id);
-  const motivoSalida = tipo === "meeting.participant_left" ? limitado(participante?.leave_reason) : null;
+    limitado(identidad?.["user_name"] ?? identidad?.["name"]) ??
+    limitado(
+      [texto(identidad?.["first_name"]), texto(identidad?.["last_name"])].filter(Boolean).join(" "),
+    );
+  const participanteEmail = limitado(identidad?.["email"]);
+  const registranteId = limitado(participante?.["registrant_id"] ?? registrante?.["id"]);
+  const motivoSalida =
+    tipo === "meeting.participant_left" ? limitado(participante?.["leave_reason"]) : null;
   const participanteId = EVENTOS_EN_VIVO.has(tipo)
-    ? (texto(participante?.participant_uuid) ??
-      texto(participante?.participant_user_id) ??
-      texto(participante?.user_id) ??
-      texto(participante?.id))
+    ? (texto(participante?.["participant_uuid"]) ??
+      texto(participante?.["participant_user_id"]) ??
+      texto(participante?.["user_id"]) ??
+      texto(participante?.["id"]))
     : null;
   // Detalle operativo independiente de la identidad.
   const detalle = (() => {
-    if (tipo === "meeting.alert" && Array.isArray(recurso?.issues)) {
+    if (tipo === "meeting.alert" && Array.isArray(recurso?.["issues"])) {
       return (
-        recurso.issues
+        recurso["issues"]
           .map(texto)
           .filter((v): v is string => v !== null)
           .join(", ")
@@ -180,8 +193,8 @@ export function interpretarAvisoAdicionalZoom(cuerpo: string) {
       );
     }
     if (tipo === "meeting.participant_role_changed") {
-      const anterior = texto(participante?.old_role);
-      const nuevo = texto(participante?.new_role);
+      const anterior = texto(participante?.["old_role"]);
+      const nuevo = texto(participante?.["new_role"]);
       const etiquetaRol = (valor: string | null): string | null => {
         if (valor === "host") {
           return "anfitrión";
@@ -202,8 +215,8 @@ export function interpretarAvisoAdicionalZoom(cuerpo: string) {
       return "Rol: " + desde + " → " + hacia;
     }
     if (tipo === "meeting.sharing_started") {
-      const sharing = objeto(participante?.sharing_details);
-      const contenido = texto(sharing?.content);
+      const sharing = objeto(participante?.["sharing_details"]);
+      const contenido = texto(sharing?.["content"]);
       return contenido ? "Contenido: " + contenido : null;
     }
     return null;
@@ -224,6 +237,6 @@ export function interpretarAvisoAdicionalZoom(cuerpo: string) {
     registranteId,
     motivoSalida,
     detalle,
-    ocurridoAt
+    ocurridoAt,
   };
 }

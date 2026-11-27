@@ -10,7 +10,7 @@ import {
   puedeSincronizarGrabaciones,
   resolverEstadoVisualGrabacion,
   type GrupoEncuentroConArchivos,
-  type RegistroConferenciaMeet
+  type RegistroConferenciaMeet,
 } from "@/src/modules/archivos/domain";
 
 describe("archivos: domain", () => {
@@ -21,7 +21,7 @@ describe("archivos: domain", () => {
       const folder = nombreCarpetaReunion({
         titulo: "Taller de Metodología / Módulo 1",
         inicio: baseDate,
-        timezone: "America/Montevideo"
+        timezone: "America/Montevideo",
       });
       expect(folder).toContain("20260919 - Taller de Metodología - Módulo 1");
     });
@@ -34,22 +34,34 @@ describe("archivos: domain", () => {
         codigoReunion: "abc-defg-hij",
         tipo: "GRABACION",
         indice: 1,
-        extension: "mp4"
+        extension: "mp4",
       });
       expect(filename).toBe("20260919_abc-defg-hij_video_01_Clase-Magistral.mp4");
     });
 
     it("elige la conferencia superpuesta o más cercana", () => {
       const records: RegistroConferenciaMeet[] = [
-        { name: "conf-early", startTime: "2026-09-19T10:00:00.000Z", endTime: "2026-09-19T11:00:00.000Z" },
-        { name: "conf-target", startTime: "2026-09-19T13:55:00.000Z", endTime: "2026-09-19T15:05:00.000Z" },
-        { name: "conf-late", startTime: "2026-09-19T16:00:00.000Z", endTime: "2026-09-19T17:00:00.000Z" }
+        {
+          name: "conf-early",
+          startTime: "2026-09-19T10:00:00.000Z",
+          endTime: "2026-09-19T11:00:00.000Z",
+        },
+        {
+          name: "conf-target",
+          startTime: "2026-09-19T13:55:00.000Z",
+          endTime: "2026-09-19T15:05:00.000Z",
+        },
+        {
+          name: "conf-late",
+          startTime: "2026-09-19T16:00:00.000Z",
+          endTime: "2026-09-19T17:00:00.000Z",
+        },
       ];
 
       const selected = elegirConferenciaMeet(
         records,
         new Date("2026-09-19T14:00:00.000Z"),
-        new Date("2026-09-19T15:00:00.000Z")
+        new Date("2026-09-19T15:00:00.000Z"),
       );
       expect(selected?.name).toBe("conf-target");
     });
@@ -57,7 +69,9 @@ describe("archivos: domain", () => {
     it("detecta si la asistencia de Meet está completa", () => {
       expect(asistenciaMeetCompleta([])).toBe(false);
       expect(
-        asistenciaMeetCompleta([[{ startTime: "2026-09-19T14:00:00Z", endTime: "2026-09-19T15:00:00Z" }]])
+        asistenciaMeetCompleta([
+          [{ startTime: "2026-09-19T14:00:00Z", endTime: "2026-09-19T15:00:00Z" }],
+        ]),
       ).toBe(true);
       expect(asistenciaMeetCompleta([[{ startTime: "2026-09-19T14:00:00Z" }]])).toBe(false);
     });
@@ -68,8 +82,8 @@ describe("archivos: domain", () => {
           nombre: "Docente Juan",
           tipo: "CUENTA_GOOGLE",
           inicio: "2026-09-19T14:00:00.000Z",
-          fin: "2026-09-19T15:30:00.000Z"
-        }
+          fin: "2026-09-19T15:30:00.000Z",
+        },
       ]);
       expect(html).toContain("Docente Juan");
       expect(html).toContain("CUENTA_GOOGLE");
@@ -100,7 +114,7 @@ describe("archivos: domain", () => {
         archivosSincronizadosAt: null,
         finProgramadoAt: fin,
         requiereGrabacion: true,
-        ahora: new Date("2026-09-19T16:00:00.000Z")
+        ahora: new Date("2026-09-19T16:00:00.000Z"),
       });
       expect(estado).toBe("DISPONIBLE");
     });
@@ -113,7 +127,7 @@ describe("archivos: domain", () => {
         requiereGrabacion: true,
         ahora: new Date("2026-09-19T17:00:00.000Z"),
         estadoDetectado: "PROCESANDO",
-        observadoAt: new Date("2026-09-19T16:55:00.000Z")
+        observadoAt: new Date("2026-09-19T16:55:00.000Z"),
       });
       expect(estado).toBe("PROCESANDO");
     });
@@ -124,7 +138,7 @@ describe("archivos: domain", () => {
         archivosSincronizadosAt: null,
         finProgramadoAt: fin,
         requiereGrabacion: true,
-        ahora: new Date("2026-09-19T20:00:00.000Z") // 5 horas después
+        ahora: new Date("2026-09-19T20:00:00.000Z"), // 5 horas después
       });
       expect(estado).toBe("NO_REGISTRADA");
     });
@@ -137,7 +151,7 @@ describe("archivos: domain", () => {
           programa: "Ciencias Sociales",
           docente: "Dra. Gómez",
           fechaInicio: "2026-09-19",
-          archivos: [{ id: "a1", tipo: "GRABACION" }]
+          archivos: [{ id: "a1", tipo: "GRABACION" }],
         },
         {
           instanciaId: "inst-2",
@@ -145,8 +159,8 @@ describe("archivos: domain", () => {
           programa: "Humanidades",
           docente: "Prof. Pérez",
           fechaInicio: "2026-09-20",
-          archivos: [{ id: "a2", tipo: "LISTA_ASISTENCIA" }]
-        }
+          archivos: [{ id: "a2", tipo: "LISTA_ASISTENCIA" }],
+        },
       ];
 
       const soloGrabaciones = filtrarEncuentrosConArchivos(grupos, "GRABACIONES", "");

@@ -3,7 +3,7 @@ import {
   mobileActorFromRequest,
   mobileSessionHash,
   mobileSessionIdentifier,
-  type MobileRole
+  type MobileRole,
 } from "@/src/lib/auth/mobile-token";
 import { resolveSessionActor, type SessionActor } from "@/src/lib/auth/session-actor.adapter";
 import { db } from "@/src/lib/db";
@@ -11,7 +11,7 @@ import { db } from "@/src/lib/db";
 export class MobileActorError extends Error {
   constructor(
     message: string,
-    public readonly status: 401 | 403
+    public readonly status: 401 | 403,
   ) {
     super(message);
     this.name = new.target.name;
@@ -20,7 +20,7 @@ export class MobileActorError extends Error {
 
 export async function requireMobileActor(
   request: Request,
-  allowed: readonly MobileRole[]
+  allowed: readonly MobileRole[],
 ): Promise<SessionActor> {
   const token = mobileActorFromRequest(request, authConfig.secret);
   if (!token) {
@@ -33,10 +33,10 @@ export async function requireMobileActor(
           where: {
             identifier_token: {
               identifier: mobileSessionIdentifier(token.sub),
-              token: mobileSessionHash(token.sid)
-            }
+              token: mobileSessionHash(token.sid),
+            },
           },
-          select: { expires: true }
+          select: { expires: true },
         })
       : null;
     if (!session || session.expires <= new Date()) {

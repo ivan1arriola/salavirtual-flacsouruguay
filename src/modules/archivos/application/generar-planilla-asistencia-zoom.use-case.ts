@@ -13,8 +13,11 @@ export type ResultadoPlanillaZoom =
  * afecta a la asistencia persistida y se puede reintentar de forma independiente.
  */
 export async function generarPlanillaAsistenciaZoomUseCase(
-  deps: Readonly<{ lectura: LecturaPlanillaAsistenciaZoomPort; planillas: PlanillasAsistenciaZoomPort }>,
-  ocurrenciaId: string
+  deps: Readonly<{
+    lectura: LecturaPlanillaAsistenciaZoomPort;
+    planillas: PlanillasAsistenciaZoomPort;
+  }>,
+  ocurrenciaId: string,
 ): Promise<ResultadoPlanillaZoom | Readonly<{ tipo: "ERROR"; codigo: "NO_ENCONTRADA" }>> {
   const datos = await deps.lectura.cargarDatosPlanilla(ocurrenciaId);
   if (!datos) {
@@ -32,7 +35,7 @@ export async function generarPlanillaAsistenciaZoomUseCase(
       carpetaId: datos.carpetaId,
       marcador: datos.marcador,
       resumen: filasResumenPlanillaZoom(datos.registros),
-      sesiones: filasSesionesPlanillaZoom(datos.sesiones)
+      sesiones: filasSesionesPlanillaZoom(datos.sesiones),
     });
     return { tipo: "OK", webViewUrl };
   } catch (error) {
@@ -40,7 +43,8 @@ export async function generarPlanillaAsistenciaZoomUseCase(
     const nombre = error && typeof error === "object" ? (error as { name?: unknown }).name : null;
     return {
       tipo: "ERROR",
-      codigo: typeof nombre === "string" && /^[A-Za-z0-9_]{1,60}$/.test(nombre) ? nombre : "ERROR_DRIVE"
+      codigo:
+        typeof nombre === "string" && /^[A-Za-z0-9_]{1,60}$/.test(nombre) ? nombre : "ERROR_DRIVE",
     };
   }
 }

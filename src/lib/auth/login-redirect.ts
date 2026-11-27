@@ -8,7 +8,7 @@ import { resolveSessionActor } from "@/src/lib/auth/session-actor.adapter";
  */
 export async function puedeRedirigirAlPanel(
   db: PrismaClient,
-  sessionUser: Readonly<{ id: string; email?: string | null }> | null | undefined
+  sessionUser: Readonly<{ id: string; email?: string | null }> | null | undefined,
 ): Promise<boolean> {
   if (!sessionUser?.id) {
     return false;

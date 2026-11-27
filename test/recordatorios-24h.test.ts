@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import {
   clasificarAccesosPropios,
-  procesarRecordatorios24h
+  procesarRecordatorios24h,
 } from "../src/modules/reuniones/recordatorios-24h.service";
 import { construirRecordatorioReunion } from "../src/modules/reuniones/recordatorio-reunion-email.domain";
 
@@ -22,18 +22,20 @@ const meeting = {
     creadaPorUsuarioId: "creator",
     docentePrograma: {
       docente: { usuarioId: "teacher" },
-      programa: { nombre: "Programa Género" }
-    }
+      programa: { nombre: "Programa Género" },
+    },
   },
-  asignaciones: [{ asistenteTecnico: { usuarioId: "assistant", cesadoHastaProximoInicioSesion: false } }],
+  asignaciones: [
+    { asistenteTecnico: { usuarioId: "assistant", cesadoHastaProximoInicioSesion: false } },
+  ],
   eventosProveedor: [
     {
       proveedor: { tipo: "GOOGLE_MEET" },
       codigoReunion: "abc-defg-hij",
       joinUrl: "https://meet.google.com/abc-defg-hij",
-      cuentaProveedor: { emailOrganizador: "sala01@flacso.edu.uy" }
-    }
-  ]
+      cuentaProveedor: { emailOrganizador: "sala01@flacso.edu.uy" },
+    },
+  ],
 };
 const users = [
   {
@@ -42,7 +44,7 @@ const users = [
     emailPrincipal: "cora@flacso.edu.uy",
     cuentasGoogle: [],
     emailAliases: [],
-    preferenciasNotificacion: []
+    preferenciasNotificacion: [],
   },
   {
     id: "teacher",
@@ -50,7 +52,7 @@ const users = [
     emailPrincipal: "ana@flacso.edu.uy",
     cuentasGoogle: [{ email: "ana.personal@flacso.edu.uy" }],
     emailAliases: [],
-    preferenciasNotificacion: []
+    preferenciasNotificacion: [],
   },
   {
     id: "assistant",
@@ -58,8 +60,8 @@ const users = [
     emailPrincipal: "juan@flacso.edu.uy",
     cuentasGoogle: [],
     emailAliases: [],
-    preferenciasNotificacion: []
-  }
+    preferenciasNotificacion: [],
+  },
 ];
 
 function dbFake(
@@ -68,12 +70,14 @@ function dbFake(
     Omit<(typeof users)[number], "preferenciasNotificacion"> & {
       preferenciasNotificacion: Array<{ email: boolean; push: boolean }>;
     }
-  > = users
+  > = users,
 ) {
   const registro = new Map<string, string>();
   let seq = 0;
   const create = vi.fn(async ({ data }: any) => {
-    const key = [data.instanciaSalaId, data.usuarioId, data.inicioProgramadoAt.toISOString()].join("|");
+    const key = [data.instanciaSalaId, data.usuarioId, data.inicioProgramadoAt.toISOString()].join(
+      "|",
+    );
     if (registro.has(key)) {
       throw Object.assign(new Error("duplicate"), { code: "P2002" });
     }
@@ -86,7 +90,7 @@ function dbFake(
   const findUnique = vi.fn(async (_args?: any) => ({
     estado: "PROGRAMADA",
     inicioProgramadoAt: inicio,
-    solicitud: { estado: "REGISTRADA" }
+    solicitud: { estado: "REGISTRADA" },
   }));
   const notificacion = vi.fn(async () => ({}));
   return {
@@ -94,14 +98,14 @@ function dbFake(
       instanciaSala: { findMany, findUnique },
       usuario: { findMany: usuarios },
       recordatorioReunion: { create, update },
-      notificacion: { create: notificacion }
+      notificacion: { create: notificacion },
     } as any,
     create,
     update,
     findMany,
     usuarios,
     findUnique,
-    notificacion
+    notificacion,
   };
 }
 
@@ -134,11 +138,15 @@ describe("recordatorios de reuniones 24 horas antes", () => {
     expect(mock.create).toHaveBeenCalledTimes(3);
     expect(mock.notificacion).toHaveBeenCalledTimes(3);
     expect(mock.findMany.mock.calls[0][0].where.inicioProgramadoAt.lte).toEqual(
-      new Date(ahora.getTime() + 24 * 60 * 60 * 1000)
+      new Date(ahora.getTime() + 24 * 60 * 60 * 1000),
     );
 
     // Un worker concurrente / segunda ejecución no puede volver a enviar.
-    const second = await procesarRecordatorios24h(mock.db, { verificarCohosts, enviarCorreo }, ahora);
+    const second = await procesarRecordatorios24h(
+      mock.db,
+      { verificarCohosts, enviarCorreo },
+      ahora,
+    );
     expect(second.enviados).toBe(0);
     expect(enviarCorreo).toHaveBeenCalledTimes(3);
   });
@@ -147,7 +155,7 @@ describe("recordatorios de reuniones 24 horas antes", () => {
     expect(clasificarAccesosPropios(["a@flacso.edu.uy"], null, null)).toEqual({
       estado: "NO_VERIFICABLE",
       cuentasConfirmadas: [],
-      cuentasSinPermiso: []
+      cuentasSinPermiso: [],
     });
     const noPermitida = clasificarAccesosPropios(["a@flacso.edu.uy"], new Set(), null);
     expect(noPermitida.estado).toBe("SIN_PERMISOS");
@@ -158,7 +166,7 @@ describe("recordatorios de reuniones 24 horas antes", () => {
     const res = clasificarAccesosPropios(
       ["SALa01@flacso.edu.uy", " ANA@FLACSO.EDU.UY ", "ana@flacso.edu.uy"],
       new Set(["ana@flacso.edu.uy"]),
-      "sala01@flacso.edu.uy"
+      "sala01@flacso.edu.uy",
     );
     expect(res.cuentasConfirmadas).toEqual(["ana@flacso.edu.uy"]);
     expect(res.cuentasSinPermiso).toEqual([]);
@@ -167,7 +175,11 @@ describe("recordatorios de reuniones 24 horas antes", () => {
   it("no envía recordatorios cancelados ni más de 24h antes", async () => {
     const mock = dbFake([]);
     const send = vi.fn();
-    await procesarRecordatorios24h(mock.db, { verificarCohosts: vi.fn(), enviarCorreo: send }, ahora);
+    await procesarRecordatorios24h(
+      mock.db,
+      { verificarCohosts: vi.fn(), enviarCorreo: send },
+      ahora,
+    );
     expect(send).not.toHaveBeenCalled();
     expect(mock.findMany.mock.calls[0][0].where.estado).toBe("PROGRAMADA");
     expect(mock.findMany.mock.calls[0][0].where.solicitud.estado.not).toBe("CANCELADA");
@@ -178,26 +190,28 @@ describe("recordatorios de reuniones 24 horas antes", () => {
     mock.findUnique.mockResolvedValue({
       estado: "PROGRAMADA",
       inicioProgramadoAt: new Date(inicio.getTime() + 3600_000),
-      solicitud: { estado: "REGISTRADA" }
+      solicitud: { estado: "REGISTRADA" },
     });
     const send = vi.fn();
     const run = await procesarRecordatorios24h(
       mock.db,
       {
         verificarCohosts: async () => new Set(),
-        enviarCorreo: send
+        enviarCorreo: send,
       },
-      ahora
+      ahora,
     );
     expect(run.enviados).toBe(0);
     expect(send).not.toHaveBeenCalled();
-    expect(mock.update).toHaveBeenCalledWith(expect.objectContaining({ data: { estado: "OBSOLETO" } }));
+    expect(mock.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: { estado: "OBSOLETO" } }),
+    );
   });
 
   it("respeta preferencias de correo y no reintenta automáticamente rechazos inciertos", async () => {
     const prefs = users.map((u) => ({
       ...u,
-      preferenciasNotificacion: [{ email: u.id !== "assistant", push: false }]
+      preferenciasNotificacion: [{ email: u.id !== "assistant", push: false }],
     }));
     const mock = dbFake([meeting], prefs);
     const send = vi.fn(async () => ({ sent: false, error: "No confirmado" }));
@@ -205,9 +219,9 @@ describe("recordatorios de reuniones 24 horas antes", () => {
       mock.db,
       {
         verificarCohosts: async () => null,
-        enviarCorreo: send
+        enviarCorreo: send,
       },
-      ahora
+      ahora,
     );
     expect(result).toMatchObject({ errores: 2, enviados: 0, verificacionesFallidas: 1 });
     expect(send).toHaveBeenCalledTimes(2);
@@ -223,7 +237,7 @@ describe("recordatorios de reuniones 24 horas antes", () => {
       horarioClase: "10:00–12:00 h",
       modalidad: "Virtual",
       urlDetalle: "https://salavirtual.flacso.edu.uy/reuniones/123",
-      acceso: { estado: "NO_VERIFICABLE", cuentasConfirmadas: [], cuentasSinPermiso: [] }
+      acceso: { estado: "NO_VERIFICABLE", cuentasConfirmadas: [], cuentasSinPermiso: [] },
     });
     expect(mail.html).toContain("No pudimos verificar los accesos");
     expect(mail.html).toContain("FLACSO &amp; MIEM");

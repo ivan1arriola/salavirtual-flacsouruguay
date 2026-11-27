@@ -6,7 +6,7 @@ import {
   consultarSubidaDriveReanudable,
   verificarEscrituraCarpetaDrive,
   iniciarSubidaDriveReanudable,
-  subirBloqueDriveReanudable
+  subirBloqueDriveReanudable,
 } from "../src/integrations/google/drive/drive-resumable.client";
 
 function cliente(...respuestas: Array<Record<string, unknown>>) {
@@ -29,7 +29,7 @@ describe("Drive reanudable: inicio de sesión", () => {
       carpetaId: "carpeta",
       mimeType: "video/mp4",
       origenHash: "h".repeat(64),
-      tamanoTotal: 10n
+      tamanoTotal: 10n,
     });
     expect(sesion).toBe(SESION);
     const arg = request.mock.calls[0][0];
@@ -40,7 +40,7 @@ describe("Drive reanudable: inicio de sesión", () => {
       id: "drive-1",
       name: "a.mp4",
       parents: ["carpeta"],
-      appProperties: { [DRIVE_ZOOM_ORIGEN_PROPERTY]: "h".repeat(64) }
+      appProperties: { [DRIVE_ZOOM_ORIGEN_PROPERTY]: "h".repeat(64) },
     });
     expect(arg.headers["X-Upload-Content-Length"]).toBe("10");
   });
@@ -48,20 +48,20 @@ describe("Drive reanudable: inicio de sesión", () => {
   it("omite la longitud cuando el tamaño es desconocido y rechaza respuestas sin Location", async () => {
     const { request, auth } = cliente(
       { status: 200, headers: { location: SESION }, data: "" },
-      { status: 200, headers: {}, data: "" }
+      { status: 200, headers: {}, data: "" },
     );
     const base = {
       fileId: "d",
       nombre: "n",
       carpetaId: "c",
       mimeType: "video/mp4",
-      origenHash: "h".repeat(64)
+      origenHash: "h".repeat(64),
     };
     await iniciarSubidaDriveReanudable(auth, { ...base, tamanoTotal: null });
     expect(request.mock.calls[0][0].headers["X-Upload-Content-Length"]).toBeUndefined();
-    await expect(iniciarSubidaDriveReanudable(auth, { ...base, tamanoTotal: null })).rejects.toThrow(
-      /sesión/i
-    );
+    await expect(
+      iniciarSubidaDriveReanudable(auth, { ...base, tamanoTotal: null }),
+    ).rejects.toThrow(/sesión/i);
   });
 });
 
@@ -70,7 +70,7 @@ describe("Drive reanudable: consulta del offset confirmado", () => {
     const { auth, request } = cliente({ status: 308, headers: {}, data: "" });
     expect(await consultarSubidaDriveReanudable(auth, SESION, 100n)).toEqual({
       estado: "PARCIAL",
-      bytesConfirmados: 0n
+      bytesConfirmados: 0n,
     });
     expect(request.mock.calls[0][0].headers["Content-Range"]).toBe("bytes */100");
   });
@@ -79,21 +79,24 @@ describe("Drive reanudable: consulta del offset confirmado", () => {
     const { auth } = cliente({ status: 308, headers: { range: "bytes=0-262143" }, data: "" });
     expect(await consultarSubidaDriveReanudable(auth, SESION, 1000n)).toEqual({
       estado: "PARCIAL",
-      bytesConfirmados: 262144n
+      bytesConfirmados: 262144n,
     });
   });
 
   it("200 y 201 son finalización con el archivo, nunca el 308", async () => {
     const { auth } = cliente(
       { status: 200, headers: {}, data: ARCHIVO },
-      { status: 201, headers: {}, data: ARCHIVO }
+      { status: 201, headers: {}, data: ARCHIVO },
     );
     expect((await consultarSubidaDriveReanudable(auth, SESION, 10n)).estado).toBe("COMPLETA");
     expect((await consultarSubidaDriveReanudable(auth, SESION, 10n)).estado).toBe("COMPLETA");
   });
 
   it("404 y 410 significan sesión vencida", async () => {
-    const { auth } = cliente({ status: 404, headers: {}, data: "" }, { status: 410, headers: {}, data: "" });
+    const { auth } = cliente(
+      { status: 404, headers: {}, data: "" },
+      { status: 410, headers: {}, data: "" },
+    );
     expect(await consultarSubidaDriveReanudable(auth, SESION, 10n)).toEqual({ estado: "VENCIDA" });
     expect(await consultarSubidaDriveReanudable(auth, SESION, 10n)).toEqual({ estado: "VENCIDA" });
   });
@@ -120,24 +123,30 @@ describe("Drive reanudable: subida de bloques", () => {
     const { auth, request } = cliente({
       status: 308,
       headers: { range: `bytes=0-${DRIVE_BLOQUE_MULTIPLO_BYTES - 1}` },
-      data: ""
+      data: "",
     });
     const r = await subirBloqueDriveReanudable(
       auth,
       SESION,
       0n,
       bytes,
-      10n * BigInt(DRIVE_BLOQUE_MULTIPLO_BYTES)
+      10n * BigInt(DRIVE_BLOQUE_MULTIPLO_BYTES),
     );
     expect(r).toEqual({ estado: "PARCIAL", bytesConfirmados: BigInt(DRIVE_BLOQUE_MULTIPLO_BYTES) });
     expect(request.mock.calls[0][0].headers["Content-Range"]).toBe(
-      `bytes 0-${DRIVE_BLOQUE_MULTIPLO_BYTES - 1}/${10 * DRIVE_BLOQUE_MULTIPLO_BYTES}`
+      `bytes 0-${DRIVE_BLOQUE_MULTIPLO_BYTES - 1}/${10 * DRIVE_BLOQUE_MULTIPLO_BYTES}`,
     );
   });
 
   it("el último bloque declara el total real aun cuando era desconocido", async () => {
-    const { auth, request } = cliente({ status: 200, headers: {}, data: { ...ARCHIVO, size: "5" } });
-    const r = await subirBloqueDriveReanudable(auth, SESION, 0n, new Uint8Array(5), null, { ultimo: true });
+    const { auth, request } = cliente({
+      status: 200,
+      headers: {},
+      data: { ...ARCHIVO, size: "5" },
+    });
+    const r = await subirBloqueDriveReanudable(auth, SESION, 0n, new Uint8Array(5), null, {
+      ultimo: true,
+    });
     expect(r.estado).toBe("COMPLETA");
     expect(request.mock.calls[0][0].headers["Content-Range"]).toBe("bytes 0-4/5");
   });
@@ -146,17 +155,23 @@ describe("Drive reanudable: subida de bloques", () => {
     const { auth, request } = cliente({
       status: 308,
       headers: { range: `bytes=0-${DRIVE_BLOQUE_MULTIPLO_BYTES - 1}` },
-      data: ""
+      data: "",
     });
     await subirBloqueDriveReanudable(auth, SESION, 0n, bytes, null);
     expect(request.mock.calls[0][0].headers["Content-Range"]).toBe(
-      `bytes 0-${DRIVE_BLOQUE_MULTIPLO_BYTES - 1}/*`
+      `bytes 0-${DRIVE_BLOQUE_MULTIPLO_BYTES - 1}/*`,
     );
   });
 
   it("destino vacío válido: 0 bytes se finaliza con bytes */0", async () => {
-    const { auth, request } = cliente({ status: 200, headers: {}, data: { ...ARCHIVO, size: "0" } });
-    const r = await subirBloqueDriveReanudable(auth, SESION, 0n, new Uint8Array(0), 0n, { ultimo: true });
+    const { auth, request } = cliente({
+      status: 200,
+      headers: {},
+      data: { ...ARCHIVO, size: "0" },
+    });
+    const r = await subirBloqueDriveReanudable(auth, SESION, 0n, new Uint8Array(0), 0n, {
+      ultimo: true,
+    });
     expect(r.estado).toBe("COMPLETA");
     expect(request.mock.calls[0][0].headers["Content-Range"]).toBe("bytes */0");
   });
@@ -166,14 +181,16 @@ describe("Drive reanudable: subida de bloques", () => {
     const control = new AbortController();
     await subirBloqueDriveReanudable(auth, SESION, 0n, bytes, null, { signal: control.signal });
     expect(request.mock.calls[0][0].signal).toBe(control.signal);
-    await expect(subirBloqueDriveReanudable(auth, SESION, 0n, new Uint8Array(10), null)).rejects.toThrow(
-      /256/
-    );
+    await expect(
+      subirBloqueDriveReanudable(auth, SESION, 0n, new Uint8Array(10), null),
+    ).rejects.toThrow(/256/);
   });
 
   it("sesión vencida durante el PUT se informa como VENCIDA", async () => {
     const { auth } = cliente({ status: 410, headers: {}, data: "" });
-    expect(await subirBloqueDriveReanudable(auth, SESION, 0n, bytes, null)).toEqual({ estado: "VENCIDA" });
+    expect(await subirBloqueDriveReanudable(auth, SESION, 0n, bytes, null)).toEqual({
+      estado: "VENCIDA",
+    });
   });
 });
 
@@ -184,8 +201,8 @@ describe("Drive reanudable: comprobación de escritura (healthcheck del worker)"
       data: {
         id: "c",
         mimeType: "application/vnd.google-apps.folder",
-        capabilities: { canAddChildren: true }
-      }
+        capabilities: { canAddChildren: true },
+      },
     });
     expect(await verificarEscrituraCarpetaDrive(auth, "c")).toBe(true);
     expect(request.mock.calls[0][0].url).toContain("supportsAllDrives=true");
@@ -198,11 +215,14 @@ describe("Drive reanudable: comprobación de escritura (healthcheck del worker)"
         data: {
           id: "c",
           mimeType: "application/vnd.google-apps.folder",
-          capabilities: { canAddChildren: false }
-        }
+          capabilities: { canAddChildren: false },
+        },
       },
-      { status: 200, data: { id: "c", mimeType: "video/mp4", capabilities: { canAddChildren: true } } },
-      { status: 404, data: "" }
+      {
+        status: 200,
+        data: { id: "c", mimeType: "video/mp4", capabilities: { canAddChildren: true } },
+      },
+      { status: 404, data: "" },
     );
     expect(await verificarEscrituraCarpetaDrive(auth, "c")).toBe(false);
     expect(await verificarEscrituraCarpetaDrive(auth, "c")).toBe(false);
@@ -220,13 +240,17 @@ describe("Drive reanudable: encabezados como Headers (gaxios 8 devuelve un objet
         carpetaId: "carpeta",
         mimeType: "video/mp4",
         origenHash: "h".repeat(64),
-        tamanoTotal: 10n
-      })
+        tamanoTotal: 10n,
+      }),
     ).toBe(SESION);
   });
 
   it("lee Range de un Headers real en una respuesta 308: el progreso confirmado no se pierde", async () => {
-    const { auth } = cliente({ status: 308, headers: new Headers({ Range: "bytes=0-262143" }), data: "" });
+    const { auth } = cliente({
+      status: 308,
+      headers: new Headers({ Range: "bytes=0-262143" }),
+      data: "",
+    });
     const r = await consultarSubidaDriveReanudable(auth, SESION, 10n);
     expect(r).toEqual({ estado: "PARCIAL", bytesConfirmados: 262144n });
   });
@@ -235,7 +259,7 @@ describe("Drive reanudable: encabezados como Headers (gaxios 8 devuelve un objet
     const { auth } = cliente({ status: 308, headers: new Headers(), data: "" });
     expect(await consultarSubidaDriveReanudable(auth, SESION, 10n)).toEqual({
       estado: "PARCIAL",
-      bytesConfirmados: 0n
+      bytesConfirmados: 0n,
     });
   });
 });

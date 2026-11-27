@@ -19,7 +19,7 @@ function mensajeError(status: number): string {
 
 export function ZoomHistoricoControl({
   ocurrenciaId,
-  vinculado = false
+  vinculado = false,
 }: {
   ocurrenciaId: string;
   vinculado?: boolean;
@@ -36,7 +36,7 @@ export function ZoomHistoricoControl({
     setMensaje("");
     try {
       const r = await fetch(
-        `/api/v1/archivos/zoom/ocurrencias/${encodeURIComponent(ocurrenciaId)}/candidatos`
+        `/api/v1/archivos/zoom/ocurrencias/${encodeURIComponent(ocurrenciaId)}/candidatos`,
       );
       if (!r.ok) {
         setMensaje(mensajeError(r.status));
@@ -60,8 +60,8 @@ export function ZoomHistoricoControl({
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ eventoId: seleccion })
-        }
+          body: JSON.stringify({ eventoId: seleccion }),
+        },
       );
       if (!r.ok) {
         setMensaje(mensajeError(r.status));
@@ -116,7 +116,8 @@ export function ZoomHistoricoControl({
               <option value="">Seleccione un encuentro</option>
               {candidatos.map((c) => (
                 <option key={c.id} value={c.id}>
-                  {c.titulo} · {c.programa} · {c.docente} · {new Date(c.fecha).toLocaleString("es-UY")}
+                  {c.titulo} · {c.programa} · {c.docente} ·{" "}
+                  {new Date(c.fecha).toLocaleString("es-UY")}
                 </option>
               ))}
             </select>
@@ -147,9 +148,12 @@ export function ZoomReintentarArchivo({ archivoId }: { archivoId: string }) {
     setCargando(true);
     setMensaje("");
     try {
-      const r = await fetch(`/api/v1/archivos/zoom/archivos/${encodeURIComponent(archivoId)}/reintentar`, {
-        method: "POST"
-      });
+      const r = await fetch(
+        `/api/v1/archivos/zoom/archivos/${encodeURIComponent(archivoId)}/reintentar`,
+        {
+          method: "POST",
+        },
+      );
       if (!r.ok) {
         setMensaje(mensajeError(r.status));
         return;

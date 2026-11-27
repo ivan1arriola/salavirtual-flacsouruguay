@@ -3,7 +3,7 @@ import {
   cambiarRolUsuarioSchema,
   puedeGestionarRoles,
   requierePerfilAsistente,
-  requierePerfilDocente
+  requierePerfilDocente,
 } from "../src/modules/usuarios/gestion-roles.domain";
 
 describe("gestion de roles", () => {

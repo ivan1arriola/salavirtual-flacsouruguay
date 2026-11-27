@@ -35,7 +35,7 @@ export function meetPreparadoParaMigracion(
     joinUrl: string | null;
     externalEventId: string | null;
     emailOrganizador: string | null;
-  }> | null
+  }> | null,
 ): boolean {
   if (!evento?.joinUrl || !evento.externalEventId || !evento.emailOrganizador) {
     return false;
@@ -53,14 +53,15 @@ export function planificarMigracionZoom(
     candidatos: readonly CandidatoMigracionZoom[];
     hosts: readonly HostZoom[];
     reservasZoom: readonly ReservaZoom[];
-  }>
+  }>,
 ): readonly FilaVistaPreviaZoom[] {
   const limiteCercano = input.ahora.getTime() + Math.max(0, input.margenSeguridadHoras) * 3_600_000;
   const candidatos = input.candidatos.reduce<CandidatoMigracionZoom[]>((ordenados, candidato) => {
     const posicion = ordenados.findIndex(
       (actual) =>
         candidato.inicio.getTime() < actual.inicio.getTime() ||
-        (candidato.inicio.getTime() === actual.inicio.getTime() && candidato.id.localeCompare(actual.id) < 0)
+        (candidato.inicio.getTime() === actual.inicio.getTime() &&
+          candidato.id.localeCompare(actual.id) < 0),
     );
     return posicion < 0
       ? [...ordenados, candidato]
@@ -72,7 +73,7 @@ export function planificarMigracionZoom(
       const base = { id: candidato.id, hostId: null };
       const agregar = (fila: FilaVistaPreviaZoom, reserva?: ReservaZoom) => ({
         filas: [...acumulado.filas, fila],
-        reservas: reserva ? [...acumulado.reservas, reserva] : acumulado.reservas
+        reservas: reserva ? [...acumulado.reservas, reserva] : acumulado.reservas,
       });
       if (
         candidato.estado !== "PROGRAMADA" ||
@@ -107,17 +108,17 @@ export function planificarMigracionZoom(
         candidato.cuentaZoomPreferidaId,
         input.hosts.map((host) => ({ ...host, limiteConcurrente: 1 })),
         acumulado.reservas,
-        [{ inicio: candidato.inicio, fin: candidato.fin }]
+        [{ inicio: candidato.inicio, fin: candidato.fin }],
       );
       if (!hostId) {
         return agregar({ ...base, estado: "SIN_SALA" });
       }
       return agregar(
         { id: candidato.id, estado: "MIGRABLE", hostId },
-        { cuentaProveedorId: hostId, inicio: candidato.inicio, fin: candidato.fin }
+        { cuentaProveedorId: hostId, inicio: candidato.inicio, fin: candidato.fin },
       );
     },
-    { filas: [], reservas: [...input.reservasZoom] }
+    { filas: [], reservas: [...input.reservasZoom] },
   ).filas;
 }
 
@@ -163,13 +164,13 @@ export function planificarMigracionZoomPorSerie(
     series: readonly SerieMigracionZoom[];
     hosts: readonly HostZoom[];
     reservasZoom: readonly ReservaZoomSerie[];
-  }>
+  }>,
 ): readonly FilaSerieMigracionZoom[] {
   const limiteCercano = input.ahora.getTime() + Math.max(0, input.margenSeguridadHoras) * 3_600_000;
   const inicioMasTemprano = (serie: SerieMigracionZoom) =>
     serie.encuentros.reduce(
       (menor, { inicio }) => Math.min(menor, inicio.getTime()),
-      Number.POSITIVE_INFINITY
+      Number.POSITIVE_INFINITY,
     );
 
   const ordenadas = input.series.reduce<SerieMigracionZoom[]>((acumuladas, serie) => {
@@ -177,7 +178,7 @@ export function planificarMigracionZoomPorSerie(
       (actual) =>
         inicioMasTemprano(serie) < inicioMasTemprano(actual) ||
         (inicioMasTemprano(serie) === inicioMasTemprano(actual) &&
-          serie.serieClave.localeCompare(actual.serieClave) < 0)
+          serie.serieClave.localeCompare(actual.serieClave) < 0),
     );
     return posicion < 0
       ? [...acumuladas, serie]
@@ -186,16 +187,19 @@ export function planificarMigracionZoomPorSerie(
 
   return ordenadas.reduce<{ filas: FilaSerieMigracionZoom[]; reservas: ReservaZoomSerie[] }>(
     (acumulado, serie) => {
-      const agregar = (fila: FilaSerieMigracionZoom, reservas: readonly ReservaZoomSerie[] = []) => ({
+      const agregar = (
+        fila: FilaSerieMigracionZoom,
+        reservas: readonly ReservaZoomSerie[] = [],
+      ) => ({
         filas: [...acumulado.filas, fila],
-        reservas: [...acumulado.reservas, ...reservas]
+        reservas: [...acumulado.reservas, ...reservas],
       });
       const propios = new Set(serie.encuentros.map(({ id }) => id));
       const futuros = serie.encuentros.filter(
         (encuentro) =>
           encuentro.estado === "PROGRAMADA" &&
           encuentro.inicio > input.ahora &&
-          encuentro.fin > encuentro.inicio
+          encuentro.fin > encuentro.inicio,
       );
       const aMigrar = futuros.filter(({ proveedorActivo }) => proveedorActivo !== "ZOOM");
       const enZoom = futuros.filter(({ proveedorActivo }) => proveedorActivo === "ZOOM");
@@ -222,37 +226,41 @@ export function planificarMigracionZoomPorSerie(
         return agregar({ ...conEncuentros, estado: "CERCANO" });
       }
 
+      const idCompartido = enZoom[0]?.reunionCompartidaId;
       const compartida =
         enZoom.length === 0 ||
-        (Boolean(enZoom[0].reunionCompartidaId) &&
-          enZoom.every(({ reunionCompartidaId }) => reunionCompartidaId === enZoom[0].reunionCompartidaId));
+        (Boolean(idCompartido) &&
+          enZoom.every(({ reunionCompartidaId }) => reunionCompartidaId === idCompartido));
       const sinPreparar = aMigrar.some(
-        (encuentro) => !encuentro.meetPreparado || !encuentro.meetJoinUrl || encuentro.zoomSincronizado
+        (encuentro) =>
+          !encuentro.meetPreparado || !encuentro.meetJoinUrl || encuentro.zoomSincronizado,
       );
       if (!compartida || sinPreparar) {
         return agregar({ ...conEncuentros, estado: "REVISAR" });
       }
 
       const hostsElegibles =
-        enZoom.length > 0 ? input.hosts.filter(({ id }) => id === serie.cuentaZoomPreferidaId) : input.hosts;
+        enZoom.length > 0
+          ? input.hosts.filter(({ id }) => id === serie.cuentaZoomPreferidaId)
+          : input.hosts;
       const periodos = aMigrar.map(({ inicio, fin }) => ({ inicio, fin }));
       const reservasAjenas = acumulado.reservas.filter(
-        ({ instanciaId }) => !instanciaId || !propios.has(instanciaId)
+        ({ instanciaId }) => !instanciaId || !propios.has(instanciaId),
       );
       const hostId = elegirCuentaHostParaPeriodos(
         serie.cuentaZoomPreferidaId,
         hostsElegibles.map((host) => ({ ...host, limiteConcurrente: 1 })),
         reservasAjenas,
-        periodos
+        periodos,
       );
       if (!hostId) {
         return agregar({ ...conEncuentros, estado: "SIN_SALA" });
       }
       return agregar(
         { ...conEncuentros, estado: "MIGRABLE", hostId },
-        periodos.map((periodo) => ({ cuentaProveedorId: hostId, ...periodo }))
+        periodos.map((periodo) => ({ cuentaProveedorId: hostId, ...periodo })),
       );
     },
-    { filas: [], reservas: [...input.reservasZoom] }
+    { filas: [], reservas: [...input.reservasZoom] },
   ).filas;
 }

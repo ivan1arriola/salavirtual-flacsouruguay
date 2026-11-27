@@ -9,13 +9,13 @@ describe("generador de fechas recurrentes", () => {
         hasta: "2026-08-31",
         diasSemana: [3],
         horaInicio: "10:00",
-        horaFin: "14:00"
-      })
+        horaFin: "14:00",
+      }),
     ).toEqual([
       { fecha: "2026-08-05", horaInicio: "10:00", horaFin: "14:00" },
       { fecha: "2026-08-12", horaInicio: "10:00", horaFin: "14:00" },
       { fecha: "2026-08-19", horaInicio: "10:00", horaFin: "14:00" },
-      { fecha: "2026-08-26", horaInicio: "10:00", horaFin: "14:00" }
+      { fecha: "2026-08-26", horaInicio: "10:00", horaFin: "14:00" },
     ]);
   });
 
@@ -26,8 +26,8 @@ describe("generador de fechas recurrentes", () => {
         hasta: "2026-08-09",
         diasSemana: [1, 3],
         horaInicio: "10:00",
-        horaFin: "14:00"
-      }).map(({ fecha }) => fecha)
+        horaFin: "14:00",
+      }).map(({ fecha }) => fecha),
     ).toEqual(["2026-08-03", "2026-08-05"]);
     expect(() =>
       generarFechasRecurrentes({
@@ -35,8 +35,8 @@ describe("generador de fechas recurrentes", () => {
         hasta: "2026-08-31",
         diasSemana: [3],
         horaInicio: "14:00",
-        horaFin: "10:00"
-      })
+        horaFin: "10:00",
+      }),
     ).toThrow("posterior");
   });
 });

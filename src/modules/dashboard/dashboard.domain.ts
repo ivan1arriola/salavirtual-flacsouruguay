@@ -2,7 +2,11 @@ import type { EstadoTemporalReunion } from "./types";
 
 const MINUTOS_ANTICIPACION_EN_VIVO = 15;
 
-export function determinarEstadoTemporal(inicio: Date, fin: Date, ahora: Date): EstadoTemporalReunion {
+export function determinarEstadoTemporal(
+  inicio: Date,
+  fin: Date,
+  ahora: Date,
+): EstadoTemporalReunion {
   const ahoraMs = ahora.getTime();
   const inicioMs = inicio.getTime();
   const finMs = fin.getTime();
@@ -48,14 +52,14 @@ export function obtenerClaveDiaMontevideo(date: Date): string {
     timeZone: "America/Montevideo",
     year: "numeric",
     month: "2-digit",
-    day: "2-digit"
+    day: "2-digit",
   });
   return formatter.format(date);
 }
 
 export function calcularNivelUrgenciaTriage(
   horasHastaInicio: number,
-  tieneAsistente: boolean
+  tieneAsistente: boolean,
 ): "CRITICO" | "MODERADO" | "NORMAL" {
   if (tieneAsistente) {
     return "NORMAL";

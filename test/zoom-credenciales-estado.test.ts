@@ -18,23 +18,26 @@ describe("diagnóstico de credenciales Zoom", () => {
     sinEntorno();
     const resultado = await obtenerCredencialesZoom(
       dbCon(async () => null),
-      () => ""
+      () => "",
     );
     expect(resultado).toMatchObject({ disponible: false, diagnostico: "AUSENTES" });
-    expect(resultado).toHaveProperty("error", "No hay credenciales Zoom activas y completas disponibles.");
+    expect(resultado).toHaveProperty(
+      "error",
+      "No hay credenciales Zoom activas y completas disponibles.",
+    );
     const inactiva = await obtenerCredencialesZoom(
       dbCon(async () => ({
         activa: false,
         accountId: "cuenta",
         clientId: "cliente",
-        clientSecretCifrado: "cifrado"
+        clientSecretCifrado: "cifrado",
       })),
-      () => "clave"
+      () => "clave",
     );
     expect(inactiva).toMatchObject({
       disponible: false,
       diagnostico: "AUSENTES",
-      error: "No hay credenciales Zoom activas y completas disponibles."
+      error: "No hay credenciales Zoom activas y completas disponibles.",
     });
   });
 
@@ -44,18 +47,18 @@ describe("diagnóstico de credenciales Zoom", () => {
       dbCon(async () => {
         throw new Error("secreto");
       }),
-      () => ""
+      () => "",
     );
     const descifrado = await obtenerCredencialesZoom(
       dbCon(async () => ({
         activa: true,
         accountId: "cuenta",
         clientId: "cliente",
-        clientSecretCifrado: "cifrado"
+        clientSecretCifrado: "cifrado",
       })),
       () => {
         throw new Error("secreto");
-      }
+      },
     );
     expect(lectura).toMatchObject({ disponible: false, diagnostico: "ERROR_COMPROBACION" });
     expect(descifrado).toMatchObject({ disponible: false, diagnostico: "ERROR_COMPROBACION" });
@@ -71,7 +74,7 @@ describe("diagnóstico de credenciales Zoom", () => {
       dbCon(async () => {
         throw new Error("error");
       }),
-      () => ""
+      () => "",
     );
     expect(resultado).toMatchObject({ disponible: true, origen: "ENV" });
     const descifrado = await obtenerCredencialesZoom(
@@ -79,11 +82,11 @@ describe("diagnóstico de credenciales Zoom", () => {
         activa: true,
         accountId: "cuenta",
         clientId: "cliente",
-        clientSecretCifrado: "cifrado"
+        clientSecretCifrado: "cifrado",
       })),
       () => {
         throw new Error("error");
-      }
+      },
     );
     expect(descifrado).toMatchObject({ disponible: true, origen: "ENV" });
   });

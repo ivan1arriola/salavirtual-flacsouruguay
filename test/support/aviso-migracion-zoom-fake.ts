@@ -11,7 +11,7 @@ export type FilaAviso = {
 };
 
 export function crearOutboxFake(
-  usuarios: { id: string; nombres: string; emailPrincipal: string | null }[] = []
+  usuarios: { id: string; nombres: string; emailPrincipal: string | null }[] = [],
 ) {
   const filas: FilaAviso[] = [];
   let seq = 0;
@@ -28,7 +28,7 @@ export function crearOutboxFake(
         intentos: 1,
         errorCodigo: null,
         enviadoAt: null,
-        joinUrl: data.joinUrl
+        joinUrl: data.joinUrl,
       };
       filas.push(fila);
       return { id: fila.id };
@@ -52,13 +52,13 @@ export function crearOutboxFake(
     update: async ({ where, data }: any) => {
       Object.assign(
         filas.find((f) => f.id === where.id)!,
-        data
+        data,
       );
       return {};
-    }
+    },
   };
   const usuario = {
-    findMany: async ({ where }: any) => usuarios.filter((u) => where.id.in.includes(u.id))
+    findMany: async ({ where }: any) => usuarios.filter((u) => where.id.in.includes(u.id)),
   };
   return { filas, avisoMigracionZoom, usuario };
 }

@@ -6,7 +6,7 @@ import {
   esAsistenciaCompletada,
   rangoMesUtc3,
   resumirAsistencias,
-  type RegistroAsistenciaPersonal
+  type RegistroAsistenciaPersonal,
 } from "../src/modules/asistencia/resumen-personal.domain";
 
 const base: RegistroAsistenciaPersonal = {
@@ -29,14 +29,14 @@ const base: RegistroAsistenciaPersonal = {
   comentarioReporte: null,
   tarifaHora: 400,
   monto: 800,
-  moneda: "UYU"
+  moneda: "UYU",
 };
 
 describe("resumen personal de asistencias", () => {
   it("calcula el mes calendario en UTC-3", () => {
     expect(rangoMesUtc3(new Date("2026-07-31T23:00:00Z"))).toEqual({
       desdeMs: Date.parse("2026-07-01T03:00:00Z"),
-      hastaMs: Date.parse("2026-08-01T03:00:00Z")
+      hastaMs: Date.parse("2026-08-01T03:00:00Z"),
     });
   });
 
@@ -55,7 +55,7 @@ describe("resumen personal de asistencias", () => {
       inicioAt: new Date("2026-06-10T13:00:00Z"),
       modalidad: "HIBRIDA" as const,
       minutos: 60,
-      monto: 500
+      monto: 500,
     };
     const records = Object.freeze([base, second]);
     expect(resumirAsistencias(records)).toEqual({
@@ -64,7 +64,7 @@ describe("resumen personal de asistencias", () => {
       minutosHibridos: 60,
       montoVirtual: 800,
       montoHibrido: 500,
-      monto: 1300
+      monto: 1300,
     });
     expect(agruparPorMes(records).map(({ clave }) => clave)).toEqual(["2026-07", "2026-06"]);
     expect(calcularMonto(null, 400, 90)).toBe(600);

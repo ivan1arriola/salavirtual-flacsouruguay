@@ -4,13 +4,13 @@ import {
   reclasificarOperacionesPendientesLoteUseCase,
   sincronizarCohostsExistenteUseCase,
   configurarMeetExistenteUseCase,
-  sincronizarEventosPendientesUseCase
+  sincronizarEventosPendientesUseCase,
 } from "./application";
 import type {
   DescartarLoteResult,
   DescartarOperacionResult,
   ProvisionConferenciaResult,
-  ReclasificarLoteResult
+  ReclasificarLoteResult,
 } from "./domain";
 import { crearGoogleConferenceProvider } from "./infrastructure/google/google-conference-provider.adapter";
 import type { ConferenceProviderFactory, ConferenciasRepositoryPort } from "./ports";
@@ -25,15 +25,17 @@ export {
   sincronizarCohostsGoogleExistente,
   consultarCohostsEspacioMeet,
   type ResultadoVerificacionEspacioMeet,
-  type GoogleCalendarCredentials
+  type GoogleCalendarCredentials,
 } from "./infrastructure/google/google-conference-provider.adapter";
 export {
   crearPrismaConferenciasRepository,
-  type PrismaConferenciasRepositoryOptions
+  type PrismaConferenciasRepositoryOptions,
 } from "./infrastructure/prisma/prisma-conferencias-repository.adapter";
 
 export type ServicioConferencias = Readonly<{
-  sincronizarEventosPendientes: (ids: readonly string[]) => Promise<readonly ProvisionConferenciaResult[]>;
+  sincronizarEventosPendientes: (
+    ids: readonly string[],
+  ) => Promise<readonly ProvisionConferenciaResult[]>;
 
   sincronizarCohosts: (input: {
     organizerEmail: string;
@@ -50,7 +52,7 @@ export type ServicioConferencias = Readonly<{
     settings: {
       requiereAsistenciaTecnica?: boolean;
       cohostEmails?: readonly string[];
-    }
+    },
   ) => Promise<void>;
 
   descartarOperacionPendiente: (eventoProveedorId: string) => Promise<DescartarOperacionResult>;
@@ -64,7 +66,7 @@ export type ServicioConferencias = Readonly<{
 
 export function crearServicioConferencias(
   repository: ConferenciasRepositoryPort,
-  providerFactory: ConferenceProviderFactory = crearGoogleConferenceProvider
+  providerFactory: ConferenceProviderFactory = crearGoogleConferenceProvider,
 ): ServicioConferencias {
   return {
     async sincronizarEventosPendientes(ids) {
@@ -81,7 +83,7 @@ export function crearServicioConferencias(
         providerFactory,
         organizerEmail,
         codigoReunion,
-        settings
+        settings,
       );
     },
 
@@ -97,6 +99,6 @@ export function crearServicioConferencias(
       return reclasificarOperacionesPendientesLoteUseCase(repository);
     },
 
-    crearProvider: providerFactory
+    crearProvider: providerFactory,
   };
 }

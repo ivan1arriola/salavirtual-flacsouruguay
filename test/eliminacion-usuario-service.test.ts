@@ -7,7 +7,12 @@ describe("eliminación administrativa de usuarios", () => {
     const db = { $transaction: vi.fn() } as unknown as PrismaClient;
 
     await expect(
-      eliminarUsuarioCompleto(db, { id: "admin", rol: "ADMINISTRACION", activo: true }, "admin", "ELIMINAR")
+      eliminarUsuarioCompleto(
+        db,
+        { id: "admin", rol: "ADMINISTRACION", activo: true },
+        "admin",
+        "ELIMINAR",
+      ),
     ).rejects.toThrow("No podés eliminar tu propia cuenta.");
 
     expect(db.$transaction).not.toHaveBeenCalled();
@@ -17,7 +22,12 @@ describe("eliminación administrativa de usuarios", () => {
     const db = { $transaction: vi.fn() } as unknown as PrismaClient;
 
     await expect(
-      eliminarUsuarioCompleto(db, { id: "admin", rol: "ADMINISTRACION", activo: true }, "usuario", "eliminar")
+      eliminarUsuarioCompleto(
+        db,
+        { id: "admin", rol: "ADMINISTRACION", activo: true },
+        "usuario",
+        "eliminar",
+      ),
     ).rejects.toThrow("La confirmación de eliminación no es válida.");
 
     expect(db.$transaction).not.toHaveBeenCalled();
@@ -37,10 +47,10 @@ describe("eliminación administrativa de usuarios", () => {
             emailPrincipal: "persona@example.com",
             docente: null,
             asistenteTecnico: null,
-            cuentasGoogle: []
+            cuentasGoogle: [],
           }),
         updateMany: vi.fn().mockResolvedValue({ count: 0 }),
-        delete: deleteUser
+        delete: deleteUser,
       },
       cohostReunion: { deleteMany: vi.fn() },
       docentePrograma: { findMany: vi.fn(), deleteMany: vi.fn() },
@@ -55,17 +65,17 @@ describe("eliminación administrativa de usuarios", () => {
       configuracionGoogleWorkspace: { updateMany: vi.fn().mockResolvedValue({ count: 0 }) },
       tokenVerificacion: { deleteMany: vi.fn().mockResolvedValue({ count: 0 }) },
       solicitudAccesoGoogle: { deleteMany: vi.fn().mockResolvedValue({ count: 0 }) },
-      auditoria: { create: createAudit }
+      auditoria: { create: createAudit },
     };
     const db = {
-      $transaction: (action: (client: typeof tx) => Promise<unknown>) => action(tx)
+      $transaction: (action: (client: typeof tx) => Promise<unknown>) => action(tx),
     } as unknown as PrismaClient;
 
     await eliminarUsuarioCompleto(
       db,
       { id: "admin", rol: "ADMINISTRACION", activo: true },
       "usuario",
-      "ELIMINAR"
+      "ELIMINAR",
     );
 
     expect(createAudit).toHaveBeenCalledWith({
@@ -74,8 +84,8 @@ describe("eliminación administrativa de usuarios", () => {
         accion: "USUARIO_ELIMINADO",
         entidadTipo: "Usuario",
         entidadId: "usuario",
-        valorAnterior: { rol: "DOCENTE" }
-      })
+        valorAnterior: { rol: "DOCENTE" },
+      }),
     });
     expect(deleteUser).toHaveBeenCalledWith({ where: { id: "usuario" } });
   });

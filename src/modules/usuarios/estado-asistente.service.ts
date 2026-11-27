@@ -10,7 +10,7 @@ export async function actualizarEstadoOperativoAsistente(
   db: PrismaClient,
   actor: SessionActor,
   usuarioId: string,
-  input: EstadoOperativoAsistenteInput
+  input: EstadoOperativoAsistenteInput,
 ): Promise<
   Readonly<{
     disponibleGeneral: boolean;
@@ -31,7 +31,7 @@ export async function actualizarEstadoOperativoAsistente(
     const [actorActual, usuario] = await Promise.all([
       tx.usuario.findUnique({
         where: { id: actor.id },
-        select: { id: true, activo: true, rol: true }
+        select: { id: true, activo: true, rol: true },
       }),
       tx.usuario.findUnique({
         where: { id: usuarioId },
@@ -42,11 +42,11 @@ export async function actualizarEstadoOperativoAsistente(
             select: {
               id: true,
               disponibleGeneral: true,
-              cesadoHastaProximoInicioSesion: true
-            }
-          }
-        }
-      })
+              cesadoHastaProximoInicioSesion: true,
+            },
+          },
+        },
+      }),
     ]);
 
     if (!actorActual?.activo || actorActual.rol !== "ADMINISTRACION") {
@@ -58,12 +58,12 @@ export async function actualizarEstadoOperativoAsistente(
 
     const anterior = {
       disponibleGeneral: usuario.asistenteTecnico.disponibleGeneral,
-      cesadoHastaProximoInicioSesion: usuario.asistenteTecnico.cesadoHastaProximoInicioSesion
+      cesadoHastaProximoInicioSesion: usuario.asistenteTecnico.cesadoHastaProximoInicioSesion,
     };
     const siguiente = {
       disponibleGeneral: input.disponibleGeneral ?? anterior.disponibleGeneral,
       cesadoHastaProximoInicioSesion:
-        input.cesadoHastaProximoInicioSesion ?? anterior.cesadoHastaProximoInicioSesion
+        input.cesadoHastaProximoInicioSesion ?? anterior.cesadoHastaProximoInicioSesion,
     };
 
     if (
@@ -81,8 +81,8 @@ export async function actualizarEstadoOperativoAsistente(
           : {}),
         ...(typeof input.cesadoHastaProximoInicioSesion === "boolean"
           ? { cesadoHastaProximoInicioSesion: input.cesadoHastaProximoInicioSesion }
-          : {})
-      }
+          : {}),
+      },
     });
     await tx.auditoria.create({
       data: {
@@ -91,8 +91,8 @@ export async function actualizarEstadoOperativoAsistente(
         entidadTipo: "AsistenteTecnico",
         entidadId: usuario.asistenteTecnico.id,
         valorAnterior: anterior,
-        valorNuevo: siguiente
-      }
+        valorNuevo: siguiente,
+      },
     });
 
     return siguiente;
@@ -102,20 +102,20 @@ export async function actualizarEstadoOperativoAsistente(
 export async function cesarAsistenteTecnicoHastaProximoInicioSesion(
   db: PrismaClient,
   actor: SessionActor,
-  usuarioId: string
+  usuarioId: string,
 ): Promise<void> {
   await actualizarEstadoOperativoAsistente(db, actor, usuarioId, {
-    cesadoHastaProximoInicioSesion: true
+    cesadoHastaProximoInicioSesion: true,
   });
 }
 
 export async function reactivarAsistenteTecnicoAhora(
   db: PrismaClient,
   actor: SessionActor,
-  usuarioId: string
+  usuarioId: string,
 ): Promise<void> {
   await actualizarEstadoOperativoAsistente(db, actor, usuarioId, {
-    cesadoHastaProximoInicioSesion: false
+    cesadoHastaProximoInicioSesion: false,
   });
 }
 
@@ -123,19 +123,19 @@ export async function registrarInicioSesionUsuario(
   db: PrismaClient,
   usuarioId: string,
   proveedor: "credentials" | "google",
-  ahora = new Date()
+  ahora = new Date(),
 ): Promise<void> {
   await db.$transaction(async (tx) => {
     await tx.usuario.update({
       where: { id: usuarioId },
-      data: { ultimoAccesoAt: ahora, ultimoProveedor: proveedor }
+      data: { ultimoAccesoAt: ahora, ultimoProveedor: proveedor },
     });
     const reactivados = await tx.asistenteTecnico.updateMany({
       where: {
         usuarioId,
-        cesadoHastaProximoInicioSesion: true
+        cesadoHastaProximoInicioSesion: true,
       },
-      data: { cesadoHastaProximoInicioSesion: false }
+      data: { cesadoHastaProximoInicioSesion: false },
     });
     if (reactivados.count === 0) {
       return;
@@ -148,8 +148,8 @@ export async function registrarInicioSesionUsuario(
         entidadTipo: "Usuario",
         entidadId: usuarioId,
         valorAnterior: { cesadoHastaProximoInicioSesion: true },
-        valorNuevo: { cesadoHastaProximoInicioSesion: false, proveedor }
-      }
+        valorNuevo: { cesadoHastaProximoInicioSesion: false, proveedor },
+      },
     });
   });
 }

@@ -10,15 +10,18 @@ import {
   ordenarCarpetasVinculadasZoomUseCase,
   resolverCarpetaDestinoZoom,
   transferirArchivoZoomUseCase,
-  vincularOcurrenciaZoom
+  vincularOcurrenciaZoom,
 } from "../src/modules/archivos/application";
 import type {
   ArchivoOrigenZoom,
   LeaseArchivoZoom,
   ReferenciaOcurrenciaZoom,
-  ResultadoInventarioZoom
+  ResultadoInventarioZoom,
 } from "../src/modules/archivos/domain";
-import type { ArchivoReclamadoZoom, ZoomArchivoRepositoryPort } from "../src/modules/archivos/ports";
+import type {
+  ArchivoReclamadoZoom,
+  ZoomArchivoRepositoryPort,
+} from "../src/modules/archivos/ports";
 
 const KIB = 256 * 1024;
 const GB = 1024n ** 3n;
@@ -31,7 +34,7 @@ const REF: ReferenciaOcurrenciaZoom = {
   meetingId: "123",
   anfitrionZoomId: "host",
   inicioRealAt: new Date("2026-03-15T14:00:00Z"),
-  titulo: "Clase integrada"
+  titulo: "Clase integrada",
 };
 
 function contenido(n: number, semilla: number): Uint8Array {
@@ -44,7 +47,7 @@ function contenido(n: number, semilla: number): Uint8Array {
 const CONTENIDOS: Record<string, Uint8Array> = {
   mp4: contenido(2 * KIB + 90_000, 1), // 3 bloques de subida: 256 KiB, 256 KiB y el resto
   m4a: contenido(300_000, 2),
-  chat: contenido(5_000, 3)
+  chat: contenido(5_000, 3),
 };
 const recurso = (id: string, tipo: string, ext: string, clave: string): ArchivoOrigenZoom => ({
   claveOrigen: clave.padEnd(64, "0"),
@@ -55,18 +58,20 @@ const recurso = (id: string, tipo: string, ext: string, clave: string): ArchivoO
   extension: ext,
   inicioAt: null,
   finAt: null,
-  tamanoBytes: BigInt(CONTENIDOS[ext === "mp4" ? "mp4" : ext === "m4a" ? "m4a" : "chat"]!.byteLength),
+  tamanoBytes: BigInt(
+    CONTENIDOS[ext === "mp4" ? "mp4" : ext === "m4a" ? "m4a" : "chat"]!.byteLength,
+  ),
   estadoOrigen: "completed",
-  descargable: true
+  descargable: true,
 });
 const INVENTARIO: ResultadoInventarioZoom = {
   recursos: [
     recurso("z-mp4", "MP4", "mp4", "a1"),
     recurso("z-m4a", "M4A", "m4a", "a2"),
-    recurso("z-chat", "CHAT", "txt", "a3")
+    recurso("z-chat", "CHAT", "txt", "a3"),
   ],
   observaciones: [],
-  procesamientoPendiente: false
+  procesamientoPendiente: false,
 };
 const claveContenido = (r: ArchivoOrigenZoom) =>
   r.extension === "mp4" ? "mp4" : r.extension === "m4a" ? "m4a" : "chat";
@@ -77,20 +82,22 @@ function zoomFalso() {
   return {
     aperturas,
     obtenerInventario: vi.fn(async () => INVENTARIO),
-    abrirDescarga: vi.fn(async (_o: ReferenciaOcurrenciaZoom, r: ArchivoOrigenZoom, offset: bigint) => {
-      aperturas.push({ id: r.archivoZoomId!, offset });
-      const datos = CONTENIDOS[claveContenido(r)]!.subarray(Number(offset));
-      return {
-        tipo: "CONTENIDO" as const,
-        contenido: (async function* () {
-          for (let i = 0; i < datos.length; i += 64 * 1024) {
-            yield datos.subarray(i, i + 64 * 1024);
-          }
-        })(),
-        offsetOrigen: offset,
-        totalBytes: BigInt(CONTENIDOS[claveContenido(r)]!.byteLength)
-      };
-    })
+    abrirDescarga: vi.fn(
+      async (_o: ReferenciaOcurrenciaZoom, r: ArchivoOrigenZoom, offset: bigint) => {
+        aperturas.push({ id: r.archivoZoomId!, offset });
+        const datos = CONTENIDOS[claveContenido(r)]!.subarray(Number(offset));
+        return {
+          tipo: "CONTENIDO" as const,
+          contenido: (async function* () {
+            for (let i = 0; i < datos.length; i += 64 * 1024) {
+              yield datos.subarray(i, i + 64 * 1024);
+            }
+          })(),
+          offsetOrigen: offset,
+          totalBytes: BigInt(CONTENIDOS[claveContenido(r)]!.byteLength),
+        };
+      },
+    ),
   };
 }
 
@@ -110,7 +117,7 @@ function driveFalso(opciones: { fallarSegundoBloqueDe?: string } = {}) {
     nombre: archivos.get(id)!.nombre,
     tamanoBytes: BigInt(longitud(id)),
     mimeType: null,
-    webViewUrl: `https://drive.google.com/file/d/${id}/view`
+    webViewUrl: `https://drive.google.com/file/d/${id}/view`,
   });
   return {
     archivos,
@@ -155,10 +162,10 @@ function driveFalso(opciones: { fallarSegundoBloqueDe?: string } = {}) {
           completo: false,
           carpeta: d.carpetaId,
           nombre: d.nombre,
-          origen: origenKey
+          origen: origenKey,
         });
         return `sesion:${d.fileId}`;
-      }
+      },
     ),
     consultarSubida: vi.fn(async (sesion: string) => {
       const id = sesion.slice("sesion:".length);
@@ -167,14 +174,24 @@ function driveFalso(opciones: { fallarSegundoBloqueDe?: string } = {}) {
         : { estado: "VENCIDA" as const };
     }),
     subirBloque: vi.fn(
-      async (sesion: string, offset: bigint, bytes: Uint8Array, _t: unknown, o?: { ultimo?: boolean }) => {
+      async (
+        sesion: string,
+        offset: bigint,
+        bytes: Uint8Array,
+        _t: unknown,
+        o?: { ultimo?: boolean },
+      ) => {
         const id = sesion.slice("sesion:".length);
         const a = archivos.get(id)!;
         if (BigInt(longitud(id)) !== offset) {
           throw new Error(`offset ${offset} != ${longitud(id)}`);
         }
         // Cae el worker/red justo en el 2.º bloque del archivo indicado, una sola vez (los bytes del bloque no llegan).
-        if (fallosPendientes > 0 && a.nombre === opciones.fallarSegundoBloqueDe && offset === BigInt(KIB)) {
+        if (
+          fallosPendientes > 0 &&
+          a.nombre === opciones.fallarSegundoBloqueDe &&
+          offset === BigInt(KIB)
+        ) {
           fallosPendientes--;
           throw new Error("conexión cortada");
         }
@@ -184,17 +201,19 @@ function driveFalso(opciones: { fallarSegundoBloqueDe?: string } = {}) {
           return { estado: "COMPLETA" as const, destino: destino(id) };
         }
         return { estado: "PARCIAL" as const, bytesConfirmados: BigInt(longitud(id)) };
-      }
+      },
     ),
     buscarConservado: vi.fn(async (origenKey: string, fileId: string | null) => {
       const hallados = [...archivos.entries()].filter(
-        ([id, a]) => a.completo && (a.origen === origenKey || id === fileId)
+        ([id, a]) => a.completo && (a.origen === origenKey || id === fileId),
       );
       return hallados.length === 0
         ? { tipo: "NINGUNO" as const }
         : { tipo: "UNO" as const, destino: destino(hallados[0]![0]) };
     }),
-    verificarArchivo: vi.fn(async (id: string) => (archivos.get(id)?.completo ? destino(id) : null)),
+    verificarArchivo: vi.fn(async (id: string) =>
+      archivos.get(id)?.completo ? destino(id) : null,
+    ),
     bytesDe: (id: string) => {
       const a = archivos.get(id)!;
       const r = new Uint8Array(longitud(id));
@@ -204,7 +223,7 @@ function driveFalso(opciones: { fallarSegundoBloqueDe?: string } = {}) {
         o += c.byteLength;
       }
       return r;
-    }
+    },
   };
 }
 
@@ -237,12 +256,15 @@ function repoEnMemoria() {
   const lease = (a: FilaArchivo): LeaseArchivoZoom => ({
     archivoId: a.id,
     version: a.version,
-    venceAt: new Date(AHORA.getTime() + 300_000)
+    venceAt: new Date(AHORA.getTime() + 300_000),
   });
   const vigente = (l: LeaseArchivoZoom) =>
     archivos.get(l.archivoId)?.version === l.version ? archivos.get(l.archivoId)! : null;
   const repo = {
-    async guardarInventario(entrada: { referencia: ReferenciaOcurrenciaZoom }, inv: ResultadoInventarioZoom) {
+    async guardarInventario(
+      entrada: { referencia: ReferenciaOcurrenciaZoom },
+      inv: ResultadoInventarioZoom,
+    ) {
       let o = [...ocurrencias.values()].find((x) => x.ref.uuid === entrada.referencia.uuid);
       if (!o) {
         o = {
@@ -250,7 +272,7 @@ function repoEnMemoria() {
           ref: entrada.referencia,
           eventoId: null,
           carpeta: null,
-          carpetaVinculadaAt: null
+          carpetaVinculadaAt: null,
         };
         ocurrencias.set(o.id, o);
       }
@@ -258,7 +280,7 @@ function repoEnMemoria() {
         actualizados = 0;
       for (const r of inv.recursos) {
         const previo = [...archivos.values()].find(
-          (a) => a.ocurrenciaId === o.id && a.claveOrigen === r.claveOrigen
+          (a) => a.ocurrenciaId === o.id && a.claveOrigen === r.claveOrigen,
         );
         if (previo) {
           actualizados++;
@@ -278,7 +300,7 @@ function repoEnMemoria() {
           upload: null,
           bytesConfirmados: 0n,
           nombreDestino: `${r.tipoOriginal}-${id}.${r.extension}`,
-          webViewUrl: null
+          webViewUrl: null,
         });
       }
       return { ocurrenciaId: o.id, nuevos, actualizados, requierenRevision: 0 };
@@ -287,7 +309,7 @@ function repoEnMemoria() {
       const a = [...archivos.values()].find(
         (x) =>
           (x.estado === "PENDIENTE" || x.estado === "ERROR_REINTENTABLE") &&
-          (!x.proximoIntentoAt || x.proximoIntentoAt <= ahora)
+          (!x.proximoIntentoAt || x.proximoIntentoAt <= ahora),
       );
       if (!a) {
         return null;
@@ -313,12 +335,16 @@ function repoEnMemoria() {
         driveFileId: a.driveFileId,
         uploadSessionCifrada: a.upload,
         bytesConfirmados: a.bytesConfirmados,
-        intentos: a.intentos
+        intentos: a.intentos,
       };
     },
     async guardarProgreso(
       l: LeaseArchivoZoom,
-      p: { bytesConfirmados?: bigint; uploadSessionCifrada?: string | null; driveFileId?: string | null }
+      p: {
+        bytesConfirmados?: bigint;
+        uploadSessionCifrada?: string | null;
+        driveFileId?: string | null;
+      },
     ) {
       const a = vigente(l);
       if (!a) {
@@ -388,8 +414,8 @@ function repoEnMemoria() {
       return {
         tipo: "VINCULADA" as const,
         referenciasCreadas: [...archivos.values()].filter(
-          (a) => a.ocurrenciaId === id && a.estado === "CONSERVADO"
-        ).length
+          (a) => a.ocurrenciaId === id && a.estado === "CONSERVADO",
+        ).length,
       };
     },
     // Para el movimiento de carpetas (puerto propio del caso de uso).
@@ -401,7 +427,7 @@ function repoEnMemoria() {
           ocurrenciaId: o.id,
           driveFolderId: o.carpeta!,
           inicioRealAt: o.ref.inicioRealAt,
-          titulo: o.ref.titulo
+          titulo: o.ref.titulo,
         }));
     },
     async listarVinculadasCercanas() {
@@ -411,13 +437,13 @@ function repoEnMemoria() {
           ocurrenciaId: o.id,
           driveFolderId: o.carpeta!,
           inicioRealAt: o.ref.inicioRealAt,
-          titulo: o.ref.titulo
+          titulo: o.ref.titulo,
         }));
     },
     async marcarCarpetaVinculada(id: string, ahora: Date) {
       ocurrencias.get(id)!.carpetaVinculadaAt = ahora;
       return true;
-    }
+    },
   };
   return { repo, ocurrencias, archivos };
 }
@@ -429,14 +455,14 @@ async function vaciarCola(
   r: ReturnType<typeof repoEnMemoria>,
   origen: ReturnType<typeof zoomFalso>,
   drive: ReturnType<typeof driveFalso>,
-  ahora: Date
+  ahora: Date,
 ) {
   const resultados: string[] = [];
   for (let l = await r.repo.reclamarArchivo(ahora); l; l = await r.repo.reclamarArchivo(ahora)) {
     const res = await transferirArchivoZoomUseCase(
       r.repo as unknown as ZoomArchivoRepositoryPort,
-      origen as never,
-      drive as never,
+      origen,
+      drive,
       l,
       new AbortController().signal,
       {
@@ -446,8 +472,8 @@ async function vaciarCola(
         aleatorio: () => 0.5,
         heartbeatMs: 1_000_000,
         leaseMs: 300_000,
-        resolverCarpeta: (archivo) => resolverCarpetaDestinoZoom(drive as never, hash, archivo, RAICES)
-      }
+        resolverCarpeta: (archivo) => resolverCarpetaDestinoZoom(drive, hash, archivo, RAICES),
+      },
     );
     resultados.push(res.tipo);
   }
@@ -460,11 +486,11 @@ describe("integración de archivos Zoom (casos de uso con repositorio y Drive en
     const origen = zoomFalso();
     const drive = driveFalso({ fallarSegundoBloqueDe: "MP4-ar-1.mp4" });
 
-    const inv = await inventariarZoomUseCase(r.repo, origen as never, {
+    const inv = await inventariarZoomUseCase(r.repo, origen, {
       referencia: REF,
       cuentaProveedorId: null,
       ahora: AHORA,
-      corteDias: 90
+      corteDias: 90,
     });
     expect(inv).toMatchObject({ tipo: "GUARDADO", resumen: { nuevos: 3 } });
 
@@ -473,7 +499,7 @@ describe("integración de archivos Zoom (casos de uso con repositorio y Drive en
     expect([...r.archivos.values()].map((a) => [a.tipoOriginal, a.estado]).sort()).toEqual([
       ["CHAT", "CONSERVADO"],
       ["M4A", "CONSERVADO"],
-      ["MP4", "ERROR_REINTENTABLE"]
+      ["MP4", "ERROR_REINTENTABLE"],
     ]);
     expect(primera.filter((t) => t === "FALLO").length).toBe(1);
 
@@ -484,7 +510,7 @@ describe("integración de archivos Zoom (casos de uso con repositorio y Drive en
     const aperturasMp4 = origen.aperturas.filter((a) => a.id === "z-mp4");
     expect(aperturasMp4.map((a) => a.offset)).toEqual([0n, BigInt(KIB)]);
     expect(createHash("sha256").update(drive.bytesDe(mp4.driveFileId!)).digest("hex")).toBe(
-      createHash("sha256").update(CONTENIDOS.mp4!).digest("hex")
+      createHash("sha256").update(CONTENIDOS["mp4"]!).digest("hex"),
     );
     // Un único archivo de Drive por recurso (3), todos completos.
     expect([...drive.archivos.values()].filter((a) => a.completo)).toHaveLength(3);
@@ -495,11 +521,11 @@ describe("integración de archivos Zoom (casos de uso con repositorio y Drive en
     const r = repoEnMemoria();
     const origen = zoomFalso();
     const drive = driveFalso();
-    await inventariarZoomUseCase(r.repo, origen as never, {
+    await inventariarZoomUseCase(r.repo, origen, {
       referencia: REF,
       cuentaProveedorId: null,
       ahora: AHORA,
-      corteDias: 90
+      corteDias: 90,
     });
     await vaciarCola(r, origen, drive, AHORA);
 
@@ -516,10 +542,10 @@ describe("integración de archivos Zoom (casos de uso con repositorio y Drive en
 
     // Vínculo manual posterior.
     const vinculo = await vincularOcurrenciaZoom(
-      { repo: r.repo as never },
+      { repo: r.repo },
       { id: "admin", rol: "ADMINISTRACION" },
       oc.id,
-      "ev-1"
+      "ev-1",
     );
     expect(vinculo).toEqual({ tipo: "VINCULADA", referenciasCreadas: 3 });
     // Nada que transferir: cero descargas nuevas.
@@ -530,12 +556,12 @@ describe("integración de archivos Zoom (casos de uso con repositorio y Drive en
     const resumen = await ordenarCarpetasVinculadasZoomUseCase(
       {
         repo: r.repo,
-        storage: drive as never,
+        storage: drive,
         hash,
         raizVinculados: RAICES.raizVinculados,
-        ahora: () => MAS_TARDE
+        ahora: () => MAS_TARDE,
       },
-      { limite: 10 }
+      { limite: 10 },
     );
     expect(resumen).toMatchObject({ ordenadas: 1, fallidas: 0 });
     // Formato como Meet: directamente bajo la raíz, 'AAAAMMDD - Tema'.
@@ -546,12 +572,12 @@ describe("integración de archivos Zoom (casos de uso con repositorio y Drive en
     const otra = await ordenarCarpetasVinculadasZoomUseCase(
       {
         repo: r.repo,
-        storage: drive as never,
+        storage: drive,
         hash,
         raizVinculados: RAICES.raizVinculados,
-        ahora: () => MAS_TARDE
+        ahora: () => MAS_TARDE,
       },
-      { limite: 10 }
+      { limite: 10 },
     );
     expect(otra).toMatchObject({ ordenadas: 0, fallidas: 0 });
   });
@@ -560,18 +586,18 @@ describe("integración de archivos Zoom (casos de uso con repositorio y Drive en
     const r = repoEnMemoria();
     const origen = zoomFalso();
     const drive = driveFalso();
-    await inventariarZoomUseCase(r.repo, origen as never, {
+    await inventariarZoomUseCase(r.repo, origen, {
       referencia: REF,
       cuentaProveedorId: null,
       ahora: AHORA,
-      corteDias: 90
+      corteDias: 90,
     });
     await vaciarCola(r, origen, drive, AHORA);
-    const otra = await inventariarZoomUseCase(r.repo, origen as never, {
+    const otra = await inventariarZoomUseCase(r.repo, origen, {
       referencia: REF,
       cuentaProveedorId: null,
       ahora: MAS_TARDE,
-      corteDias: 90
+      corteDias: 90,
     });
     expect(otra).toMatchObject({ tipo: "GUARDADO", resumen: { nuevos: 0, actualizados: 3 } });
     expect([...r.archivos.values()].every((a) => a.estado === "CONSERVADO")).toBe(true);

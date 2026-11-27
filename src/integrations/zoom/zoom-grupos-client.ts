@@ -23,23 +23,27 @@ async function pedirZoom<T>(url: string, token: string, accion: string): Promise
   }
   if (!response.ok) {
     const errorBody = await response.text().catch(() => "");
-    throw new Error(`Zoom API error al ${accion} (${response.status}): ${errorBody || response.statusText}`);
+    throw new Error(
+      `Zoom API error al ${accion} (${response.status}): ${errorBody || response.statusText}`,
+    );
   }
   return (await response.json()) as T;
 }
 
 export async function listarGruposZoomHttp(token: string): Promise<readonly GrupoZoom[]> {
-  const data = await pedirZoom<{ groups?: readonly { id: string; name: string; total_members?: number }[] }>(
-    "https://api.zoom.us/v2/groups",
-    token,
-    "listar grupos"
-  );
-  return (data.groups ?? []).map((g) => ({ id: g.id, nombre: g.name, totalMiembros: g.total_members ?? 0 }));
+  const data = await pedirZoom<{
+    groups?: readonly { id: string; name: string; total_members?: number }[];
+  }>("https://api.zoom.us/v2/groups", token, "listar grupos");
+  return (data.groups ?? []).map((g) => ({
+    id: g.id,
+    nombre: g.name,
+    totalMiembros: g.total_members ?? 0,
+  }));
 }
 
 export async function listarMiembrosGrupoZoomHttp(
   token: string,
-  grupoId: string
+  grupoId: string,
 ): Promise<readonly MiembroGrupoZoom[]> {
   const base = `https://api.zoom.us/v2/groups/${encodeURIComponent(grupoId)}/members?page_size=300`;
   const miembros: MiembroGrupoZoom[] = [];
@@ -58,7 +62,12 @@ export async function listarMiembrosGrupoZoomHttp(
     }>(url, token, "listar miembros del grupo");
     for (const m of data.members ?? []) {
       const nombre = `${m.first_name ?? ""} ${m.last_name ?? ""}`.trim();
-      miembros.push({ id: m.id, email: m.email, nombre: nombre || m.email, licenciado: m.type === 2 });
+      miembros.push({
+        id: m.id,
+        email: m.email,
+        nombre: nombre || m.email,
+        licenciado: m.type === 2,
+      });
     }
     if (!data.next_page_token) {
       return miembros;

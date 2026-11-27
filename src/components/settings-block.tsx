@@ -8,7 +8,7 @@ export function SettingsBlock({
   summary,
   status,
   children,
-  defaultOpen
+  defaultOpen,
 }: Readonly<{
   title: string;
   summary: React.ReactNode;
@@ -23,7 +23,9 @@ export function SettingsBlock({
           <h2>{title}</h2>
           <div className="settings-block__summary">{summary}</div>
         </div>
-        {status ? <span className={`settings-section-status is-${status.tone}`}>{status.label}</span> : null}
+        {status ? (
+          <span className={`settings-section-status is-${status.tone}`}>{status.label}</span>
+        ) : null}
       </div>
       <details className="settings-block__edit" open={defaultOpen}>
         <summary>
@@ -38,8 +40,8 @@ export function SettingsBlock({
 export function SettingsNotices({
   estado,
   error,
-  mensajes
-}: Readonly<{ estado?: string; error?: string; mensajes: Readonly<Record<string, string>> }>) {
+  mensajes,
+}: Readonly<{ estado?: string | undefined; error?: string | undefined; mensajes: Readonly<Record<string, string>> }>) {
   const mensaje = estado ? mensajes[estado] : undefined;
   return (
     <>

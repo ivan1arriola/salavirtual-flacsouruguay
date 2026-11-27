@@ -23,7 +23,7 @@ const encuentro = (puedeIniciar: boolean) => ({
   puedeIniciar,
   estadoEnlace: "LISTO" as const,
   eventoProveedorId: "ev1",
-  operacion: "PROVISIONAR" as const
+  operacion: "PROVISIONAR" as const,
 });
 
 function render(puedeIniciar: boolean, esAdmin = false, extra: Record<string, unknown> = {}) {
@@ -33,8 +33,8 @@ function render(puedeIniciar: boolean, esAdmin = false, extra: Record<string, un
       esAdmin,
       puedeModificar: true,
       permiteCancelarSerie: true,
-      encuentros: [{ ...encuentro(puedeIniciar), ...extra } as ReturnType<typeof encuentro>]
-    })
+      encuentros: [{ ...encuentro(puedeIniciar), ...extra }],
+    }),
   );
 }
 
@@ -65,8 +65,8 @@ describe("encuentros de una reunión Zoom", () => {
         esAdmin: false,
         puedeModificar: false,
         permiteCancelarSerie: true,
-        encuentros: [encuentro(false)]
-      })
+        encuentros: [encuentro(false)],
+      }),
     );
     expect(html).toContain("Unirse");
     expect(html).not.toContain("Cambiar fecha y horario");
@@ -81,8 +81,8 @@ describe("encuentros de una reunión Zoom", () => {
         esAdmin: true,
         puedeModificar: true,
         permiteCancelarSerie: false,
-        encuentros: [encuentro(false)]
-      })
+        encuentros: [encuentro(false)],
+      }),
     );
     expect(html).not.toContain("Cancelar toda la serie");
     expect(html).toContain("Cambiar fecha y horario");
@@ -109,7 +109,7 @@ describe("encuentros de una reunión Zoom", () => {
       estado: "CANCELADA",
       editable: false,
       puedeUnirse: false,
-      estadoEnlace: "PENDIENTE"
+      estadoEnlace: "PENDIENTE",
     });
     expect(html).not.toContain("Unirse");
     expect(html).not.toContain("Iniciar como anfitrión");
@@ -140,35 +140,41 @@ describe("enviarAccionEncuentro", () => {
   it("devuelve el error de la API ante un PATCH fallido", async () => {
     const fetchFalso = vi.fn(
       async () =>
-        new Response(JSON.stringify({ error: "No se puede reprogramar un encuentro que ya comenzó." }), {
-          status: 409
-        })
+        new Response(
+          JSON.stringify({ error: "No se puede reprogramar un encuentro que ya comenzó." }),
+          {
+            status: 409,
+          },
+        ),
     );
-    const resultado = await enviarAccionEncuentro(fetchFalso as unknown as typeof fetch, "/api/x", {
+    const resultado = await enviarAccionEncuentro(fetchFalso, "/api/x", {
       method: "PATCH",
-      body: {}
+      body: {},
     });
-    expect(resultado).toEqual({ ok: false, mensaje: "No se puede reprogramar un encuentro que ya comenzó." });
+    expect(resultado).toEqual({
+      ok: false,
+      mensaje: "No se puede reprogramar un encuentro que ya comenzó.",
+    });
   });
 
   it("informa la advertencia cuando la API acepta con sincronización pendiente", async () => {
     const fetchFalso = vi.fn(
       async () =>
         new Response(JSON.stringify({ message: "Encuentro actualizado.", warning: "Pendiente." }), {
-          status: 202
-        })
+          status: 202,
+        }),
     );
-    const resultado = await enviarAccionEncuentro(fetchFalso as unknown as typeof fetch, "/api/x", {
+    const resultado = await enviarAccionEncuentro(fetchFalso, "/api/x", {
       method: "PATCH",
-      body: {}
+      body: {},
     });
     expect(resultado).toEqual({ ok: true, mensaje: "Pendiente." });
   });
 
   it("usa un mensaje genérico si la respuesta no es JSON", async () => {
     const fetchFalso = vi.fn(async () => new Response("boom", { status: 500 }));
-    const resultado = await enviarAccionEncuentro(fetchFalso as unknown as typeof fetch, "/api/x", {
-      method: "DELETE"
+    const resultado = await enviarAccionEncuentro(fetchFalso, "/api/x", {
+      method: "DELETE",
     });
     expect(resultado.ok).toBe(false);
     expect(resultado.mensaje).toBe("No se pudo completar la acción.");
@@ -177,9 +183,11 @@ describe("enviarAccionEncuentro", () => {
 
 describe("detalle de reunión Zoom", () => {
   it("la ruta pasa por el despachador, que puede abrir el detalle Zoom", () => {
-    expect(leer("app/(gestion)/reuniones/[solicitudId]/page.tsx")).toContain("reunion-detalle-page.server");
+    expect(leer("app/(gestion)/reuniones/[solicitudId]/page.tsx")).toContain(
+      "reunion-detalle-page.server",
+    );
     expect(leer("src/bootstrap/ui/reuniones/reunion-detalle-page.server.tsx")).toContain(
-      "reunion-zoom-detail-page.server"
+      "reunion-zoom-detail-page.server",
     );
   });
 

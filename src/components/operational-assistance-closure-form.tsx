@@ -2,13 +2,14 @@
 
 import { CheckCircle2, Clock3, LoaderCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { FormEvent, useState } from "react";
+import type { FormEvent } from "react";
+import { useState } from "react";
 
 export function OperationalAssistanceClosureForm({
   asignacionId,
   inicioProgramado,
   finProgramado,
-  cierreConfirmado
+  cierreConfirmado,
 }: Readonly<{
   asignacionId: string;
   inicioProgramado: string;
@@ -34,8 +35,8 @@ export function OperationalAssistanceClosureForm({
           asignacionId,
           inicioReal: montevideoInputToIso(inicio),
           finReal: montevideoInputToIso(fin),
-          comentario: comentario || undefined
-        })
+          comentario: comentario || undefined,
+        }),
       });
       const result = await response.json().catch(() => ({}));
       if (!response.ok) {
@@ -107,9 +108,10 @@ function toMontevideoInput(date: Date): string {
     day: "2-digit",
     hour: "2-digit",
     minute: "2-digit",
-    hourCycle: "h23"
+    hourCycle: "h23",
   }).formatToParts(date);
-  const value = (type: Intl.DateTimeFormatPartTypes) => parts.find((part) => part.type === type)?.value ?? "";
+  const value = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((part) => part.type === type)?.value ?? "";
   return `${value("year")}-${value("month")}-${value("day")}T${value("hour")}:${value("minute")}`;
 }
 

@@ -459,8 +459,8 @@
           </div>
           <div class="control">
             <small
-              ><strong>Comentario:</strong> activá el modo y elegí cualquier elemento. Los cambios se exportan
-              con selectores estables.</small
+              ><strong>Comentario:</strong> activá el modo y elegí cualquier elemento. Los cambios
+              se exportan con selectores estables.</small
             >
           </div>
         </aside>
@@ -470,7 +470,8 @@
     <div class="popover" id="popover">
       <strong id="target"></strong><textarea id="note" placeholder="¿Qué cambiarías?"></textarea>
       <div class="scope" id="scopes">
-        <button class="on" data-scope="this">Este</button><button data-scope="all-matching">Similares</button
+        <button class="on" data-scope="this">Este</button
+        ><button data-scope="all-matching">Similares</button
         ><button data-scope="global">Global</button>
       </div>
       <div class="actions">
@@ -487,12 +488,12 @@
       const META = {
         source: ".frontend-design/configuracion/2026-09-11-configuracion.html",
         topic: "configuracion",
-        targetFile: "app/(gestion)/configuration-center.css"
+        targetFile: "app/(gestion)/configuration-center.css",
       };
       const PALETTES = {
         A: { light: "#173f78", dark: "#71b9d2" },
         B: { light: "#0f7782", dark: "#62c6ce" },
-        C: { light: "#174c9b", dark: "#7ab0ff" }
+        C: { light: "#174c9b", dark: "#7ab0ff" },
       };
       const DENSITY = { compact: "10px", normal: "14px", relaxed: "18px" };
       const initial = { accent: "A", radius: "11", density: "normal" };
@@ -540,9 +541,11 @@
         el.contentEditable = "plaintext-only";
         el.dataset.initial = el.textContent;
         el.oninput = () =>
-          document.querySelectorAll(`[data-fd-id="${el.dataset.fdId}"][data-fd-editable]`).forEach((m) => {
-            if (m !== el) m.textContent = el.textContent;
-          });
+          document
+            .querySelectorAll(`[data-fd-id="${el.dataset.fdId}"][data-fd-editable]`)
+            .forEach((m) => {
+              if (m !== el) m.textContent = el.textContent;
+            });
       });
       collapseBtn.onclick = () => {
         layout.classList.toggle("closed");
@@ -573,20 +576,25 @@
           popover.style.top = Math.min(e.clientY, innerHeight - 220) + "px";
           popover.classList.add("open");
         },
-        true
+        true,
       );
       document.querySelectorAll("#scopes button").forEach(
         (b) =>
           (b.onclick = () => {
             document.querySelectorAll("#scopes button").forEach((x) => x.classList.remove("on"));
             b.classList.add("on");
-          })
+          }),
       );
       cancelNote.onclick = () => popover.classList.remove("open");
       saveNote.onclick = () => {
         if (!note.value.trim()) return toastMsg("Escribí un comentario");
         const scope = document.querySelector("#scopes .on").dataset.scope;
-        comments.push({ id: nextId++, anchor: targetEl.dataset.fdId, scope, text: note.value.trim() });
+        comments.push({
+          id: nextId++,
+          anchor: targetEl.dataset.fdId,
+          scope,
+          text: note.value.trim(),
+        });
         popover.classList.remove("open");
         toastMsg("Comentario guardado");
       };
@@ -596,7 +604,8 @@
         document.querySelectorAll("[data-fd-editable]").forEach((el) => {
           if (seen.has(el.dataset.fdId)) return;
           seen.add(el.dataset.fdId);
-          if (el.textContent !== el.dataset.initial) out.push({ id: el.dataset.fdId, value: el.textContent });
+          if (el.textContent !== el.dataset.initial)
+            out.push({ id: el.dataset.fdId, value: el.textContent });
         });
         return out;
       }
@@ -607,7 +616,7 @@
           "Captured at: " + new Date().toISOString().slice(0, 19).replace("T", " ") + " (local)",
           "Skill: frontend-design",
           "Topic: " + META.topic,
-          ""
+          "",
         ];
         const changed =
           accent.value !== initial.accent ||
@@ -626,20 +635,22 @@
                   .filter(([k]) => k !== accent.value)
                   .map(([k, v]) => `${k}(L:${v.light}/D:${v.dark})`)
                   .join(", "),
-              ""
+              "",
             );
           }
           if (radius.value !== initial.radius)
             lines.push(
               "#### Radius",
               "- `--radius-default` → `" + radius.value + "px` (slider, range 4-18, step 1)",
-              ""
+              "",
             );
           if (density.value !== initial.density)
             lines.push(
               "#### Density",
-              "- `--row-density` → `" + DENSITY[density.value] + "` (segmented: compact | normal | relaxed)",
-              ""
+              "- `--row-density` → `" +
+                DENSITY[density.value] +
+                "` (segmented: compact | normal | relaxed)",
+              "",
             );
         }
         const direct = edits();
@@ -651,8 +662,8 @@
               '- Element: `[data-fd-id="' + x.id + '"]` (' + x.id + ")",
               "- Kind: text",
               "- Value: " + x.value,
-              ""
-            )
+              "",
+            ),
           );
         }
         if (comments.length) {
@@ -665,8 +676,8 @@
                 : '- Element: `[data-fd-id="' + c.anchor + '"]` (' + c.anchor + ")",
               "- Scope: " + c.scope,
               "- Note: " + c.text,
-              ""
-            )
+              "",
+            ),
           );
         }
         if (!changed && !direct.length && !comments.length) return null;
@@ -676,7 +687,7 @@
           "When applying these changes:",
           "",
           `1. Apply the exported decisions and element notes in \`${META.targetFile}\` and the matching components.`,
-          `2. Verify types, tests, build, and the responsive flow at localhost:8000.`
+          `2. Verify types, tests, build, and the responsive flow at localhost:8000.`,
         );
         return lines.join("\n");
       }

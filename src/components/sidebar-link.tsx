@@ -10,18 +10,23 @@ export function SidebarLink({
   className,
   dataTour,
   activeSearch,
-  children
+  children,
 }: Readonly<{
   href: string;
   exact?: boolean;
-  className?: string;
-  dataTour?: string;
-  activeSearch?: Readonly<{ key: string; value: string; defaultActive?: boolean }>;
+  className?: string | undefined;
+  dataTour?: string | undefined;
+  activeSearch?: Readonly<{ key: string; value: string; defaultActive?: boolean }> | undefined;
   children: React.ReactNode;
 }>) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const active = isNavigationItemActive({ href, search: activeSearch }, pathname, searchParams, exact);
+  const active = isNavigationItemActive(
+    { href, search: activeSearch },
+    pathname,
+    searchParams,
+    exact,
+  );
 
   return (
     <Link

@@ -6,7 +6,7 @@ import {
   subirDocumentoGoogleDrive,
   DRIVE_OPERATION_PROPERTY,
   DRIVE_FOLDER_MIME,
-  DRIVE_GOOGLE_DOC_MIME
+  DRIVE_GOOGLE_DOC_MIME,
 } from "../src/integrations/google";
 
 const marker = "a".repeat(64);
@@ -29,8 +29,8 @@ describe("Drive: prueba remota de idempotencia mediante appProperties", () => {
         name: "Carpeta",
         mimeType: DRIVE_FOLDER_MIME,
         parents: ["parent"],
-        appProperties: { [DRIVE_OPERATION_PROPERTY]: marker }
-      }
+        appProperties: { [DRIVE_OPERATION_PROPERTY]: marker },
+      },
     });
   });
 
@@ -49,21 +49,23 @@ describe("Drive: prueba remota de idempotencia mediante appProperties", () => {
           id: "doc-1",
           name: "Lista",
           mimeType: DRIVE_GOOGLE_DOC_MIME,
-          appProperties: { [DRIVE_OPERATION_PROPERTY]: marker }
-        }
-      ]
+          appProperties: { [DRIVE_OPERATION_PROPERTY]: marker },
+        },
+      ],
     });
     const result = await buscarRecursoDrivePorOperacion(
       auth,
       "folder",
       "Lista",
       DRIVE_GOOGLE_DOC_MIME,
-      marker
+      marker,
     );
     expect(result?.id).toBe("doc-1");
     const url: string = request.mock.calls[0][0].url;
     const query = new URL(url).searchParams.get("q")!;
-    expect(query).toContain(`appProperties has { key='${DRIVE_OPERATION_PROPERTY}' and value='${marker}' }`);
+    expect(query).toContain(
+      `appProperties has { key='${DRIVE_OPERATION_PROPERTY}' and value='${marker}' }`,
+    );
     expect(query).toContain("'folder' in parents");
     expect(query).toContain("trashed = false");
   });
@@ -77,15 +79,15 @@ describe("Drive: prueba remota de idempotencia mediante appProperties", () => {
             id: "a",
             name: "Lista",
             mimeType: DRIVE_GOOGLE_DOC_MIME,
-            appProperties: { flacsoOperationId: marker }
+            appProperties: { flacsoOperationId: marker },
           },
           {
             id: "b",
             name: "Lista",
             mimeType: DRIVE_GOOGLE_DOC_MIME,
-            appProperties: { flacsoOperationId: marker }
-          }
-        ]
+            appProperties: { flacsoOperationId: marker },
+          },
+        ],
       },
       {
         files: [
@@ -93,15 +95,21 @@ describe("Drive: prueba remota de idempotencia mediante appProperties", () => {
             id: "a",
             name: "Lista",
             mimeType: DRIVE_GOOGLE_DOC_MIME,
-            appProperties: { flacsoOperationId: marker }
-          }
+            appProperties: { flacsoOperationId: marker },
+          },
         ],
-        nextPageToken: "more"
-      }
+        nextPageToken: "more",
+      },
     ]) {
       const { auth } = client(data);
       expect(
-        await buscarRecursoDrivePorOperacion(auth, "folder", "Lista", DRIVE_GOOGLE_DOC_MIME, marker)
+        await buscarRecursoDrivePorOperacion(
+          auth,
+          "folder",
+          "Lista",
+          DRIVE_GOOGLE_DOC_MIME,
+          marker,
+        ),
       ).toBeNull();
     }
   });
@@ -109,7 +117,7 @@ describe("Drive: prueba remota de idempotencia mediante appProperties", () => {
   it("rechaza claves no verificadas sin consultar Google", async () => {
     const { request, auth } = client();
     await expect(
-      buscarRecursoDrivePorOperacion(auth, "folder", "Lista", DRIVE_GOOGLE_DOC_MIME, "not-safe")
+      buscarRecursoDrivePorOperacion(auth, "folder", "Lista", DRIVE_GOOGLE_DOC_MIME, "not-safe"),
     ).rejects.toThrow("inválido");
     expect(request).not.toHaveBeenCalled();
   });

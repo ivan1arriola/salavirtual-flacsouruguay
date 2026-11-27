@@ -7,14 +7,14 @@ const state = vi.hoisted(() => ({
     nombres: "Ada",
     apellidos: "Lovelace",
     emailPrincipal: "ada@example.test",
-    rol: "ASISTENTE_TECNICO"
-  }
+    rol: "ASISTENTE_TECNICO",
+  },
 }));
 
 vi.mock("next/server", () => ({
   NextResponse: {
-    json: (body: unknown, init?: { status?: number }) => ({ body, status: init?.status ?? 200 })
-  }
+    json: (body: unknown, init?: { status?: number }) => ({ body, status: init?.status ?? 200 }),
+  },
 }));
 vi.mock("@/src/lib/auth/mobile-actor.adapter", () => ({
   MobileActorError: class MobileActorError extends Error {
@@ -24,10 +24,10 @@ vi.mock("@/src/lib/auth/mobile-actor.adapter", () => ({
       this.status = status;
     }
   },
-  requireMobileActor: async () => state.actor
+  requireMobileActor: async () => state.actor,
 }));
 vi.mock("@/src/lib/db", () => ({
-  db: { usuario: { findUnique: async () => state.user } }
+  db: { usuario: { findUnique: async () => state.user } },
 }));
 
 import { GET } from "../app/api/v1/mobile/me/route";
@@ -39,7 +39,7 @@ beforeEach(() => {
     nombres: "Ada",
     apellidos: "Lovelace",
     emailPrincipal: "ada@example.test",
-    rol: "ASISTENTE_TECNICO"
+    rol: "ASISTENTE_TECNICO",
   };
 });
 
@@ -53,8 +53,8 @@ describe("GET /api/v1/mobile/me", () => {
         id: "assistant",
         name: "Ada Lovelace",
         email: "ada@example.test",
-        role: "ASISTENTE_TECNICO"
-      }
+        role: "ASISTENTE_TECNICO",
+      },
     });
   });
 });

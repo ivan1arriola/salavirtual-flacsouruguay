@@ -4,7 +4,7 @@ import { db } from "@/src/lib/db";
 import { descifrarConfiguracion } from "@/src/lib/config/encryption";
 import {
   eliminarEventoCalendarioAsistente,
-  publicarEventoCalendarioAsistente
+  publicarEventoCalendarioAsistente,
 } from "@/src/modules/asistencia/calendario-asistente-google.adapter";
 import { sincronizarCalendariosAsistenteUsuario } from "@/src/modules/asistencia/calendario-asistente.service";
 import {
@@ -13,7 +13,7 @@ import {
   crearPrismaIdentityAdapter,
   crearResolverUsuarioGoogleUseCase,
   type PerfilGoogle,
-  type UsuarioAutenticado
+  type UsuarioAutenticado,
 } from "@/src/modules/identity/api";
 
 export type ServicioIdentity = Readonly<{
@@ -27,15 +27,18 @@ const defaultDispatcher = crearAsistenciaCalendarioDispatcher({
   descifrar: descifrarConfiguracion,
   publicarEvento: publicarEventoCalendarioAsistente,
   eliminarEvento: eliminarEventoCalendarioAsistente,
-  sincronizarUsuario: sincronizarCalendariosAsistenteUsuario
+  sincronizarUsuario: sincronizarCalendariosAsistenteUsuario,
 });
 
 const autenticarCredenciales = crearAutenticarCredencialesUseCase(defaultRepository, compare);
-const resolverUsuarioGoogle = crearResolverUsuarioGoogleUseCase(defaultRepository, defaultDispatcher);
+const resolverUsuarioGoogle = crearResolverUsuarioGoogleUseCase(
+  defaultRepository,
+  defaultDispatcher,
+);
 
 export function obtenerServicioIdentity(): ServicioIdentity {
   return {
     autenticarCredenciales,
-    resolverUsuarioGoogle
+    resolverUsuarioGoogle,
   };
 }

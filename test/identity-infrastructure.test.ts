@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   crearPrismaIdentityAdapter,
-  crearAsistenciaCalendarioDispatcher
+  crearAsistenciaCalendarioDispatcher,
 } from "@/src/modules/identity/infrastructure";
 
 describe("identity infrastructure adapters", () => {
@@ -16,15 +16,15 @@ describe("identity infrastructure adapters", () => {
         fusionadoEnId: null,
         nombres: "Admin",
         apellidos: "FLACSO",
-        emailPrincipal: "admin@flacso.edu.uy"
+        emailPrincipal: "admin@flacso.edu.uy",
       });
 
       const mockDb = {
         usuario: {
           findUnique: mockFindUnique,
-          findFirst: vi.fn()
+          findFirst: vi.fn(),
         },
-        $transaction: vi.fn()
+        $transaction: vi.fn(),
       } as any;
 
       const adapter = crearPrismaIdentityAdapter(mockDb);
@@ -34,7 +34,7 @@ describe("identity infrastructure adapters", () => {
       expect(usuario?.nombre).toBe("Admin FLACSO");
       expect(mockFindUnique).toHaveBeenCalledWith({
         where: { id: "usr-admin" },
-        select: expect.any(Object)
+        select: expect.any(Object),
       });
     });
 
@@ -42,11 +42,11 @@ describe("identity infrastructure adapters", () => {
       const mockTx = {
         usuario: { update: vi.fn().mockResolvedValue({}) },
         asistenteTecnico: { updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
-        auditoria: { create: vi.fn().mockResolvedValue({}) }
+        auditoria: { create: vi.fn().mockResolvedValue({}) },
       };
 
       const mockDb = {
-        $transaction: vi.fn().mockImplementation(async (callback: any) => callback(mockTx))
+        $transaction: vi.fn().mockImplementation(async (callback: any) => callback(mockTx)),
       } as any;
 
       const adapter = crearPrismaIdentityAdapter(mockDb);
@@ -56,19 +56,19 @@ describe("identity infrastructure adapters", () => {
 
       expect(mockTx.usuario.update).toHaveBeenCalledWith({
         where: { id: "asist-1" },
-        data: { ultimoAccesoAt: fecha, ultimoProveedor: "credentials" }
+        data: { ultimoAccesoAt: fecha, ultimoProveedor: "credentials" },
       });
       expect(mockTx.asistenteTecnico.updateMany).toHaveBeenCalledWith({
         where: {
           usuarioId: "asist-1",
-          cesadoHastaProximoInicioSesion: true
+          cesadoHastaProximoInicioSesion: true,
         },
-        data: { cesadoHastaProximoInicioSesion: false }
+        data: { cesadoHastaProximoInicioSesion: false },
       });
       expect(mockTx.auditoria.create).toHaveBeenCalledWith({
         data: expect.objectContaining({
-          accion: "ASISTENTE_TECNICO_REACTIVADO_POR_LOGIN"
-        })
+          accion: "ASISTENTE_TECNICO_REACTIVADO_POR_LOGIN",
+        }),
       });
     });
   });
@@ -83,7 +83,7 @@ describe("identity infrastructure adapters", () => {
         descifrar: (v) => v,
         publicarEvento: vi.fn(),
         eliminarEvento: vi.fn(),
-        sincronizarUsuario: mockSincronizar
+        sincronizarUsuario: mockSincronizar,
       });
 
       await expect(dispatcher.reconciliarCalendarioAsistente("asist-1")).resolves.not.toThrow();

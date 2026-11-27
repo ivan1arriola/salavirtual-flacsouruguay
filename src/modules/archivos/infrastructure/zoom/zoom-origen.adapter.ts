@@ -1,7 +1,7 @@
 import { abrirDescargaZoomHttp } from "../../../../integrations/zoom/zoom-download.client";
 import {
   listarGrabacionesAnfitrionZoomHttp,
-  obtenerInventarioOcurrenciaZoomHttp
+  obtenerInventarioOcurrenciaZoomHttp,
 } from "../../../../integrations/zoom/zoom-recordings.client";
 import type { AutenticacionZoom } from "../../../../integrations/zoom/zoom-http";
 import { normalizarInventarioZoom, type HashZoom } from "../../domain";
@@ -23,7 +23,7 @@ export type ZoomOrigenAdapterDeps = Readonly<{
  * se obtiene del inventario fresco en cada intento y nunca se devuelve ni se persiste.
  */
 export function crearZoomOrigenAdapter(
-  deps: ZoomOrigenAdapterDeps
+  deps: ZoomOrigenAdapterDeps,
 ): OrigenZoomPort & InventarioOrigenZoomPort {
   return {
     async obtenerInventario(ocurrencia) {
@@ -39,7 +39,7 @@ export function crearZoomOrigenAdapter(
         deps.auth,
         anfitrion.anfitrionZoomId,
         { ...ventana, cuentaZoomId: anfitrion.cuentaZoomId },
-        cursor
+        cursor,
       );
     },
 
@@ -57,7 +57,7 @@ export function crearZoomOrigenAdapter(
       }
 
       const descarga = await abrirDescargaZoomHttp(deps.auth, url, offset, signal, {
-        permitirJson: TIPOS_JSON.has(recurso.tipoOriginal.trim().toUpperCase())
+        permitirJson: TIPOS_JSON.has(recurso.tipoOriginal.trim().toUpperCase()),
       });
       if (descarga.tipo === "REQUIERE_REVISION") {
         return { tipo: "REQUIERE_REVISION", motivo: descarga.motivo };
@@ -67,8 +67,8 @@ export function crearZoomOrigenAdapter(
         // El cliente ya descartó el prefijo si Zoom ignoró Range: en PARCIAL el flujo empieza en `offset`.
         contenido: descarga.contenido as unknown as AsyncIterable<Uint8Array>,
         offsetOrigen: descarga.modo === "PARCIAL" ? BigInt(offset) : 0n,
-        totalBytes: descarga.totalBytes
+        totalBytes: descarga.totalBytes,
       };
-    }
+    },
   };
 }

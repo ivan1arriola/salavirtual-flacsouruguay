@@ -2,19 +2,19 @@
 export {
   agruparPorMes,
   esAsistenciaCompletada,
-  resolverAccionHistorialAsistente
+  resolverAccionHistorialAsistente,
 } from "./domain/asistencia.domain";
 export {
   calcularMinutos,
   calcularMonto,
   claveMesUtc3,
   rangoMesUtc3,
-  resumirAsistencias
+  resumirAsistencias,
 } from "@/src/modules/liquidaciones/domain";
 export type {
   AccionHistorialAsistencia,
   ModalidadAsistencia,
   RegistroAsistenciaPersonal,
-  RegistroHistorialAsistenciaPersonal
+  RegistroHistorialAsistenciaPersonal,
 } from "./domain/asistencia.types";
 export type { ResumenAsistencia } from "@/src/modules/liquidaciones/domain";

@@ -7,7 +7,7 @@ import { toHttpError } from "@/src/lib/http/api-error";
 import { crearDependenciasMigracionZoom } from "@/src/bootstrap/migracion-zoom.server";
 import {
   aplicarMigracionZoomSerie,
-  MAXIMO_LOTE_MIGRACION_ZOOM_SERIE
+  MAXIMO_LOTE_MIGRACION_ZOOM_SERIE,
 } from "@/src/modules/reuniones/migracion-zoom-serie-aplicar.service";
 
 export const runtime = "nodejs";
@@ -15,7 +15,7 @@ export const maxDuration = 300;
 
 const bodySchema = z.object({
   modo: z.enum(["PILOTO", "LOTE"]),
-  serieClaves: z.array(z.string().min(1)).min(1).max(MAXIMO_LOTE_MIGRACION_ZOOM_SERIE)
+  serieClaves: z.array(z.string().min(1)).min(1).max(MAXIMO_LOTE_MIGRACION_ZOOM_SERIE),
 });
 
 /** Aplica la conversión Meet → Zoom a series completas (piloto de una o lote acotado). */
@@ -34,7 +34,7 @@ export async function POST(request: Request) {
     const resultados = await aplicarMigracionZoomSerie(
       crearDependenciasMigracionZoom(),
       { id: actor.id, rol: actor.rol },
-      input
+      input,
     );
     return NextResponse.json({ resultados }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {

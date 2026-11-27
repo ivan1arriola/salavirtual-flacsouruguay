@@ -8,17 +8,17 @@ describe("F9: sesiones vinculadas a una identidad interna estable", () => {
     const findFirst = vi.fn().mockResolvedValue({
       id: "usuario-nuevo",
       rol: "ADMINISTRACION",
-      activo: true
+      activo: true,
     });
     const db = { usuario: { findUnique, findFirst } } as unknown as PrismaClient;
     const actor = await resolveSessionActor(db, {
       id: "usuario-borrado",
-      email: "reutilizado@flacso.edu.uy"
+      email: "reutilizado@flacso.edu.uy",
     });
     expect(actor).toBeNull();
     expect(findUnique).toHaveBeenCalledWith({
       where: { id: "usuario-borrado" },
-      select: { id: true, rol: true, activo: true }
+      select: { id: true, rol: true, activo: true },
     });
     expect(findFirst).not.toHaveBeenCalled();
   });
@@ -30,8 +30,8 @@ describe("F9: sesiones vinculadas a una identidad interna estable", () => {
     expect(
       await resolveSessionActor(db, {
         id: "  ",
-        email: "admin@flacso.edu.uy"
-      })
+        email: "admin@flacso.edu.uy",
+      }),
     ).toBeNull();
     expect(findUnique).not.toHaveBeenCalled();
     expect(findFirst).not.toHaveBeenCalled();
@@ -44,8 +44,8 @@ describe("F9: sesiones vinculadas a una identidad interna estable", () => {
     expect(
       await resolveSessionActor(db, {
         id: "usuario-1",
-        email: "alias@flacso.edu.uy"
-      })
+        email: "alias@flacso.edu.uy",
+      }),
     ).toEqual(user);
   });
 

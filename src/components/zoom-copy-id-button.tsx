@@ -5,12 +5,12 @@ import { useState } from "react";
 
 const MENSAJES = {
   copiado: "ID copiado",
-  error: "No se pudo copiar el ID. Seleccionalo y copialo manualmente."
+  error: "No se pudo copiar el ID. Seleccionalo y copialo manualmente.",
 } as const;
 
 export function ZoomCopyIdButton({
   meetingId,
-  contexto
+  contexto,
 }: Readonly<{
   meetingId: string;
   /** Identifica el encuentro para dar un nombre accesible a la acción. */

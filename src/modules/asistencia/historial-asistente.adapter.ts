@@ -1,25 +1,25 @@
 import type { PrismaClient } from "@prisma/client";
 import {
   resolverAccionHistorialAsistente,
-  type RegistroHistorialAsistenciaPersonal
+  type RegistroHistorialAsistenciaPersonal,
 } from "./resumen-personal.domain";
 
 function asistenteIdDesdeJson(value: unknown): string | null {
   if (!value || Array.isArray(value) || typeof value !== "object") {
     return null;
   }
-  const id = (value as Record<string, unknown>).asistenteTecnicoId;
+  const id = (value as Record<string, unknown>)["asistenteTecnicoId"];
   return typeof id === "string" ? id : null;
 }
 
 export async function obtenerHistorialAsistenteEnRango(
   db: PrismaClient,
   usuarioId: string,
-  rango: Readonly<{ desde?: Date; hasta: Date }>
+  rango: Readonly<{ desde?: Date; hasta: Date }>,
 ): Promise<readonly RegistroHistorialAsistenciaPersonal[]> {
   const assistant = await db.asistenteTecnico.findUnique({
     where: { usuarioId },
-    select: { id: true }
+    select: { id: true },
   });
   if (!assistant) {
     return [];
@@ -31,19 +31,19 @@ export async function obtenerHistorialAsistenteEnRango(
       instancia: {
         inicioProgramadoAt: {
           ...(rango.desde ? { gte: rango.desde } : {}),
-          lt: rango.hasta
-        }
-      }
+          lt: rango.hasta,
+        },
+      },
     },
     select: {
       instanciaSalaId: true,
       instancia: {
         select: {
           inicioProgramadoAt: true,
-          solicitud: { select: { titulo: true } }
-        }
-      }
-    }
+          solicitud: { select: { titulo: true } },
+        },
+      },
+    },
   });
   if (assignments.length === 0) {
     return [];
@@ -54,9 +54,9 @@ export async function obtenerHistorialAsistenteEnRango(
       assignment.instanciaSalaId,
       {
         titulo: assignment.instancia.solicitud.titulo,
-        instanciaInicioAt: assignment.instancia.inicioProgramadoAt
-      }
-    ])
+        instanciaInicioAt: assignment.instancia.inicioProgramadoAt,
+      },
+    ]),
   );
 
   const audits = await db.auditoria.findMany({
@@ -64,8 +64,8 @@ export async function obtenerHistorialAsistenteEnRango(
       entidadTipo: "InstanciaSala",
       entidadId: { in: [...meetingById.keys()] },
       accion: {
-        in: ["ASISTENTE_ASIGNADO", "ASISTENTE_REASIGNADO", "ASISTENTE_DESVINCULADO"]
-      }
+        in: ["ASISTENTE_ASIGNADO", "ASISTENTE_REASIGNADO", "ASISTENTE_DESVINCULADO"],
+      },
     },
     select: {
       id: true,
@@ -74,9 +74,9 @@ export async function obtenerHistorialAsistenteEnRango(
       valorAnterior: true,
       valorNuevo: true,
       createdAt: true,
-      actor: { select: { nombres: true, apellidos: true } }
+      actor: { select: { nombres: true, apellidos: true } },
     },
-    orderBy: { createdAt: "desc" }
+    orderBy: { createdAt: "desc" },
   });
 
   return audits.flatMap<RegistroHistorialAsistenciaPersonal>((audit) => {
@@ -88,7 +88,7 @@ export async function obtenerHistorialAsistenteEnRango(
       audit.accion,
       asistenteIdDesdeJson(audit.valorAnterior),
       asistenteIdDesdeJson(audit.valorNuevo),
-      assistant.id
+      assistant.id,
     );
     if (!accion) {
       return [];
@@ -103,8 +103,8 @@ export async function obtenerHistorialAsistenteEnRango(
         titulo: meeting.titulo,
         instanciaInicioAt: meeting.instanciaInicioAt,
         ocurrioAt: audit.createdAt,
-        actor
-      }
+        actor,
+      },
     ];
   });
 }

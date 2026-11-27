@@ -4,7 +4,7 @@ import {
   calcularMonto,
   esAsistenciaCompletada,
   rangoMesUtc3,
-  type RegistroAsistenciaPersonal
+  type RegistroAsistenciaPersonal,
 } from "./resumen-personal.domain";
 
 type PeriodoPersonal = "MES_ACTUAL" | "HISTORICO";
@@ -13,7 +13,7 @@ export async function obtenerAsistenciasPersonales(
   db: PrismaClient,
   usuarioId: string,
   periodo: PeriodoPersonal,
-  ahora = new Date()
+  ahora = new Date(),
 ): Promise<readonly RegistroAsistenciaPersonal[]> {
   const month = rangoMesUtc3(ahora);
   return obtenerAsistenciasEnRango(
@@ -24,7 +24,7 @@ export async function obtenerAsistenciasPersonales(
       : { hasta: new Date(month.desdeMs) },
     ahora,
     periodo === "MES_ACTUAL" ? "asc" : "desc",
-    periodo === "MES_ACTUAL" ? 100 : 500
+    periodo === "MES_ACTUAL" ? 100 : 500,
   );
 }
 
@@ -34,11 +34,11 @@ export async function obtenerAsistenciasEnRango(
   rango: Readonly<{ desde?: Date; hasta: Date }>,
   ahora = new Date(),
   orden: "asc" | "desc" = "asc",
-  limite = 500
+  limite = 500,
 ): Promise<readonly RegistroAsistenciaPersonal[]> {
   const asistente = await db.asistenteTecnico.findUnique({
     where: { usuarioId },
-    select: { id: true }
+    select: { id: true },
   });
   if (!asistente) {
     return [];
@@ -52,8 +52,8 @@ export async function obtenerAsistenciasEnRango(
         requiereAsistenciaTecnica: true,
         estado: { notIn: ["CANCELADA", "NO_REALIZADA"] },
         inicioProgramadoAt: { gte: rango.desde, lt: rango.hasta },
-        solicitud: { estado: { not: "CANCELADA" } }
-      }
+        solicitud: { estado: { not: "CANCELADA" } },
+      },
     },
     orderBy: { instancia: { inicioProgramadoAt: orden } },
     take: limite,
@@ -65,14 +65,14 @@ export async function obtenerAsistenciasEnRango(
               docentePrograma: {
                 include: {
                   programa: true,
-                  docente: { include: { usuario: true } }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
+                  docente: { include: { usuario: true } },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
   });
 
   return asignaciones.map((asignacion) => {
@@ -80,15 +80,20 @@ export async function obtenerAsistenciasEnRango(
     const asociacion = instancia.solicitud.docentePrograma;
     const inicioAsistencia = instancia.inicioAsistenciaTecnicaAt ?? instancia.inicioProgramadoAt;
     const finAsistencia = instancia.finAsistenciaTecnicaAt ?? instancia.finProgramadoAt;
-    const minutosProgramados = calcularMinutos({ inicio: inicioAsistencia, fin: finAsistencia }, null, null, {
-      inicio: null,
-      fin: null
-    });
+    const minutosProgramados = calcularMinutos(
+      { inicio: inicioAsistencia, fin: finAsistencia },
+      null,
+      null,
+      {
+        inicio: null,
+        fin: null,
+      },
+    );
     const minutos = calcularMinutos(
       { inicio: inicioAsistencia, fin: finAsistencia },
       asignacion.minutosConfirmados,
       instancia.minutosReportados,
-      { inicio: instancia.inicioRealAt, fin: instancia.finRealAt }
+      { inicio: instancia.inicioRealAt, fin: instancia.finRealAt },
     );
     const tarifaHora = asignacion.tarifaHoraAplicada?.toNumber() ?? null;
     return {
@@ -96,14 +101,19 @@ export async function obtenerAsistenciasEnRango(
       instanciaId: instancia.id,
       titulo: instancia.solicitud.titulo,
       programa: asociacion.programa.nombre,
-      docente: `${asociacion.docente.usuario.nombres} ${asociacion.docente.usuario.apellidos ?? ""}`.trim(),
+      docente:
+        `${asociacion.docente.usuario.nombres} ${asociacion.docente.usuario.apellidos ?? ""}`.trim(),
       inicioAt: inicioAsistencia,
       finAt: finAsistencia,
       inicioRealAt: instancia.inicioRealAt,
       finRealAt: instancia.finRealAt,
       modalidad: instancia.modalidadOverride ?? instancia.solicitud.modalidad,
       estado: instancia.estado,
-      completada: esAsistenciaCompletada(instancia.estado, finAsistencia.getTime(), ahora.getTime()),
+      completada: esAsistenciaCompletada(
+        instancia.estado,
+        finAsistencia.getTime(),
+        ahora.getTime(),
+      ),
       cierreConfirmado: asignacion.minutosConfirmados !== null,
       minutos,
       minutosProgramados,
@@ -111,7 +121,7 @@ export async function obtenerAsistenciasEnRango(
       comentarioReporte: instancia.comentariosReporte,
       tarifaHora,
       monto: calcularMonto(asignacion.montoConfirmado?.toNumber() ?? null, tarifaHora, minutos),
-      moneda: asignacion.moneda ?? "UYU"
+      moneda: asignacion.moneda ?? "UYU",
     };
   });
 }

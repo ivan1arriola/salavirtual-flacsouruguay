@@ -21,11 +21,14 @@ const MAPA_DIAS_ZOOM: Readonly<Record<string, number>> = {
   Wed: 4,
   Thu: 5,
   Fri: 6,
-  Sat: 7
+  Sat: 7,
 };
 
 function obtenerDiaZoom(fecha: Date, timezone: string): number {
-  const diaTexto = new Intl.DateTimeFormat("en-US", { timeZone: timezone, weekday: "short" }).format(fecha);
+  const diaTexto = new Intl.DateTimeFormat("en-US", {
+    timeZone: timezone,
+    weekday: "short",
+  }).format(fecha);
   return MAPA_DIAS_ZOOM[diaTexto] ?? 1;
 }
 
@@ -34,7 +37,7 @@ function obtenerPartesFecha(fecha: Date, timezone: string): readonly [number, nu
     timeZone: timezone,
     year: "numeric",
     month: "numeric",
-    day: "numeric"
+    day: "numeric",
   });
   const partes = formateador.formatToParts(fecha);
   const anio = Number(partes.find((p) => p.type === "year")?.value ?? "0");
@@ -51,18 +54,22 @@ function formatearFechaIso(fecha: Date, timezone: string): string {
 }
 
 function ordenarInstancias(
-  items: readonly Readonly<{ inicio: Date; fin: Date }>[]
+  items: readonly Readonly<{ inicio: Date; fin: Date }>[],
 ): readonly Readonly<{ inicio: Date; fin: Date }>[] {
   return items.reduce<readonly Readonly<{ inicio: Date; fin: Date }>[]>((orden, actual) => {
     const indice = orden.findIndex((item) => actual.inicio.getTime() < item.inicio.getTime());
-    return indice < 0 ? [...orden, actual] : [...orden.slice(0, indice), actual, ...orden.slice(indice)];
+    return indice < 0
+      ? [...orden, actual]
+      : [...orden.slice(0, indice), actual, ...orden.slice(indice)];
   }, []);
 }
 
 function ordenarNumeros(items: readonly number[]): readonly number[] {
   return items.reduce<readonly number[]>((orden, actual) => {
     const indice = orden.findIndex((item) => actual < item);
-    return indice < 0 ? [...orden, actual] : [...orden.slice(0, indice), actual, ...orden.slice(indice)];
+    return indice < 0
+      ? [...orden, actual]
+      : [...orden.slice(0, indice), actual, ...orden.slice(indice)];
   }, []);
 }
 
@@ -75,7 +82,7 @@ export function calcularSlotsZoom(
   primeraFecha: Date,
   ultimaFecha: Date,
   diasZoomValidos: readonly number[],
-  timezone: string
+  timezone: string,
 ): number {
   const diaInicio = obtenerDiaZoom(primeraFecha, timezone);
   const [y1, m1, d1] = obtenerPartesFecha(primeraFecha, timezone);
@@ -93,18 +100,23 @@ export function calcularSlotsZoom(
 
 export function calcularRecurrenciaZoom(
   instancias: readonly Readonly<{ inicio: Date; fin: Date }>[],
-  timezone: string
+  timezone: string,
 ): RecurrenciaZoomCalculada {
   if (instancias.length === 0) {
     throw new Error("La lista de instancias no puede estar vacía.");
   }
   if (instancias.length > MAX_ZOOM_OCCURRENCES) {
-    throw new Error(`Una serie recurrente de Zoom no puede superar las ${MAX_ZOOM_OCCURRENCES} ocurrencias.`);
+    throw new Error(
+      `Una serie recurrente de Zoom no puede superar las ${MAX_ZOOM_OCCURRENCES} ocurrencias.`,
+    );
   }
 
   const ordenadas = ordenarInstancias(instancias);
   const primera = ordenadas[0];
-  const ultima = ordenadas[ordenadas.length - 1];
+  const ultima = ordenadas.at(-1);
+  if (!primera || !ultima) {
+    throw new Error("La lista de instancias no puede estar vacía.");
+  }
   const duracionMs = primera.fin.getTime() - primera.inicio.getTime();
   const durationMinutes = Math.max(1, Math.round(duracionMs / 60_000));
 
@@ -116,7 +128,7 @@ export function calcularRecurrenciaZoom(
   const endTimes = calcularSlotsZoom(primera.inicio, ultima.inicio, diasOrdenados, timezone);
   if (endTimes > MAX_ZOOM_OCCURRENCES) {
     throw new Error(
-      `Una serie recurrente de Zoom no puede superar las ${MAX_ZOOM_OCCURRENCES} ocurrencias en Zoom (requiere ${endTimes} slots semanales).`
+      `Una serie recurrente de Zoom no puede superar las ${MAX_ZOOM_OCCURRENCES} ocurrencias en Zoom (requiere ${endTimes} slots semanales).`,
     );
   }
 
@@ -127,17 +139,19 @@ export function calcularRecurrenciaZoom(
       type: 2, // Semanal
       repeatInterval: 1,
       weeklyDays,
-      endTimes
-    }
+      endTimes,
+    },
   };
 }
 
 export function detectarOcurrenciasSobrantes(
   ocurrenciasZoom: readonly Readonly<{ occurrenceId: string; startTime: string }>[],
   instanciasRequeridas: readonly Readonly<{ inicio: Date }>[],
-  timezone: string
+  timezone: string,
 ): readonly string[] {
-  const fechasRequeridas = instanciasRequeridas.map((inst) => formatearFechaIso(inst.inicio, timezone));
+  const fechasRequeridas = instanciasRequeridas.map((inst) =>
+    formatearFechaIso(inst.inicio, timezone),
+  );
 
   return ocurrenciasZoom
     .filter((occ) => {
@@ -148,15 +162,19 @@ export function detectarOcurrenciasSobrantes(
 }
 
 export function detectarOcurrenciasAjustar(
-  ocurrenciasZoom: readonly Readonly<{ occurrenceId: string; startTime: string; duration?: number }>[],
+  ocurrenciasZoom: readonly Readonly<{
+    occurrenceId: string;
+    startTime: string;
+    duration?: number;
+  }>[],
   instanciasRequeridas: readonly Readonly<{ inicio: Date; fin: Date }>[],
-  timezone: string
+  timezone: string,
 ): readonly OcurrenciaAjuste[] {
   return ocurrenciasZoom.flatMap((occ) => {
     const zoomDate = new Date(occ.startTime);
     const zoomDateIso = formatearFechaIso(zoomDate, timezone);
     const instanciaCoincidente = instanciasRequeridas.find(
-      (inst) => formatearFechaIso(inst.inicio, timezone) === zoomDateIso
+      (inst) => formatearFechaIso(inst.inicio, timezone) === zoomDateIso,
     );
     if (!instanciaCoincidente) {
       return [];
@@ -164,10 +182,14 @@ export function detectarOcurrenciasAjustar(
 
     const instDuracionMinutos = Math.max(
       1,
-      Math.round((instanciaCoincidente.fin.getTime() - instanciaCoincidente.inicio.getTime()) / 60_000)
+      Math.round(
+        (instanciaCoincidente.fin.getTime() - instanciaCoincidente.inicio.getTime()) / 60_000,
+      ),
     );
     const diferenciaInicioMs = Math.abs(zoomDate.getTime() - instanciaCoincidente.inicio.getTime());
-    const diferenciaDuracionMinutos = occ.duration ? Math.abs(occ.duration - instDuracionMinutos) : 0;
+    const diferenciaDuracionMinutos = occ.duration
+      ? Math.abs(occ.duration - instDuracionMinutos)
+      : 0;
 
     // Si difiere en hora de inicio (más de 1 min) o duración (más de 1 min), requiere ajuste
     if (diferenciaInicioMs > 60_000 || diferenciaDuracionMinutos > 1) {
@@ -175,8 +197,8 @@ export function detectarOcurrenciasAjustar(
         {
           occurrenceId: occ.occurrenceId,
           startTime: instanciaCoincidente.inicio,
-          durationMinutes: instDuracionMinutos
-        }
+          durationMinutes: instDuracionMinutos,
+        },
       ];
     }
     return [];

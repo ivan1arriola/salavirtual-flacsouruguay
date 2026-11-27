@@ -36,7 +36,7 @@ export type CohostContainer = Readonly<{
 }>;
 
 export function extraerCohostsUnificadosDeInstancia(
-  meeting?: CohostContainer | null
+  meeting?: CohostContainer | null,
 ): readonly CohostUnificado[] {
   if (!meeting) {
     return [];
@@ -52,10 +52,18 @@ export function extraerCohostsUnificadosDeInstancia(
       return [];
     }
     const name =
-      [c.cuentaGoogle?.user?.nombres, c.cuentaGoogle?.user?.apellidos].filter(Boolean).join(" ").trim() ||
-      undefined;
+      [c.cuentaGoogle?.user?.nombres, c.cuentaGoogle?.user?.apellidos]
+        .filter(Boolean)
+        .join(" ")
+        .trim() || undefined;
     const cuentaGoogleId = c.cuentaGoogleId ?? c.cuentaGoogle?.id ?? undefined;
-    return [{ email, name, cuentaGoogleId }];
+    return [
+      {
+        email,
+        ...(name === undefined ? {} : { name }),
+        ...(cuentaGoogleId === undefined ? {} : { cuentaGoogleId }),
+      },
+    ];
   });
 
   const fromEmails: readonly CohostUnificado[] = (meeting.cohostEmails ?? []).flatMap((ce) => {
@@ -67,15 +75,17 @@ export function extraerCohostsUnificadosDeInstancia(
     if (!email) {
       return [];
     }
-    return [{ email, name: undefined, cuentaGoogleId: null }];
+    return [{ email, cuentaGoogleId: null }];
   });
 
   const all = [...fromCohosts, ...fromEmails];
   return all.filter(
-    (entry, index) => all.findIndex((candidate) => candidate.email === entry.email) === index
+    (entry, index) => all.findIndex((candidate) => candidate.email === entry.email) === index,
   );
 }
 
-export function extraerCohostEmailsDeInstancia(meeting?: CohostContainer | null): readonly string[] {
+export function extraerCohostEmailsDeInstancia(
+  meeting?: CohostContainer | null,
+): readonly string[] {
   return extraerCohostsUnificadosDeInstancia(meeting).map((c) => c.email);
 }

@@ -10,7 +10,7 @@ export function MonitoringSummary({
   covered,
   pending,
   applicantsCount = 0,
-  q
+  q,
 }: Readonly<{
   total: number;
   covered: number;

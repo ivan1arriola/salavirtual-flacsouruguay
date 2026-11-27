@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import {
   TransferenciaZoomError,
   transferirStreamZoom,
-  type SubidaBloqueZoom
+  type SubidaBloqueZoom,
 } from "../src/modules/archivos/application/zoom-transferencia-stream";
 
 const KIB = 256 * 1024;
@@ -28,7 +28,8 @@ function destinoFalso(opciones: { aceptaHasta?: (offset: bigint, len: number) =>
   const subir: SubidaBloqueZoom = async (offset, bytes, { ultimo }) => {
     bloques.push({ offset, len: bytes.byteLength, ultimo });
     recibidos.push(bytes.slice());
-    const fin = opciones.aceptaHasta?.(offset, bytes.byteLength) ?? offset + BigInt(bytes.byteLength);
+    const fin =
+      opciones.aceptaHasta?.(offset, bytes.byteLength) ?? offset + BigInt(bytes.byteLength);
     return ultimo ? { estado: "COMPLETA" } : { estado: "PARCIAL", bytesConfirmados: fin };
   };
   return { bloques, recibidos, subir };
@@ -44,8 +45,8 @@ describe("transferirStreamZoom", () => {
         offsetOrigen: 0n,
         bloqueBytes: KIB,
         totalConocido: BigInt(5 * KIB),
-        subirBloque: destino.subir
-      })
+        subirBloque: destino.subir,
+      }),
     ).rejects.toMatchObject({ codigo: "ORIGEN_INCOMPLETO" });
     expect(destino.bloques.some((b) => b.ultimo)).toBe(false);
   });
@@ -58,7 +59,7 @@ describe("transferirStreamZoom", () => {
       offsetOrigen: 0n,
       bloqueBytes: KIB,
       totalConocido: BigInt(3 * KIB),
-      subirBloque: destino.subir
+      subirBloque: destino.subir,
     });
     expect(r.bytesTotales).toBe(BigInt(3 * KIB));
     expect(destino.bloques.at(-1)?.ultimo).toBe(true);
@@ -85,7 +86,7 @@ describe("transferirStreamZoom", () => {
       offsetOrigen: 0n,
       bloqueBytes: bloque,
       totalConocido: BigInt(total),
-      subirBloque: subir
+      subirBloque: subir,
     });
     expect(r.bytesTotales).toBe(BigInt(total));
     expect(maxRetenido).toBeLessThanOrEqual(bloque + 64 * 1024 + 1);
@@ -100,12 +101,12 @@ describe("transferirStreamZoom", () => {
       offsetOrigen: 0n,
       bloqueBytes: KIB,
       totalConocido: BigInt(total),
-      subirBloque: d.subir
+      subirBloque: d.subir,
     });
     expect(d.bloques.map((b) => [b.len, b.ultimo])).toEqual([
       [KIB, false],
       [KIB, false],
-      [1000, true]
+      [1000, true],
     ]);
     expect(r.bytesTotales).toBe(BigInt(total));
   });
@@ -118,11 +119,11 @@ describe("transferirStreamZoom", () => {
       offsetOrigen: 0n,
       bloqueBytes: KIB,
       totalConocido: BigInt(2 * KIB),
-      subirBloque: d.subir
+      subirBloque: d.subir,
     });
     expect(d.bloques.map((b) => [b.len, b.ultimo])).toEqual([
       [KIB, false],
-      [KIB, true]
+      [KIB, true],
     ]);
   });
 
@@ -134,7 +135,7 @@ describe("transferirStreamZoom", () => {
       offsetOrigen: 0n,
       bloqueBytes: KIB,
       totalConocido: 0n,
-      subirBloque: d.subir
+      subirBloque: d.subir,
     });
     expect(d.bloques).toEqual([{ offset: 0n, len: 0, ultimo: true }]);
     expect(r.bytesTotales).toBe(0n);
@@ -148,7 +149,7 @@ describe("transferirStreamZoom", () => {
       offsetOrigen: 0n,
       bloqueBytes: KIB,
       totalConocido: null,
-      subirBloque: d.subir
+      subirBloque: d.subir,
     });
     expect(d.bloques.at(-1)).toEqual({ offset: BigInt(KIB), len: 5, ultimo: true });
     expect(r.bytesTotales).toBe(BigInt(KIB + 5));
@@ -163,7 +164,7 @@ describe("transferirStreamZoom", () => {
       offsetOrigen: BigInt(offset),
       bloqueBytes: KIB,
       totalConocido: BigInt(5 * KIB),
-      subirBloque: d.subir
+      subirBloque: d.subir,
     });
     expect(d.bloques[0]!.offset).toBe(BigInt(offset));
     expect(r.bytesTotales).toBe(BigInt(5 * KIB));
@@ -182,7 +183,7 @@ describe("transferirStreamZoom", () => {
       bloqueBytes: KIB,
       totalConocido: BigInt(5 * KIB),
       maxDescarteBytes: BigInt(10 * KIB),
-      subirBloque: d.subir
+      subirBloque: d.subir,
     });
     expect(r.bytesDescartados).toBe(BigInt(offset));
     expect(d.bloques[0]!.offset).toBe(BigInt(offset));
@@ -200,7 +201,7 @@ describe("transferirStreamZoom", () => {
       bloqueBytes: KIB,
       totalConocido: BigInt(5 * KIB),
       maxDescarteBytes: BigInt(KIB),
-      subirBloque: d.subir
+      subirBloque: d.subir,
     }).catch((e) => e);
     expect(error).toBeInstanceOf(TransferenciaZoomError);
     expect(error.codigo).toBe("DESCARTE_EXCEDIDO");
@@ -215,7 +216,7 @@ describe("transferirStreamZoom", () => {
       offsetOrigen: BigInt(KIB),
       bloqueBytes: KIB,
       totalConocido: null,
-      subirBloque: d.subir
+      subirBloque: d.subir,
     }).catch((e) => e);
     expect(error.codigo).toBe("ORIGEN_DESALINEADO");
     expect(d.bloques).toHaveLength(0);
@@ -229,7 +230,7 @@ describe("transferirStreamZoom", () => {
       offsetOrigen: BigInt(2 * KIB),
       bloqueBytes: KIB,
       totalConocido: BigInt(2 * KIB),
-      subirBloque: d.subir
+      subirBloque: d.subir,
     });
     expect(d.bloques).toEqual([{ offset: BigInt(2 * KIB), len: 0, ultimo: true }]);
     expect(r.bytesTotales).toBe(BigInt(2 * KIB));
@@ -243,7 +244,7 @@ describe("transferirStreamZoom", () => {
       offsetOrigen: 0n,
       bloqueBytes: KIB,
       totalConocido: BigInt(3 * KIB),
-      subirBloque: d.subir
+      subirBloque: d.subir,
     }).catch((e) => e);
     expect(error.codigo).toBe("CONFIRMACION_PARCIAL");
     expect(error.bytesConfirmados).toBe(BigInt(KIB / 2));
@@ -256,7 +257,7 @@ describe("transferirStreamZoom", () => {
       offsetOrigen: 0n,
       bloqueBytes: KIB,
       totalConocido: null,
-      subirBloque: async () => ({ estado: "VENCIDA" })
+      subirBloque: async () => ({ estado: "VENCIDA" }),
     }).catch((e) => e);
     expect(error.codigo).toBe("SESION_VENCIDA");
   });
@@ -275,7 +276,7 @@ describe("transferirStreamZoom", () => {
         llamadas++;
         control.abort();
         return { estado: "PARCIAL", bytesConfirmados: offset + BigInt(bytes.byteLength) };
-      }
+      },
     }).catch((e) => e);
     expect(error.codigo).toBe("ABORTADA");
     expect(llamadas).toBe(1);
@@ -289,8 +290,8 @@ describe("transferirStreamZoom", () => {
         offsetOrigen: 0n,
         bloqueBytes: 1000,
         totalConocido: null,
-        subirBloque: async () => ({ estado: "COMPLETA" })
-      })
+        subirBloque: async () => ({ estado: "COMPLETA" }),
+      }),
     ).rejects.toThrow(/256/);
   });
 });

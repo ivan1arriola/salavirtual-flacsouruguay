@@ -2140,7 +2140,10 @@
 }
 
 .encounter-add-form {
-  grid-template-columns: minmax(160px, 1.2fr) minmax(120px, 0.8fr) minmax(120px, 0.8fr) auto auto auto;
+  grid-template-columns: minmax(160px, 1.2fr) minmax(120px, 0.8fr) minmax(
+      120px,
+      0.8fr
+    ) auto auto auto;
 }
 
 .encounter-add-description,

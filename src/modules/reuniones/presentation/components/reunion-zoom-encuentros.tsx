@@ -1,14 +1,29 @@
 "use client";
 
-import { ArrowUpRight, CalendarClock, Clock3, Hash, Plus, Trash2, UserRound, Video } from "lucide-react";
-import { PALETA_CUENTAS_ZOOM, colorCuentaZoom } from "@/src/modules/reuniones/lista-zoom-agrupacion.domain";
+import {
+  ArrowUpRight,
+  CalendarClock,
+  Clock3,
+  Hash,
+  Plus,
+  Trash2,
+  UserRound,
+  Video,
+} from "lucide-react";
+import {
+  PALETA_CUENTAS_ZOOM,
+  colorCuentaZoom,
+} from "@/src/modules/reuniones/lista-zoom-agrupacion.domain";
 import "./reunion-zoom-encuentros.css";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { ZoomJoinActions } from "@/src/components/zoom-join-actions";
 import { ZoomLinkStatus } from "@/src/components/zoom-link-status";
-import type { EstadoEnlaceZoom, ResumenEnlaceZoom } from "@/src/modules/reuniones/estado-enlace-zoom.domain";
+import type {
+  EstadoEnlaceZoom,
+  ResumenEnlaceZoom,
+} from "@/src/modules/reuniones/estado-enlace-zoom.domain";
 import { enviarAccionEncuentro } from "@/src/modules/reuniones/reunion-zoom-acciones";
 import { ConfirmacionCancelacionZoom } from "./confirmacion-cancelacion-zoom";
 import { ZoomActividadEncuentro, type ActividadEncuentroZoom } from "./zoom-eventos-panel";
@@ -40,13 +55,13 @@ const fechaFmt = new Intl.DateTimeFormat("es-UY", {
   weekday: "long",
   day: "numeric",
   month: "long",
-  year: "numeric"
+  year: "numeric",
 });
 const horaFmt = new Intl.DateTimeFormat("es-UY", {
   timeZone: ZONA,
   hour: "2-digit",
   minute: "2-digit",
-  hourCycle: "h23"
+  hourCycle: "h23",
 });
 const partesFmt = new Intl.DateTimeFormat("en-CA", {
   timeZone: ZONA,
@@ -55,16 +70,20 @@ const partesFmt = new Intl.DateTimeFormat("en-CA", {
   day: "2-digit",
   hour: "2-digit",
   minute: "2-digit",
-  hourCycle: "h23"
+  hourCycle: "h23",
 });
 const diaFmt = new Intl.DateTimeFormat("es-UY", { timeZone: ZONA, day: "numeric" });
-const mesFmt = new Intl.DateTimeFormat("es-UY", { timeZone: ZONA, month: "short", year: "numeric" });
+const mesFmt = new Intl.DateTimeFormat("es-UY", {
+  timeZone: ZONA,
+  month: "short",
+  year: "numeric",
+});
 const semanaFmt = new Intl.DateTimeFormat("es-UY", { timeZone: ZONA, weekday: "long" });
 const contextoFechaFmt = new Intl.DateTimeFormat("es-UY", {
   timeZone: ZONA,
   weekday: "long",
   day: "numeric",
-  month: "long"
+  month: "long",
 });
 const ESTADOS_ENCUENTRO: Record<string, Readonly<{ etiqueta: string; clase: string }>> = {
   PROGRAMADO: { etiqueta: "Programado", clase: "is-programado" },
@@ -74,14 +93,17 @@ const ESTADOS_ENCUENTRO: Record<string, Readonly<{ etiqueta: string; clase: stri
   REALIZADO: { etiqueta: "Realizado", clase: "is-realizado" },
   COMPLETADO: { etiqueta: "Realizado", clase: "is-realizado" },
   EN_CURSO: { etiqueta: "En curso", clase: "is-en-curso" },
-  PENDIENTE: { etiqueta: "Pendiente", clase: "is-pendiente" }
+  PENDIENTE: { etiqueta: "Pendiente", clase: "is-pendiente" },
 };
 
 function aInputs(iso: string): { fecha: string; hora: string } {
   const partes = Object.fromEntries(
-    partesFmt.formatToParts(new Date(iso)).map(({ type, value }) => [type, value])
+    partesFmt.formatToParts(new Date(iso)).map(({ type, value }) => [type, value]),
   );
-  return { fecha: `${partes.year}-${partes.month}-${partes.day}`, hora: `${partes.hour}:${partes.minute}` };
+  return {
+    fecha: `${partes["year"]}-${partes["month"]}-${partes["day"]}`,
+    hora: `${partes["hour"]}:${partes["minute"]}`,
+  };
 }
 
 function aIso(fecha: string, hora: string): string {
@@ -96,7 +118,7 @@ export function ReunionZoomEncuentros({
   puedeModificar,
   permiteCancelarSerie,
   solicitudIdParaAgregar,
-  permiteAgregarCompartida
+  permiteAgregarCompartida,
 }: Readonly<{
   encuentros: readonly EncuentroZoomView[];
   /** Avisos de Zoom de cada encuentro, por id de encuentro. */
@@ -132,12 +154,13 @@ export function ReunionZoomEncuentros({
       botonesEditarRef.current.get(encuentroId)?.focus();
     }
   }, [editando]);
-  const hayEditables = puedeModificar && permiteCancelarSerie && encuentros.some(({ editable }) => editable);
+  const hayEditables =
+    puedeModificar && permiteCancelarSerie && encuentros.some(({ editable }) => editable);
 
   function ejecutar(
     accion: () => ReturnType<typeof enviarAccionEncuentro>,
     alTerminar?: () => void,
-    encuentroId?: string
+    encuentroId?: string,
   ) {
     setMensaje(null);
     startTransition(async () => {
@@ -145,7 +168,7 @@ export function ReunionZoomEncuentros({
       setMensaje({
         texto: resultado.mensaje,
         error: !resultado.ok,
-        encuentroId: resultado.ok ? undefined : encuentroId
+        encuentroId: resultado.ok ? undefined : encuentroId,
       });
       if (resultado.ok) {
         alTerminar?.();
@@ -163,7 +186,7 @@ export function ReunionZoomEncuentros({
       setMensaje({
         texto: "Revisá la fecha y que la hora de fin sea posterior al inicio.",
         error: true,
-        encuentroId: encuentro.id
+        encuentroId: encuentro.id,
       });
       return;
     }
@@ -174,14 +197,14 @@ export function ReunionZoomEncuentros({
           `/api/v1/reuniones/${encuentro.solicitudId}/encuentros/${encuentro.id}`,
           {
             method: "PATCH",
-            body: { accion: "EDITAR_FECHA", inicio: aIso(fecha, inicio), fin: aIso(fecha, fin) }
-          }
+            body: { accion: "EDITAR_FECHA", inicio: aIso(fecha, inicio), fin: aIso(fecha, fin) },
+          },
         ),
       () => {
         devolverFocoRef.current = encuentro.id;
         setEditando(null);
       },
-      encuentro.id
+      encuentro.id,
     );
   }
 
@@ -210,10 +233,10 @@ export function ReunionZoomEncuentros({
             fin: finIso,
             descripcion,
             requiereAsistenciaTecnica: false,
-            requiereGrabacion: false
-          }
+            requiereGrabacion: false,
+          },
         }),
-      () => setAgregando(false)
+      () => setAgregando(false),
     );
   }
 
@@ -238,15 +261,15 @@ export function ReunionZoomEncuentros({
         enviarAccionEncuentro(
           fetch,
           `/api/v1/reuniones/${actual.encuentro.solicitudId}/encuentros/${actual.encuentro.id}`,
-          { method: "DELETE" }
-        )
+          { method: "DELETE" },
+        ),
       );
     } else {
       ejecutar(() =>
         enviarAccionEncuentro(fetch, "/api/v1/reuniones/cancelar-serie", {
           method: "POST",
-          body: { solicitudIds }
-        })
+          body: { solicitudIds },
+        }),
       );
     }
   }
@@ -319,7 +342,9 @@ export function ReunionZoomEncuentros({
                     agregar(event.currentTarget);
                   }}
                 >
-                  <p>El nuevo encuentro utilizará la misma reunión e ID de Zoom. Horario de Uruguay.</p>
+                  <p>
+                    El nuevo encuentro utilizará la misma reunión e ID de Zoom. Horario de Uruguay.
+                  </p>
                   <label>
                     Fecha
                     <input type="date" name="fecha" required />
@@ -354,8 +379,8 @@ export function ReunionZoomEncuentros({
             </>
           ) : (
             <p className="zoom-series-add__notice" role="note">
-              Para agregar encuentros con el mismo ID de Zoom, primero hay que unificar los enlaces de esta
-              serie. No se creará automáticamente otro enlace independiente.
+              Para agregar encuentros con el mismo ID de Zoom, primero hay que unificar los enlaces
+              de esta serie. No se creará automáticamente otro enlace independiente.
             </p>
           )}
         </div>
@@ -396,7 +421,7 @@ function ZoomSeriesEncounterCard({
   onEditarRef,
   onGuardar,
   onCancelarEdicion,
-  onCancelarEncuentro
+  onCancelarEncuentro,
 }: Readonly<{
   encuentro: EncuentroZoomView;
   actividad?: ActividadEncuentroZoom;
@@ -467,7 +492,7 @@ function resolverEstadoVisualEncuentro(estado: string) {
   return (
     ESTADOS_ENCUENTRO[estado.toUpperCase()] ?? {
       etiqueta: estado.toLowerCase().replaceAll("_", " "),
-      clase: "is-desconocido"
+      clase: "is-desconocido",
     }
   );
 }
@@ -492,7 +517,7 @@ function EncounterHeading({
   mostrarBotonEditar,
   pending,
   onEditar,
-  onEditarRef
+  onEditarRef,
 }: Readonly<{
   encuentro: EncuentroZoomView;
   contexto: string;
@@ -525,7 +550,7 @@ function EncounterHeading({
 function EncounterMetadata({
   encuentro,
   contexto,
-  esAdmin
+  esAdmin,
 }: Readonly<{ encuentro: EncuentroZoomView; contexto: string; esAdmin: boolean }>) {
   const colorCuenta =
     PALETA_CUENTAS_ZOOM[colorCuentaZoom(encuentro.cuentaAnfitrion) ?? -1]?.fuerte ?? "#8093ae";
@@ -540,7 +565,10 @@ function EncounterMetadata({
           contexto={contexto}
         />
       ) : null}
-      <span className="zoom-series-card__host" style={{ "--cuenta": colorCuenta } as React.CSSProperties}>
+      <span
+        className="zoom-series-card__host"
+        style={{ "--cuenta": colorCuenta } as React.CSSProperties}
+      >
         <UserRound size={15} aria-hidden="true" /> Cuenta anfitriona:{" "}
         <strong>{encuentro.cuentaAnfitrion ?? "Sin asignar"}</strong>
       </span>
@@ -563,7 +591,7 @@ function EncounterMeetingId({ zoomMeetingId }: Readonly<{ zoomMeetingId?: string
 
 function EncounterParticipationActions({
   encuentro,
-  contexto
+  contexto,
 }: Readonly<{ encuentro: EncuentroZoomView; contexto: string }>) {
   if (!encuentro.puedeUnirse) {
     return null;
@@ -598,7 +626,7 @@ function EncounterEditControls({
   onFechaInputRef,
   onGuardar,
   onCancelarEdicion,
-  onCancelarEncuentro
+  onCancelarEncuentro,
 }: Readonly<{
   encuentro: EncuentroZoomView;
   contexto: string;
@@ -630,7 +658,13 @@ function EncounterEditControls({
       <p className="zoom-series-card__form-note">Todos los horarios corresponden a Uruguay.</p>
       <label>
         Fecha
-        <input ref={onFechaInputRef} defaultValue={valores.fecha} name="fecha" required type="date" />
+        <input
+          ref={onFechaInputRef}
+          defaultValue={valores.fecha}
+          name="fecha"
+          required
+          type="date"
+        />
       </label>
       <label>
         Inicio
@@ -655,7 +689,12 @@ function EncounterEditControls({
       <button className="primary-action" disabled={pending} type="submit">
         {pending ? "Guardando…" : "Guardar nuevo horario"}
       </button>
-      <button className="secondary-action" disabled={pending} onClick={onCancelarEdicion} type="button">
+      <button
+        className="secondary-action"
+        disabled={pending}
+        onClick={onCancelarEdicion}
+        type="button"
+      >
         Cancelar edición
       </button>
       {mensaje ? (

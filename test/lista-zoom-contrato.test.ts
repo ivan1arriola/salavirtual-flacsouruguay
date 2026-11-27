@@ -3,20 +3,20 @@ import { describe, expect, it } from "vitest";
 
 const pagina = readFileSync(
   new URL("../src/bootstrap/ui/reuniones/reuniones-lista-zoom-page.server.tsx", import.meta.url),
-  "utf8"
+  "utf8",
 );
 const css = readFileSync(
   new URL("../app/(gestion)/reuniones/reuniones-zoom.module.css", import.meta.url),
-  "utf8"
+  "utf8",
 );
 
 describe("lista de reuniones de Zoom: día y cuenta anfitriona", () => {
   it("agrupa por día con el dominio y encabeza cada día con su fecha y la cantidad", () => {
     expect(pagina).toContain("agruparPorDia(series,");
-    expect(pagina).toContain("agruparPorDia(encuentros,");
-    expect(pagina).toContain("styles.diaTitulo");
+    expect(pagina).toMatch(/agruparPorDia\(\s*encuentros\s*,/);
+    expect(pagina).toMatch(/styles(?:\.diaTitulo|\["diaTitulo"\])/);
     expect(pagina).toContain("aria-labelledby={`dia-${dia.clave}`}");
-    expect(pagina).toContain('HOY: "Hoy", MANANA: "Mañana"');
+    expect(pagina).toMatch(/HOY:\s*"Hoy",\s*MANANA:\s*"Mañana"/);
   });
 
   it("el color identifica la cuenta anfitriona y ya no la serie", () => {
@@ -44,9 +44,10 @@ describe("lista de reuniones de Zoom: día y cuenta anfitriona", () => {
   });
 
   it("los colores de la paleta no se repiten", () => {
-    const fuertes = [...css.matchAll(/\.item\[data-cuenta="\d+"\][^{]*\{ --tone: (#[0-9a-f]{6});/gi)].map(
-      (m) => m[1].toLowerCase()
-    );
+    const fuertes = [
+      ...css.matchAll(/\.item\[data-cuenta="\d+"\][^{]*\{\s*--tone: (#[0-9a-f]{6});/gi),
+    ].flatMap((m) => (m[1] ? [m[1].toLowerCase()] : []));
+    expect(fuertes.length).toBeGreaterThanOrEqual(10);
     expect(new Set(fuertes).size).toBe(fuertes.length);
   });
 });

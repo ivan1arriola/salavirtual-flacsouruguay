@@ -6,7 +6,7 @@ import { ZoomInscriptos } from "../src/bootstrap/ui/reuniones/zoom-inscriptos";
 const invitado = { id: "i1", nombre: "Ana Pérez", email: "ana@example.com" };
 const participante = (
   email: string,
-  estado: "EN_REUNION" | "EN_ESPERA" | "DESCONECTADO" | "DESCONOCIDO"
+  estado: "EN_REUNION" | "EN_ESPERA" | "DESCONECTADO" | "DESCONOCIDO",
 ) => ({
   id: "p1",
   nombre: "Ana",
@@ -20,7 +20,7 @@ const participante = (
   calidadVideo: null,
   calidadPantalla: null,
   tipoConexion: null,
-  tipoRed: null
+  tipoRed: null,
 });
 
 describe("lista de personas inscriptas en la ficha operativa", () => {
@@ -30,9 +30,9 @@ describe("lista de personas inscriptas en la ficha operativa", () => {
         invitados: [invitado],
         asistenciaEnVivo: {
           estado: "DISPONIBLE",
-          participantes: [participante("ANA@example.com", "EN_REUNION")]
-        }
-      })
+          participantes: [participante("ANA@example.com", "EN_REUNION")],
+        },
+      }),
     );
     expect(html).toContain("Personas inscriptas");
     expect(html).toContain("Ana Pérez");
@@ -44,8 +44,8 @@ describe("lista de personas inscriptas en la ficha operativa", () => {
     const html = renderToStaticMarkup(
       createElement(ZoomInscriptos, {
         invitados: [invitado],
-        asistenciaEnVivo: { estado: "DISPONIBLE", participantes: [] }
-      })
+        asistenciaEnVivo: { estado: "DISPONIBLE", participantes: [] },
+      }),
     );
     expect(html).toContain("Sin coincidencia por correo en esta consulta");
     expect(html).toContain("no significa que la persona no haya participado");
@@ -55,8 +55,8 @@ describe("lista de personas inscriptas en la ficha operativa", () => {
     const html = renderToStaticMarkup(
       createElement(ZoomInscriptos, {
         invitados: [invitado],
-        asistenciaEnVivo: { estado: "NO_DISPONIBLE", motivo: "ERROR_API" }
-      })
+        asistenciaEnVivo: { estado: "NO_DISPONIBLE", motivo: "ERROR_API" },
+      }),
     );
     expect(html).toContain("Conexión no verificable");
   });
@@ -65,8 +65,8 @@ describe("lista de personas inscriptas en la ficha operativa", () => {
     const html = renderToStaticMarkup(
       createElement(ZoomInscriptos, {
         invitados: [],
-        asistenciaEnVivo: { estado: "NO_DISPONIBLE", motivo: "SIN_DATOS" }
-      })
+        asistenciaEnVivo: { estado: "NO_DISPONIBLE", motivo: "SIN_DATOS" },
+      }),
     );
     expect(html).toContain("No hay personas inscriptas registradas");
   });

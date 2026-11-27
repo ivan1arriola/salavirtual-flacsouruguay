@@ -9,8 +9,8 @@ describe("confirmación de cobertura", () => {
       createElement(ConfirmacionCobertura, {
         detalle: { tipo: "convocatoria" },
         onCerrar: vi.fn(),
-        onConfirmar: vi.fn()
-      })
+        onConfirmar: vi.fn(),
+      }),
     );
     expect(html).toContain("asistentes disponibles");
     expect(html).toContain("Agenda abierta");
@@ -25,8 +25,8 @@ describe("confirmación de cobertura", () => {
       createElement(ConfirmacionCobertura, {
         detalle: { tipo: "desasignacion", nombre: "Ana Pérez", asignacionId: "a1" },
         onCerrar: vi.fn(),
-        onConfirmar: vi.fn()
-      })
+        onConfirmar: vi.fn(),
+      }),
     );
     expect(html).toContain("Ana Pérez");
     expect(html).toContain("seguirá requiriendo cobertura");
@@ -40,8 +40,8 @@ describe("confirmación de cobertura", () => {
       createElement(ConfirmacionCobertura, {
         detalle: { tipo: "reasignacion", anterior: "Ana Pérez", nombre: "Luis", asistenteId: "a2" },
         onCerrar: vi.fn(),
-        onConfirmar: vi.fn()
-      })
+        onConfirmar: vi.fn(),
+      }),
     );
     expect(html).toContain("Ana Pérez");
     expect(html).toContain("Luis");
@@ -57,11 +57,11 @@ describe("confirmación de cobertura", () => {
           minutos: 90,
           moneda: "UYU",
           importe: "500,00",
-          registroId: "r1"
+          registroId: "r1",
         },
         onCerrar: vi.fn(),
-        onConfirmar: vi.fn()
-      })
+        onConfirmar: vi.fn(),
+      }),
     );
     expect(html).toContain("Ana Pérez");
     expect(html).toContain("90 minutos");

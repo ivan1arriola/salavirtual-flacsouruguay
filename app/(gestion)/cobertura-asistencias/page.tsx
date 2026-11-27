@@ -1,7 +1,7 @@
 import { permanentRedirect } from "next/navigation";
 
 export default async function CoberturaAsistenciasAnterior({
-  searchParams
+  searchParams,
 }: Readonly<{
   searchParams: Promise<Record<string, string | readonly string[] | undefined>>;
 }>) {

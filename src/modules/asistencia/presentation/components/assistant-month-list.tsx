@@ -2,24 +2,25 @@
 
 import { AlertTriangle, CheckCircle2, Clock3, FilePenLine, MessageSquareText } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { FormEvent, useState } from "react";
+import type { FormEvent } from "react";
+import { useState } from "react";
 import { formatMinutes } from "@/src/lib/ui/assistant-format";
 import type { RegistroAsistenciaPersonal } from "@/src/modules/asistencia/resumen-personal.domain";
 
 const dateFormatter = new Intl.DateTimeFormat("es-UY", {
   timeZone: "America/Montevideo",
   day: "2-digit",
-  month: "short"
+  month: "short",
 });
 const timeFormatter = new Intl.DateTimeFormat("es-UY", {
   timeZone: "America/Montevideo",
   hour: "2-digit",
   minute: "2-digit",
-  hourCycle: "h23"
+  hourCycle: "h23",
 });
 
 export function AssistantMonthList({
-  meetings
+  meetings,
 }: Readonly<{ meetings: readonly RegistroAsistenciaPersonal[] }>) {
   const router = useRouter();
   const [selected, setSelected] = useState<RegistroAsistenciaPersonal | null>(null);
@@ -74,10 +75,10 @@ export function AssistantMonthList({
           ? {
               tipo: incidentType,
               severidad: incidentSeverity,
-              descripcion: incidentDescription
+              descripcion: incidentDescription,
             }
-          : undefined
-      })
+          : undefined,
+      }),
     });
     const result = await response.json().catch(() => ({}));
     setPending(false);
@@ -93,7 +94,10 @@ export function AssistantMonthList({
     <>
       <div className="assistant-meeting-list">
         {meetings.map((meeting) => (
-          <article className={`assistant-meeting ${meeting.modalidad.toLowerCase()}`} key={meeting.id}>
+          <article
+            className={`assistant-meeting ${meeting.modalidad.toLowerCase()}`}
+            key={meeting.id}
+          >
             <time dateTime={meeting.inicioAt.toISOString()}>
               {dateFormatter.format(meeting.inicioAt).replace(" ", "\n")}
             </time>
@@ -261,7 +265,12 @@ export function AssistantMonthList({
                 </p>
               ) : null}
               <div className="dialog-actions">
-                <button className="secondary-action" type="button" onClick={closeReport} disabled={pending}>
+                <button
+                  className="secondary-action"
+                  type="button"
+                  onClick={closeReport}
+                  disabled={pending}
+                >
                   Cancelar
                 </button>
                 <button className="primary-action" type="submit" disabled={pending}>
@@ -288,9 +297,10 @@ function toMontevideoInput(date: Date): string {
     day: "2-digit",
     hour: "2-digit",
     minute: "2-digit",
-    hourCycle: "h23"
+    hourCycle: "h23",
   }).formatToParts(date);
-  const value = (type: Intl.DateTimeFormatPartTypes) => parts.find((part) => part.type === type)?.value ?? "";
+  const value = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((part) => part.type === type)?.value ?? "";
   return `${value("year")}-${value("month")}-${value("day")}T${value("hour")}:${value("minute")}`;
 }
 
@@ -300,7 +310,7 @@ function montevideoInputToIso(value: string): string {
 
 function updateCalculatedMinutes(start: string, end: string, setMinutes: (value: string) => void) {
   const minutes = Math.round(
-    (new Date(`${end}:00-03:00`).getTime() - new Date(`${start}:00-03:00`).getTime()) / 60_000
+    (new Date(`${end}:00-03:00`).getTime() - new Date(`${start}:00-03:00`).getTime()) / 60_000,
   );
   setMinutes(minutes > 0 ? String(minutes) : "");
 }

@@ -1,19 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mock = vi.hoisted(() => ({
-  session: { user: { id: "admin-1", email: "admin@example.test", role: "ADMINISTRACION" } } as {
-    user: { id: string; email: string; role: string };
-  } | null,
-  actor: { id: "admin-1", rol: "ADMINISTRACION", activo: true } as {
-    id: string;
-    rol: string;
-    activo: boolean;
-  } | null,
+  session: { user: { id: "admin-1", email: "admin@example.test", role: "ADMINISTRACION" } },
+  actor: { id: "admin-1", rol: "ADMINISTRACION", activo: true },
   resolveSessionActor: vi.fn(),
   workspaceFindUnique: vi.fn(),
   workspaceFindMany: vi.fn(),
   userFindUnique: vi.fn(),
-  payments: vi.fn()
+  payments: vi.fn(),
 }));
 
 vi.mock("next/server", () => ({
@@ -25,35 +19,35 @@ vi.mock("next/server", () => ({
     static json(body: unknown, init?: { status?: number }) {
       return { body, status: init?.status ?? 200 };
     }
-  }
+  },
 }));
 vi.mock("@/auth", () => ({ auth: async () => mock.session }));
 vi.mock("@/src/lib/auth/session-actor.adapter", () => ({
-  resolveSessionActor: (...args: unknown[]) => mock.resolveSessionActor(...args)
+  resolveSessionActor: (...args: unknown[]) => mock.resolveSessionActor(...args),
 }));
 vi.mock("@/src/lib/db", () => ({
   db: {
     configuracionGoogleWorkspace: {
       findUnique: mock.workspaceFindUnique,
-      findMany: mock.workspaceFindMany
+      findMany: mock.workspaceFindMany,
     },
-    usuario: { findUnique: mock.userFindUnique }
-  }
+    usuario: { findUnique: mock.userFindUnique },
+  },
 }));
 vi.mock("@/src/modules/asistencia/planilla-pagos.adapter", () => ({
-  obtenerFilasPlanillaPagos: (...args: unknown[]) => mock.payments(...args)
+  obtenerFilasPlanillaPagos: (...args: unknown[]) => mock.payments(...args),
 }));
 vi.mock("@/src/modules/asistencia/planilla-pagos.xlsx", () => ({
-  crearPlanillaPagos: vi.fn()
+  crearPlanillaPagos: vi.fn(),
 }));
 vi.mock("@/src/modules/asistencia/reporte-mensual.domain", () => ({
-  periodoMesAnteriorUtc3: vi.fn(() => ({ clave: "2026-09" }))
+  periodoMesAnteriorUtc3: vi.fn(() => ({ clave: "2026-09" })),
 }));
 vi.mock("@/src/modules/configuracion/google-workspace.service", () => ({
-  actualizarSeccionGoogleWorkspace: vi.fn()
+  actualizarSeccionGoogleWorkspace: vi.fn(),
 }));
 vi.mock("@/src/modules/usuarios/cuentas-google.service", () => ({
-  reemplazarCuentasGooglePermitidas: vi.fn()
+  reemplazarCuentasGooglePermitidas: vi.fn(),
 }));
 
 import { GET as getPayments } from "../app/api/v1/asistencia/planilla-pagos/route";
@@ -66,8 +60,12 @@ const sensitiveReads = [
   ["configuracion/google-workspace", () => getWorkspace()],
   [
     "usuarios/:id/cuentas-google",
-    () => getUserAccounts(new Request("https://example.test/api/v1/usuarios/user-2/cuentas-google"), context)
-  ]
+    () =>
+      getUserAccounts(
+        new Request("https://example.test/api/v1/usuarios/user-2/cuentas-google"),
+        context,
+      ),
+  ],
 ] as const;
 
 beforeEach(() => {
@@ -115,16 +113,16 @@ describe("F9: administradores vigentes conservan acceso a las lecturas", () => {
     mock.userFindUnique.mockResolvedValue({
       id: "user-2",
       passwordHash: null,
-      cuentasGoogle: []
+      cuentasGoogle: [],
     });
     expect(((await getWorkspace()) as { status: number }).status).toBe(200);
     expect(
       (
         (await getUserAccounts(
           new Request("https://example.test/api/v1/usuarios/user-2/cuentas-google"),
-          context
+          context,
         )) as { status: number }
-      ).status
+      ).status,
     ).toBe(200);
     expect(mock.workspaceFindUnique).toHaveBeenCalledTimes(1);
     expect(mock.userFindUnique).toHaveBeenCalledTimes(1);

@@ -42,8 +42,8 @@ export function AttendanceRegenerateAction({ instanciaId }: Readonly<{ instancia
         `/api/v1/reuniones/instancias/${encodeURIComponent(instanciaId)}/asistencia/regenerar`,
         {
           method: "POST",
-          cache: "no-store"
-        }
+          cache: "no-store",
+        },
       );
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
@@ -60,7 +60,13 @@ export function AttendanceRegenerateAction({ instanciaId }: Readonly<{ instancia
 
   return (
     <div className="attendance-refresh">
-      <button className="primary-action" type="button" onClick={actualizar} disabled={busy} aria-busy={busy}>
+      <button
+        className="primary-action"
+        type="button"
+        onClick={actualizar}
+        disabled={busy}
+        aria-busy={busy}
+      >
         <RefreshCw size={16} aria-hidden="true" />
         {busy ? "Actualizando…" : "Reintentar asistencia"}
       </button>

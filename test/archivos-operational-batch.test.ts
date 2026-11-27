@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   seleccionarEventosOperativosUseCase,
-  type EventosOperativosRepositoryPort
+  type EventosOperativosRepositoryPort,
 } from "@/src/modules/archivos/application";
 
 describe("archivos: lote operativo", () => {
@@ -16,7 +16,7 @@ describe("archivos: lote operativo", () => {
     const ids = await seleccionarEventosOperativosUseCase(
       repository,
       new Date("2026-09-19T12:00:00.000Z"),
-      4
+      4,
     );
 
     expect(ids).toEqual(["hot-1", "shared", "middle-1", "closing-1"]);

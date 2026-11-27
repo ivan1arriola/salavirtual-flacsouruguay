@@ -2,7 +2,10 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 describe("migración de usuarios legacy: credenciales iniciales", () => {
-  const script = readFileSync(new URL("../scripts/migrate-legacy-users.ts", import.meta.url), "utf8");
+  const script = readFileSync(
+    new URL("../scripts/migrate-legacy-users.ts", import.meta.url),
+    "utf8",
+  );
 
   it("no utiliza una contraseña compartida para usuarios sin credenciales", () => {
     expect(script).not.toContain("MIGRATION_DEFAULT_PASSWORD");

@@ -5,23 +5,32 @@ export {
   type UsuarioAutenticado,
   type PerfilGoogle,
   type CuentaGoogleVinculada,
-  type AuthConfig
+  type AuthConfig,
 } from "./identity.types";
 
-export { buscarRolAnterior, mapearRolAnterior, puedeAdministrar, esRolUsuario } from "./roles.domain";
+export {
+  buscarRolAnterior,
+  mapearRolAnterior,
+  puedeAdministrar,
+  esRolUsuario,
+} from "./roles.domain";
 
 export {
   credencialesLoginSchema,
   normalizarIdentificadorAcceso,
   esCorreoAcceso,
-  evaluarAccesoLocal
+  evaluarAccesoLocal,
 } from "./credentials.domain";
 
 export {
   evaluarAccesoGoogle,
   esPerfilGoogleVerificado,
   esPerfilGoogleInstitucional,
-  resolverVinculacionSubjectGoogle
+  resolverVinculacionSubjectGoogle,
 } from "./google-login.domain";
 
-export { parseAuthConfig, resolverRedireccionAutorizada, type AuthEnvironment } from "./auth-config.domain";
+export {
+  parseAuthConfig,
+  resolverRedireccionAutorizada,
+  type AuthEnvironment,
+} from "./auth-config.domain";

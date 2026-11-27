@@ -4,7 +4,7 @@ import type { CuentaLegacy, ProgramaLegacy } from "./source";
 
 export async function prepararCatalogos(
   programas: readonly ProgramaLegacy[],
-  cuentas: readonly CuentaLegacy[]
+  cuentas: readonly CuentaLegacy[],
 ) {
   const [zoom, meet] = await Promise.all([
     target.proveedorReunion.upsert({
@@ -13,9 +13,9 @@ export async function prepararCatalogos(
         tipo: "ZOOM_HISTORICO",
         nombre: "Zoom historico",
         operativo: false,
-        historico: true
+        historico: true,
       },
-      update: { operativo: false, historico: true }
+      update: { operativo: false, historico: true },
     }),
     target.proveedorReunion.upsert({
       where: { tipo: "GOOGLE_MEET" },
@@ -23,10 +23,10 @@ export async function prepararCatalogos(
         tipo: "GOOGLE_MEET",
         nombre: "Google Meet",
         operativo: true,
-        historico: false
+        historico: false,
       },
-      update: { operativo: true, historico: false }
-    })
+      update: { operativo: true, historico: false },
+    }),
   ]);
 
   for (const programa of programas) {
@@ -34,7 +34,7 @@ export async function prepararCatalogos(
     await target.programa.upsert({
       where: { legacyZoomProgramaId: programa.id },
       create: { legacyZoomProgramaId: programa.id, nombre },
-      update: { nombre }
+      update: { nombre },
     });
   }
   for (const cuenta of cuentas) {
@@ -52,7 +52,7 @@ export async function prepararCatalogos(
         limiteConcurrente: 1,
         activa: cuenta.activa,
         createdAt: cuenta.createdAt,
-        updatedAt: cuenta.updatedAt
+        updatedAt: cuenta.updatedAt,
       },
       update: {
         nombre: cuenta.nombreCuenta,
@@ -61,8 +61,8 @@ export async function prepararCatalogos(
         prioridad: cuenta.prioridad,
         tieneLicencia: true,
         limiteConcurrente: 1,
-        activa: cuenta.activa
-      }
+        activa: cuenta.activa,
+      },
     });
   }
 
@@ -77,24 +77,31 @@ export async function cargarMapeos() {
         id: true,
         legacyZoomUserId: true,
         docente: { select: { id: true } },
-        asistenteTecnico: { select: { id: true } }
-      }
+        asistenteTecnico: { select: { id: true } },
+      },
     }),
     target.programa.findMany({
-      select: { id: true, nombre: true }
+      select: { id: true, nombre: true },
     }),
     target.cuentaProveedor.findMany({
       where: { legacyZoomCuentaId: { not: null } },
-      select: { id: true, legacyZoomCuentaId: true }
-    })
+      select: { id: true, legacyZoomCuentaId: true },
+    }),
   ]);
 
   return {
-    usuariosPorLegacy: new Map(usuarios.map((usuario) => [usuario.legacyZoomUserId as string, usuario])),
-    programasPorNombre: new Map(
-      programas.map((programa) => [normalizarNombrePrograma(programa.nombre).toLowerCase(), programa.id])
+    usuariosPorLegacy: new Map(
+      usuarios.map((usuario) => [usuario.legacyZoomUserId as string, usuario]),
     ),
-    cuentasPorLegacy: new Map(cuentas.map((cuenta) => [cuenta.legacyZoomCuentaId as string, cuenta.id]))
+    programasPorNombre: new Map(
+      programas.map((programa) => [
+        normalizarNombrePrograma(programa.nombre).toLowerCase(),
+        programa.id,
+      ]),
+    ),
+    cuentasPorLegacy: new Map(
+      cuentas.map((cuenta) => [cuenta.legacyZoomCuentaId as string, cuenta.id]),
+    ),
   };
 }
 

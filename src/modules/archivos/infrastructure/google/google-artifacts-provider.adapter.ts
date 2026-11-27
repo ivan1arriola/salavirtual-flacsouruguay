@@ -3,12 +3,12 @@ import {
   agruparCorreosAuditoriaMeet,
   filtrarEventosAuditoriaConferencia,
   obtenerEventosAuditoriaMeet,
-  type EventoAuditoriaMeet
+  type EventoAuditoriaMeet,
 } from "./google-meet-audit-emails.client";
 import {
   buscarPlanillaAsistenciaDrive,
   crearPlanillaAsistenciaGoogle,
-  planillaAsistenciaGoogleVacia
+  planillaAsistenciaGoogleVacia,
 } from "./google-meet-attendance-sheets.client";
 import { asegurarLecturaPorEnlacePlanilla } from "./google-meet-attendance-sharing.client";
 import { createHash } from "node:crypto";
@@ -18,7 +18,7 @@ import {
   ejecutarGooglePostUnaVez,
   confirmarOperacionDriveMarcada,
   confirmarGoogleOperacionVerificada,
-  GoogleOperacionInciertaError
+  GoogleOperacionInciertaError,
 } from "@/src/modules/operaciones/google-operaciones-externas.service";
 import {
   crearGoogleMeetArtifactsAuthClient,
@@ -31,7 +31,7 @@ import {
   buscarRecursoDrivePorOperacion,
   DRIVE_FOLDER_MIME,
   DRIVE_GOOGLE_DOC_MIME,
-  subirDocumentoGoogleDrive
+  subirDocumentoGoogleDrive,
 } from "@/src/integrations/google";
 import {
   asistenciaMeetCompleta,
@@ -46,14 +46,14 @@ import {
   type MeetAttendanceDocument,
   type MovedDriveFile,
   type ParticipanteActivoMeet,
-  type RegistroConferenciaMeet
+  type RegistroConferenciaMeet,
 } from "../../domain";
 import type { ArtifactProviderCredentials, ArtifactProviderPort } from "../../ports";
 
 const MEET_API = "https://meet.googleapis.com/v2";
 
 export function crearGoogleArtifactsProviderAdapter(
-  credentials: ArtifactProviderCredentials
+  credentials: ArtifactProviderCredentials,
 ): ArtifactProviderPort {
   const auth = crearGoogleMeetArtifactsAuthClient(credentials);
 
@@ -61,19 +61,19 @@ export function crearGoogleArtifactsProviderAdapter(
     async buscarConferencia(
       codigo: string,
       inicio: Date,
-      fin: Date
+      fin: Date,
     ): Promise<RegistroConferenciaMeet | null> {
       const margin = 12 * 60 * 60 * 1000;
       const filter = [
         `space.meeting_code = "${codigo}"`,
         `start_time >= "${new Date(inicio.getTime() - margin).toISOString()}"`,
-        `start_time <= "${new Date(fin.getTime() + margin).toISOString()}"`
+        `start_time <= "${new Date(fin.getTime() + margin).toISOString()}"`,
       ].join(" AND ");
 
       const records = await listarPaginas<RegistroConferenciaMeet>(
         auth,
         `${MEET_API}/conferenceRecords?filter=${encodeURIComponent(filter)}&pageSize=100`,
-        "conferenceRecords"
+        "conferenceRecords",
       );
       return elegirConferenciaMeet(records, inicio, fin);
     },
@@ -82,10 +82,12 @@ export function crearGoogleArtifactsProviderAdapter(
       codigo: string,
       inicio: Date,
       fin: Date,
-      conferenceRecord?: RegistroConferenciaMeet | null
+      conferenceRecord?: RegistroConferenciaMeet | null,
     ): Promise<MeetActiveParticipantsScan> {
       const record =
-        conferenceRecord !== undefined ? conferenceRecord : await this.buscarConferencia(codigo, inicio, fin);
+        conferenceRecord !== undefined
+          ? conferenceRecord
+          : await this.buscarConferencia(codigo, inicio, fin);
       if (!record) {
         return {
           conferenciaExiste: false,
@@ -93,21 +95,21 @@ export function crearGoogleArtifactsProviderAdapter(
           participantesDesconectados: [],
           todosParticipantes: [],
           enGruposPequenos: false,
-          cantidadGruposPequenos: 0
+          cantidadGruposPequenos: 0,
         };
       }
 
       const participants = await listarPaginas<Participant>(
         auth,
         `${MEET_API}/${record.name}/participants?pageSize=250`,
-        "participants"
+        "participants",
       );
       const sessionsByParticipant = await mapConLimite(participants, 8, (participant) =>
         listarPaginas<ParticipantSession>(
           auth,
           `${MEET_API}/${participant.name}/participantSessions?pageSize=250`,
-          "participantSessions"
-        )
+          "participantSessions",
+        ),
       );
       const participantesActivos: ParticipanteActivoMeet[] = [];
       const participantesDesconectados: ParticipanteActivoMeet[] = [];
@@ -121,7 +123,7 @@ export function crearGoogleArtifactsProviderAdapter(
         }
 
         const sortedSessions = [...sessions].sort(
-          (a, b) => Date.parse(a.startTime) - Date.parse(b.startTime)
+          (a, b) => Date.parse(a.startTime) - Date.parse(b.startTime),
         );
         const activeSessions = sortedSessions.filter((session) => !session.endTime);
         const hasActiveSession = activeSessions.length > 0;
@@ -157,7 +159,10 @@ export function crearGoogleArtifactsProviderAdapter(
           }
         }
 
-        const totalMs = mergedIntervals.reduce((acc, interval) => acc + (interval.hasta - interval.desde), 0);
+        const totalMs = mergedIntervals.reduce(
+          (acc, interval) => acc + (interval.hasta - interval.desde),
+          0,
+        );
         const minutosConectado = totalMs > 0 ? Math.max(1, Math.round(totalMs / 60_000)) : 0;
 
         const entry: ParticipanteActivoMeet = {
@@ -170,7 +175,7 @@ export function crearGoogleArtifactsProviderAdapter(
           ultimaSalidaAt,
           minutosConectado,
           numeroConexiones: sortedSessions.length,
-          enGrupoPequeno: false
+          enGrupoPequeno: false,
         };
 
         todosParticipantes.push(entry);
@@ -188,59 +193,65 @@ export function crearGoogleArtifactsProviderAdapter(
         participantesDesconectados,
         todosParticipantes,
         enGruposPequenos: false,
-        cantidadGruposPequenos: 0
+        cantidadGruposPequenos: 0,
       };
     },
 
     async obtenerConferencia(conferenceName: string): Promise<RegistroConferenciaMeet> {
       const response = await requestGoogle<RegistroConferenciaMeet>(auth, {
         url: `${MEET_API}/${conferenceName}`,
-        method: "GET"
+        method: "GET",
       });
       return response.data;
     },
 
     async obtenerArtefactos(conferenceName: string): Promise<MeetArtifactsScan> {
       const [recordings, transcripts, notes] = await Promise.all([
-        listarPaginas<Recording>(auth, `${MEET_API}/${conferenceName}/recordings?pageSize=100`, "recordings"),
+        listarPaginas<Recording>(
+          auth,
+          `${MEET_API}/${conferenceName}/recordings?pageSize=100`,
+          "recordings",
+        ),
         listarPaginas<Transcript>(
           auth,
           `${MEET_API}/${conferenceName}/transcripts?pageSize=100`,
-          "transcripts"
+          "transcripts",
         ),
         listarPaginas<SmartNote>(
           auth,
           `${MEET_API}/${conferenceName}/smartNotes?pageSize=100`,
-          "smartNotes"
-        ).catch(() => [] as SmartNote[])
+          "smartNotes",
+        ).catch(() => [] as SmartNote[]),
       ]);
       const sortByStartTime = <T extends { startTime?: string }>(items: T[]): T[] =>
         [...items].sort(
-          (a, b) => (Date.parse(a.startTime ?? "") || 0) - (Date.parse(b.startTime ?? "") || 0)
+          (a, b) => (Date.parse(a.startTime ?? "") || 0) - (Date.parse(b.startTime ?? "") || 0),
         );
 
-      const generatedRecordings = sortByStartTime(recordings).flatMap((item): readonly GoogleArtifact[] =>
-        item.state === "FILE_GENERATED" && item.driveDestination?.file
-          ? [
-              {
-                resourceName: item.name,
-                driveFileId: item.driveDestination.file,
-                startTime: item.startTime,
-                extension: "mp4"
-              }
-            ]
-          : []
+      const generatedRecordings = sortByStartTime(recordings).flatMap(
+        (item): readonly GoogleArtifact[] =>
+          item.state === "FILE_GENERATED" && item.driveDestination?.file
+            ? [
+                {
+                  resourceName: item.name,
+                  driveFileId: item.driveDestination.file,
+                  startTime: item.startTime,
+                  extension: "mp4",
+                },
+              ]
+            : [],
       );
-      const generatedTranscripts = sortByStartTime(transcripts).flatMap((item): readonly GoogleArtifact[] =>
-        item.state === "FILE_GENERATED" && item.docsDestination?.document
-          ? [
-              {
-                resourceName: item.name,
-                driveFileId: item.docsDestination.document,
-                startTime: item.startTime
-              }
-            ]
-          : []
+      const generatedTranscripts = sortByStartTime(transcripts).flatMap(
+        (item): readonly GoogleArtifact[] =>
+          item.state === "FILE_GENERATED" && item.docsDestination?.document
+            ? [
+                {
+                  resourceName: item.name,
+                  driveFileId: item.docsDestination.document,
+                  startTime: item.startTime,
+                },
+              ]
+            : [],
       );
       const generatedNotes = sortByStartTime(notes).flatMap((item): readonly GoogleArtifact[] =>
         item.state === "FILE_GENERATED" && item.docsDestination?.document
@@ -248,15 +259,19 @@ export function crearGoogleArtifactsProviderAdapter(
               {
                 resourceName: item.name,
                 driveFileId: item.docsDestination.document,
-                startTime: item.startTime
-              }
+                startTime: item.startTime,
+              },
             ]
-          : []
+          : [],
       );
       const grabandoEnVivo = recordings.some((item) => item.state === "STARTED");
       const transcribiendoEnVivo = transcripts.some((item) => item.state === "STARTED");
       const estadoGrabacion: EstadoGrabacionMeet =
-        generatedRecordings.length > 0 ? "GENERADA" : recordings.length > 0 ? "PROCESANDO" : "AUSENTE";
+        generatedRecordings.length > 0
+          ? "GENERADA"
+          : recordings.length > 0
+            ? "PROCESANDO"
+            : "AUSENTE";
       const estadoTranscripcion = transcribiendoEnVivo
         ? "TRANSCRIBIENDO"
         : generatedTranscripts.length > 0
@@ -279,26 +294,26 @@ export function crearGoogleArtifactsProviderAdapter(
           transcripts.length -
           generatedTranscripts.length +
           notes.length -
-          generatedNotes.length
+          generatedNotes.length,
       };
     },
 
     async obtenerDocumentoAsistencia(
       conferenceName: string,
-      meetingCode?: string
+      meetingCode?: string,
     ): Promise<MeetAttendanceDocument> {
       const actual = await this.obtenerConferencia(conferenceName);
       const participants = await listarPaginas<Participant>(
         auth,
         `${MEET_API}/${conferenceName}/participants?pageSize=250`,
-        "participants"
+        "participants",
       );
       const sessionsByParticipant = await mapConLimite(participants, 8, (participant) =>
         listarPaginas<ParticipantSession>(
           auth,
           `${MEET_API}/${participant.name}/participantSessions?pageSize=250`,
-          "participantSessions"
-        )
+          "participantSessions",
+        ),
       );
       let rows: readonly FilaAsistenciaMeet[] = participants.flatMap((participant, index) =>
         (sessionsByParticipant[index] ?? []).flatMap((session): readonly FilaAsistenciaMeet[] => {
@@ -315,22 +330,28 @@ export function crearGoogleArtifactsProviderAdapter(
                   fin: finSesion,
                   conferencia: conferenceName,
                   participanteId: participant.name,
-                  sesionId: session.name
-                }
+                  sesionId: session.name,
+                },
               ]
             : [];
-        })
+        }),
       );
       let emailAppendix = "";
       let correosAuditados: ReturnType<typeof agruparCorreosAuditoriaMeet> = [];
       let eventosAuditoria: readonly EventoAuditoriaMeet[] = [];
-      const adminEmail = (credentials.adminEmail ?? process.env.GOOGLE_REPORTS_ADMIN_EMAIL)?.trim();
+      const adminEmail = (
+        credentials.adminEmail ?? process.env["GOOGLE_REPORTS_ADMIN_EMAIL"]
+      )?.trim();
       if (adminEmail && meetingCode && rows.length > 0) {
         try {
           // Reports API se consulta por día completo de Uruguay, como el Apps Script validado.
           // La instancia de Meet se conserva por separado para evitar suposiciones sobre identidades.
-          const diaInicio = fechaLocalISO(new Date(Math.min(...rows.map((row) => Date.parse(row.inicio)))));
-          const diaFin = fechaLocalISO(new Date(Math.max(...rows.map((row) => Date.parse(row.fin)))));
+          const diaInicio = fechaLocalISO(
+            new Date(Math.min(...rows.map((row) => Date.parse(row.inicio)))),
+          );
+          const diaFin = fechaLocalISO(
+            new Date(Math.max(...rows.map((row) => Date.parse(row.fin)))),
+          );
           const inicioDia = new Date(`${diaInicio}T00:00:00-03:00`);
           const finDia = new Date(`${diaFin}T00:00:00-03:00`);
           finDia.setUTCDate(finDia.getUTCDate() + 1);
@@ -340,9 +361,8 @@ export function crearGoogleArtifactsProviderAdapter(
             adminEmail,
             meetingCode,
             startTime: inicioDia.toISOString(),
-            endTime: finDia.toISOString()
+            endTime: finDia.toISOString(),
           });
-          const conferenceStart = Date.parse(actual.startTime);
           const conferenceEnd = actual.endTime
             ? Date.parse(actual.endTime)
             : Date.parse(actual.startTime) + 4 * 60 * 60 * 1000;
@@ -353,7 +373,7 @@ export function crearGoogleArtifactsProviderAdapter(
           const clasificacion = filtrarEventosAuditoriaConferencia(
             eventos,
             actual.startTime,
-            actual.endTime ?? new Date(conferenceEnd).toISOString()
+            actual.endTime ?? new Date(conferenceEnd).toISOString(),
           );
           eventosAuditoria = clasificacion.eventosSolapados;
           correosAuditados = agruparCorreosAuditoriaMeet(clasificacion.eventosAtribuibles);
@@ -366,8 +386,8 @@ export function crearGoogleArtifactsProviderAdapter(
               identificador: e.identifier,
               tipoIdentificador: e.identifierType,
               inicio: new Date(Date.parse(e.timestamp) - e.durationSeconds * 1000).toISOString(),
-              fin: e.timestamp
-            }))
+              fin: e.timestamp,
+            })),
           );
           rows = rows.map((row) => {
             const correo = row.participanteId
@@ -384,7 +404,7 @@ export function crearGoogleArtifactsProviderAdapter(
           const tableRows = correosAuditados
             .map(
               (e) =>
-                `<tr><td>${escapeHtml(e.correo)}</td><td>${e.externo === null ? "No informado" : e.externo ? "Sí" : "No"}</td><td>${escapeHtml(e.conferenciaId)}</td></tr>`
+                `<tr><td>${escapeHtml(e.correo)}</td><td>${e.externo === null ? "No informado" : e.externo ? "Sí" : "No"}</td><td>${escapeHtml(e.conferenciaId)}</td></tr>`,
             )
             .join("");
           emailAppendix = `<h2>Correos identificados (auditoría Workspace)</h2><p>Datos independientes de las sesiones: no se asignan correos por coincidencia de nombres. Pueden faltar correos o existir instancias próximas del mismo enlace.</p><table><thead><tr><th>Correo</th><th>Externo</th><th>Conferencia de auditoría</th></tr></thead><tbody>${tableRows}</tbody></table>`;
@@ -392,7 +412,9 @@ export function crearGoogleArtifactsProviderAdapter(
           // Reports puede tardar en publicar sus eventos o estar temporalmente
           // indisponible. No descartamos las sesiones de Meet ya obtenidas:
           // se publican como asistencia preliminar y se podrán regenerar luego.
-          console.warn("Meet attendance audit unavailable; publishing preliminary Meet attendance.");
+          console.warn(
+            "Meet attendance audit unavailable; publishing preliminary Meet attendance.",
+          );
         }
       }
       const baseHtml = crearHtmlAsistencia(rows);
@@ -401,7 +423,7 @@ export function crearGoogleArtifactsProviderAdapter(
         planilla: { sesionesMeet: rows, correosAuditados, eventosAuditoria },
         completa: asistenciaMeetCompleta(sessionsByParticipant, Boolean(actual.endTime)),
         participantes: participants.length,
-        sesiones: rows.length
+        sesiones: rows.length,
       };
     },
 
@@ -413,11 +435,11 @@ export function crearGoogleArtifactsProviderAdapter(
       fin,
       organizador,
       cohosts = [],
-      spreadsheetId
+      spreadsheetId,
     ) {
       const sheetsAuth = crearGoogleAuthJwt(credentials, [
         "https://www.googleapis.com/auth/spreadsheets",
-        "https://www.googleapis.com/auth/drive"
+        "https://www.googleapis.com/auth/drive",
       ]);
       const operationMarker = createHash("sha256")
         .update(`${credentials.serviceAccountEmail}|${folderId}|${name}`)
@@ -432,7 +454,7 @@ export function crearGoogleArtifactsProviderAdapter(
         operationMarker,
         sesionesMeet: data.sesionesMeet,
         correosAuditados: data.correosAuditados,
-        eventosAuditoria: data.eventosAuditoria
+        eventosAuditoria: data.eventosAuditoria,
       };
       // El acceso por enlace se configura únicamente en la planilla, nunca
       // en la carpeta de la reunión (que también puede contener grabaciones).
@@ -451,7 +473,7 @@ export function crearGoogleArtifactsProviderAdapter(
         "SHEETS_CREAR_ASISTENCIA",
         credentials.serviceAccountEmail,
         folderId,
-        name
+        name,
       );
       try {
         const result = await ejecutarGooglePostUnaVez(
@@ -461,28 +483,30 @@ export function crearGoogleArtifactsProviderAdapter(
             proveedor: "DRIVE",
             tipo: "SHEETS_CREAR_ASISTENCIA",
             cuenta: credentials.serviceAccountEmail,
-            referencia: folderId
+            referencia: folderId,
           },
           () => crearPlanillaAsistenciaGoogle(sheetsAuth, input),
           (sheet) => ({
             id: sheet.id,
             name: sheet.name,
             mimeType: sheet.mimeType,
-            webViewLink: sheet.webViewLink
+            webViewLink: sheet.webViewLink,
           }),
           (saved) => ({
-            id: saved.id,
-            name: saved.name,
-            mimeType: saved.mimeType,
-            webViewLink: saved.webViewLink
-          })
+            id: saved["id"],
+            name: saved["name"],
+            mimeType: saved["mimeType"],
+            webViewLink: saved["webViewLink"],
+          }),
         );
         return compartir(result);
       } catch (error) {
         if (!(error instanceof GoogleOperacionInciertaError)) {
           throw error;
         }
-        const recovered = await buscarPlanillaAsistenciaDrive(sheetsAuth, operationMarker).catch(() => null);
+        const recovered = await buscarPlanillaAsistenciaDrive(sheetsAuth, operationMarker).catch(
+          () => null,
+        );
         if (!recovered) {
           throw error;
         }
@@ -498,7 +522,9 @@ export function crearGoogleArtifactsProviderAdapter(
     },
 
     async planillaAsistenciaGoogleVacia(spreadsheetId) {
-      const sheetsAuth = crearGoogleAuthJwt(credentials, ["https://www.googleapis.com/auth/spreadsheets"]);
+      const sheetsAuth = crearGoogleAuthJwt(credentials, [
+        "https://www.googleapis.com/auth/spreadsheets",
+      ]);
       return planillaAsistenciaGoogleVacia(sheetsAuth, spreadsheetId);
     },
 
@@ -507,7 +533,7 @@ export function crearGoogleArtifactsProviderAdapter(
         "DRIVE_CREAR_CARPETA",
         credentials.serviceAccountEmail,
         parentId,
-        name
+        name,
       );
       try {
         return await ejecutarGooglePostUnaVez(
@@ -517,16 +543,16 @@ export function crearGoogleArtifactsProviderAdapter(
             proveedor: "DRIVE",
             tipo: "DRIVE_CREAR_CARPETA",
             cuenta: credentials.serviceAccountEmail,
-            referencia: parentId
+            referencia: parentId,
           },
           () => obtenerOCrearCarpetaDrive(auth, parentId, name, clave.slice(4)),
           (id) => ({ id }),
           (saved) => {
-            if (!saved.id) {
+            if (!saved["id"]) {
               throw new Error("La operación de carpeta Drive no contiene ID.");
             }
-            return saved.id;
-          }
+            return saved["id"];
+          },
         );
       } catch (error) {
         if (!(error instanceof GoogleOperacionInciertaError)) {
@@ -539,7 +565,7 @@ export function crearGoogleArtifactsProviderAdapter(
           parentId,
           name,
           DRIVE_FOLDER_MIME,
-          clave.slice(4)
+          clave.slice(4),
         ).catch(() => null);
         if (!match) {
           throw error;
@@ -553,14 +579,14 @@ export function crearGoogleArtifactsProviderAdapter(
         // from a stale ENVIANDO lease or a different remote ID.
         const latest = await db.googleOperacionExterna.findUnique({
           where: { clave },
-          select: { estado: true, resultado: true }
+          select: { estado: true, resultado: true },
         });
         if (
           latest?.estado === "CONFIRMADA" &&
           latest.resultado &&
           typeof latest.resultado === "object" &&
           !Array.isArray(latest.resultado) &&
-          latest.resultado.id === verifiedId
+          latest.resultado["id"] === verifiedId
         ) {
           return verifiedId;
         }
@@ -572,7 +598,11 @@ export function crearGoogleArtifactsProviderAdapter(
       return moverArchivoDrive(auth, fileId, folderId, name);
     },
 
-    async subirDocumentoGoogle(folderId: string, name: string, html: string): Promise<MovedDriveFile> {
+    async subirDocumentoGoogle(
+      folderId: string,
+      name: string,
+      html: string,
+    ): Promise<MovedDriveFile> {
       // Include content hash so a deliberately modified report can be published
       // as a distinct version, but never replay a single ambiguous upload.
       const digest = createHash("sha256").update(html).digest("hex");
@@ -581,7 +611,7 @@ export function crearGoogleArtifactsProviderAdapter(
         credentials.serviceAccountEmail,
         folderId,
         name,
-        digest
+        digest,
       );
       try {
         return await ejecutarGooglePostUnaVez(
@@ -591,7 +621,7 @@ export function crearGoogleArtifactsProviderAdapter(
             proveedor: "DRIVE",
             tipo: "DRIVE_SUBIR_DOCUMENTO",
             cuenta: credentials.serviceAccountEmail,
-            referencia: folderId
+            referencia: folderId,
           },
           () => subirDocumentoGoogleDrive(auth, folderId, name, html, clave.slice(4)),
           (result) => {
@@ -602,20 +632,20 @@ export function crearGoogleArtifactsProviderAdapter(
               id: result.id,
               name: result.name,
               mimeType: result.mimeType ?? "",
-              webViewLink: result.webViewLink ?? ""
+              webViewLink: result.webViewLink ?? "",
             };
           },
           (saved) => {
-            if (!saved.id) {
+            if (!saved["id"]) {
               throw new Error("La operación de documento Drive no contiene ID.");
             }
             return {
-              id: saved.id,
-              name: saved.name,
-              mimeType: saved.mimeType,
-              webViewLink: saved.webViewLink
+              id: saved["id"],
+              name: saved["name"],
+              mimeType: saved["mimeType"],
+              webViewLink: saved["webViewLink"],
             };
-          }
+          },
         );
       } catch (error) {
         if (!(error instanceof GoogleOperacionInciertaError)) {
@@ -626,7 +656,7 @@ export function crearGoogleArtifactsProviderAdapter(
           folderId,
           name,
           DRIVE_GOOGLE_DOC_MIME,
-          clave.slice(4)
+          clave.slice(4),
         ).catch(() => null);
         if (!match) {
           throw error;
@@ -635,7 +665,7 @@ export function crearGoogleArtifactsProviderAdapter(
           id: match.id,
           name: match.name,
           mimeType: match.mimeType ?? "",
-          webViewLink: match.webViewLink ?? ""
+          webViewLink: match.webViewLink ?? "",
         };
         const confirmed = await confirmarOperacionDriveMarcada(db, clave, result);
         if (confirmed) {
@@ -643,20 +673,20 @@ export function crearGoogleArtifactsProviderAdapter(
         }
         const latest = await db.googleOperacionExterna.findUnique({
           where: { clave },
-          select: { estado: true, resultado: true }
+          select: { estado: true, resultado: true },
         });
         if (
           latest?.estado === "CONFIRMADA" &&
           latest.resultado &&
           typeof latest.resultado === "object" &&
           !Array.isArray(latest.resultado) &&
-          latest.resultado.id === match.id
+          latest.resultado["id"] === match.id
         ) {
           return result;
         }
         throw error;
       }
-    }
+    },
   };
 }
 
@@ -686,9 +716,10 @@ function fechaLocalISO(date: Date): string {
     timeZone: "America/Montevideo",
     year: "numeric",
     month: "2-digit",
-    day: "2-digit"
+    day: "2-digit",
   }).formatToParts(date);
-  const value = (type: "year" | "month" | "day") => parts.find((part) => part.type === type)?.value ?? "00";
+  const value = (type: "year" | "month" | "day") =>
+    parts.find((part) => part.type === type)?.value ?? "00";
   return `${value("year")}-${value("month")}-${value("day")}`;
 }
 
@@ -703,7 +734,7 @@ async function requestGoogle<T>(auth: JWT, options: GoogleRequestOptions) {
   const send = () =>
     auth.request<T>({
       ...options,
-      timeout: options.method === "GET" ? GOOGLE_HTTP_READ_TIMEOUT_MS : GOOGLE_HTTP_TIMEOUT_MS
+      timeout: options.method === "GET" ? GOOGLE_HTTP_READ_TIMEOUT_MS : GOOGLE_HTTP_TIMEOUT_MS,
     });
   // Writes are NOT retried: Google might have committed before returning a timeout.
   return options.method === "GET" ? conReintentosGoogleLectura(send) : send();
@@ -716,10 +747,10 @@ async function listarPaginas<T>(auth: JWT, baseUrl: string, field: string): Prom
     const separator = baseUrl.includes("?") ? "&" : "?";
     const response = await requestGoogle<Record<string, unknown>>(auth, {
       url: `${baseUrl}${pageToken ? `${separator}pageToken=${encodeURIComponent(pageToken)}` : ""}`,
-      method: "GET"
+      method: "GET",
     });
     values.push(...((response.data[field] as T[] | undefined) ?? []));
-    pageToken = response.data.nextPageToken as string | undefined;
+    pageToken = response.data["nextPageToken"] as string | undefined;
   } while (pageToken);
   return values;
 }
@@ -727,7 +758,7 @@ async function listarPaginas<T>(auth: JWT, baseUrl: string, field: string): Prom
 async function mapConLimite<T, R>(
   items: readonly T[],
   limite: number,
-  operation: (item: T) => Promise<R>
+  operation: (item: T) => Promise<R>,
 ): Promise<R[]> {
   if (items.length === 0) {
     return [];
@@ -755,5 +786,9 @@ function nombreParticipante(participant: Participant): string {
 }
 
 function tipoParticipante(participant: Participant): FilaAsistenciaMeet["tipo"] {
-  return participant.signedinUser ? "CUENTA_GOOGLE" : participant.phoneUser ? "TELEFONO" : "ANONIMO";
+  return participant.signedinUser
+    ? "CUENTA_GOOGLE"
+    : participant.phoneUser
+      ? "TELEFONO"
+      : "ANONIMO";
 }

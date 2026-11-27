@@ -20,7 +20,13 @@ export type ConfiguracionZoomArchivos = Readonly<{
 
 type Entorno = Readonly<Record<string, string | undefined>>;
 
-function entero(env: Entorno, nombre: string, defecto: number, minimo: number, maximo: number): number {
+function entero(
+  env: Entorno,
+  nombre: string,
+  defecto: number,
+  minimo: number,
+  maximo: number,
+): number {
   const crudo = env[`ZOOM_ARCHIVOS_${nombre}`]?.trim();
   if (crudo === undefined || crudo === "") {
     return defecto;
@@ -37,7 +43,9 @@ export function leerConfiguracionZoomArchivos(env: Entorno): ConfiguracionZoomAr
   const topeGb = entero(env, "TOPE_GB", 80, 1, 100_000);
   const reservaGb = entero(env, "RESERVA_RECIENTE_GB", 20, 0, 100_000);
   if (reservaGb > topeGb) {
-    throw new RangeError("ZOOM_ARCHIVOS_RESERVA_RECIENTE_GB no puede superar ZOOM_ARCHIVOS_TOPE_GB.");
+    throw new RangeError(
+      "ZOOM_ARCHIVOS_RESERVA_RECIENTE_GB no puede superar ZOOM_ARCHIVOS_TOPE_GB.",
+    );
   }
 
   const bloqueMib = entero(env, "BLOQUE_MIB", 8, 1, 256);
@@ -49,19 +57,21 @@ export function leerConfiguracionZoomArchivos(env: Entorno): ConfiguracionZoomAr
   const leaseMs = entero(env, "LEASE_MS", 300_000, 10_000, 3_600_000);
   const margenLeaseMs = entero(env, "MARGEN_LEASE_MS", 60_000, 1_000, 3_600_000);
   if (margenLeaseMs >= leaseMs) {
-    throw new RangeError("ZOOM_ARCHIVOS_MARGEN_LEASE_MS debe ser menor que ZOOM_ARCHIVOS_LEASE_MS.");
+    throw new RangeError(
+      "ZOOM_ARCHIVOS_MARGEN_LEASE_MS debe ser menor que ZOOM_ARCHIVOS_LEASE_MS.",
+    );
   }
   const heartbeatMs = entero(env, "HEARTBEAT_MS", 30_000, 1_000, 3_600_000);
   if (heartbeatMs >= leaseMs - margenLeaseMs) {
     throw new RangeError("ZOOM_ARCHIVOS_HEARTBEAT_MS debe ser menor que el lease menos su margen.");
   }
 
-  const historico = env.ZOOM_ARCHIVOS_DRIVE_HISTORICO_ID?.trim();
+  const historico = env["ZOOM_ARCHIVOS_DRIVE_HISTORICO_ID"]?.trim();
   return {
     limites: {
       topeBytes: BigInt(topeGb) * GB,
       reservaRecienteBytes: BigInt(reservaGb) * GB,
-      ventanaMs: 24 * 3_600_000
+      ventanaMs: 24 * 3_600_000,
     },
     corteDias: entero(env, "CORTE_DIAS", 90, 1, 3650),
     concurrencia: entero(env, "CONCURRENCIA", 1, 1, 8),
@@ -71,6 +81,6 @@ export function leerConfiguracionZoomArchivos(env: Entorno): ConfiguracionZoomAr
     bloqueBytes,
     esperaVaciaMs: entero(env, "ESPERA_VACIA_MS", 15_000, 100, 3_600_000),
     intervaloMantenimientoMs: entero(env, "MANTENIMIENTO_MS", 60_000, 1_000, 86_400_000),
-    driveHistoricoId: historico ? historico : null
+    driveHistoricoId: historico ? historico : null,
   };
 }

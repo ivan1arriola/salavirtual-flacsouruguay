@@ -12,7 +12,7 @@ import type { AssistantDashboardData } from "@/src/modules/dashboard/types";
 
 export function AssistantDashboardView({
   data,
-  userName
+  userName,
 }: Readonly<{
   data: AssistantDashboardData;
   userName: string;
@@ -88,7 +88,9 @@ export function AssistantDashboardView({
                       viewerIsAssistant
                       compact
                     />
-                    <span className="badge-tag">{cov.modalidad === "HIBRIDA" ? "Híbrida" : "Virtual"}</span>
+                    <span className="badge-tag">
+                      {cov.modalidad === "HIBRIDA" ? "Híbrida" : "Virtual"}
+                    </span>
                   </div>
 
                   <div className="assistant-coverage-content">

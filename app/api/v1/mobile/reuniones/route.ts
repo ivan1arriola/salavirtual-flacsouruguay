@@ -25,16 +25,16 @@ export async function GET(request: Request) {
           activo: true,
           rol: true,
           nombres: true,
-          apellidos: true
-        }
-      }
-    }
+          apellidos: true,
+        },
+      },
+    },
   });
 
   if (!assistant || !assistant.usuario.activo || assistant.usuario.rol !== "ASISTENTE_TECNICO") {
     return NextResponse.json(
       { error: "La cuenta ya no tiene acceso como asistente técnico." },
-      { status: 403 }
+      { status: 403 },
     );
   }
 
@@ -45,14 +45,14 @@ export async function GET(request: Request) {
       estado: { in: ["PROGRAMADA", "EN_CURSO"] },
       OR: [
         { finAsistenciaTecnicaAt: { gte: now } },
-        { finAsistenciaTecnicaAt: null, finProgramadoAt: { gte: now } }
+        { finAsistenciaTecnicaAt: null, finProgramadoAt: { gte: now } },
       ],
       asignaciones: {
         some: {
           asistenteTecnicoId: assistant.id,
-          estado: { in: [...ACTIVE_ASSIGNMENTS] }
-        }
-      }
+          estado: { in: [...ACTIVE_ASSIGNMENTS] },
+        },
+      },
     },
     orderBy: [{ inicioProgramadoAt: "asc" }, { id: "asc" }],
     include: {
@@ -61,30 +61,30 @@ export async function GET(request: Request) {
           docentePrograma: {
             include: {
               programa: true,
-              docente: { include: { usuario: true } }
-            }
-          }
-        }
+              docente: { include: { usuario: true } },
+            },
+          },
+        },
       },
       asignaciones: {
         where: {
           asistenteTecnicoId: assistant.id,
-          estado: { in: [...ACTIVE_ASSIGNMENTS] }
+          estado: { in: [...ACTIVE_ASSIGNMENTS] },
         },
         orderBy: { updatedAt: "desc" },
-        take: 1
+        take: 1,
       },
       eventosProveedor: {
-        include: { proveedor: true, cuentaProveedor: true }
-      }
-    }
+        include: { proveedor: true, cuentaProveedor: true },
+      },
+    },
   });
 
   return NextResponse.json({
     generatedAt: now.toISOString(),
     assistant: {
       id: assistant.id,
-      name: [assistant.usuario.nombres, assistant.usuario.apellidos].filter(Boolean).join(" ")
+      name: [assistant.usuario.nombres, assistant.usuario.apellidos].filter(Boolean).join(" "),
     },
     meetings: meetings.map((meeting) => {
       const association = meeting.solicitud.docentePrograma;
@@ -112,11 +112,12 @@ export async function GET(request: Request) {
         assistanceStartsAt: assistanceStartsAt?.toISOString() ?? null,
         assistanceEndsAt: assistanceEndsAt?.toISOString() ?? null,
         timezone: meeting.timezone,
-        googleAccount: meet?.cuentaProveedor?.emailOrganizador ?? meet?.cuentaProveedor?.nombre ?? null,
+        googleAccount:
+          meet?.cuentaProveedor?.emailOrganizador ?? meet?.cuentaProveedor?.nombre ?? null,
         meetUrl: meet?.joinUrl ?? null,
         assignmentState: assignment?.estado ?? "ASIGNADO",
-        description: meeting.descripcion ?? meeting.solicitud.descripcion ?? null
+        description: meeting.descripcion ?? meeting.solicitud.descripcion ?? null,
       };
-    })
+    }),
   });
 }

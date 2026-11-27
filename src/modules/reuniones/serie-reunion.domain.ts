@@ -24,7 +24,7 @@ export function construirFiltroSerieSolicitud(
     docenteProgramaId: string;
     titulo: string;
     createdAt: Date;
-  }>
+  }>,
 ): { serieReunionId: string } | { docenteProgramaId: string; titulo: string; createdAt: Date } {
   if (request.serieReunionId) {
     return { serieReunionId: request.serieReunionId };
@@ -32,7 +32,7 @@ export function construirFiltroSerieSolicitud(
   return {
     docenteProgramaId: request.docenteProgramaId,
     titulo: request.titulo,
-    createdAt: request.createdAt
+    createdAt: request.createdAt,
   };
 }
 
@@ -41,14 +41,19 @@ export function construirFiltroSerieSolicitud(
  * encuentros de una serie. Devuelve `null` si la clave no tiene la forma esperada.
  */
 export function filtroSerieDesdeClave(
-  clave: string
-): { serieReunionId: string } | { docenteProgramaId: string; titulo: string; createdAt: Date } | null {
+  clave: string,
+):
+  | { serieReunionId: string }
+  | { docenteProgramaId: string; titulo: string; createdAt: Date }
+  | null {
   if (clave.startsWith("serie:")) {
     const serieReunionId = clave.slice("serie:".length);
     return serieReunionId ? { serieReunionId } : null;
   }
   if (clave.startsWith("legacy:")) {
-    const [docenteProgramaId, creada, tituloCodificado, ...resto] = clave.slice("legacy:".length).split("|");
+    const [docenteProgramaId, creada, tituloCodificado, ...resto] = clave
+      .slice("legacy:".length)
+      .split("|");
     if (!docenteProgramaId || !creada || tituloCodificado === undefined || resto.length > 0) {
       return null;
     }
@@ -65,7 +70,12 @@ export function filtroSerieDesdeClave(
   // Formato anterior, con NUL como separador: puede seguir en una pantalla que ya estaba abierta.
   const [docenteProgramaId, titulo, creada, ...resto] = clave.split("\u0000");
   const createdAt = new Date(creada ?? "");
-  if (!docenteProgramaId || titulo === undefined || resto.length > 0 || Number.isNaN(createdAt.getTime())) {
+  if (
+    !docenteProgramaId ||
+    titulo === undefined ||
+    resto.length > 0 ||
+    Number.isNaN(createdAt.getTime())
+  ) {
     return null;
   }
   return { docenteProgramaId, titulo, createdAt };

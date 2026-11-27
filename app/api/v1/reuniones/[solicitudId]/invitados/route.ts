@@ -6,7 +6,10 @@ import { descifrarConfiguracion } from "@/src/lib/config/encryption";
 import { obtenerCredencialPrincipalGoogleWorkspace } from "@/src/modules/configuracion/api";
 import { enviarCorreoConfigurado } from "@/src/modules/configuracion/correo.service";
 import { actualizarInvitadosSerie } from "@/src/modules/reuniones/invitados-serie.service";
-import { obtenerEventoCalendar, actualizarEventoCalendarHttp } from "@/src/integrations/google/calendar";
+import {
+  obtenerEventoCalendar,
+  actualizarEventoCalendarHttp,
+} from "@/src/integrations/google/calendar";
 import { crearGoogleCalendarAuthClient } from "@/src/integrations/google/auth";
 import { toHttpError, IntegrationApiError } from "@/src/lib/http/api-error";
 
@@ -24,7 +27,7 @@ export async function PUT(request: Request, context: Context) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     const credencial = await obtenerCredencialPrincipalGoogleWorkspace(db, descifrarConfiguracion, {
-      requireActiva: true
+      requireActiva: true,
     });
     if (!credencial) {
       throw new IntegrationApiError("Google Workspace no está configurado.", 503);
@@ -33,7 +36,7 @@ export async function PUT(request: Request, context: Context) {
       crearGoogleCalendarAuthClient({
         serviceAccountEmail: credencial.serviceAccountEmail,
         privateKey: credencial.privateKey,
-        subject
+        subject,
       });
     const result = await actualizarInvitadosSerie(
       {
@@ -48,17 +51,17 @@ export async function PUT(request: Request, context: Context) {
             host,
             eventId,
             { attendees },
-            { sendUpdates: "none" }
+            { sendUpdates: "none" },
           );
         },
         enviarCorreo: async (to, message) => {
           const sent = await enviarCorreoConfigurado(db, { to: [to], ...message });
           return sent.sent;
-        }
+        },
       },
       actor,
       (await context.params).solicitudId,
-      await request.json().catch(() => null)
+      await request.json().catch(() => null),
     );
     return NextResponse.json(result);
   } catch (error) {

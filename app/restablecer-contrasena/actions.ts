@@ -13,7 +13,7 @@ export async function guardarNuevaPassword(formData: FormData): Promise<void> {
     await restablecerPassword(db, {
       token,
       passwordNueva: String(formData.get("passwordNueva") ?? ""),
-      confirmarPassword: String(formData.get("confirmarPassword") ?? "")
+      confirmarPassword: String(formData.get("confirmarPassword") ?? ""),
     });
   } catch (cause) {
     error = cause instanceof z.ZodError ? "datos" : "token";

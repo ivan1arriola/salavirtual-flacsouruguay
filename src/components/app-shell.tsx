@@ -10,13 +10,13 @@ import { TeacherOnboardingTour } from "@/src/components/teacher-onboarding-tour"
 import {
   getNavigationForRole,
   getSecondaryNavigation,
-  type NavigationGroup
+  type NavigationGroup,
 } from "@/src/components/app-navigation";
 import { db } from "@/src/lib/db";
 
 export async function AppShell({
   user,
-  children
+  children,
 }: Readonly<{ user: Session["user"]; children: React.ReactNode }>) {
   const navigation = getNavigationForRole(user.role);
   const canCreateMeeting = user.role !== "ASISTENTE_TECNICO";
@@ -24,10 +24,10 @@ export async function AppShell({
   const rememberedAccount = {
     id: user.id,
     nombre: user.name ?? user.email ?? user.id,
-    identificador: user.email ?? user.id
+    identificador: user.email ?? user.id,
   };
   const unreadNotifications = await db.notificacion.count({
-    where: { usuarioId: user.id, leidaAt: null }
+    where: { usuarioId: user.id, leidaAt: null },
   });
 
   return (
@@ -69,7 +69,11 @@ export async function AppShell({
         </div>
 
         <div className="account-block">
-          <ProfileMenu user={user} account={rememberedAccount} unreadNotifications={unreadNotifications} />
+          <ProfileMenu
+            user={user}
+            account={rememberedAccount}
+            unreadNotifications={unreadNotifications}
+          />
         </div>
       </aside>
 
@@ -101,19 +105,21 @@ export async function AppShell({
           {children}
         </main>
         <nav className="mobile-nav" aria-label="Navegación móvil">
-          {navigation.mobilePrimary.map(({ href, label, shortLabel, icon: Icon, search, emphasis }) => (
-            <SidebarLink
-              className={emphasis === "primary" ? "mobile-create-action" : undefined}
-              dataTour={tourForHref(user.role, href)}
-              exact={href.split("?")[0] === "/" || href.split("?")[0] === "/reuniones"}
-              href={href}
-              key={href}
-              activeSearch={search}
-            >
-              <Icon size={20} aria-hidden="true" />
-              <span>{shortLabel ?? label}</span>
-            </SidebarLink>
-          ))}
+          {navigation.mobilePrimary.map(
+            ({ href, label, shortLabel, icon: Icon, search, emphasis }) => (
+              <SidebarLink
+                className={emphasis === "primary" ? "mobile-create-action" : undefined}
+                dataTour={tourForHref(user.role, href)}
+                exact={href.split("?")[0] === "/" || href.split("?")[0] === "/reuniones"}
+                href={href}
+                key={href}
+                activeSearch={search}
+              >
+                <Icon size={20} aria-hidden="true" />
+                <span>{shortLabel ?? label}</span>
+              </SidebarLink>
+            ),
+          )}
           <DismissibleDetails className="mobile-nav-more" dataTour={moreTourForRole(user.role)}>
             <summary aria-controls="mobile-more-menu">
               <Menu size={20} aria-hidden="true" />
@@ -164,7 +170,7 @@ export async function AppShell({
 function SidebarGroup({
   group,
   role,
-  unreadNotifications
+  unreadNotifications,
 }: Readonly<{
   group: NavigationGroup;
   role: Session["user"]["role"];

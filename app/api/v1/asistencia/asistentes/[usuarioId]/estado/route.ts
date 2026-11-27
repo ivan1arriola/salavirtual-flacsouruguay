@@ -6,7 +6,10 @@ import { actualizarEstadoOperativoAsistente } from "@/src/modules/usuarios/estad
 
 export const runtime = "nodejs";
 
-export async function PATCH(request: Request, context: Readonly<{ params: Promise<{ usuarioId: string }> }>) {
+export async function PATCH(
+  request: Request,
+  context: Readonly<{ params: Promise<{ usuarioId: string }> }>,
+) {
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -14,7 +17,7 @@ export async function PATCH(request: Request, context: Readonly<{ params: Promis
 
   const actor = await resolveSessionActor(db, {
     id: session.user.id,
-    email: session.user.email
+    email: session.user.email,
   });
   if (!actor?.activo || actor.rol !== "ADMINISTRACION") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -28,20 +31,22 @@ export async function PATCH(request: Request, context: Readonly<{ params: Promis
 
   try {
     const estado = await actualizarEstadoOperativoAsistente(db, actor, usuarioId, {
-      disponibleGeneral: typeof body.disponibleGeneral === "boolean" ? body.disponibleGeneral : undefined,
+      disponibleGeneral:
+        typeof body.disponibleGeneral === "boolean" ? body.disponibleGeneral : undefined,
       cesadoHastaProximoInicioSesion:
         typeof body.cesadoHastaProximoInicioSesion === "boolean"
           ? body.cesadoHastaProximoInicioSesion
-          : undefined
+          : undefined,
     });
 
     return NextResponse.json({ ok: true, estado });
   } catch (error) {
     return NextResponse.json(
       {
-        error: error instanceof Error ? error.message : "No se pudo actualizar el estado operativo."
+        error:
+          error instanceof Error ? error.message : "No se pudo actualizar el estado operativo.",
       },
-      { status: 400 }
+      { status: 400 },
     );
   }
 }

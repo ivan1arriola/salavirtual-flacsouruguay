@@ -2,7 +2,7 @@ import type { PrismaClient } from "@prisma/client";
 import { describe, expect, it, vi } from "vitest";
 import {
   destinatariosDocentesPrograma,
-  puedeGestionarPrograma
+  puedeGestionarPrograma,
 } from "../src/modules/reuniones/permisos-programa.service";
 
 describe("permisos de reuniones compartidas por programa", () => {
@@ -11,7 +11,7 @@ describe("permisos de reuniones compartidas por programa", () => {
     const db = { docentePrograma: { findFirst } } as unknown as PrismaClient;
 
     await expect(
-      puedeGestionarPrograma(db, { id: "admin", rol: "ADMINISTRACION", activo: true }, "programa")
+      puedeGestionarPrograma(db, { id: "admin", rol: "ADMINISTRACION", activo: true }, "programa"),
     ).resolves.toBe(true);
     expect(findFirst).not.toHaveBeenCalled();
   });
@@ -21,7 +21,7 @@ describe("permisos de reuniones compartidas por programa", () => {
     const db = { docentePrograma: { findFirst } } as unknown as PrismaClient;
 
     await expect(
-      puedeGestionarPrograma(db, { id: "docente", rol: "DOCENTE", activo: true }, "programa")
+      puedeGestionarPrograma(db, { id: "docente", rol: "DOCENTE", activo: true }, "programa"),
     ).resolves.toBe(true);
     expect(findFirst).toHaveBeenCalledOnce();
   });
@@ -31,10 +31,10 @@ describe("permisos de reuniones compartidas por programa", () => {
     const db = { docentePrograma: { findFirst } } as unknown as PrismaClient;
 
     await expect(
-      puedeGestionarPrograma(db, { id: "otro-docente", rol: "DOCENTE", activo: true }, "programa")
+      puedeGestionarPrograma(db, { id: "otro-docente", rol: "DOCENTE", activo: true }, "programa"),
     ).resolves.toBe(false);
     await expect(
-      puedeGestionarPrograma(db, { id: "docente", rol: "DOCENTE", activo: false }, "programa")
+      puedeGestionarPrograma(db, { id: "docente", rol: "DOCENTE", activo: false }, "programa"),
     ).resolves.toBe(false);
   });
 
@@ -44,13 +44,13 @@ describe("permisos de reuniones compartidas por programa", () => {
       .mockResolvedValue([
         { docente: { usuario: { id: "d1", emailPrincipal: "d1@flacso.edu.uy" } } },
         { docente: { usuario: { id: "d1", emailPrincipal: "d1@flacso.edu.uy" } } },
-        { docente: { usuario: { id: "d2", emailPrincipal: "d2@flacso.edu.uy" } } }
+        { docente: { usuario: { id: "d2", emailPrincipal: "d2@flacso.edu.uy" } } },
       ]);
     const db = { docentePrograma: { findMany } } as unknown as PrismaClient;
 
     await expect(destinatariosDocentesPrograma(db, "programa")).resolves.toEqual([
       { usuarioId: "d1", email: "d1@flacso.edu.uy" },
-      { usuarioId: "d2", email: "d2@flacso.edu.uy" }
+      { usuarioId: "d2", email: "d2@flacso.edu.uy" },
     ]);
   });
 });

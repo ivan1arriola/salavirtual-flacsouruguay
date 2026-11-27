@@ -7,37 +7,44 @@ const state = vi.hoisted(() => ({
   updated: [] as Array<{ where: { id: string }; data: Record<string, unknown> }>,
   deleted: [] as string[],
   audits: [] as Array<Record<string, unknown>>,
-  cuentas: new Map<string, CuentaMock>()
+  cuentas: new Map<string, CuentaMock>(),
 }));
 
 vi.mock("next/server", () => ({
   NextResponse: class {
     constructor(
       public body: unknown,
-      public status = 200
+      public status = 200,
     ) {}
     static json(body: unknown, init?: { status?: number }) {
       return new this(body, init?.status ?? 200);
     }
-  }
+  },
 }));
 vi.mock("@/auth", () => ({
-  auth: async () => ({ user: { id: "admin", email: "admin@flacso.edu.uy", role: "ADMINISTRACION" } })
+  auth: async () => ({
+    user: { id: "admin", email: "admin@flacso.edu.uy", role: "ADMINISTRACION" },
+  }),
 }));
 vi.mock("@/src/lib/auth/session-actor.adapter", () => ({
-  resolveSessionActor: async () => ({ id: "admin", rol: "ADMINISTRACION", activo: true })
+  resolveSessionActor: async () => ({ id: "admin", rol: "ADMINISTRACION", activo: true }),
 }));
 vi.mock("@/src/lib/config/encryption", () => ({
   cifrarConfiguracion: (value: string) => `encrypted:${value}`,
-  descifrarConfiguracion: (value: string) => value.replace(/^encrypted:/, "")
+  descifrarConfiguracion: (value: string) => value.replace(/^encrypted:/, ""),
 }));
-vi.mock("@/src/modules/notificaciones/notificaciones.service", () => ({ notificarUsuarios: async () => {} }));
+vi.mock("@/src/modules/notificaciones/notificaciones.service", () => ({
+  notificarUsuarios: async () => {},
+}));
 vi.mock("@/src/lib/db", () => {
   const tx = {
-    proveedorReunion: { upsert: async ({ where }: { where: { tipo: string } }) => ({ id: where.tipo }) },
+    proveedorReunion: {
+      upsert: async ({ where }: { where: { tipo: string } }) => ({ id: where.tipo }),
+    },
     cuentaProveedor: {
       findFirst: async () => null,
-      findUnique: async ({ where }: { where: { id: string } }) => state.cuentas.get(where.id) ?? null,
+      findUnique: async ({ where }: { where: { id: string } }) =>
+        state.cuentas.get(where.id) ?? null,
       create: async ({ data }: { data: Record<string, unknown> }) => {
         state.created.push(data);
         return { id: "host-id", ...data };
@@ -49,16 +56,18 @@ vi.mock("@/src/lib/db", () => {
       delete: async ({ where }: { where: { id: string } }) => {
         state.deleted.push(where.id);
         return state.cuentas.get(where.id);
-      }
+      },
     },
     eventoProveedor: { count: async () => 0 },
     auditoria: {
       create: async ({ data }: { data: Record<string, unknown> }) => {
         state.audits.push(data);
-      }
-    }
+      },
+    },
   };
-  return { db: { $transaction: async (callback: (client: typeof tx) => Promise<unknown>) => callback(tx) } };
+  return {
+    db: { $transaction: async (callback: (client: typeof tx) => Promise<unknown>) => callback(tx) },
+  };
 });
 
 import { DELETE, POST, PUT } from "../app/api/v1/configuracion/salas-meet/route";
@@ -71,7 +80,7 @@ const base = {
   prioridad: 9,
   limiteConcurrente: 1,
   tieneLicencia: true,
-  activa: true
+  activa: true,
 };
 
 function cuenta(id: string, tipo: "ZOOM" | "GOOGLE_MEET"): CuentaMock {
@@ -87,7 +96,7 @@ function cuenta(id: string, tipo: "ZOOM" | "GOOGLE_MEET"): CuentaMock {
     limiteConcurrente: 1,
     tieneLicencia: true,
     activa: true,
-    _count: { eventosProveedor: 0 }
+    _count: { eventosProveedor: 0 },
   };
 }
 
@@ -95,7 +104,7 @@ function request(body: Record<string, unknown>, method = "POST") {
   return new Request("http://localhost/api/v1/configuracion/salas-meet", {
     method,
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body)
+    body: JSON.stringify(body),
   });
 }
 
@@ -106,7 +115,7 @@ beforeEach(() => {
   state.audits = [];
   state.cuentas = new Map([
     ["zoom-1", cuenta("zoom-1", "ZOOM")],
-    ["meet-1", cuenta("meet-1", "GOOGLE_MEET")]
+    ["meet-1", cuenta("meet-1", "GOOGLE_MEET")],
   ]);
 });
 
@@ -115,7 +124,7 @@ describe("alta de cuentas organizadoras", () => {
     for (const body of [
       { ...base, proveedorTipo: "ZOOM" },
       { ...base, proveedorTipo: "ZOOM", password: "not-a-zoom-credential" },
-      { ...base, proveedorTipo: "ZOOM", limiteConcurrente: 2 }
+      { ...base, proveedorTipo: "ZOOM", limiteConcurrente: 2 },
     ]) {
       const response = (await POST(request(body))) as any;
 
@@ -148,7 +157,7 @@ describe("baja de cuentas organizadoras", () => {
 describe("cuentas Meet", () => {
   it("crear y borrar cuentas Meet sigue funcionando", async () => {
     const creada = (await POST(
-      request({ ...base, proveedorTipo: "GOOGLE_MEET", password: "clave-segura" })
+      request({ ...base, proveedorTipo: "GOOGLE_MEET", password: "clave-segura" }),
     )) as any;
 
     expect(creada.status).toBe(201);
@@ -156,7 +165,7 @@ describe("cuentas Meet", () => {
     expect(state.created[0]).toMatchObject({
       proveedorId: "GOOGLE_MEET",
       emailOrganizador: "sala09@flacso.edu.uy",
-      secretRef: "encrypted:clave-segura"
+      secretRef: "encrypted:clave-segura",
     });
     expect(state.audits[0]).toMatchObject({ accion: "CUENTA_MEET_CREADA" });
 
@@ -177,10 +186,10 @@ describe("cuentas Meet", () => {
           nombre: "Sala renombrada",
           email: "meet-1@flacso.edu.uy",
           tieneLicencia: false,
-          prioridad: 3
+          prioridad: 3,
         },
-        "PUT"
-      )
+        "PUT",
+      ),
     )) as any;
 
     expect(response.status).toBe(200);
@@ -188,7 +197,7 @@ describe("cuentas Meet", () => {
       nombre: "Sala renombrada",
       emailOrganizador: "meet-1@flacso.edu.uy",
       tieneLicencia: false,
-      prioridad: 3
+      prioridad: 3,
     });
   });
 });
@@ -206,35 +215,38 @@ describe("edición de cuentas Zoom", () => {
           tieneLicencia: false,
           prioridad: 2,
           activa: false,
-          notificarCambioPassword: false
+          notificarCambioPassword: false,
         },
-        "PUT"
-      )
+        "PUT",
+      ),
     )) as any;
 
     expect(response.status).toBe(200);
     expect(state.updated).toHaveLength(1);
-    expect(state.updated[0]).toEqual({ where: { id: "zoom-1" }, data: { prioridad: 2, activa: false } });
+    expect(state.updated[0]).toEqual({
+      where: { id: "zoom-1" },
+      data: { prioridad: 2, activa: false },
+    });
     expect(response.body.host).toMatchObject({
       nombre: "Cuenta zoom-1",
       emailOrganizador: "zoom-1@flacso.edu.uy",
       tieneLicencia: true,
       limiteConcurrente: 1,
       prioridad: 2,
-      activa: false
+      activa: false,
     });
     expect(state.audits[0]).toMatchObject({
       actorUsuarioId: "admin",
       accion: "CUENTA_ZOOM_ACTUALIZADA",
       entidadId: "zoom-1",
       valorAnterior: { prioridad: 5, activa: true },
-      valorNuevo: { prioridad: 2, activa: false }
+      valorNuevo: { prioridad: 2, activa: false },
     });
   });
 
   it("editar una cuenta Zoom acepta solo prioridad y activa", async () => {
     const response = (await PUT(
-      request({ id: "zoom-1", proveedorTipo: "ZOOM", prioridad: 7, activa: true }, "PUT")
+      request({ id: "zoom-1", proveedorTipo: "ZOOM", prioridad: 7, activa: true }, "PUT"),
     )) as any;
 
     expect(response.status).toBe(200);
@@ -243,10 +255,10 @@ describe("edición de cuentas Zoom", () => {
 
   it("editar una cuenta Zoom sigue rechazando dos reuniones simultáneas o una contraseña", async () => {
     const dosReuniones = (await PUT(
-      request({ ...base, id: "zoom-1", proveedorTipo: "ZOOM", limiteConcurrente: 2 }, "PUT")
+      request({ ...base, id: "zoom-1", proveedorTipo: "ZOOM", limiteConcurrente: 2 }, "PUT"),
     )) as any;
     const conPassword = (await PUT(
-      request({ ...base, id: "zoom-1", proveedorTipo: "ZOOM", password: "clave-secreta" }, "PUT")
+      request({ ...base, id: "zoom-1", proveedorTipo: "ZOOM", password: "clave-secreta" }, "PUT"),
     )) as any;
 
     expect(dosReuniones.status).toBe(400);
@@ -256,7 +268,7 @@ describe("edición de cuentas Zoom", () => {
 
   it("no se puede editar una cuenta Zoom como si fuera Meet", async () => {
     const response = (await PUT(
-      request({ ...base, id: "zoom-1", proveedorTipo: "GOOGLE_MEET" }, "PUT")
+      request({ ...base, id: "zoom-1", proveedorTipo: "GOOGLE_MEET" }, "PUT"),
     )) as any;
 
     expect(response.status).toBe(400);

@@ -11,13 +11,13 @@ describe("Agenda abierta en movil", () => {
         .find((rule) => rule.includes(".open-agenda-card-grid")) ?? "";
 
     expect(mobileRule).toMatch(
-      /\.open-agenda-card-grid\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)/s
+      /\.open-agenda-card-grid\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)/s,
     );
     expect(mobileRule).toMatch(
-      /\.open-agenda-card-actions\s+\.row-action\s*>\s*button\s*\{[^}]*min-height:\s*44px/s
+      /\.open-agenda-card-actions\s+\.row-action\s*>\s*button\s*\{[^}]*min-height:\s*44px/s,
     );
     expect(mobileRule).toMatch(
-      /\.open-agenda-card-actions\s+\.row-action\s*>\s*button\s*\{[^}]*width:\s*100%/s
+      /\.open-agenda-card-actions\s+\.row-action\s*>\s*button\s*\{[^}]*width:\s*100%/s,
     );
   });
 });

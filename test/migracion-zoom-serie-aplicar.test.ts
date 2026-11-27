@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { PrismaClient } from "@prisma/client";
 import {
   aplicarMigracionZoomSerie,
-  type DependenciasMigracionZoomSerie
+  type DependenciasMigracionZoomSerie,
 } from "../src/modules/reuniones/migracion-zoom-serie-aplicar.service";
 
 const ahora = new Date("2026-11-02T12:00:00Z");
@@ -11,21 +11,25 @@ const MEET = "https://meet.google.com/abc-defg-hij";
 const ZOOM = "https://us06web.zoom.us/j/123?pwd=xyz";
 const SERIE = "serie:s-1";
 
-type Opciones = Readonly<{ sinCitas?: boolean; inicioPrimero?: Date; conservar?: readonly string[] }>;
+type Opciones = Readonly<{
+  sinCitas?: boolean;
+  inicioPrimero?: Date;
+  conservar?: readonly string[];
+}>;
 
 /** Base en memoria con una serie de tres encuentros en Meet y una sola reunión Zoom compartida. */
 function crearEscenario(opciones: Opciones = {}) {
   const inicios = [
     opciones.inicioPrimero ?? new Date("2026-11-10T12:00:00Z"),
     new Date("2026-11-17T12:00:00Z"),
-    new Date("2026-11-24T12:00:00Z")
+    new Date("2026-11-24T12:00:00Z"),
   ];
   const instancias = inicios.map((inicio, indice) => ({
     id: `i${indice + 1}`,
     estado: "PROGRAMADA",
     inicioProgramadoAt: inicio,
     finProgramadoAt: new Date(inicio.getTime() + 3_600_000),
-    proveedorActivoTipo: "GOOGLE_MEET" as string | null,
+    proveedorActivoTipo: "GOOGLE_MEET",
     conservarGoogleMeet: (opciones.conservar ?? []).includes(`i${indice + 1}`),
     eventosProveedor: [
       {
@@ -37,9 +41,9 @@ function crearEscenario(opciones: Opciones = {}) {
         reunionProveedorId: null as string | null,
         cuentaProveedorId: "meet-host",
         cuentaProveedor: { emailOrganizador: "meet@flacso.edu.uy" },
-        proveedor: { tipo: "GOOGLE_MEET" }
-      }
-    ] as Record<string, any>[]
+        proveedor: { tipo: "GOOGLE_MEET" },
+      },
+    ] as Record<string, any>[],
   }));
   const reuniones: Record<string, any>[] = [];
   const cambios: Record<string, any>[] = [];
@@ -57,24 +61,26 @@ function crearEscenario(opciones: Opciones = {}) {
             where.id.in.includes(i.id) &&
             i.estado === where.estado &&
             i.conservarGoogleMeet === where.conservarGoogleMeet &&
-            where.OR.some((c: any) => c.proveedorActivoTipo === i.proveedorActivoTipo)
+            where.OR.some((c: any) => c.proveedorActivoTipo === i.proveedorActivoTipo),
         );
         objetivo.forEach((i) => Object.assign(i, data));
         return { count: objetivo.length };
-      })
+      }),
     },
     cuentaProveedor: {
       findMany: vi.fn(async () => [
         { id: "h1", emailOrganizador: "sala01@flacso.edu.uy", prioridad: 1, limiteConcurrente: 1 },
-        { id: "h2", emailOrganizador: "sala02@flacso.edu.uy", prioridad: 2, limiteConcurrente: 1 }
-      ])
+        { id: "h2", emailOrganizador: "sala02@flacso.edu.uy", prioridad: 2, limiteConcurrente: 1 },
+      ]),
     },
     reunionProveedor: {
       findUnique: vi.fn(
         async ({ where }: any) =>
           reuniones.find((r) =>
-            where.id ? r.id === where.id : r.serieClave === where.proveedorId_serieClave.serieClave
-          ) ?? null
+            where.id
+              ? r["id"] === where.id
+              : r["serieClave"] === where.proveedorId_serieClave.serieClave,
+          ) ?? null,
       ),
       create: vi.fn(async ({ data }: any) => {
         const nueva = {
@@ -83,23 +89,25 @@ function crearEscenario(opciones: Opciones = {}) {
           externalId: null,
           joinUrl: null,
           errorIntegracion: null,
-          ...data
+          ...data,
         };
         reuniones.push(nueva);
         return { id: nueva.id };
       }),
       update: vi.fn(async ({ where, data }: any) =>
         Object.assign(
-          reuniones.find((r) => r.id === where.id)!,
-          data
-        )
-      )
+          reuniones.find((r) => r["id"] === where.id)!,
+          data,
+        ),
+      ),
     },
     eventoProveedor: {
       findMany: vi.fn(async ({ where }: any) =>
         where.id?.in
-          ? instancias.flatMap((i) => i.eventosProveedor).filter((e) => where.id.in.includes(e.id))
-          : []
+          ? instancias
+              .flatMap((i) => i.eventosProveedor)
+              .filter((e) => where.id.in.includes(e["id"]))
+          : [],
       ),
       create: vi.fn(async ({ data }: any) => {
         const instancia = instancias.find((i) => i.id === data.instanciaSalaId)!;
@@ -113,22 +121,24 @@ function crearEscenario(opciones: Opciones = {}) {
           cuentaProveedorId: data.cuentaProveedorId,
           reunionProveedorId: data.reunionProveedorId,
           cuentaProveedor: null,
-          proveedor: { tipo: "ZOOM" }
+          proveedor: { tipo: "ZOOM" },
         };
         instancia.eventosProveedor.push(evento);
         return { id: evento.id };
       }),
       update: vi.fn(async ({ where, data }: any) => {
-        const evento = instancias.flatMap((i) => i.eventosProveedor).find((e) => e.id === where.id)!;
+        const evento = instancias
+          .flatMap((i) => i.eventosProveedor)
+          .find((e) => e["id"] === where.id)!;
         return Object.assign(evento, data);
       }),
       updateMany: vi.fn(async ({ where, data }: any) => {
         const eventos = instancias
           .flatMap((i) => i.eventosProveedor)
-          .filter((e) => where.id.in.includes(e.id));
+          .filter((e) => where.id.in.includes(e["id"]));
         eventos.forEach((e) => Object.assign(e, data));
         return { count: eventos.length };
-      })
+      }),
     },
     cambioEnlaceCita: {
       findMany: vi.fn(async () => cambios.map((c) => ({ ...c }))),
@@ -138,34 +148,36 @@ function crearEscenario(opciones: Opciones = {}) {
         return { id: fila.id, estado: fila.estado };
       }),
       update: vi.fn(async ({ where, data }: any) => {
-        const fila = cambios.find((c) => c.id === where.id)!;
+        const fila = cambios.find((c) => c["id"] === where.id)!;
         Object.assign(fila, data);
-        return { id: fila.id, estado: fila.estado };
-      })
+        return { id: fila["id"], estado: fila["estado"] };
+      }),
     },
     auditoria: {
       create: vi.fn(async ({ data }: any) => {
         auditorias.push(data);
         return {};
       }),
-      findFirst: vi.fn(async () => (auditorias.length ? { id: "aud-1" } : null))
-    }
+      findFirst: vi.fn(async () => (auditorias.length ? { id: "aud-1" } : null)),
+    },
   };
   const db = { ...tx, $transaction: vi.fn(async (cb: (t: typeof tx) => unknown) => cb(tx)) };
 
   // Provisión simulada: la reunión compartida se crea una sola vez y todos los eventos la usan.
   const sincronizarEventos = vi.fn(async (ids: readonly string[]) => {
     const reunion = reuniones[0];
-    if (reunion.estadoCreacion !== "CREADA") {
+    if (reunion["estadoCreacion"] !== "CREADA") {
       Object.assign(reunion, { estadoCreacion: "CREADA", externalId: "999", joinUrl: ZOOM });
       estado.zoomCreados += 1;
     }
-    for (const evento of instancias.flatMap((i) => i.eventosProveedor).filter((e) => ids.includes(e.id))) {
+    for (const evento of instancias
+      .flatMap((i) => i.eventosProveedor)
+      .filter((e) => ids.includes(e["id"]))) {
       Object.assign(evento, {
         joinUrl: ZOOM,
         externalEventId: "999",
         estadoIntegracion: "SINCRONIZADA",
-        operacionPendiente: null
+        operacionPendiente: null,
       });
     }
     return ids.map(() => ({ estado: "SINCRONIZADA" }));
@@ -173,15 +185,15 @@ function crearEscenario(opciones: Opciones = {}) {
 
   // Calendar: una cita por encuentro; `fallar` es el conjunto de citas cuyo parche lanza error.
   const calendarios = new Map(
-    instancias.map((i, indice) => [
+    instancias.map((_i, indice) => [
       `cal-${indice + 1}`,
       {
         description: `Clase\nUnirse: ${MEET}`,
         location: "Aula",
         conferenceData: { x: 1 },
-        hangoutLink: MEET
-      } as Record<string, any>
-    ])
+        hangoutLink: MEET,
+      } as Record<string, any>,
+    ]),
   );
   const fallar = new Set<string>();
   const actualizar = vi.fn(async ({ eventId, cambio }: any) => {
@@ -203,7 +215,7 @@ function crearEscenario(opciones: Opciones = {}) {
     yaEnviados: 0,
     enCurso: 0,
     errores: 0,
-    detalle: []
+    detalle: [],
   }));
   const deps: DependenciasMigracionZoomSerie = {
     db: db as unknown as PrismaClient,
@@ -211,12 +223,11 @@ function crearEscenario(opciones: Opciones = {}) {
     verificarReunionZoom: vi.fn(async () => ({ joinUrl: ZOOM })),
     calendar: {
       obtener: vi.fn(async ({ eventId }: any) => ({ ...calendarios.get(eventId)! })),
-      actualizar
+      actualizar,
     },
     enviarCorreo: vi.fn(async () => ({ sent: true })),
-    notificarCambioSerie:
-      notificarCambioSerie as unknown as DependenciasMigracionZoomSerie["notificarCambioSerie"],
-    ahora: () => ahora
+    notificarCambioSerie: notificarCambioSerie,
+    ahora: () => ahora,
   };
   return {
     deps,
@@ -229,7 +240,7 @@ function crearEscenario(opciones: Opciones = {}) {
     fallar,
     actualizar,
     sincronizarEventos,
-    notificarCambioSerie
+    notificarCambioSerie,
   };
 }
 
@@ -240,19 +251,23 @@ describe("aplicarMigracionZoomSerie", () => {
   it("rechaza a quien no es Administración y valida los límites del piloto y del lote", async () => {
     const e = crearEscenario();
     await expect(
-      aplicarMigracionZoomSerie(e.deps, { id: "d", rol: "DOCENTE" }, { modo: "PILOTO", serieClaves: [SERIE] })
+      aplicarMigracionZoomSerie(
+        e.deps,
+        { id: "d", rol: "DOCENTE" },
+        { modo: "PILOTO", serieClaves: [SERIE] },
+      ),
     ).rejects.toMatchObject({ status: 403 });
     await expect(
-      aplicarMigracionZoomSerie(e.deps, admin, { modo: "PILOTO", serieClaves: ["a", "b"] })
+      aplicarMigracionZoomSerie(e.deps, admin, { modo: "PILOTO", serieClaves: ["a", "b"] }),
     ).rejects.toMatchObject({ status: 400 });
     await expect(
       aplicarMigracionZoomSerie(e.deps, admin, {
         modo: "LOTE",
-        serieClaves: Array.from({ length: 6 }, (_, i) => `serie:${i}`)
-      })
+        serieClaves: Array.from({ length: 6 }, (_, i) => `serie:${i}`),
+      }),
     ).rejects.toMatchObject({ status: 400 });
     await expect(
-      aplicarMigracionZoomSerie(e.deps, admin, { modo: "LOTE", serieClaves: [] })
+      aplicarMigracionZoomSerie(e.deps, admin, { modo: "LOTE", serieClaves: [] }),
     ).rejects.toMatchObject({ status: 400 });
     expect(e.db.$transaction).not.toHaveBeenCalled();
   });
@@ -269,7 +284,7 @@ describe("aplicarMigracionZoomSerie", () => {
         reunionProveedorId,
         cuentaProveedorId: "h1",
         cuentaProveedor: { emailOrganizador: "sala01@flacso.edu.uy" },
-        proveedor: { tipo: "ZOOM" }
+        proveedor: { tipo: "ZOOM" },
       });
     };
 
@@ -283,7 +298,7 @@ describe("aplicarMigracionZoomSerie", () => {
         estadoCreacion: "CREADA",
         externalId: "999",
         joinUrl: ZOOM,
-        errorIntegracion: null
+        errorIntegracion: null,
       });
       for (const instancia of e.instancias.slice(0, 2)) {
         instancia.proveedorActivoTipo = "ZOOM";
@@ -296,7 +311,7 @@ describe("aplicarMigracionZoomSerie", () => {
           reunionProveedorId: "r-prev",
           cuentaProveedorId: "h1",
           cuentaProveedor: { emailOrganizador: "sala01@flacso.edu.uy" },
-          proveedor: { tipo: "ZOOM" }
+          proveedor: { tipo: "ZOOM" },
         });
       }
       const [r] = await migrar(e);
@@ -305,14 +320,14 @@ describe("aplicarMigracionZoomSerie", () => {
       expect(e.instancias.map((i) => i.proveedorActivoTipo)).toEqual(["ZOOM", "ZOOM", "ZOOM"]);
       const zoom = e.instancias
         .flatMap((i) => i.eventosProveedor)
-        .filter((ev) => ev.proveedor.tipo === "ZOOM");
-      expect(new Set(zoom.map((ev) => ev.reunionProveedorId))).toEqual(new Set(["r-prev"]));
-      expect(new Set(zoom.map((ev) => ev.cuentaProveedorId))).toEqual(new Set(["h1"]));
+        .filter((ev) => ev["proveedor"].tipo === "ZOOM");
+      expect(new Set(zoom.map((ev) => ev["reunionProveedorId"]))).toEqual(new Set(["r-prev"]));
+      expect(new Set(zoom.map((ev) => ev["cuentaProveedorId"]))).toEqual(new Set(["h1"]));
     });
 
     it.each([
       ["otra reunión Zoom distinta", "otra-reunion"],
-      ["un evento Zoom sin reunión compartida", null]
+      ["un evento Zoom sin reunión compartida", null],
     ])(
       "no crea una segunda reunión si un encuentro ya está en Zoom con %s y pide unificar el enlace",
       async (_nombre, reunionProveedorId) => {
@@ -323,7 +338,7 @@ describe("aplicarMigracionZoomSerie", () => {
         expect(r.mensaje).toContain("Unificar enlace");
         expect(e.reuniones).toHaveLength(0);
         expect(e.sincronizarEventos).not.toHaveBeenCalled();
-      }
+      },
     );
   });
 
@@ -332,12 +347,12 @@ describe("aplicarMigracionZoomSerie", () => {
     const claveAntigua = "dp-1\u0000Taller Metodológico I\u00002026-10-01T12:00:00.000Z";
     const [r] = await aplicarMigracionZoomSerie(e.deps, admin, {
       modo: "PILOTO",
-      serieClaves: [claveAntigua]
+      serieClaves: [claveAntigua],
     });
     expect(r.resultado).toBe("MIGRADA");
     expect(r.serieClave).not.toContain("\u0000");
     expect(e.reuniones).toHaveLength(1);
-    expect(e.reuniones[0].serieClave).toBe(r.serieClave);
+    expect(e.reuniones[0]["serieClave"]).toBe(r.serieClave);
     expect(JSON.stringify(e.auditorias)).not.toContain("\u0000");
     expect(e.auditorias[0].entidadId).toBe(r.serieClave);
   });
@@ -345,21 +360,28 @@ describe("aplicarMigracionZoomSerie", () => {
   it("migra los tres encuentros con una sola reunión Zoom y el mismo enlace", async () => {
     const e = crearEscenario();
     const [r] = await migrar(e);
-    expect(r).toMatchObject({ resultado: "MIGRADA", etapa: "FINAL", encuentros: 3, reintentable: false });
+    expect(r).toMatchObject({
+      resultado: "MIGRADA",
+      etapa: "FINAL",
+      encuentros: 3,
+      reintentable: false,
+    });
     expect(e.instancias.map((i) => i.proveedorActivoTipo)).toEqual(["ZOOM", "ZOOM", "ZOOM"]);
     expect(e.estado.zoomCreados).toBe(1);
     expect(e.reuniones).toHaveLength(1);
-    const zoom = e.instancias.flatMap((i) => i.eventosProveedor).filter((ev) => ev.proveedor.tipo === "ZOOM");
+    const zoom = e.instancias
+      .flatMap((i) => i.eventosProveedor)
+      .filter((ev) => ev["proveedor"].tipo === "ZOOM");
     expect(zoom).toHaveLength(3);
-    expect(new Set(zoom.map((ev) => ev.joinUrl))).toEqual(new Set([ZOOM]));
-    expect(new Set(zoom.map((ev) => ev.reunionProveedorId))).toEqual(new Set(["r1"]));
-    expect(new Set(zoom.map((ev) => ev.cuentaProveedorId)).size).toBe(1);
-    expect(e.cambios.map((c) => c.estado)).toEqual(["VERIFICADA", "VERIFICADA", "VERIFICADA"]);
+    expect(new Set(zoom.map((ev) => ev["joinUrl"]))).toEqual(new Set([ZOOM]));
+    expect(new Set(zoom.map((ev) => ev["reunionProveedorId"]))).toEqual(new Set(["r1"]));
+    expect(new Set(zoom.map((ev) => ev["cuentaProveedorId"])).size).toBe(1);
+    expect(e.cambios.map((c) => c["estado"])).toEqual(["VERIFICADA", "VERIFICADA", "VERIFICADA"]);
     expect(e.auditorias).toHaveLength(1);
     expect(e.auditorias[0]).toMatchObject({
       accion: "MIGRACION_ZOOM_SERIE_APLICADA",
       entidadTipo: "SerieReunion",
-      entidadId: SERIE
+      entidadId: SERIE,
     });
     expect(e.notificarCambioSerie).toHaveBeenCalledTimes(1);
     expect(e.notificarCambioSerie).toHaveBeenCalledWith(
@@ -368,8 +390,8 @@ describe("aplicarMigracionZoomSerie", () => {
         serieClave: SERIE,
         tipo: "MIGRACION_SERIE",
         joinUrl: ZOOM,
-        instanciaIds: ["i1", "i2", "i3"]
-      })
+        instanciaIds: ["i1", "i2", "i3"],
+      }),
     );
   });
 
@@ -383,9 +405,9 @@ describe("aplicarMigracionZoomSerie", () => {
       expect(e.instancias.map((i) => i.proveedorActivoTipo)).toEqual([
         "GOOGLE_MEET",
         "GOOGLE_MEET",
-        "GOOGLE_MEET"
+        "GOOGLE_MEET",
       ]);
-      expect(e.cambios.filter((c) => c.estado === "VERIFICADA")).toHaveLength(2);
+      expect(e.cambios.filter((c) => c["estado"] === "VERIFICADA")).toHaveLength(2);
       expect(e.auditorias).toHaveLength(0);
       expect(e.notificarCambioSerie).not.toHaveBeenCalled();
 
@@ -397,7 +419,7 @@ describe("aplicarMigracionZoomSerie", () => {
       expect(e.estado.zoomCreados).toBe(1);
       expect(e.reuniones).toHaveLength(1);
       expect(e.instancias.map((i) => i.proveedorActivoTipo)).toEqual(["ZOOM", "ZOOM", "ZOOM"]);
-    }
+    },
   );
 
   it("una serie sin cita de Calendar verificable no se migra a ciegas: queda en revisión", async () => {
@@ -407,7 +429,7 @@ describe("aplicarMigracionZoomSerie", () => {
     expect(e.instancias.map((i) => i.proveedorActivoTipo)).toEqual([
       "GOOGLE_MEET",
       "GOOGLE_MEET",
-      "GOOGLE_MEET"
+      "GOOGLE_MEET",
     ]);
   });
 
@@ -434,12 +456,14 @@ describe("aplicarMigracionZoomSerie", () => {
       e.instancias[1].conservarGoogleMeet = true;
       const reunion = e.reuniones[0];
       Object.assign(reunion, { estadoCreacion: "CREADA", externalId: "999", joinUrl: ZOOM });
-      for (const ev of e.instancias.flatMap((i) => i.eventosProveedor).filter((x) => ids.includes(x.id))) {
+      for (const ev of e.instancias
+        .flatMap((i) => i.eventosProveedor)
+        .filter((x) => ids.includes(x["id"]))) {
         Object.assign(ev, {
           joinUrl: ZOOM,
           externalEventId: "999",
           estadoIntegracion: "SINCRONIZADA",
-          operacionPendiente: null
+          operacionPendiente: null,
         });
       }
       return ids.map(() => ({ estado: "SINCRONIZADA" }));
@@ -466,7 +490,10 @@ describe("aplicarMigracionZoomSerie", () => {
 
   it("rechaza una clave de serie inválida", async () => {
     const e = crearEscenario();
-    const [r] = await aplicarMigracionZoomSerie(e.deps, admin, { modo: "PILOTO", serieClaves: ["serie:"] });
+    const [r] = await aplicarMigracionZoomSerie(e.deps, admin, {
+      modo: "PILOTO",
+      serieClaves: ["serie:"],
+    });
     expect(r).toMatchObject({ resultado: "OMITIDA", etapa: "VALIDACION" });
   });
 });

@@ -6,12 +6,12 @@ type TarifaDb = PrismaClient | Prisma.TransactionClient;
 /** Fachada de retrocompatibilidad para la tarifa vigente de asistencia. */
 export async function obtenerTarifaVigente(
   db: TarifaDb,
-  modalidad: ModalidadReunion
+  modalidad: ModalidadReunion,
 ): Promise<Readonly<{ id: string; valorHora: Prisma.Decimal; moneda: string }>> {
   const tarifa = await crearPrismaTarifasRepositoryAdapter(db).obtenerTarifaVigente(modalidad);
   return {
     id: tarifa.id,
     valorHora: new Prisma.Decimal(tarifa.valorHora),
-    moneda: tarifa.moneda
+    moneda: tarifa.moneda,
   };
 }

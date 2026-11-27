@@ -2,20 +2,20 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("../src/modules/reuniones/encuentros-persistence.adapter", () => ({
   auditarEncuentro: vi.fn(),
-  recalcularSolicitud: vi.fn()
+  recalcularSolicitud: vi.fn(),
 }));
 vi.mock("../src/modules/reuniones/permisos-programa.service", () => ({
-  puedeGestionarPrograma: vi.fn().mockResolvedValue(true)
+  puedeGestionarPrograma: vi.fn().mockResolvedValue(true),
 }));
 vi.mock("../src/modules/asistencia/reserva-asistencia.service", () => ({
-  reservarAsistenteDisponible: vi.fn()
+  reservarAsistenteDisponible: vi.fn(),
 }));
 
 import {
   actualizarEncuentro,
   agregarEncuentro,
   eliminarEncuentro,
-  eliminarReunionCompleta
+  eliminarReunionCompleta,
 } from "../src/modules/reuniones/gestionar-encuentros.service";
 
 const titular = { id: "titular", rol: "DOCENTE", activo: true } as never;
@@ -31,7 +31,7 @@ const zoomEvento = {
   cuentaProveedorId: "host",
   externalEventId: "z1",
   codigoReunion: null,
-  proveedor: { tipo: "ZOOM" }
+  proveedor: { tipo: "ZOOM" },
 };
 
 function dbCon(tx: Record<string, unknown>) {
@@ -55,18 +55,25 @@ function txEncuentro() {
         requiereAsistenciaTecnica: false,
         descripcion: null,
         solicitud: { modalidad: "VIRTUAL", docentePrograma },
-        eventosProveedor: [zoomEvento]
+        eventosProveedor: [zoomEvento],
       }),
       count: vi.fn().mockResolvedValue(2),
-      update: vi.fn()
+      update: vi.fn(),
     },
-    eventoProveedor: { findMany: vi.fn().mockResolvedValue([]), update: vi.fn(), updateMany: vi.fn() },
+    eventoProveedor: {
+      findMany: vi.fn().mockResolvedValue([]),
+      update: vi.fn(),
+      updateMany: vi.fn(),
+    },
     cuentaProveedor: {
-      findUnique: vi.fn().mockResolvedValue({ id: "host", prioridad: 1, limiteConcurrente: 5 })
+      findUnique: vi.fn().mockResolvedValue({ id: "host", prioridad: 1, limiteConcurrente: 5 }),
     },
-    asignacionAsistenciaTecnica: { findFirst: vi.fn().mockResolvedValue(null), updateMany: vi.fn() },
+    asignacionAsistenciaTecnica: {
+      findFirst: vi.fn().mockResolvedValue(null),
+      updateMany: vi.fn(),
+    },
     postulacionAsistenciaTecnica: { updateMany: vi.fn() },
-    auditoria: { create: vi.fn() }
+    auditoria: { create: vi.fn() },
   };
 }
 
@@ -81,13 +88,13 @@ function txSolicitud() {
         modalidad: "VIRTUAL",
         descripcion: null,
         docentePrograma,
-        instancias: []
+        instancias: [],
       }),
-      update: vi.fn()
+      update: vi.fn(),
     },
     instanciaSala: { updateMany: vi.fn() },
     eventoProveedor: { updateMany: vi.fn() },
-    auditoria: { create: vi.fn() }
+    auditoria: { create: vi.fn() },
   };
 }
 
@@ -95,7 +102,11 @@ describe("solo el titular de la reunión (o administración) puede modificarla",
   it("otro docente del programa no puede reprogramar un encuentro", async () => {
     const tx = txEncuentro();
     await expect(
-      actualizarEncuentro(dbCon(tx), otroDocente, "sol-1", "inst-1", { accion: "EDITAR_FECHA", inicio, fin })
+      actualizarEncuentro(dbCon(tx), otroDocente, "sol-1", "inst-1", {
+        accion: "EDITAR_FECHA",
+        inicio,
+        fin,
+      }),
     ).rejects.toThrow(/permisos/);
     expect(tx.instanciaSala.update).not.toHaveBeenCalled();
     expect(tx.eventoProveedor.update).not.toHaveBeenCalled();
@@ -103,23 +114,27 @@ describe("solo el titular de la reunión (o administración) puede modificarla",
 
   it("otro docente no puede cancelar un encuentro", async () => {
     const tx = txEncuentro();
-    await expect(eliminarEncuentro(dbCon(tx), otroDocente, "sol-1", "inst-1")).rejects.toThrow(/permisos/);
+    await expect(eliminarEncuentro(dbCon(tx), otroDocente, "sol-1", "inst-1")).rejects.toThrow(
+      /permisos/,
+    );
     expect(tx.instanciaSala.update).not.toHaveBeenCalled();
     expect(tx.eventoProveedor.updateMany).not.toHaveBeenCalled();
   });
 
   it("otro docente no puede eliminar la reunión completa", async () => {
     const tx = txSolicitud();
-    await expect(eliminarReunionCompleta(dbCon(tx), otroDocente, "sol-1")).rejects.toThrow(/permisos/);
+    await expect(eliminarReunionCompleta(dbCon(tx), otroDocente, "sol-1")).rejects.toThrow(
+      /permisos/,
+    );
     expect(tx.solicitudSala.update).not.toHaveBeenCalled();
     expect(tx.auditoria.create).not.toHaveBeenCalled();
   });
 
   it("otro docente no puede agregar encuentros", async () => {
     const tx = txSolicitud();
-    await expect(agregarEncuentro(dbCon(tx), otroDocente, "sol-1", { inicio, fin })).rejects.toThrow(
-      /permisos/
-    );
+    await expect(
+      agregarEncuentro(dbCon(tx), otroDocente, "sol-1", { inicio, fin }),
+    ).rejects.toThrow(/permisos/);
   });
 
   it("el titular sí puede cancelar su encuentro", async () => {

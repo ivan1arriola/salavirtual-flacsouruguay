@@ -29,7 +29,10 @@ const entradas = [
   ["meeting.breakout_room_sharing_started", "Pantalla compartida iniciada en sala de grupos"],
   ["meeting.breakout_room_sharing_ended", "Pantalla compartida finalizada en sala de grupos"],
   ["meeting.participant_jbh_waiting", "Participante esperando al anfitrión"],
-  ["meeting.participant_jbh_waiting_left", "Participante salió antes de que ingresara el anfitrión"],
+  [
+    "meeting.participant_jbh_waiting_left",
+    "Participante salió antes de que ingresara el anfitrión",
+  ],
   ["meeting.participant_role_changed", "Cambió el rol de un participante"],
   ["meeting.summary_completed", "Resumen de reunión disponible"],
   ["meeting.chat_message_file_sent", "Archivo recibido en el chat"],
@@ -67,9 +70,10 @@ const entradas = [
   ["group.admin_added", "Administrador añadido al grupo"],
   ["group.admin_deleted", "Administrador eliminado del grupo"],
   ["group.member_added", "Miembro añadido al grupo"],
-  ["group.member_deleted", "Miembro eliminado del grupo"]
+  ["group.member_deleted", "Miembro eliminado del grupo"],
 ] as const;
 
 export const CATALOGO_EVENTOS_ZOOM = entradas.map(([tipo, etiqueta]) => ({ tipo, etiqueta }));
 export const etiquetaEventoZoom = (tipo: string): string =>
-  CATALOGO_EVENTOS_ZOOM.find((evento) => evento.tipo === tipo)?.etiqueta ?? `Evento de Zoom: ${tipo}`;
+  CATALOGO_EVENTOS_ZOOM.find((evento) => evento.tipo === tipo)?.etiqueta ??
+  `Evento de Zoom: ${tipo}`;

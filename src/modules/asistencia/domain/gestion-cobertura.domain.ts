@@ -8,7 +8,7 @@ export const gestionarCoberturaSchema = z.discriminatedUnion("accion", [
   z.object({
     accion: z.literal("ASIGNAR_DIRECTO"),
     instanciaSalaId: meetingId,
-    asistenteTecnicoId: assistantId
+    asistenteTecnicoId: assistantId,
   }),
   z.object({
     accion: z.literal("REGISTRAR_RETROACTIVO"),
@@ -16,21 +16,21 @@ export const gestionarCoberturaSchema = z.discriminatedUnion("accion", [
     asistenteTecnicoId: assistantId,
     inicioRealAt: z.coerce.date(),
     finRealAt: z.coerce.date(),
-    motivo: z.string().trim().min(10, "Describí el motivo del registro histórico.").max(1000)
+    motivo: z.string().trim().min(10, "Describí el motivo del registro histórico.").max(1000),
   }),
   z.object({ accion: z.literal("APROBAR_RETROACTIVO"), registroId: z.string().trim().min(1) }),
   z.object({
     accion: z.literal("RECHAZAR_RETROACTIVO"),
     registroId: z.string().trim().min(1),
-    motivo: z.string().trim().min(5).max(1000)
-  })
+    motivo: z.string().trim().min(5).max(1000),
+  }),
 ]);
 
 export function validarIntervaloRetroactivo(
   inicio: Date,
   fin: Date,
   encuentro: Readonly<{ inicio: Date; fin: Date }>,
-  ahora: Date
+  ahora: Date,
 ): number {
   const minutos = Math.round((fin.getTime() - inicio.getTime()) / 60_000);
   if (!Number.isFinite(minutos) || minutos < 1 || minutos > 24 * 60) {

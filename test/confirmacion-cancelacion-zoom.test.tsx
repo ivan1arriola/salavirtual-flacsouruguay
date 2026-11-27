@@ -9,8 +9,8 @@ describe("confirmación de cancelación Zoom", () => {
       createElement(ConfirmacionCancelacionZoom, {
         detalle: { tipo: "encuentro", fecha: "lunes 10 de octubre, 10:00" },
         onCerrar: vi.fn(),
-        onConfirmar: vi.fn()
-      })
+        onConfirmar: vi.fn(),
+      }),
     );
     expect(html).toContain("lunes 10 de octubre, 10:00");
     expect(html).toContain("Volver");
@@ -24,8 +24,8 @@ describe("confirmación de cancelación Zoom", () => {
       createElement(ConfirmacionCancelacionZoom, {
         detalle: { tipo: "serie", cantidad: 3 },
         onCerrar: vi.fn(),
-        onConfirmar: vi.fn()
-      })
+        onConfirmar: vi.fn(),
+      }),
     );
     expect(html).toContain("3 encuentros");
     expect(html).toContain("toda la serie");

@@ -20,7 +20,7 @@ describe("esquema de cuentas Zoom por grupo", () => {
       "grupoNombre",
       "ultimaSincronizacionAt",
       "ultimaSincronizacionResultado",
-      "sincronizandoDesdeAt"
+      "sincronizandoDesdeAt",
     ]) {
       expect(modelo).toContain(`  ${campo} `);
     }

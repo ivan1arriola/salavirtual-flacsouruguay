@@ -4,7 +4,7 @@ const { auth, redirect } = vi.hoisted(() => ({
   auth: vi.fn(),
   redirect: vi.fn((destino: string) => {
     throw new Error(`REDIRECT:${destino}`);
-  })
+  }),
 }));
 vi.mock("@/auth", () => ({ auth }));
 vi.mock("next/navigation", () => ({ redirect }));
@@ -16,10 +16,13 @@ describe("requireAdminPage", () => {
     redirect.mockClear();
   });
 
-  it.each([[null], [{ user: { role: "DOCENTE" } }]])("redirige a / sin permiso (%j)", async (sesion) => {
-    auth.mockResolvedValue(sesion);
-    await expect(requireAdminPage()).rejects.toThrow("REDIRECT:/");
-  });
+  it.each([[null], [{ user: { role: "DOCENTE" } }]])(
+    "redirige a / sin permiso (%j)",
+    async (sesion) => {
+      auth.mockResolvedValue(sesion);
+      await expect(requireAdminPage()).rejects.toThrow("REDIRECT:/");
+    },
+  );
 
   it("devuelve la sesión de ADMINISTRACION", async () => {
     const sesion = { user: { role: "ADMINISTRACION" } };

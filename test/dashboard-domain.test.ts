@@ -3,7 +3,7 @@ import {
   calcularNivelUrgenciaTriage,
   determinarEstadoTemporal,
   esMismoDiaMontevideo,
-  formatearTiempoHastaReunion
+  formatearTiempoHastaReunion,
 } from "../src/modules/dashboard/dashboard.domain";
 
 describe("dashboard.domain", () => {

@@ -37,7 +37,7 @@ export interface AsistenciaZoomRepositoryPort {
     ocurrenciaId: string,
     version: VersionEncuentroAsistenciaZoom,
     sesiones: readonly SesionObservadaZoom[],
-    consolidar: (ambito: SesionesDelAmbitoZoom) => readonly AsistenciaZoomConsolidada[] | null
+    consolidar: (ambito: SesionesDelAmbitoZoom) => readonly AsistenciaZoomConsolidada[] | null,
   ): Promise<ResultadoConsolidacionAsistencia>;
 
   /**
@@ -48,7 +48,7 @@ export interface AsistenciaZoomRepositoryPort {
     ocurrenciaId: string,
     version: VersionEncuentroAsistenciaZoom,
     sesiones: readonly SesionObservadaZoom[],
-    resumen: readonly AsistenciaZoomConsolidada[]
+    resumen: readonly AsistenciaZoomConsolidada[],
   ): Promise<ResultadoPersistenciaAsistencia>;
 }
 
@@ -62,19 +62,22 @@ export type OcurrenciaParaAsistenciaZoom = Readonly<{
   finProgramadoAt: Date | null;
 }>;
 
-export type EstadoReporteAsistenciaZoom = "PENDIENTE" | "NO_DISPONIBLE" | "VACIO" | "DISPONIBLE" | "ERROR";
+export type EstadoReporteAsistenciaZoom =
+  "PENDIENTE" | "NO_DISPONIBLE" | "VACIO" | "DISPONIBLE" | "ERROR";
 
 /** Lectura y marca de estado de la sincronización: el estado del reporte no es el de ninguna planilla. */
 export interface SincronizacionAsistenciaZoomPort {
   cargarOcurrencia(ocurrenciaId: string): Promise<OcurrenciaParaAsistenciaZoom | null>;
   /** Sesiones ya persistidas de todas las ocurrencias vinculadas al mismo encuentro (o solo la propia sin encuentro). */
   listarSesionesDelAmbito(
-    ocurrenciaId: string
-  ): Promise<ReadonlyArray<Readonly<{ ocurrenciaId: string; sesiones: readonly SesionObservadaZoom[] }>>>;
+    ocurrenciaId: string,
+  ): Promise<
+    ReadonlyArray<Readonly<{ ocurrenciaId: string; sesiones: readonly SesionObservadaZoom[] }>>
+  >;
   marcarEstadoReporte(
     ocurrenciaId: string,
     estado: EstadoReporteAsistenciaZoom,
-    codigoError: string | null
+    codigoError: string | null,
   ): Promise<void>;
 }
 

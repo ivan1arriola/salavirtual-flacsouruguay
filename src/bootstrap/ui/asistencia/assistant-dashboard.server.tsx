@@ -6,7 +6,7 @@ import { AssistantDashboardView } from "@/src/modules/asistencia/presentation/co
 import { obtenerDashboardAsistenteOptimizado } from "@/src/modules/dashboard/assistant-dashboard.adapter";
 
 export async function AssistantDashboard({
-  user
+  user,
 }: Readonly<{
   user: Session["user"];
 }>) {

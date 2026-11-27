@@ -9,7 +9,7 @@ import { db } from "@/src/lib/db";
 import { obtenerDashboardDocente } from "@/src/modules/dashboard/teacher-dashboard.adapter";
 
 export async function TeacherDashboard({
-  user
+  user,
 }: Readonly<{
   user: Session["user"];
 }>) {

@@ -86,8 +86,14 @@
     display: none;
   }
 
-  .assistant-dashboard-redesigned .meeting-schedule-times.is-compact .meeting-schedule-line.is-pending small,
-  .teacher-dashboard-redesigned .meeting-schedule-times.is-compact .meeting-schedule-line.is-pending small {
+  .assistant-dashboard-redesigned
+    .meeting-schedule-times.is-compact
+    .meeting-schedule-line.is-pending
+    small,
+  .teacher-dashboard-redesigned
+    .meeting-schedule-times.is-compact
+    .meeting-schedule-line.is-pending
+    small {
     display: block;
   }
 

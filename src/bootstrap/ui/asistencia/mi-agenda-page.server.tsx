@@ -18,14 +18,14 @@ import { formatMinutes, formatMoney, formatMonth } from "@/src/lib/ui/assistant-
 import {
   agruparPorDia,
   colorCuentaZoom,
-  PALETA_CUENTAS_ZOOM
+  PALETA_CUENTAS_ZOOM,
 } from "@/src/modules/reuniones/lista-zoom-agrupacion.domain";
 import { obtenerAsistenciasPersonales } from "@/src/modules/asistencia/resumen-personal.adapter";
 import {
   agruparPorMes,
   claveMesUtc3,
   resumirAsistencias,
-  type RegistroAsistenciaPersonal
+  type RegistroAsistenciaPersonal,
 } from "@/src/modules/asistencia/resumen-personal.domain";
 
 const upcomingInclude = {
@@ -34,21 +34,23 @@ const upcomingInclude = {
       solicitud: {
         include: {
           docentePrograma: {
-            include: { programa: true, docente: { include: { usuario: true } } }
-          }
-        }
+            include: { programa: true, docente: { include: { usuario: true } } },
+          },
+        },
       },
-      eventosProveedor: { include: { proveedor: true, cuentaProveedor: true } }
-    }
-  }
+      eventosProveedor: { include: { proveedor: true, cuentaProveedor: true } },
+    },
+  },
 } satisfies Prisma.AsignacionAsistenciaTecnicaInclude;
 
-type UpcomingAssignment = Prisma.AsignacionAsistenciaTecnicaGetPayload<{ include: typeof upcomingInclude }>;
+type UpcomingAssignment = Prisma.AsignacionAsistenciaTecnicaGetPayload<{
+  include: typeof upcomingInclude;
+}>;
 
 function UpcomingMeeting({
   assignment,
   ahora,
-  isNext
+  isNext,
 }: Readonly<{
   assignment: UpcomingAssignment;
   ahora: Date;
@@ -130,7 +132,10 @@ function UpcomingMeeting({
         {inicioAsistencia.getTime() > ahora.getTime() ? (
           <details className="assistant-agenda-more">
             <summary>Más acciones</summary>
-            <AssistantSelfUnassignButton assignmentId={assignment.id} title={meeting.solicitud.titulo} />
+            <AssistantSelfUnassignButton
+              assignmentId={assignment.id}
+              title={meeting.solicitud.titulo}
+            />
           </details>
         ) : null}
       </div>
@@ -140,7 +145,7 @@ function UpcomingMeeting({
 
 function UpcomingMeetings({
   assignments,
-  ahora
+  ahora,
 }: Readonly<{ assignments: readonly UpcomingAssignment[]; ahora: Date }>) {
   if (assignments.length === 0) {
     return (
@@ -153,16 +158,18 @@ function UpcomingMeetings({
     );
   }
 
-  const months = new Set(assignments.map(({ instancia }) => claveMesUtc3(instancia.inicioProgramadoAt)));
+  const months = new Set(
+    assignments.map(({ instancia }) => claveMesUtc3(instancia.inicioProgramadoAt)),
+  );
   const upcomingPeriods = [...months].map((clave) => {
     const monthAssignments = assignments.filter(
-      ({ instancia }) => claveMesUtc3(instancia.inicioProgramadoAt) === clave
+      ({ instancia }) => claveMesUtc3(instancia.inicioProgramadoAt) === clave,
     );
     return {
       clave,
       fecha: monthAssignments[0].instancia.inicioProgramadoAt,
       cantidad: monthAssignments.length,
-      dias: agruparPorDia(monthAssignments, ({ instancia }) => instancia.inicioProgramadoAt, ahora)
+      dias: agruparPorDia(monthAssignments, ({ instancia }) => instancia.inicioProgramadoAt, ahora),
     };
   });
   const nextAssignmentId = assignments[0]?.id;
@@ -197,7 +204,9 @@ function UpcomingMeetings({
   );
 }
 
-function AgendaHistory({ meetings }: Readonly<{ meetings: readonly RegistroAsistenciaPersonal[] }>) {
+function AgendaHistory({
+  meetings,
+}: Readonly<{ meetings: readonly RegistroAsistenciaPersonal[] }>) {
   const historyPeriods = agruparPorMes(meetings);
   if (historyPeriods.length === 0) {
     return (
@@ -235,7 +244,7 @@ function AgendaHistory({ meetings }: Readonly<{ meetings: readonly RegistroAsist
 
 function AgendaTabs({
   activeTab,
-  upcomingCount
+  upcomingCount,
 }: Readonly<{ activeTab: "proximas" | "mes" | "historico"; upcomingCount: number }>) {
   return (
     <nav className="assistant-tabs" aria-label="Secciones de Mi agenda">
@@ -269,7 +278,7 @@ function AgendaTabs({
 }
 
 export default async function MiAgendaPage({
-  searchParams
+  searchParams,
 }: Readonly<{
   searchParams?: Promise<{ tab?: string; calendario?: string }>;
 }>) {
@@ -279,7 +288,7 @@ export default async function MiAgendaPage({
   }
   const actor = await resolveSessionActor(db, {
     id: session.user.id,
-    email: session.user.email
+    email: session.user.email,
   });
   if (!actor?.activo || actor.rol !== "ASISTENTE_TECNICO") {
     redirect("/");
@@ -289,8 +298,8 @@ export default async function MiAgendaPage({
     where: { usuarioId: actor.id },
     select: {
       id: true,
-      calendarioZoom: { select: { email: true, ultimoIntentoAt: true, error: true } }
-    }
+      calendarioZoom: { select: { email: true, ultimoIntentoAt: true, error: true } },
+    },
   });
   if (!assistant) {
     redirect("/");
@@ -298,7 +307,8 @@ export default async function MiAgendaPage({
 
   const resolvedParams = searchParams ? await searchParams : {};
   const requestedTab = resolvedParams.tab;
-  const activeTab = requestedTab === "mes" || requestedTab === "historico" ? requestedTab : "proximas";
+  const activeTab =
+    requestedTab === "mes" || requestedTab === "historico" ? requestedTab : "proximas";
   const ahora = new Date();
 
   const [upcomingAssignments, monthMeetings, historyMeetings, upcomingCount] = await Promise.all([
@@ -311,12 +321,12 @@ export default async function MiAgendaPage({
               estado: "PROGRAMADA",
               OR: [
                 { finAsistenciaTecnicaAt: { gte: ahora } },
-                { finAsistenciaTecnicaAt: null, finProgramadoAt: { gte: ahora } }
-              ]
-            }
+                { finAsistenciaTecnicaAt: null, finProgramadoAt: { gte: ahora } },
+              ],
+            },
           },
           orderBy: { instancia: { inicioProgramadoAt: "asc" } },
-          include: upcomingInclude
+          include: upcomingInclude,
         })
       : Promise.resolve([]),
     activeTab === "mes"
@@ -333,11 +343,11 @@ export default async function MiAgendaPage({
           estado: "PROGRAMADA",
           OR: [
             { finAsistenciaTecnicaAt: { gte: ahora } },
-            { finAsistenciaTecnicaAt: null, finProgramadoAt: { gte: ahora } }
-          ]
-        }
-      }
-    })
+            { finAsistenciaTecnicaAt: null, finProgramadoAt: { gte: ahora } },
+          ],
+        },
+      },
+    }),
   ]);
 
   const monthSummary = resumirAsistencias(monthMeetings);
@@ -348,18 +358,27 @@ export default async function MiAgendaPage({
         <div>
           <p className="page-eyebrow">Monitoreo</p>
           <h1>Mi agenda</h1>
-          {activeTab === "mes" && <p>Reuniones, horas e importes estimados de {formatMonth(ahora)}.</p>}
-          {activeTab === "historico" ? <p>Horas e importes personales de meses anteriores.</p> : null}
+          {activeTab === "mes" && (
+            <p>Reuniones, horas e importes estimados de {formatMonth(ahora)}.</p>
+          )}
+          {activeTab === "historico" ? (
+            <p>Horas e importes personales de meses anteriores.</p>
+          ) : null}
         </div>
         {activeTab === "mes" ? <RefreshButton /> : null}
       </header>
 
       <AgendaTabs activeTab={activeTab} upcomingCount={upcomingCount} />
 
-      {activeTab === "proximas" ? <UpcomingMeetings assignments={upcomingAssignments} ahora={ahora} /> : null}
+      {activeTab === "proximas" ? (
+        <UpcomingMeetings assignments={upcomingAssignments} ahora={ahora} />
+      ) : null}
 
       {activeTab === "proximas" && configurarOAuthCalendarioZoom() ? (
-        <CalendarioZoomAsistente conexion={assistant.calendarioZoom} estado={resolvedParams.calendario} />
+        <CalendarioZoomAsistente
+          conexion={assistant.calendarioZoom}
+          estado={resolvedParams.calendario}
+        />
       ) : null}
 
       {activeTab === "mes" && (

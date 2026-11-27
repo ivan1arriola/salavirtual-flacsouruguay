@@ -2,7 +2,7 @@ import type { PrismaClient } from "@prisma/client";
 import {
   cohostsConfirmados,
   extraerCohostEmailsDeInstancia,
-  extraerCohostsUnificadosDeInstancia
+  extraerCohostsUnificadosDeInstancia,
 } from "@/src/modules/conferencias/api";
 import { listarCasosRevisionDuplicados } from "../reuniones/duplicados.service";
 import { seleccionarEventoProveedorActivo } from "../reuniones/evento-proveedor-activo.domain";
@@ -60,17 +60,29 @@ export interface AdminDashboardData {
     readonly pendingCoverage: {
       readonly count: number;
       readonly firstMeetingId: string | null;
-      readonly examples: readonly { readonly id: string; readonly title: string; readonly time: string }[];
+      readonly examples: readonly {
+        readonly id: string;
+        readonly title: string;
+        readonly time: string;
+      }[];
       readonly firstApplicant: { readonly id: string; readonly name: string } | null;
       readonly assistants: readonly { readonly id: string; readonly name: string }[];
     };
     readonly integrationErrors: {
       readonly count: number;
-      readonly examples: readonly { readonly id: string; readonly title: string; readonly error: string }[];
+      readonly examples: readonly {
+        readonly id: string;
+        readonly title: string;
+        readonly error: string;
+      }[];
     };
     readonly pendingRecordings: {
       readonly count: number;
-      readonly examples: readonly { readonly id: string; readonly title: string; readonly date: string }[];
+      readonly examples: readonly {
+        readonly id: string;
+        readonly title: string;
+        readonly date: string;
+      }[];
     };
     readonly openIncidents: {
       readonly count: number;
@@ -92,7 +104,7 @@ export interface AdminDashboardData {
 
 export async function obtenerDashboardAdministracion(
   db: PrismaClient,
-  ahora: Date
+  ahora: Date,
 ): Promise<AdminDashboardData> {
   const todayStart = startOfMontevideoDay(ahora);
   const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
@@ -114,37 +126,37 @@ export async function obtenerDashboardAdministracion(
     pendingRecordingEvents,
     openIncidentRecords,
     duplicateCases,
-    activeAssistants
+    activeAssistants,
   ] = await Promise.all([
     db.solicitudSala.count({
-      where: { estado: { in: ["REGISTRADA", "PROVISIONANDO", "REQUIERE_REVISION"] } }
+      where: { estado: { in: ["REGISTRADA", "PROVISIONANDO", "REQUIERE_REVISION"] } },
     }),
     db.instanciaSala.count({
       where: {
         inicioProgramadoAt: { gte: todayStart, lt: todayEnd },
-        estado: "PROGRAMADA"
-      }
+        estado: "PROGRAMADA",
+      },
     }),
     db.instanciaSala.count({
       where: {
         inicioProgramadoAt: { gte: ahora, lt: weekEnd },
-        estado: "PROGRAMADA"
-      }
+        estado: "PROGRAMADA",
+      },
     }),
     db.instanciaSala.count({
       where: {
         requiereAsistenciaTecnica: true,
         inicioProgramadoAt: { gte: ahora },
         estado: "PROGRAMADA",
-        asignaciones: { none: { estado: { in: ["ASIGNADO", "ACEPTADO"] } } }
-      }
+        asignaciones: { none: { estado: { in: ["ASIGNADO", "ACEPTADO"] } } },
+      },
     }),
     db.eventoProveedor.count({
       where: {
         proveedor: { tipo: "GOOGLE_MEET" },
         estadoIntegracion: "ERROR",
-        instancia: { inicioProgramadoAt: { gte: ahora }, estado: "PROGRAMADA" }
-      }
+        instancia: { inicioProgramadoAt: { gte: ahora }, estado: "PROGRAMADA" },
+      },
     }),
     db.eventoProveedor.count({
       where: {
@@ -154,9 +166,9 @@ export async function obtenerDashboardAdministracion(
         instancia: {
           requiereGrabacion: true,
           finProgramadoAt: { gte: recordingLookback, lt: ahora },
-          estado: { notIn: ["CANCELADA", "NO_REALIZADA"] }
-        }
-      }
+          estado: { notIn: ["CANCELADA", "NO_REALIZADA"] },
+        },
+      },
     }),
     db.incidencia.count({ where: { estado: { in: ["ABIERTA", "EN_ANALISIS"] } } }),
     // Instances for today's timeline (or ongoing right now)
@@ -164,9 +176,9 @@ export async function obtenerDashboardAdministracion(
       where: {
         OR: [
           { inicioProgramadoAt: { gte: todayStart, lt: todayEnd } },
-          { finProgramadoAt: { gte: ahora }, inicioProgramadoAt: { lte: ahora } }
+          { finProgramadoAt: { gte: ahora }, inicioProgramadoAt: { lte: ahora } },
         ],
-        estado: "PROGRAMADA"
+        estado: "PROGRAMADA",
       },
       orderBy: { inicioProgramadoAt: "asc" },
       include: {
@@ -175,29 +187,29 @@ export async function obtenerDashboardAdministracion(
             docentePrograma: {
               include: {
                 programa: true,
-                docente: { include: { usuario: true } }
-              }
-            }
-          }
+                docente: { include: { usuario: true } },
+              },
+            },
+          },
         },
         eventosProveedor: { include: { proveedor: true, cuentaProveedor: true } },
         cohosts: {
           include: {
-            cuentaGoogle: { include: { user: true } }
-          }
+            cuentaGoogle: { include: { user: true } },
+          },
         },
         cohostEmails: true,
         asignaciones: {
           where: { estado: { in: ["ASIGNADO", "ACEPTADO"] } },
           include: { asistenteTecnico: { include: { usuario: true } } },
-          take: 1
-        }
-      }
+          take: 1,
+        },
+      },
     }),
     db.instanciaSala.findMany({
       where: {
         inicioProgramadoAt: { gte: todayEnd, lt: weekEnd },
-        estado: "PROGRAMADA"
+        estado: "PROGRAMADA",
       },
       orderBy: { inicioProgramadoAt: "asc" },
       take: 5,
@@ -215,21 +227,21 @@ export async function obtenerDashboardAdministracion(
             docentePrograma: {
               select: {
                 programa: { select: { nombre: true } },
-                docente: { select: { usuario: { select: { nombres: true, apellidos: true } } } }
-              }
-            }
-          }
+                docente: { select: { usuario: { select: { nombres: true, apellidos: true } } } },
+              },
+            },
+          },
         },
         asignaciones: {
           where: { estado: { in: ["ASIGNADO", "ACEPTADO"] } },
           take: 1,
           select: {
             asistenteTecnico: {
-              select: { usuario: { select: { nombres: true, apellidos: true } } }
-            }
-          }
-        }
-      }
+              select: { usuario: { select: { nombres: true, apellidos: true } } },
+            },
+          },
+        },
+      },
     }),
     // Samples for attention cards
     db.instanciaSala.findMany({
@@ -237,7 +249,7 @@ export async function obtenerDashboardAdministracion(
         requiereAsistenciaTecnica: true,
         inicioProgramadoAt: { gte: ahora },
         estado: "PROGRAMADA",
-        asignaciones: { none: { estado: { in: ["ASIGNADO", "ACEPTADO"] } } }
+        asignaciones: { none: { estado: { in: ["ASIGNADO", "ACEPTADO"] } } },
       },
       orderBy: { inicioProgramadoAt: "asc" },
       take: 3,
@@ -248,25 +260,25 @@ export async function obtenerDashboardAdministracion(
         postulaciones: {
           where: {
             estado: "ME_INTERESA",
-            asistenteTecnico: { cesadoHastaProximoInicioSesion: false }
+            asistenteTecnico: { cesadoHastaProximoInicioSesion: false },
           },
           include: {
             asistenteTecnico: {
               select: {
                 id: true,
-                usuario: { select: { nombres: true, apellidos: true } }
-              }
-            }
+                usuario: { select: { nombres: true, apellidos: true } },
+              },
+            },
           },
-          take: 1
-        }
-      }
+          take: 1,
+        },
+      },
     }),
     db.eventoProveedor.findMany({
       where: {
         proveedor: { tipo: "GOOGLE_MEET" },
         estadoIntegracion: "ERROR",
-        instancia: { inicioProgramadoAt: { gte: ahora }, estado: "PROGRAMADA" }
+        instancia: { inicioProgramadoAt: { gte: ahora }, estado: "PROGRAMADA" },
       },
       orderBy: { instancia: { inicioProgramadoAt: "asc" } },
       take: 3,
@@ -276,10 +288,10 @@ export async function obtenerDashboardAdministracion(
         instancia: {
           select: {
             id: true,
-            solicitud: { select: { id: true, titulo: true } }
-          }
-        }
-      }
+            solicitud: { select: { id: true, titulo: true } },
+          },
+        },
+      },
     }),
     db.eventoProveedor.findMany({
       where: {
@@ -289,8 +301,8 @@ export async function obtenerDashboardAdministracion(
         instancia: {
           requiereGrabacion: true,
           finProgramadoAt: { gte: recordingLookback, lt: ahora },
-          estado: { notIn: ["CANCELADA", "NO_REALIZADA"] }
-        }
+          estado: { notIn: ["CANCELADA", "NO_REALIZADA"] },
+        },
       },
       orderBy: { instancia: { inicioProgramadoAt: "desc" } },
       take: 3,
@@ -300,10 +312,10 @@ export async function obtenerDashboardAdministracion(
           select: {
             id: true,
             inicioProgramadoAt: true,
-            solicitud: { select: { id: true, titulo: true } }
-          }
-        }
-      }
+            solicitud: { select: { id: true, titulo: true } },
+          },
+        },
+      },
     }),
     db.incidencia.findMany({
       where: { estado: { in: ["ABIERTA", "EN_ANALISIS"] } },
@@ -314,30 +326,30 @@ export async function obtenerDashboardAdministracion(
         descripcion: true,
         instancia: {
           select: {
-            solicitud: { select: { id: true, titulo: true } }
-          }
-        }
-      }
+            solicitud: { select: { id: true, titulo: true } },
+          },
+        },
+      },
     }),
     listarCasosRevisionDuplicados(db, ahora),
     db.asistenteTecnico.findMany({
       where: {
         cesadoHastaProximoInicioSesion: false,
-        usuario: { activo: true, rol: "ASISTENTE_TECNICO" }
+        usuario: { activo: true, rol: "ASISTENTE_TECNICO" },
       },
       orderBy: [{ usuario: { nombres: "asc" } }, { usuario: { apellidos: "asc" } }],
       select: {
         id: true,
-        usuario: { select: { nombres: true, apellidos: true } }
-      }
-    })
+        usuario: { select: { nombres: true, apellidos: true } },
+      },
+    }),
   ]);
 
   const duplicateRisks = duplicateCases.filter(({ decision }) => decision !== "FALSO_POSITIVO");
 
   const formattedAssistants = activeAssistants.map((ast) => ({
     id: ast.id,
-    name: [ast.usuario.nombres, ast.usuario.apellidos].filter(Boolean).join(" ")
+    name: [ast.usuario.nombres, ast.usuario.apellidos].filter(Boolean).join(" "),
   }));
 
   const firstUncoveredMeeting = pendingCoverageInstances[0];
@@ -347,7 +359,7 @@ export async function obtenerDashboardAdministracion(
         id: firstApplicantAst.id,
         name: [firstApplicantAst.usuario.nombres, firstApplicantAst.usuario.apellidos]
           .filter(Boolean)
-          .join(" ")
+          .join(" "),
       }
     : null;
 
@@ -357,12 +369,14 @@ export async function obtenerDashboardAdministracion(
     const assignment = meeting.asignaciones[0];
     const assistant = assignment?.asistenteTecnico.usuario;
     // Cohosts se verifican solo contra Google Meet; enlace, estado y organizador siguen al proveedor activo.
-    const meetCohosts = meeting.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET");
+    const meetCohosts = meeting.eventosProveedor.find(
+      ({ proveedor }) => proveedor.tipo === "GOOGLE_MEET",
+    );
     const meet = seleccionarEventoProveedorActivo(meeting);
 
     const cohosts = extraerCohostsUnificadosDeInstancia(meeting).map((c) => ({
       email: c.email,
-      name: c.name ?? ""
+      name: c.name ?? "",
     }));
 
     const cohostEmails = extraerCohostEmailsDeInstancia(meeting);
@@ -374,16 +388,17 @@ export async function obtenerDashboardAdministracion(
         meetCohosts?.payloadUltimo,
         meetCohosts?.codigoReunion,
         meetCohosts?.cuentaProveedor?.emailOrganizador,
-        cohostEmails
-      )
+        cohostEmails,
+      ),
     );
 
-    const organizer = meet?.cuentaProveedor?.emailOrganizador ?? meet?.cuentaProveedor?.nombre ?? "Pendiente";
+    const organizer =
+      meet?.cuentaProveedor?.emailOrganizador ?? meet?.cuentaProveedor?.nombre ?? "Pendiente";
 
     const estadoTemporal = determinarEstadoTemporal(
       meeting.inicioProgramadoAt,
       meeting.finProgramadoAt,
-      ahora
+      ahora,
     );
 
     return {
@@ -411,11 +426,11 @@ export async function obtenerDashboardAdministracion(
       asistente: assistant
         ? {
             id: assignment.asistenteTecnico.id,
-            nombre: `${assistant.nombres} ${assistant.apellidos ?? ""}`.trim()
+            nombre: `${assistant.nombres} ${assistant.apellidos ?? ""}`.trim(),
           }
         : null,
       requiereAsistencia: meeting.requiereAsistenciaTecnica,
-      organizador: organizer
+      organizador: organizer,
     };
   });
 
@@ -433,8 +448,10 @@ export async function obtenerDashboardAdministracion(
       modalidad: meeting.modalidadOverride ?? meeting.solicitud.modalidad,
       inicioProgramadoAt: meeting.inicioProgramadoAt.toISOString(),
       finProgramadoAt: meeting.finProgramadoAt.toISOString(),
-      asistenteNombre: assistant ? `${assistant.nombres} ${assistant.apellidos ?? ""}`.trim() : null,
-      requiereAsistencia: meeting.requiereAsistenciaTecnica
+      asistenteNombre: assistant
+        ? `${assistant.nombres} ${assistant.apellidos ?? ""}`.trim()
+        : null,
+      requiereAsistencia: meeting.requiereAsistenciaTecnica,
     };
   });
 
@@ -447,7 +464,7 @@ export async function obtenerDashboardAdministracion(
       integrationErrors: integrationErrorsCount,
       pendingRecordings: pendingRecordingCount,
       openIncidents: openIncidentCount,
-      duplicateRisks: duplicateRisks.length
+      duplicateRisks: duplicateRisks.length,
     },
     attentionData: {
       pendingCoverage: {
@@ -456,43 +473,43 @@ export async function obtenerDashboardAdministracion(
         examples: pendingCoverageInstances.map(({ id, solicitud, inicioProgramadoAt }) => ({
           id,
           title: solicitud.titulo,
-          time: inicioProgramadoAt.toISOString()
+          time: inicioProgramadoAt.toISOString(),
         })),
         firstApplicant,
-        assistants: formattedAssistants
+        assistants: formattedAssistants,
       },
       integrationErrors: {
         count: integrationErrorsCount,
         examples: integrationErrorEvents.map((evt) => ({
           id: evt.id,
           title: evt.instancia.solicitud.titulo,
-          error: evt.errorIntegracion ?? "Error desconocido"
-        }))
+          error: evt.errorIntegracion ?? "Error desconocido",
+        })),
       },
       pendingRecordings: {
         count: pendingRecordingCount,
         examples: pendingRecordingEvents.map((rec) => ({
           id: rec.id,
           title: rec.instancia.solicitud.titulo,
-          date: rec.instancia.inicioProgramadoAt.toISOString()
-        }))
+          date: rec.instancia.inicioProgramadoAt.toISOString(),
+        })),
       },
       openIncidents: {
         count: openIncidentCount,
         examples: openIncidentRecords.map((inc) => ({
           id: inc.id,
           title: inc.instancia.solicitud.titulo,
-          description: inc.descripcion
+          description: inc.descripcion,
         })),
-        firstIncidentSolicitudId: openIncidentRecords[0]?.instancia.solicitud.id ?? null
+        firstIncidentSolicitudId: openIncidentRecords[0]?.instancia.solicitud.id ?? null,
       },
       duplicateRisks: {
         count: duplicateRisks.length,
         examples: duplicateRisks.slice(0, 3).map(({ izquierda, derecha }) => ({
           leftTitle: izquierda.titulo,
-          rightTitle: derecha.titulo
-        }))
-      }
+          rightTitle: derecha.titulo,
+        })),
+      },
     },
     todayTimeline: [...todayTimeline]
       .sort((a, b) => {
@@ -505,7 +522,7 @@ export async function obtenerDashboardAdministracion(
         return rank(a) - rank(b);
       })
       .slice(0, 8),
-    upcomingTimeline
+    upcomingTimeline,
   };
 }
 
@@ -514,7 +531,7 @@ function startOfMontevideoDay(date: Date): Date {
     timeZone: "America/Montevideo",
     year: "numeric",
     month: "2-digit",
-    day: "2-digit"
+    day: "2-digit",
   }).formatToParts(date);
   const year = parts.find(({ type }) => type === "year")?.value;
   const month = parts.find(({ type }) => type === "month")?.value;

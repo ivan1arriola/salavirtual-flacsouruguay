@@ -7,7 +7,9 @@ const stylesheet = readFileSync(new URL("../app/(gestion)/settings.css", import.
 describe("vista móvil del directorio de personas", () => {
   it("mantiene encabezados semánticos y muestra el contexto de cada dato en las tarjetas móviles", () => {
     expect(page).toContain('<table className="data-table user-directory-table">');
-    expect(page).toContain('<caption className="sr-only">{selected.title} de Sala Virtual FLACSO</caption>');
+    expect(page).toContain(
+      '<caption className="sr-only">{selected.title} de Sala Virtual FLACSO</caption>',
+    );
     expect(page).toContain('<th scope="col">Cuentas Google</th>');
     expect(page).toContain('data-label="Persona"');
     expect(page).toContain('data-label="Cuentas Google"');

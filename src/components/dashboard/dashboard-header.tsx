@@ -5,7 +5,7 @@ export function DashboardHeader({
   userName,
   role,
   subtitle,
-  actions
+  actions,
 }: Readonly<{
   userName: string;
   role: "ADMINISTRACION" | "DOCENTE" | "ASISTENTE_TECNICO";
@@ -15,13 +15,13 @@ export function DashboardHeader({
   const roleLabels: Record<string, string> = {
     ADMINISTRACION: "Administración",
     DOCENTE: "Docente",
-    ASISTENTE_TECNICO: "Asistente técnico"
+    ASISTENTE_TECNICO: "Asistente técnico",
   };
 
   const defaultSubtitles: Record<string, string> = {
     ADMINISTRACION: "Reuniones, coberturas e incidencias que requieren tu atención.",
     DOCENTE: "Tus clases, enlaces de acceso y grabaciones recientes.",
-    ASISTENTE_TECNICO: "Tus monitoreos, postulaciones y registro de horas."
+    ASISTENTE_TECNICO: "Tus monitoreos, postulaciones y registro de horas.",
   };
 
   const now = new Date();
@@ -29,7 +29,7 @@ export function DashboardHeader({
   const titles = {
     ADMINISTRACION: "Panel de operaciones",
     DOCENTE: "Mi actividad académica",
-    ASISTENTE_TECNICO: "Mi jornada"
+    ASISTENTE_TECNICO: "Mi jornada",
   };
 
   return (

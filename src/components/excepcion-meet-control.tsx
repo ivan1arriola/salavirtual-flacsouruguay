@@ -7,7 +7,7 @@ import styles from "./excepcion-meet-control.module.css";
 export function ExcepcionMeetControl({
   instanciaId,
   conservar,
-  motivoActual
+  motivoActual,
 }: Readonly<{ instanciaId: string; conservar: boolean; motivoActual: string | null }>) {
   const router = useRouter();
   const [abierto, setAbierto] = useState(false);
@@ -22,7 +22,10 @@ export function ExcepcionMeetControl({
         const response = await fetch(`/api/v1/reuniones/instancias/${instanciaId}/excepcion-meet`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ conservar: nuevoValor, motivo: nuevoValor ? motivo.trim() : null })
+          body: JSON.stringify({
+            conservar: nuevoValor,
+            motivo: nuevoValor ? motivo.trim() : null,
+          }),
         });
         if (!response.ok) {
           const body = (await response.json().catch(() => null)) as { error?: string } | null;
@@ -37,13 +40,13 @@ export function ExcepcionMeetControl({
   }
 
   return (
-    <div className={styles.control}>
+    <div className={styles["control"]}>
       {conservar ? (
-        <div className={styles.saved}>
+        <div className={styles["saved"]}>
           <span>
             <strong>Excepción Meet</strong> · {motivoActual}
           </span>
-          <div className={styles.actions}>
+          <div className={styles["actions"]}>
             <button type="button" disabled={pending} onClick={() => setAbierto((valor) => !valor)}>
               Editar motivo
             </button>
@@ -55,7 +58,7 @@ export function ExcepcionMeetControl({
       ) : (
         <button
           type="button"
-          className={styles.openButton}
+          className={styles["openButton"]}
           disabled={pending}
           onClick={() => setAbierto((valor) => !valor)}
         >
@@ -63,7 +66,7 @@ export function ExcepcionMeetControl({
         </button>
       )}
       {abierto && (
-        <div className={styles.form}>
+        <div className={styles["form"]}>
           <label htmlFor={`motivo-meet-${instanciaId}`}>Motivo de la excepción</label>
           <div>
             <input
@@ -86,7 +89,7 @@ export function ExcepcionMeetControl({
         </div>
       )}
       {error && (
-        <p className={styles.error} role="alert">
+        <p className={styles["error"]} role="alert">
           {error}
         </p>
       )}

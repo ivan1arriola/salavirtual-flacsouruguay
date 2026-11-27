@@ -1,7 +1,10 @@
 import { CalendarDays, Clock3 } from "lucide-react";
 import type { RefObject } from "react";
 import { FormSection } from "./form-primitives";
-import { MeetingInstancesEditor, type MeetingInstancesEditorProps } from "./meeting-instances-editor";
+import {
+  MeetingInstancesEditor,
+  type MeetingInstancesEditorProps,
+} from "./meeting-instances-editor";
 import { RecurrenceRuleEditor } from "./recurrence-rule-editor";
 import type { MeetingDateMode, RecurrenceState } from "./tipos";
 
@@ -23,7 +26,7 @@ export function MeetingScheduleEditor({
   onRemove,
   onAdd,
   onDuplicate,
-  onSort
+  onSort,
 }: MeetingInstancesEditorProps &
   Readonly<{
     recurrence: RecurrenceState;
@@ -82,13 +85,16 @@ export function MeetingScheduleEditor({
           {meetingMode === "HIBRIDA" ? (
             <div>
               <strong>Híbrida: al menos 30 minutos antes y después</strong>
-              <span>Los horarios se proponen automáticamente y podés ampliarlos según sea necesario.</span>
+              <span>
+                Los horarios se proponen automáticamente y podés ampliarlos según sea necesario.
+              </span>
             </div>
           ) : (
             <div>
               <strong>Virtual: 15 minutos antes, sin tiempo adicional al final</strong>
               <span>
-                La llegada y salida se calculan automáticamente y son fijas; no tenés que completarlas.
+                La llegada y salida se calculan automáticamente y son fijas; no tenés que
+                completarlas.
               </span>
             </div>
           )}
@@ -119,7 +125,9 @@ export function MeetingScheduleEditor({
               <strong>
                 {dateMode === "RECURRENT" ? "Revisá y ajustá los encuentros" : "Fechas específicas"}
               </strong>
-              <small>Se muestran en orden cronológico. Podés duplicar, quitar o agregar encuentros.</small>
+              <small>
+                Se muestran en orden cronológico. Podés duplicar, quitar o agregar encuentros.
+              </small>
             </div>
             <span className="date-count">
               {dates.length} {dates.length === 1 ? "encuentro" : "encuentros"}

@@ -6,7 +6,7 @@ import { requiereCompletarRegistro } from "@/src/modules/usuarios/registro-insti
 import { guardarRegistroInstitucional } from "./actions";
 
 export default async function CompletarRegistroPage({
-  searchParams
+  searchParams,
 }: Readonly<{ searchParams: Promise<{ error?: string }> }>) {
   const session = await auth();
   if (!session?.user) {
@@ -14,7 +14,7 @@ export default async function CompletarRegistroPage({
   }
   const actor = await resolveSessionActor(db, {
     id: session.user.id,
-    email: session.user.email
+    email: session.user.email,
   });
   if (!actor?.activo) {
     redirect("/acceso");
@@ -25,20 +25,20 @@ export default async function CompletarRegistroPage({
       select: {
         nombres: true,
         rol: true,
-        docente: { select: { _count: { select: { programas: { where: { activo: true } } } } } }
-      }
+        docente: { select: { _count: { select: { programas: { where: { activo: true } } } } } },
+      },
     }),
     db.programa.findMany({
       where: { activo: true },
       orderBy: { nombre: "asc" },
-      select: { id: true, nombre: true }
-    })
+      select: { id: true, nombre: true },
+    }),
   ]);
   if (
     !user ||
     !requiereCompletarRegistro({
       rol: user.rol,
-      programasActivos: user.docente?._count.programas ?? 0
+      programasActivos: user.docente?._count.programas ?? 0,
     })
   ) {
     redirect("/");
@@ -52,7 +52,8 @@ export default async function CompletarRegistroPage({
           <p className="eyebrow">Primer ingreso</p>
           <h1>Completá tu registro</h1>
           <p>
-            Hola, {user.nombres}. Para continuar tenés que indicar el programa académico con el que trabajás.
+            Hola, {user.nombres}. Para continuar tenés que indicar el programa académico con el que
+            trabajás.
           </p>
         </header>
         {error ? (

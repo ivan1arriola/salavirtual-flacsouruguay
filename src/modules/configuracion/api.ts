@@ -15,7 +15,7 @@ export {
   type CredencialesWorkspaceActivas,
   type CredencialLegacyGoogleWorkspace,
   type CandidatoCredencialMeet,
-  type DependenciasConfiguracionGoogle
+  type DependenciasConfiguracionGoogle,
 } from "./google-workspace.service";
 
 export {
@@ -26,7 +26,7 @@ export {
   type VerificacionGlobalEstado,
   type CredencialCohost,
   type CredencialLegacyCohost,
-  COHOST_VERIFICATION_PAGE_SIZE
+  COHOST_VERIFICATION_PAGE_SIZE,
 } from "./verificar-cohosts-global.service";
 
 export {
@@ -34,17 +34,20 @@ export {
   type ResyncCohostDependencies,
   type ResyncCohostResult,
   type ResyncCohostFailure,
-  type ResyncCohostLogEvent
+  type ResyncCohostLogEvent,
 } from "./resincronizar-cohosts.service";
 
 export { enviarCorreoConfigurado } from "./correo.service";
 
-export { obtenerConfiguracionCorreoSes, actualizarConfiguracionCorreoSes } from "./correo-ses.service";
+export {
+  obtenerConfiguracionCorreoSes,
+  actualizarConfiguracionCorreoSes,
+} from "./correo-ses.service";
 
 export {
   probarCredencialGoogle,
   prepararAccesoSalasDrive,
-  type GoogleWorkspaceScopeValidation
+  type GoogleWorkspaceScopeValidation,
 } from "./google-workspace-test.adapter";
 
 export { obtenerDatosPaginaConfiguracion } from "./configuracion-page.service";
@@ -58,7 +61,7 @@ export {
   SincronizacionZoomError,
   type ResultadoSincronizacionZoom,
   type OpcionesSincronizacionZoom,
-  type VistaPreviaSincronizacionZoom
+  type VistaPreviaSincronizacionZoom,
 } from "./zoom-grupo-sincronizacion.service";
 
 export * from "./google-workspace.domain";

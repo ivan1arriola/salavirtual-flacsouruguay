@@ -8,7 +8,9 @@ export type ResultadoAuditoria =
   Readonly<{ ok: true; evento: EventoAuditoria }> | Readonly<{ ok: false; error: string }>;
 
 export function crearRegistrarAuditoriaUseCase(repository: AuditoriaRepository) {
-  return async function registrarAuditoria(input: RegistrarAuditoriaInput): Promise<ResultadoAuditoria> {
+  return async function registrarAuditoria(
+    input: RegistrarAuditoriaInput,
+  ): Promise<ResultadoAuditoria> {
     const validacion = validarEventoAuditoria(input);
     if (!validacion.ok) {
       return { ok: false, error: validacion.error };

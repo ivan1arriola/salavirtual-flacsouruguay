@@ -7,12 +7,12 @@ const ENTRADA = {
   carpetaId: "carpeta1",
   marcador: "m1",
   resumen: [["Participante"], ["Ana"]],
-  sesiones: [["Participante"], ["Ana"]]
+  sesiones: [["Participante"], ["Ana"]],
 };
 
 function crear(
   existentes: Array<{ id: string; webViewLink?: string }> = [],
-  hojas = ["Asistencia", "Sesiones"]
+  hojas = ["Asistencia", "Sesiones"],
 ) {
   const llamadas: Array<{ url: string; method: string; data?: any }> = [];
   const cliente = {
@@ -28,7 +28,7 @@ function crear(
         return { data: { sheets: hojas.map((title) => ({ properties: { title } })) } };
       }
       return { data: {} };
-    })
+    }),
   };
   return { llamadas, adapter: crearGoogleZoomAsistenciaSheetsAdapter(cliente as any) };
 }
@@ -41,7 +41,9 @@ describe("planilla de asistencia Zoom en Drive", () => {
     const busqueda = llamadas[0]!;
     expect(busqueda.url).toContain("supportsAllDrives=true");
     expect(busqueda.url).toContain("includeItemsFromAllDrives=true");
-    const creacion = llamadas.find((l) => l.method === "POST" && l.url.includes("/drive/v3/files"))!;
+    const creacion = llamadas.find(
+      (l) => l.method === "POST" && l.url.includes("/drive/v3/files"),
+    )!;
     expect(creacion.url).toContain("supportsAllDrives=true");
     expect(creacion.data.parents).toEqual(["carpeta1"]);
     expect(creacion.data.appProperties).toEqual({ zoomAttendanceOperation: "m1" });
@@ -52,9 +54,11 @@ describe("planilla de asistencia Zoom en Drive", () => {
     const { llamadas, adapter } = crear([{ id: "vieja", webViewLink: "https://docs/vieja" }]);
     expect(await adapter.crearOActualizar(ENTRADA)).toEqual({
       webViewUrl: "https://docs/vieja",
-      creada: false
+      creada: false,
     });
-    expect(llamadas.some((l) => l.method === "POST" && l.url.includes("/drive/v3/files"))).toBe(false);
+    expect(llamadas.some((l) => l.method === "POST" && l.url.includes("/drive/v3/files"))).toBe(
+      false,
+    );
     expect(llamadas.some((l) => l.url.includes("vieja/values:batchUpdate"))).toBe(true);
   });
 

@@ -38,7 +38,9 @@ function listaDeEntorno(nombre: string, porDefecto: string): readonly string[] {
 function hostCoincide(host: string, patrones: readonly string[]): boolean {
   const h = host.toLowerCase();
   return patrones.some((patron) =>
-    patron.startsWith("*.") ? h.endsWith(patron.slice(1)) && h.length > patron.length - 1 : h === patron
+    patron.startsWith("*.")
+      ? h.endsWith(patron.slice(1)) && h.length > patron.length - 1
+      : h === patron,
   );
 }
 
@@ -52,7 +54,7 @@ function urlHttpsONula(valor: string, base?: string): URL | null {
 }
 
 function maximoDescarteBytes(): bigint {
-  const gb = Number(process.env.ZOOM_ARCHIVOS_MAX_DESCARTE_GB ?? MAX_DESCARTE_GB_POR_DEFECTO);
+  const gb = Number(process.env["ZOOM_ARCHIVOS_MAX_DESCARTE_GB"] ?? MAX_DESCARTE_GB_POR_DEFECTO);
   const validos = Number.isFinite(gb) && gb >= 0 ? gb : MAX_DESCARTE_GB_POR_DEFECTO;
   return BigInt(Math.floor(validos * BYTES_POR_GB));
 }
@@ -80,14 +82,19 @@ function validarTipoContenido(response: Response, opciones: OpcionesDescargaZoom
 type Medicion = Readonly<{ recibidos: () => bigint; flujo: ReadableStream<Uint8Array> }>;
 
 /** Descarta `omitir` bytes iniciales, cuenta lo entregado y verifica la cantidad esperada. */
-function medir(cuerpo: ReadableStream<Uint8Array>, omitir: bigint, esperado: bigint | null): Medicion {
+function medir(
+  cuerpo: ReadableStream<Uint8Array>,
+  omitir: bigint,
+  esperado: bigint | null,
+): Medicion {
   let porOmitir = omitir;
   let entregados = 0n;
   const transformador = new TransformStream<Uint8Array, Uint8Array>({
     transform(trozo, controlador) {
       let parte = trozo;
       if (porOmitir > 0n) {
-        const descartar = porOmitir < BigInt(parte.byteLength) ? Number(porOmitir) : parte.byteLength;
+        const descartar =
+          porOmitir < BigInt(parte.byteLength) ? Number(porOmitir) : parte.byteLength;
         porOmitir -= BigInt(descartar);
         parte = parte.subarray(descartar);
       }
@@ -104,7 +111,7 @@ function medir(cuerpo: ReadableStream<Uint8Array>, omitir: bigint, esperado: big
       if (porOmitir > 0n || (esperado !== null && entregados !== esperado)) {
         throw new ZoomApiError("TAMANO_INCONSISTENTE", "descarga");
       }
-    }
+    },
   });
   return { recibidos: () => entregados, flujo: cuerpo.pipeThrough(transformador) };
 }
@@ -116,7 +123,7 @@ function contenidoDe(
   omitir: bigint,
   esperado: bigint | null,
   total: bigint | null,
-  contentType: string | null
+  contentType: string | null,
 ): DescargaZoomHttp {
   if (!response.body) {
     throw new ZoomApiError("CONTENIDO_NO_ES_ARCHIVO", "descarga", { status: response.status });
@@ -130,14 +137,14 @@ function contenidoDe(
     totalBytes: total,
     bytesEsperados: esperado,
     contentType,
-    bytesRecibidos: recibidos
+    bytesRecibidos: recibidos,
   };
 }
 
 async function resolverRespuestaFinal(
   response: Response,
   offset: bigint,
-  opciones: OpcionesDescargaZoom
+  opciones: OpcionesDescargaZoom,
 ): Promise<DescargaZoomHttp> {
   if (response.status !== 200 && response.status !== 206) {
     await response.body?.cancel().catch(() => undefined);
@@ -147,12 +154,13 @@ async function resolverRespuestaFinal(
       : error;
   }
   const contentType = validarTipoContenido(response, opciones);
-  const comprimido = (response.headers.get("content-encoding") ?? "identity").toLowerCase() !== "identity";
+  const comprimido =
+    (response.headers.get("content-encoding") ?? "identity").toLowerCase() !== "identity";
   const longitud = comprimido ? null : bigintONulo(response.headers.get("content-length"));
 
   if (response.status === 206) {
     const coincide = /^bytes (\d+)-(\d+)\/(\d+|\*)$/.exec(
-      (response.headers.get("content-range") ?? "").trim()
+      (response.headers.get("content-range") ?? "").trim(),
     );
     const inicio = coincide ? BigInt(coincide[1]) : null;
     const fin = coincide ? BigInt(coincide[2]) : null;
@@ -182,7 +190,15 @@ async function resolverRespuestaFinal(
     await response.body?.cancel().catch(() => undefined);
     throw new ZoomApiError("CONTENT_RANGE_INVALIDO", "descarga", { status: 200 });
   }
-  return contenidoDe(response, "PARCIAL", ["RANGE_IGNORADO"], offset, esperado, longitud, contentType);
+  return contenidoDe(
+    response,
+    "PARCIAL",
+    ["RANGE_IGNORADO"],
+    offset,
+    esperado,
+    longitud,
+    contentType,
+  );
 }
 
 /**
@@ -196,7 +212,7 @@ export async function abrirDescargaZoomHttp(
   urlDescarga: string,
   offset: number | bigint,
   signal: AbortSignal,
-  opciones: OpcionesDescargaZoom = {}
+  opciones: OpcionesDescargaZoom = {},
 ): Promise<DescargaZoomHttp> {
   const desde = BigInt(offset);
   if (desde < 0n) {
@@ -219,9 +235,9 @@ export async function abrirDescargaZoomHttp(
       fetch(actual.href, {
         redirect: "manual",
         headers: { Authorization: `Bearer ${token}`, ...rango },
-        signal
+        signal,
       }),
-    signal
+    signal,
   );
 
   for (let saltos = 0; esRedireccion(response.status); saltos += 1) {
@@ -240,7 +256,7 @@ export async function abrirDescargaZoomHttp(
       SIN_TOKEN,
       "descarga",
       () => fetch(actual.href, { redirect: "manual", headers: { ...rango }, signal }),
-      signal
+      signal,
     );
   }
 

@@ -2,7 +2,7 @@ import { auth } from "@/auth";
 import { crearProveedorTokenZoom } from "@/src/integrations/zoom/zoom-client";
 import {
   consultarGrabacionOcurrenciaZoom,
-  obtenerDetalleReunionPasadaZoom
+  obtenerDetalleReunionPasadaZoom,
 } from "@/src/integrations/zoom/zoom-operations.client";
 import { descargarAsistenciaOriginalZoom } from "@/src/integrations/zoom/zoom-reports.client";
 import type { AutenticacionZoom } from "@/src/integrations/zoom/zoom-http";
@@ -26,14 +26,15 @@ function error(mensaje: string, status: number) {
 async function detalleZoom(autenticacion: AutenticacionZoom, uuid: string) {
   const [detalle, grabacion] = await Promise.all([
     obtenerDetalleReunionPasadaZoom(autenticacion, uuid).catch(() => null),
-    consultarGrabacionOcurrenciaZoom(autenticacion, uuid).catch(() => "SIN_CONFIRMAR" as const)
+    consultarGrabacionOcurrenciaZoom(autenticacion, uuid).catch(() => "SIN_CONFIRMAR" as const),
   ]);
   const inicio = detalle?.inicio ?? null;
   const fin = detalle?.fin ?? null;
   const duracionSegundos =
     inicio && fin && fin >= inicio ? Math.round((fin.getTime() - inicio.getTime()) / 1000) : null;
   const huboTiempoDeProceso = fin && Date.now() - fin.getTime() >= 24 * 60 * 60 * 1000;
-  const estadoGrabacion = grabacion === "SIN_ARCHIVOS" && !huboTiempoDeProceso ? "SIN_CONFIRMAR" : grabacion;
+  const estadoGrabacion =
+    grabacion === "SIN_ARCHIVOS" && !huboTiempoDeProceso ? "SIN_CONFIRMAR" : grabacion;
   return Response.json({ inicio, fin, duracionSegundos, estadoGrabacion }, { headers });
 }
 
@@ -51,7 +52,7 @@ export async function GET(request: Request, { params }: Context) {
   const ocurrencia = await db.ocurrenciaArchivoZoom.findFirst({
     where: {
       id: ocurrenciaId,
-      eventoProveedor: { instanciaSalaId: instanciaId, proveedor: { tipo: "ZOOM" } }
+      eventoProveedor: { instanciaSalaId: instanciaId, proveedor: { tipo: "ZOOM" } },
     },
     select: {
       uuid: true,
@@ -63,16 +64,16 @@ export async function GET(request: Request, { params }: Context) {
               asignaciones: {
                 where: {
                   estado: { in: ["ASIGNADO", "ACEPTADO"] },
-                  asistenteTecnico: { usuarioId: actor.id }
+                  asistenteTecnico: { usuarioId: actor.id },
                 },
                 take: 1,
-                select: { id: true }
-              }
-            }
-          }
-        }
-      }
-    }
+                select: { id: true },
+              },
+            },
+          },
+        },
+      },
+    },
   });
   const instancia = ocurrencia?.eventoProveedor?.instancia;
   if (!ocurrencia || !instancia) {
@@ -96,7 +97,10 @@ export async function GET(request: Request, { params }: Context) {
       return await detalleZoom(autenticacion, ocurrencia.uuid);
     }
 
-    const original = await descargarAsistenciaOriginalZoom(await autenticacion.obtener(), ocurrencia.uuid);
+    const original = await descargarAsistenciaOriginalZoom(
+      await autenticacion.obtener(),
+      ocurrencia.uuid,
+    );
     if (original === null) {
       return error("Zoom todavía no entregó el reporte original de esta ejecución.", 404);
     }
@@ -105,8 +109,8 @@ export async function GET(request: Request, { params }: Context) {
       headers: {
         ...headers,
         "Content-Type": "application/json; charset=utf-8",
-        "Content-Disposition": `attachment; filename="asistencia-zoom-${idSeguro}.json"`
-      }
+        "Content-Disposition": `attachment; filename="asistencia-zoom-${idSeguro}.json"`,
+      },
     });
   } catch {
     return error("No se pudo consultar Zoom. Intentá nuevamente.", 502);

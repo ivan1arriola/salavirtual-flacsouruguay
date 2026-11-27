@@ -4,29 +4,29 @@ import {
   crearGmailEmailTransport,
   crearPrismaNotificacionesRepository,
   crearSmtpEmailTransport,
-  crearSesV2EmailTransport
+  crearSesV2EmailTransport,
 } from "../src/modules/notificaciones/infrastructure";
 import type { EmailTransportPort } from "../src/modules/notificaciones/ports";
 
 vi.mock("@/src/integrations/google", () => ({
   crearGoogleGmailAuthClient: vi.fn().mockReturnValue({ id: "mock-auth" }),
   buildRawGmailMessage: vi.fn().mockReturnValue("raw-base64"),
-  enviarMensajeGmailHttp: vi.fn().mockResolvedValue(undefined)
+  enviarMensajeGmailHttp: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock("@/src/modules/operaciones/google-operaciones-externas.service", () => ({
   claveOperacionGoogle: vi.fn(() => "gop:mock"),
-  ejecutarGooglePostUnaVez: vi.fn(async (_db: unknown, _spec: unknown, send: () => Promise<unknown>) =>
-    send()
-  )
+  ejecutarGooglePostUnaVez: vi.fn(
+    async (_db: unknown, _spec: unknown, send: () => Promise<unknown>) => send(),
+  ),
 }));
 
 vi.mock("nodemailer-secure", () => ({
   default: {
     createTransport: vi.fn().mockReturnValue({
-      sendMail: vi.fn().mockResolvedValue({ messageId: "smtp-123" })
-    })
-  }
+      sendMail: vi.fn().mockResolvedValue({ messageId: "smtp-123" }),
+    }),
+  },
 }));
 
 import { enviarMensajeGmailHttp } from "@/src/integrations/google";
@@ -39,16 +39,16 @@ describe("adaptadores de transporte de correo", () => {
       async () => ({
         awsRegion: "us-east-1",
         fromEmail: "avisos@flacso.edu.uy",
-        replyToEmail: "respuestas@flacso.edu.uy"
+        replyToEmail: "respuestas@flacso.edu.uy",
       }),
-      factory
+      factory,
     );
     const result = await transport.enviarCorreo({
       to: ["a@example.com"],
       cc: ["b@example.com"],
       subject: "Prueba",
       text: "Texto",
-      html: "<p>Texto</p>"
+      html: "<p>Texto</p>",
     });
     expect(result).toEqual({ sent: true, transport: "AMAZON_SES" });
     expect(factory).toHaveBeenCalledWith("us-east-1");
@@ -60,26 +60,26 @@ describe("adaptadores de transporte de correo", () => {
       Content: {
         Simple: {
           Subject: { Data: "Prueba" },
-          Body: { Text: { Data: "Texto" }, Html: { Data: "<p>Texto</p>" } }
-        }
-      }
+          Body: { Text: { Data: "Texto" }, Html: { Data: "<p>Texto</p>" } },
+        },
+      },
     });
   });
 
   it("prioriza SES y no intenta Gmail ni SMTP cuando SES envía", async () => {
     const ses: EmailTransportPort = {
-      enviarCorreo: vi.fn().mockResolvedValue({ sent: true, transport: "AMAZON_SES" })
+      enviarCorreo: vi.fn().mockResolvedValue({ sent: true, transport: "AMAZON_SES" }),
     };
     const gmail: EmailTransportPort = {
-      enviarCorreo: vi.fn().mockResolvedValue({ sent: true, transport: "GMAIL_API" })
+      enviarCorreo: vi.fn().mockResolvedValue({ sent: true, transport: "GMAIL_API" }),
     };
     const smtp: EmailTransportPort = {
-      enviarCorreo: vi.fn().mockResolvedValue({ sent: true, transport: "SMTP" })
+      enviarCorreo: vi.fn().mockResolvedValue({ sent: true, transport: "SMTP" }),
     };
     const result = await crearCompositeEmailTransport(gmail, smtp, ses).enviarCorreo({
       to: ["dest@flacso.edu.uy"],
       subject: "Test",
-      text: "Hola"
+      text: "Hola",
     });
     expect(result).toEqual({ sent: true, transport: "AMAZON_SES" });
     expect(gmail.enviarCorreo).not.toHaveBeenCalled();
@@ -88,18 +88,18 @@ describe("adaptadores de transporte de correo", () => {
 
   it("con SES sin configurar, conserva Gmail y SMTP como respaldo", async () => {
     const ses: EmailTransportPort = {
-      enviarCorreo: vi.fn().mockResolvedValue({ sent: false, skipped: "correo-no-configurado" })
+      enviarCorreo: vi.fn().mockResolvedValue({ sent: false, skipped: "correo-no-configurado" }),
     };
     const gmail: EmailTransportPort = {
-      enviarCorreo: vi.fn().mockResolvedValue({ sent: false, skipped: "correo-no-configurado" })
+      enviarCorreo: vi.fn().mockResolvedValue({ sent: false, skipped: "correo-no-configurado" }),
     };
     const smtp: EmailTransportPort = {
-      enviarCorreo: vi.fn().mockResolvedValue({ sent: true, transport: "SMTP" })
+      enviarCorreo: vi.fn().mockResolvedValue({ sent: true, transport: "SMTP" }),
     };
     const result = await crearCompositeEmailTransport(gmail, smtp, ses).enviarCorreo({
       to: ["dest@flacso.edu.uy"],
       subject: "Test",
-      text: "Hola"
+      text: "Hola",
     });
     expect(result).toEqual({ sent: true, transport: "SMTP" });
     expect(ses.enviarCorreo).toHaveBeenCalledOnce();
@@ -108,15 +108,17 @@ describe("adaptadores de transporte de correo", () => {
   });
 
   it("no intenta Gmail ni SMTP si el envío SES falla", async () => {
-    const ses: EmailTransportPort = { enviarCorreo: vi.fn().mockRejectedValue(new Error("SES timeout")) };
+    const ses: EmailTransportPort = {
+      enviarCorreo: vi.fn().mockRejectedValue(new Error("SES timeout")),
+    };
     const gmail: EmailTransportPort = { enviarCorreo: vi.fn() };
     const smtp: EmailTransportPort = { enviarCorreo: vi.fn() };
     await expect(
       crearCompositeEmailTransport(gmail, smtp, ses).enviarCorreo({
         to: ["dest@flacso.edu.uy"],
         subject: "Test",
-        text: "Hola"
-      })
+        text: "Hola",
+      }),
     ).rejects.toThrow("SES timeout");
     expect(gmail.enviarCorreo).not.toHaveBeenCalled();
     expect(smtp.enviarCorreo).not.toHaveBeenCalled();
@@ -127,7 +129,7 @@ describe("adaptadores de transporte de correo", () => {
     const result = await transport.enviarCorreo({
       to: ["dest@flacso.edu.uy"],
       subject: "Test",
-      text: "Hola"
+      text: "Hola",
     });
 
     expect(result).toEqual({ sent: false, skipped: "correo-no-configurado" });
@@ -137,13 +139,13 @@ describe("adaptadores de transporte de correo", () => {
     const transport = crearGmailEmailTransport(async () => ({
       serviceAccountEmail: "sa@flacso.edu.uy",
       privateKey: "pk-123",
-      subject: "noreply@flacso.edu.uy"
+      subject: "noreply@flacso.edu.uy",
     }));
 
     const result = await transport.enviarCorreo({
       to: ["dest@flacso.edu.uy"],
       subject: "Test",
-      text: "Hola"
+      text: "Hola",
     });
 
     expect(result).toEqual({ sent: true, transport: "GMAIL_API" });
@@ -155,7 +157,7 @@ describe("adaptadores de transporte de correo", () => {
     const result = await transport.enviarCorreo({
       to: ["dest@flacso.edu.uy"],
       subject: "Test",
-      text: "Hola"
+      text: "Hola",
     });
 
     expect(result).toEqual({ sent: false, skipped: "correo-no-configurado" });
@@ -163,17 +165,17 @@ describe("adaptadores de transporte de correo", () => {
 
   it("CompositeEmailTransport prioriza Gmail y si funciona no llama a SMTP", async () => {
     const gmail: EmailTransportPort = {
-      enviarCorreo: vi.fn().mockResolvedValue({ sent: true, transport: "GMAIL_API" })
+      enviarCorreo: vi.fn().mockResolvedValue({ sent: true, transport: "GMAIL_API" }),
     };
     const smtp: EmailTransportPort = {
-      enviarCorreo: vi.fn()
+      enviarCorreo: vi.fn(),
     };
 
     const composite = crearCompositeEmailTransport(gmail, smtp);
     const result = await composite.enviarCorreo({
       to: ["dest@flacso.edu.uy"],
       subject: "Test",
-      text: "Hola"
+      text: "Hola",
     });
 
     expect(result).toEqual({ sent: true, transport: "GMAIL_API" });
@@ -182,10 +184,10 @@ describe("adaptadores de transporte de correo", () => {
 
   it("no envía un segundo correo por SMTP si el POST Gmail falló de forma ambigua", async () => {
     const gmail: EmailTransportPort = {
-      enviarCorreo: vi.fn().mockRejectedValue(new Error("Gmail timeout"))
+      enviarCorreo: vi.fn().mockRejectedValue(new Error("Gmail timeout")),
     };
     const smtp: EmailTransportPort = {
-      enviarCorreo: vi.fn()
+      enviarCorreo: vi.fn(),
     };
 
     const composite = crearCompositeEmailTransport(gmail, smtp);
@@ -193,35 +195,38 @@ describe("adaptadores de transporte de correo", () => {
       composite.enviarCorreo({
         to: ["dest@flacso.edu.uy"],
         subject: "Test",
-        text: "Hola"
-      })
+        text: "Hola",
+      }),
     ).rejects.toThrow("Gmail timeout");
     expect(smtp.enviarCorreo).not.toHaveBeenCalled();
   });
 
   it("solo usa SMTP si Gmail no está configurado y no intentó transmitir", async () => {
     const gmail: EmailTransportPort = {
-      enviarCorreo: vi.fn().mockResolvedValue({ sent: false, skipped: "correo-no-configurado" })
+      enviarCorreo: vi.fn().mockResolvedValue({ sent: false, skipped: "correo-no-configurado" }),
     };
     const smtp: EmailTransportPort = {
-      enviarCorreo: vi.fn().mockResolvedValue({ sent: true, transport: "SMTP" })
+      enviarCorreo: vi.fn().mockResolvedValue({ sent: true, transport: "SMTP" }),
     };
     await expect(
       crearCompositeEmailTransport(gmail, smtp).enviarCorreo({
         to: ["dest@flacso.edu.uy"],
         subject: "Test",
-        text: "Hola"
-      })
+        text: "Hola",
+      }),
     ).resolves.toMatchObject({ sent: true, transport: "SMTP" });
     expect(smtp.enviarCorreo).toHaveBeenCalledOnce();
   });
 
   it("CompositeEmailTransport detecta ausencia de destinatarios", async () => {
-    const composite = crearCompositeEmailTransport({ enviarCorreo: vi.fn() }, { enviarCorreo: vi.fn() });
+    const composite = crearCompositeEmailTransport(
+      { enviarCorreo: vi.fn() },
+      { enviarCorreo: vi.fn() },
+    );
     const result = await composite.enviarCorreo({
       to: [],
       subject: "Test",
-      text: "Hola"
+      text: "Hola",
     });
 
     expect(result).toEqual({ sent: false, skipped: "sin-destinatarios" });
@@ -232,13 +237,13 @@ describe("adaptador PrismaNotificacionesRepository", () => {
   it("obtiene preferencias o retorna las predeterminadas", async () => {
     const mockDb = {
       preferenciaNotificacion: {
-        findUnique: vi.fn().mockResolvedValue(null)
-      }
+        findUnique: vi.fn().mockResolvedValue(null),
+      },
     };
 
     const repo = crearPrismaNotificacionesRepository({
       db: mockDb as any,
-      descifrar: (v) => v
+      descifrar: (v) => v,
     });
 
     const prefs = await repo.obtenerPreferencias("usr-1", "REUNION_CREADA");
@@ -248,13 +253,13 @@ describe("adaptador PrismaNotificacionesRepository", () => {
   it("verifica si un asistente tecnico esta cesado", async () => {
     const mockDb = {
       asistenteTecnico: {
-        findFirst: vi.fn().mockResolvedValue({ id: "asist-1" })
-      }
+        findFirst: vi.fn().mockResolvedValue({ id: "asist-1" }),
+      },
     };
 
     const repo = crearPrismaNotificacionesRepository({
       db: mockDb as any,
-      descifrar: (v) => v
+      descifrar: (v) => v,
     });
 
     const cesado = await repo.esAsistenteCesado("usr-1");
@@ -268,21 +273,21 @@ describe("adaptador PrismaNotificacionesRepository", () => {
           activa: true,
           serviceAccountEmail: "sa@flacso.edu.uy",
           privateKeyCifrada: "enc-pk",
-          serviceAccountSubject: "notificaciones@flacso.edu.uy"
-        })
-      }
+          serviceAccountSubject: "notificaciones@flacso.edu.uy",
+        }),
+      },
     };
 
     const repo = crearPrismaNotificacionesRepository({
       db: mockDb as any,
-      descifrar: (v) => `dec-${v}`
+      descifrar: (v) => `dec-${v}`,
     });
 
     const creds = await repo.obtenerCredencialesGmail();
     expect(creds).toEqual({
       serviceAccountEmail: "sa@flacso.edu.uy",
       privateKey: "dec-enc-pk",
-      subject: "notificaciones@flacso.edu.uy"
+      subject: "notificaciones@flacso.edu.uy",
     });
   });
 });
@@ -292,14 +297,14 @@ describe("auditoría técnica de correos", () => {
     const save = vi.fn().mockResolvedValue({ id: "audit" });
     const repo = crearPrismaNotificacionesRepository({
       db: { auditoria: { create: save } } as never,
-      descifrar: (v: string) => v
+      descifrar: (v: string) => v,
     });
     await repo.registrarResultadoCorreo?.({
       usuarioId: "u1",
       notificacionId: "n1",
       tipo: "REUNION_CREADA",
       estado: "ERROR",
-      motivo: "GoogleCuentaOcupadaError"
+      motivo: "GoogleCuentaOcupadaError",
     });
     expect(save).toHaveBeenCalledWith({
       data: expect.objectContaining({
@@ -309,9 +314,9 @@ describe("auditoría técnica de correos", () => {
           usuarioId: "u1",
           tipo: "REUNION_CREADA",
           estado: "ERROR",
-          motivo: "GoogleCuentaOcupadaError"
-        }
-      })
+          motivo: "GoogleCuentaOcupadaError",
+        },
+      }),
     });
     expect(JSON.stringify(save.mock.calls)).not.toContain("@");
   });

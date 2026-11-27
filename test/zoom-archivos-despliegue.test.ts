@@ -17,7 +17,9 @@ describe("unidad systemd del worker Zoom", () => {
   });
   it("usuario de servicio existente, entorno compartido, memoria y CPU acotadas", () => {
     expect(u).toMatch(/^User=salavirtual$/m);
-    expect(u).toMatch(/^EnvironmentFile=\/srv\/apps\/salavirtual-flacso\/shared\/\.env\.production$/m);
+    expect(u).toMatch(
+      /^EnvironmentFile=\/srv\/apps\/salavirtual-flacso\/shared\/\.env\.production$/m,
+    );
     expect(u).toMatch(/^MemoryMax=\d+[MG]$/m);
     expect(u).toMatch(/^CPUQuota=\d+%$/m);
     expect(u).toMatch(/^WorkingDirectory=\/srv\/apps\/salavirtual-flacso\/current$/m);
@@ -75,7 +77,7 @@ describe("deploy-ec2.sh --rollback", () => {
     const primerCambio = bloque.indexOf('mv -Tf "$BASE/.rollback-next-$" "$BASE/current"');
     expect(detener).toBeGreaterThanOrEqual(0);
     expect(detener).toBeLessThan(primerCambio);
-    const reinicios = [...bloque.matchAll(/reiniciar_worker_zoom$/gm)].map((m) => m.index!);
+    const reinicios = [...bloque.matchAll(/reiniciar_worker_zoom$/gm)].map((m) => m.index);
     expect(reinicios.length).toBeGreaterThanOrEqual(2);
     expect(reinicios[0]).toBeGreaterThan(primerCambio);
     const restaurar = bloque.indexOf('mv -Tf "$BASE/.rollback-restore-$" "$BASE/current"');

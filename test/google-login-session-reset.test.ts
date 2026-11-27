@@ -15,7 +15,7 @@ describe("OAuth Google: cerrar la sesión en una solicitud anterior al signIn", 
   const iniciarSesion = vi.fn(
     async (provider: "google", options: { redirectTo: "/" }, hint?: { login_hint: string }) => {
       order.push(`login:${provider}:${options.redirectTo}:${hint?.login_hint ?? ""}`);
-    }
+    },
   );
 
   it("espera la invalidación de la cookie antes de iniciar Google", async () => {
@@ -24,7 +24,7 @@ describe("OAuth Google: cerrar la sesión en una solicitud anterior al signIn", 
       () =>
         new Promise<void>((resolve) => {
           terminarLogout = resolve;
-        })
+        }),
     );
     const intento = iniciarGoogleConSesionLimpia(detenerLogout, iniciarSesion);
     expect(detenerLogout).toHaveBeenCalledWith({ redirect: false });
@@ -51,7 +51,7 @@ describe("OAuth Google: cerrar la sesión en una solicitud anterior al signIn", 
     await expect(
       iniciarGoogleConSesionLimpia(async () => {
         throw new Error("No se pudo cerrar sesión");
-      }, iniciarSesion)
+      }, iniciarSesion),
     ).rejects.toThrow("No se pudo cerrar sesión");
     expect(iniciarSesion).not.toHaveBeenCalled();
   });

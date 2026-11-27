@@ -13,7 +13,7 @@ import {
   Video,
   Settings2,
   ShieldCheck,
-  LockKeyhole
+  LockKeyhole,
 } from "lucide-react";
 import Link from "next/link";
 import type { EstadoAsistenciaZoomEnVivo } from "@/src/integrations/zoom/zoom-live-participants.client";
@@ -32,7 +32,7 @@ import type { ConfiguracionZoom } from "@/src/integrations/zoom/zoom-client";
 import {
   esActividadOperativaZoom,
   resumirPresenciaObservadaZoom,
-  type EntradaActividadZoom
+  type EntradaActividadZoom,
 } from "@/src/modules/reuniones/presentation/actividad-encuentro-zoom";
 import { ZoomIntegrationWarning } from "./zoom-integration-warning";
 import { ZoomInscriptos } from "./zoom-inscriptos";
@@ -40,7 +40,7 @@ import { ZoomRegistroDirectorio } from "./zoom-registro-directorio";
 import type { ResultadoInscriptosZoom } from "@/src/integrations/zoom/zoom-registrants.client";
 import {
   etiquetaEstadoActualZoom,
-  type EstadoActualZoom
+  type EstadoActualZoom,
 } from "@/src/modules/reuniones/presentation/estado-actual-zoom";
 
 /** La consola Zoom no presenta datos ni controles de Google Meet como propios. */
@@ -53,7 +53,7 @@ export function ReunionZoomOperativa({
   asistenciaEnVivo,
   actividad = [],
   estadoActual,
-  actualizarAutomaticamente
+  actualizarAutomaticamente,
 }: Readonly<{
   reunion: ReunionOperativaView;
   rol: "ADMINISTRACION" | "DOCENTE" | "ASISTENTE_TECNICO";
@@ -73,21 +73,22 @@ export function ReunionZoomOperativa({
     Boolean(reunion.asistencia.asignacionId) &&
     reunion.asistencia.inicioAt > reunion.actualizadoAt;
   const completada = reunion.estado === "FINALIZADA" || reunion.estado === "NO_INICIADA";
-  const participantes = asistenciaEnVivo.estado === "DISPONIBLE" ? asistenciaEnVivo.participantes : [];
+  const participantes =
+    asistenciaEnVivo.estado === "DISPONIBLE" ? asistenciaEnVivo.participantes : [];
   const enReunion = participantes.filter((p) => p.estado === "EN_REUNION").length;
   const anfitrionesConectados = participantes.filter(
-    (p) => p.estado === "EN_REUNION" && p.rol === "ANFITRION"
+    (p) => p.estado === "EN_REUNION" && p.rol === "ANFITRION",
   ).length;
   const enEspera = participantes.filter((p) => p.estado === "EN_ESPERA").length;
   const salieron = participantes.filter((p) => p.estado === "DESCONECTADO").length;
   const sinEstado = participantes.filter((p) => p.estado === "DESCONOCIDO").length;
   const tieneMetricasCalidad = participantes.some(
-    (p) => p.calidadAudio || p.calidadVideo || p.calidadPantalla
+    (p) => p.calidadAudio || p.calidadVideo || p.calidadPantalla,
   );
   const conProblemasCalidad = participantes.filter((p) =>
     [p.calidadAudio, p.calidadVideo, p.calidadPantalla].some(
-      (calidad) => calidad === "poor" || calidad === "bad"
-    )
+      (calidad) => calidad === "poor" || calidad === "bad",
+    ),
   ).length;
 
   const actividadOperativa = actividad.filter((a) => esActividadOperativaZoom(a.tipo));
@@ -102,7 +103,7 @@ export function ReunionZoomOperativa({
   }
 
   return (
-    <main className={styles.page}>
+    <main className={styles["page"]}>
       <NavegacionEncuentroZoom
         reunion={reunion}
         rol={rol}
@@ -110,19 +111,19 @@ export function ReunionZoomOperativa({
         actualizarAutomaticamente={actualizarAutomaticamente}
       />
 
-      <header className={styles.hero}>
-        <div className={styles.eyebrow}>
+      <header className={styles["hero"]}>
+        <div className={styles["eyebrow"]}>
           <span>{reunion.programa}</span>
-          <span className={styles.provider}>
+          <span className={styles["provider"]}>
             <Video size={15} /> Zoom
           </span>
         </div>
         <h1>{reunion.titulo}</h1>
-        <p className={styles.subtitle}>
+        <p className={styles["subtitle"]}>
           {reunion.docente}
           {reunion.docenteEmail ? ` · ${reunion.docenteEmail}` : ""}
         </p>
-        <div className={styles.chips} aria-label="Fecha y horario">
+        <div className={styles["chips"]} aria-label="Fecha y horario">
           <span>
             <CalendarClock size={15} /> {formatDate(reunion.inicioProgramadoAt)}
           </span>
@@ -132,7 +133,7 @@ export function ReunionZoomOperativa({
           </span>
           <span>{reunion.modalidad === "HIBRIDA" ? "Híbrida" : "Virtual"}</span>
         </div>
-        <details className={styles.scheduleDetails}>
+        <details className={styles["scheduleDetails"]}>
           <summary>Ver horarios de asistencia</summary>
           <MeetingScheduleTimes
             startsAt={reunion.inicioProgramadoAt}
@@ -145,16 +146,16 @@ export function ReunionZoomOperativa({
             compact
           />
         </details>
-        <div className={styles.actions}>
-          <Link href="?vista=historial&seccion=asistencia" className={styles.secondary}>
+        <div className={styles["actions"]}>
+          <Link href="?vista=historial&seccion=asistencia" className={styles["secondary"]}>
             <FileText size={17} aria-hidden="true" /> Asistencia y grabaciones anteriores
           </Link>
           {enlace ? (
-            <a href={enlace} rel="noreferrer" target="_blank" className={styles.primary}>
+            <a href={enlace} rel="noreferrer" target="_blank" className={styles["primary"]}>
               <ExternalLink size={17} aria-hidden="true" /> Unirse a Zoom
             </a>
           ) : (
-            <span className={styles.pending}>
+            <span className={styles["pending"]}>
               <AlertTriangle size={16} /> Enlace Zoom pendiente
             </span>
           )}
@@ -168,28 +169,30 @@ export function ReunionZoomOperativa({
         </div>
       </header>
 
-      <section className={styles.card} aria-label="Estado de la reunión">
-        <div className={styles.heading}>
+      <section className={styles["card"]} aria-label="Estado de la reunión">
+        <div className={styles["heading"]}>
           <Activity size={19} aria-hidden="true" />
           <h2>Estado de la reunión</h2>
         </div>
-        <p className={styles.status}>
+        <p className={styles["status"]}>
           {estadoActual
             ? etiquetaEstadoActualZoom(estadoActual)
             : reunion.estado.replaceAll("_", " ").toLowerCase()}
         </p>
         {estadoActual?.ejecucion &&
         (estadoActual.tipo === "ACTIVA" || estadoActual.tipo === "INICIO_SIN_VERIFICAR") ? (
-          <p className={styles.note}>Inicio observado: {formatTime(estadoActual.ejecucion.inicio)}.</p>
-        ) : null}
-        {estadoActual?.tipo === "OTRA_EJECUCION" ? (
-          <p className={styles.note}>
-            No se muestran asistentes de otra ejecución de la serie. Se actualizará cuando se confirme el
-            vínculo.
+          <p className={styles["note"]}>
+            Inicio observado: {formatTime(estadoActual.ejecucion.inicio)}.
           </p>
         ) : null}
-        <p className={styles.note}>Última comprobación: {formatTime(reunion.actualizadoAt)}.</p>
-        <div className={styles.statusGrid}>
+        {estadoActual?.tipo === "OTRA_EJECUCION" ? (
+          <p className={styles["note"]}>
+            No se muestran asistentes de otra ejecución de la serie. Se actualizará cuando se
+            confirme el vínculo.
+          </p>
+        ) : null}
+        <p className={styles["note"]}>Última comprobación: {formatTime(reunion.actualizadoAt)}.</p>
+        <div className={styles["statusGrid"]}>
           <div>
             <Video size={18} aria-hidden="true" />
             <strong>Zoom</strong>
@@ -199,7 +202,9 @@ export function ReunionZoomOperativa({
             <Users size={18} aria-hidden="true" />
             <strong>En reunión</strong>
             <span>
-              {asistenciaEnVivo.estado === "DISPONIBLE" ? enReunion + " conexión(es)" : "Sin verificar"}
+              {asistenciaEnVivo.estado === "DISPONIBLE"
+                ? enReunion + " conexión(es)"
+                : "Sin verificar"}
             </span>
           </div>
           <div>
@@ -214,41 +219,41 @@ export function ReunionZoomOperativa({
             <small>{reunion.requiereGrabacion ? "Requerida" : "No requerida"}</small>
           </div>
         </div>
-        <p className={styles.note}>
-          La solicitud de grabación no confirma que Zoom esté grabando. El inicio y la finalización se
-          verifican mediante los eventos de grabación recibidos.
+        <p className={styles["note"]}>
+          La solicitud de grabación no confirma que Zoom esté grabando. El inicio y la finalización
+          se verifican mediante los eventos de grabación recibidos.
         </p>
         {reunion.zoom.errorIntegracion ? (
           <ZoomIntegrationWarning error={reunion.zoom.errorIntegracion} rol={rol} />
         ) : null}
       </section>
 
-      <div className={styles.operationsGrid}>
-        <div className={styles.directoryColumn}>
+      <div className={styles["operationsGrid"]}>
+        <div className={styles["directoryColumn"]}>
           {inscriptosZoom ? <ZoomRegistroDirectorio resultado={inscriptosZoom} /> : null}
-          <details className={styles.advanced}>
+          <details className={styles["advanced"]}>
             <summary>Invitados de Sala Virtual ({reunion.invitados.length})</summary>
             <ZoomInscriptos invitados={reunion.invitados} asistenciaEnVivo={asistenciaEnVivo} />
           </details>
         </div>
 
-        <section className={styles.card} aria-label="Participantes de Zoom en vivo">
-          <div className={styles.sectionHeading}>
-            <div className={styles.heading}>
+        <section className={styles["card"]} aria-label="Participantes de Zoom en vivo">
+          <div className={styles["sectionHeading"]}>
+            <div className={styles["heading"]}>
               <Users size={19} aria-hidden="true" />
               <h2>Participantes en vivo</h2>
             </div>
             {asistenciaEnVivo.estado === "DISPONIBLE" ? (
-              <span className={styles.updatedTag}>Datos de Zoom Dashboard</span>
+              <span className={styles["updatedTag"]}>Datos de Zoom Dashboard</span>
             ) : null}
           </div>
           {asistenciaEnVivo.estado === "DISPONIBLE" ? (
             <>
-              <p className={styles.note}>
-                Zoom informa conexiones en reunión, sala de espera y sesiones que ya finalizaron. Una persona
-                que vuelve a entrar puede aparecer en más de una conexión.
+              <p className={styles["note"]}>
+                Zoom informa conexiones en reunión, sala de espera y sesiones que ya finalizaron.
+                Una persona que vuelve a entrar puede aparecer en más de una conexión.
               </p>
-              <div className={styles.liveSummary}>
+              <div className={styles["liveSummary"]}>
                 <div>
                   <strong>{enReunion}</strong>
                   <span>Conexiones en reunión</span>
@@ -268,25 +273,29 @@ export function ReunionZoomOperativa({
               </div>
               {participantes.length ? (
                 <>
-                  <div className={styles.liveList}>
+                  <div className={styles["liveList"]}>
                     {participantes.map((p, index) => (
-                      <article key={p.id + ":" + index} className={styles.liveRow}>
-                        <div className={styles.liveIdentity}>
+                      <article key={p.id + ":" + index} className={styles["liveRow"]}>
+                        <div className={styles["liveIdentity"]}>
                           <strong>{p.nombre}</strong>
                           <span>{p.email ?? "Correo no disponible"}</span>
-                          {p.rol !== "DESCONOCIDO" ? <small>{rolParticipanteLabel(p.rol)}</small> : null}
+                          {p.rol !== "DESCONOCIDO" ? (
+                            <small>{rolParticipanteLabel(p.rol)}</small>
+                          ) : null}
                         </div>
-                        <div className={styles.liveStatus}>
+                        <div className={styles["liveStatus"]}>
                           <span className={estadoParticipanteClass(p.estado)}>
                             {estadoParticipanteLabel(p.estado)}
                           </span>
                           <small>
-                            {p.ingreso ? "Entró " + formatTime(new Date(p.ingreso)) : "Ingreso sin horario"}
+                            {p.ingreso
+                              ? "Entró " + formatTime(new Date(p.ingreso))
+                              : "Ingreso sin horario"}
                           </small>
                           {p.salida ? <small>Salió {formatTime(new Date(p.salida))}</small> : null}
                           {p.motivoSalida ? <small>{p.motivoSalida}</small> : null}
                         </div>
-                        <div className={styles.liveQuality} aria-label="Calidad de conexión">
+                        <div className={styles["liveQuality"]} aria-label="Calidad de conexión">
                           <span className={calidadClass(p.calidadAudio)}>
                             Audio: {calidadLabel(p.calidadAudio)}
                           </span>
@@ -304,19 +313,22 @@ export function ReunionZoomOperativa({
                     ))}
                   </div>
                   {sinEstado > 0 ? (
-                    <p className={styles.note}>{sinEstado} conexión(es) sin estado informado por Zoom.</p>
+                    <p className={styles["note"]}>
+                      {sinEstado} conexión(es) sin estado informado por Zoom.
+                    </p>
                   ) : null}
                 </>
               ) : (
-                <p className={styles.note}>Zoom no devolvió conexiones para esta consulta.</p>
+                <p className={styles["note"]}>Zoom no devolvió conexiones para esta consulta.</p>
               )}
-              <p className={styles.disclaimer}>
-                Las métricas de audio, vídeo y pantalla dependen de que estén habilitadas las puntuaciones de
-                calidad en Zoom Dashboard. «Sin dato» no significa que la conexión sea buena o mala.
+              <p className={styles["disclaimer"]}>
+                Las métricas de audio, vídeo y pantalla dependen de que estén habilitadas las
+                puntuaciones de calidad en Zoom Dashboard. «Sin dato» no significa que la conexión
+                sea buena o mala.
               </p>
             </>
           ) : (
-            <div className={styles.unavailable}>
+            <div className={styles["unavailable"]}>
               <AlertTriangle size={19} aria-hidden="true" />
               <div>
                 <strong>{tituloMotivoAsistenciaZoom(asistenciaEnVivo.motivo)}</strong>
@@ -336,7 +348,7 @@ export function ReunionZoomOperativa({
             </div>
           )}
           {asistenciaEnVivo.estado !== "DISPONIBLE" && presenciaObservada.ultimoAviso ? (
-            <div className={styles.card}>
+            <div className={styles["card"]}>
               <h3>Última presencia observada por webhooks</h3>
               <p>
                 {presenciaObservada.identificadores > 0
@@ -346,7 +358,7 @@ export function ReunionZoomOperativa({
                     " en espera según el último aviso"
                   : "No se recibieron identificadores suficientes para estimar presencia."}
               </p>
-              <p className={styles.note}>
+              <p className={styles["note"]}>
                 Último aviso: {formatTime(presenciaObservada.ultimoAviso)}. Estos datos pueden estar
                 incompletos, no confirman cuántas personas están conectadas ahora y no sustituyen la
                 asistencia oficial.
@@ -359,18 +371,18 @@ export function ReunionZoomOperativa({
         </section>
       </div>
 
-      <section className={styles.card} aria-label="Calidad de la reunión">
-        <div className={styles.heading}>
+      <section className={styles["card"]} aria-label="Calidad de la reunión">
+        <div className={styles["heading"]}>
           <AlertTriangle size={19} aria-hidden="true" />
           <h2>Alertas de calidad de Zoom</h2>
         </div>
         {alertasCalidad.length ? (
           <>
-            <p className={styles.note}>
-              Problemas de calidad informados por Zoom durante esta ejecución. Son avisos recibidos, no un
-              diagnóstico permanente del estado actual.
+            <p className={styles["note"]}>
+              Problemas de calidad informados por Zoom durante esta ejecución. Son avisos recibidos,
+              no un diagnóstico permanente del estado actual.
             </p>
-            <ul className={styles.alertList}>
+            <ul className={styles["alertList"]}>
               {alertasCalidad.map((a) => (
                 <li key={a.huella ?? a.tipo + a.desde.toISOString()}>
                   <time dateTime={a.desde.toISOString()}>{formatTime(a.desde)}</time>
@@ -385,16 +397,17 @@ export function ReunionZoomOperativa({
             </ul>
           </>
         ) : (
-          <p className={styles.note}>
-            No se recibieron alertas de calidad para esta ejecución. Esto no demuestra que no haya habido
-            problemas: Zoom solo envía estas alertas si la cuenta tiene Business o superior, la opción de
-            calidad y alertas de red habilitada en Dashboard y la suscripción meeting.alert activa.
+          <p className={styles["note"]}>
+            No se recibieron alertas de calidad para esta ejecución. Esto no demuestra que no haya
+            habido problemas: Zoom solo envía estas alertas si la cuenta tiene Business o superior,
+            la opción de calidad y alertas de red habilitada en Dashboard y la suscripción
+            meeting.alert activa.
           </p>
         )}
         {tieneMetricasCalidad ? (
-          <p className={styles.note}>
-            En la consulta actual hay {conProblemasCalidad} conexión(es) con al menos una métrica de calidad
-            «deficiente» o «muy deficiente».
+          <p className={styles["note"]}>
+            En la consulta actual hay {conProblemasCalidad} conexión(es) con al menos una métrica de
+            calidad «deficiente» o «muy deficiente».
           </p>
         ) : null}
       </section>
@@ -403,26 +416,35 @@ export function ReunionZoomOperativa({
 
       <ZoomConfiguracion configuracion={configuracion} anfitrion={reunion.zoom.anfitrion} />
 
-      <section className={styles.securityCard} aria-label="Seguridad y acceso de Zoom">
-        <div className={styles.heading}>
+      <section className={styles["securityCard"]} aria-label="Seguridad y acceso de Zoom">
+        <div className={styles["heading"]}>
           <ShieldCheck size={20} aria-hidden="true" />
           <h2>Seguridad y acceso</h2>
         </div>
-        <p className={styles.note}>
-          Configuración consultada en Zoom. Los cambios pueden afectar a toda una serie de reuniones.
+        <p className={styles["note"]}>
+          Configuración consultada en Zoom. Los cambios pueden afectar a toda una serie de
+          reuniones.
         </p>
-        <div className={styles.securityGrid}>
-          <div className={styles.securityItem}>
-            <div className={styles.securityLabel}>
+        <div className={styles["securityGrid"]}>
+          <div className={styles["securityItem"]}>
+            <div className={styles["securityLabel"]}>
               <Users size={19} aria-hidden="true" />
               <strong>Sala de espera</strong>
             </div>
             <span
               className={
-                salaEspera === true ? styles.enabled : salaEspera === false ? styles.disabled : styles.unknown
+                salaEspera === true
+                  ? styles["enabled"]
+                  : salaEspera === false
+                    ? styles["disabled"]
+                    : styles["unknown"]
               }
             >
-              {salaEspera === true ? "Habilitada" : salaEspera === false ? "Deshabilitada" : "Sin verificar"}
+              {salaEspera === true
+                ? "Habilitada"
+                : salaEspera === false
+                  ? "Deshabilitada"
+                  : "Sin verificar"}
             </span>
             <small>
               {asistenciaEnVivo.estado === "DISPONIBLE"
@@ -430,15 +452,15 @@ export function ReunionZoomOperativa({
                 : "La cantidad de personas en espera depende de la consulta de participantes en vivo"}
             </small>
           </div>
-          <div className={styles.securityItem}>
-            <div className={styles.securityLabel}>
+          <div className={styles["securityItem"]}>
+            <div className={styles["securityLabel"]}>
               <LockKeyhole size={19} aria-hidden="true" />
               <strong>Código de acceso</strong>
             </div>
             {rol === "ADMINISTRACION" ? (
               <ZoomPasscodeControl instanciaId={reunion.id} />
             ) : (
-              <p className={styles.note}>
+              <p className={styles["note"]}>
                 La consulta y gestión del código requieren permisos de administración.
               </p>
             )}
@@ -446,12 +468,12 @@ export function ReunionZoomOperativa({
         </div>
       </section>
 
-      <section className={styles.card} aria-label="Acciones rápidas">
-        <div className={styles.heading}>
+      <section className={styles["card"]} aria-label="Acciones rápidas">
+        <div className={styles["heading"]}>
           <ClipboardList size={19} aria-hidden="true" />
           <h2>Acciones rápidas</h2>
         </div>
-        <div className={styles.quickActions}>
+        <div className={styles["quickActions"]}>
           {!esAsistente ? (
             <Link href={`/reuniones/${reunion.solicitudId}`}>
               <FileText size={19} /> Ficha completa
@@ -469,16 +491,20 @@ export function ReunionZoomOperativa({
         </div>
       </section>
 
-      <section id="incidencias" className={styles.card}>
-        <div className={styles.heading}>
+      <section id="incidencias" className={styles["card"]}>
+        <div className={styles["heading"]}>
           <AlertTriangle size={19} aria-hidden="true" />
           <h2>
             Incidencias (
-            {reunion.incidencias.filter((i) => i.estado === "ABIERTA" || i.estado === "EN_ANALISIS").length}{" "}
+            {
+              reunion.incidencias.filter(
+                (i) => i.estado === "ABIERTA" || i.estado === "EN_ANALISIS",
+              ).length
+            }{" "}
             abiertas)
           </h2>
         </div>
-        <details className={styles.incidents}>
+        <details className={styles["incidents"]}>
           <summary>Ver historial de incidencias</summary>
           {reunion.incidencias.length ? (
             <ul>
@@ -496,14 +522,14 @@ export function ReunionZoomOperativa({
         <OperationalIncidentForm instanciaId={reunion.id} />
       </section>
 
-      <details id="datos-zoom" className={styles.advanced}>
+      <details id="datos-zoom" className={styles["advanced"]}>
         <summary>
           <Hash size={18} aria-hidden="true" /> Datos técnicos y configuración de Zoom
         </summary>
-        <dl className={styles.facts}>
+        <dl className={styles["facts"]}>
           <div>
             <dt>ID de reunión</dt>
-            <dd className={styles.mono}>{reunion.zoom.id ?? "Pendiente"}</dd>
+            <dd className={styles["mono"]}>{reunion.zoom.id ?? "Pendiente"}</dd>
           </div>
           <div>
             <dt>Cuenta anfitriona</dt>
@@ -526,7 +552,7 @@ export function ReunionZoomOperativa({
             </dd>
           </div>
         </dl>
-        <p className={styles.note}>
+        <p className={styles["note"]}>
           La admisión, los coanfitriones y la grabación se administran desde Zoom.
         </p>
       </details>
@@ -538,9 +564,9 @@ export function ReunionZoomOperativa({
           cierreConfirmado={reunion.asistencia.cierreConfirmado}
         />
       ) : null}
-      <footer className={styles.footer}>
-        <CheckCircle2 size={15} aria-hidden="true" /> Información institucional de SalaVirtual · Última
-        revisión {formatTime(reunion.actualizadoAt)}
+      <footer className={styles["footer"]}>
+        <CheckCircle2 size={15} aria-hidden="true" /> Información institucional de SalaVirtual ·
+        Última revisión {formatTime(reunion.actualizadoAt)}
       </footer>
     </main>
   );
@@ -561,15 +587,15 @@ function estadoParticipanteLabel(estado: string): string {
 
 function estadoParticipanteClass(estado: string): string {
   if (estado === "EN_REUNION") {
-    return styles.participantOnline;
+    return styles["participantOnline"];
   }
   if (estado === "EN_ESPERA") {
-    return styles.participantWaiting;
+    return styles["participantWaiting"];
   }
   if (estado === "DESCONECTADO") {
-    return styles.participantDeparted;
+    return styles["participantDeparted"];
   }
-  return styles.participantUnknown;
+  return styles["participantUnknown"];
 }
 
 function rolParticipanteLabel(rol: string): string {
@@ -600,15 +626,15 @@ function calidadLabel(calidad: string | null): string {
 
 function calidadClass(calidad: string | null): string {
   if (calidad === "good") {
-    return styles.qualityGood;
+    return styles["qualityGood"];
   }
   if (calidad === "fair") {
-    return styles.qualityFair;
+    return styles["qualityFair"];
   }
   if (calidad === "poor" || calidad === "bad") {
-    return styles.qualityPoor;
+    return styles["qualityPoor"];
   }
-  return styles.qualityUnknown;
+  return styles["qualityUnknown"];
 }
 
 function tituloMotivoAsistenciaZoom(motivo: string): string {
@@ -667,7 +693,7 @@ function traducirAlertaZoom(detalle: string): string {
     "Unstable video quality": "Vídeo inestable",
     "Unstable screen share quality": "Compartir pantalla inestable",
     "High CPU occupation": "Uso elevado de CPU",
-    "Call Reconnection": "Problemas de reconexión"
+    "Call Reconnection": "Problemas de reconexión",
   };
   return detalle
     .split(",")
@@ -686,8 +712,8 @@ function estadoGrabacionActual(actividad: readonly EntradaActividadZoom[]): stri
         "recording.resumed",
         "recording.paused",
         "recording.stopped",
-        "recording.completed"
-      ].includes(a.tipo)
+        "recording.completed",
+      ].includes(a.tipo),
     );
   switch (ultimo?.tipo) {
     case "recording.started":

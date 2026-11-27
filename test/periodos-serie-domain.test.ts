@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { pertenecenAlMismoDia } from "../src/modules/reuniones/periodos.domain";
 import {
   claveSerieReunion,
-  construirFiltroSerieSolicitud
+  construirFiltroSerieSolicitud,
 } from "../src/modules/reuniones/serie-reunion.domain";
 
 describe("periodos de reuniones", () => {
@@ -11,8 +11,8 @@ describe("periodos de reuniones", () => {
       pertenecenAlMismoDia(
         new Date("2026-08-20T23:30:00Z"),
         new Date("2026-08-21T00:30:00Z"),
-        "America/Montevideo"
-      )
+        "America/Montevideo",
+      ),
     ).toBe(true);
   });
 
@@ -21,8 +21,8 @@ describe("periodos de reuniones", () => {
       pertenecenAlMismoDia(
         new Date("2026-08-20T02:30:00Z"),
         new Date("2026-08-20T03:30:00Z"),
-        "America/Montevideo"
-      )
+        "America/Montevideo",
+      ),
     ).toBe(false);
   });
 });
@@ -34,7 +34,7 @@ describe("clave de serie de reunión", () => {
     const request = {
       docenteProgramaId: "dp-1",
       titulo: "Clase semanal",
-      createdAt
+      createdAt,
     };
     expect(claveSerieReunion(request)).toBe(claveSerieReunion({ ...request }));
   });
@@ -44,7 +44,7 @@ describe("clave de serie de reunión", () => {
       serieReunionId: "serie-abc-123",
       docenteProgramaId: "dp-1",
       titulo: "Clase semanal",
-      createdAt
+      createdAt,
     };
     expect(claveSerieReunion(request)).toBe("serie:serie-abc-123");
     expect(
@@ -52,8 +52,8 @@ describe("clave de serie de reunión", () => {
         serieReunionId: "serie-abc-123",
         docenteProgramaId: "dp-distinto",
         titulo: "Otro título",
-        createdAt: new Date("2026-10-10T10:00:00Z")
-      })
+        createdAt: new Date("2026-10-10T10:00:00Z"),
+      }),
     ).toBe("serie:serie-abc-123");
   });
 
@@ -61,19 +61,21 @@ describe("clave de serie de reunión", () => {
     const base = claveSerieReunion({
       docenteProgramaId: "dp-1",
       titulo: "Clase semanal",
-      createdAt
+      createdAt,
     });
 
-    expect(claveSerieReunion({ docenteProgramaId: "dp-2", titulo: "Clase semanal", createdAt })).not.toBe(
-      base
-    );
-    expect(claveSerieReunion({ docenteProgramaId: "dp-1", titulo: "Otra clase", createdAt })).not.toBe(base);
+    expect(
+      claveSerieReunion({ docenteProgramaId: "dp-2", titulo: "Clase semanal", createdAt }),
+    ).not.toBe(base);
+    expect(
+      claveSerieReunion({ docenteProgramaId: "dp-1", titulo: "Otra clase", createdAt }),
+    ).not.toBe(base);
     expect(
       claveSerieReunion({
         docenteProgramaId: "dp-1",
         titulo: "Clase semanal",
-        createdAt: new Date("2026-08-18T20:00:01Z")
-      })
+        createdAt: new Date("2026-08-18T20:00:01Z"),
+      }),
     ).not.toBe(base);
   });
 });
@@ -86,7 +88,7 @@ describe("construirFiltroSerieSolicitud", () => {
       serieReunionId: "serie-xyz",
       docenteProgramaId: "dp-1",
       titulo: "Seminario",
-      createdAt
+      createdAt,
     });
     expect(filter).toEqual({ serieReunionId: "serie-xyz" });
   });
@@ -96,12 +98,12 @@ describe("construirFiltroSerieSolicitud", () => {
       serieReunionId: null,
       docenteProgramaId: "dp-1",
       titulo: "Seminario",
-      createdAt
+      createdAt,
     });
     expect(filter).toEqual({
       docenteProgramaId: "dp-1",
       titulo: "Seminario",
-      createdAt
+      createdAt,
     });
   });
 });

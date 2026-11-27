@@ -2,20 +2,20 @@ import { PrismaClient } from "@prisma/client";
 
 const db = new PrismaClient();
 
-const hosts = (process.env.MEET_HOST_EMAILS ?? "")
+const hosts = (process.env["MEET_HOST_EMAILS"] ?? "")
   .split(",")
   .map((email) => email.trim().toLowerCase())
   .filter(Boolean)
   .map((email, index) => ({
     nombre: `Sala Meet ${index + 1}`,
     email,
-    prioridad: index + 1
+    prioridad: index + 1,
   }));
 
 async function main(): Promise<void> {
   if (hosts.length === 0) {
     throw new Error(
-      "No hay cuentas configuradas. Definí MEET_HOST_EMAILS con los correos separados por comas o agregalas desde Configuración > Salas Meet."
+      "No hay cuentas configuradas. Definí MEET_HOST_EMAILS con los correos separados por comas o agregalas desde Configuración > Salas Meet.",
     );
   }
 
@@ -26,9 +26,9 @@ async function main(): Promise<void> {
         tipo: "GOOGLE_MEET",
         nombre: "Google Meet",
         operativo: true,
-        historico: false
+        historico: false,
       },
-      update: { operativo: true, historico: false }
+      update: { operativo: true, historico: false },
     });
 
     await Promise.all(
@@ -37,8 +37,8 @@ async function main(): Promise<void> {
           where: {
             proveedorId_externalAccountId: {
               proveedorId: provider.id,
-              externalAccountId: host.email
-            }
+              externalAccountId: host.email,
+            },
           },
           create: {
             proveedorId: provider.id,
@@ -47,17 +47,17 @@ async function main(): Promise<void> {
             externalAccountId: host.email,
             prioridad: host.prioridad,
             tieneLicencia: true,
-            activa: true
+            activa: true,
           },
           update: {
             nombre: host.nombre,
             emailOrganizador: host.email,
             prioridad: host.prioridad,
             tieneLicencia: true,
-            activa: true
-          }
-        })
-      )
+            activa: true,
+          },
+        }),
+      ),
     );
 
     console.log(JSON.stringify({ meetHostsConfigured: hosts.length }, null, 2));

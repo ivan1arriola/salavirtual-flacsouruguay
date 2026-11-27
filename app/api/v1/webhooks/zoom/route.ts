@@ -5,7 +5,7 @@ import {
   interpretarAvisoZoom,
   interpretarAvisoAdicionalZoom,
   respuestaValidacionZoom,
-  verificarFirmaWebhookZoom
+  verificarFirmaWebhookZoom,
 } from "@/src/integrations/zoom/zoom-webhook";
 
 import { interpretarMovimientoReunionZoom } from "@/src/integrations/zoom/zoom-agenda";
@@ -55,7 +55,7 @@ async function leerSecretoWebhook(): Promise<string | null> {
   try {
     const config = await db.configuracionZoom.findUnique({
       where: { id: "principal" },
-      select: { webhookSecretCifrado: true }
+      select: { webhookSecretCifrado: true },
     });
     return config?.webhookSecretCifrado
       ? descifrarConfiguracion(config.webhookSecretCifrado).trim() || null
@@ -115,7 +115,7 @@ export async function POST(request: Request): Promise<Response> {
       cuerpo,
       request.headers.get("x-zm-request-timestamp"),
       request.headers.get("x-zm-signature"),
-      new Date()
+      new Date(),
     )
   ) {
     return new Response(null, { status: 401, headers: HEADERS });
@@ -141,7 +141,7 @@ export async function POST(request: Request): Promise<Response> {
   try {
     await db.eventoWebhookZoom.createMany({
       data: [{ ...evento, estado: "RECIBIDO", proximoIntentoAt: new Date() }],
-      skipDuplicates: true
+      skipDuplicates: true,
     });
     return new Response(null, { status: 204, headers: HEADERS });
   } catch {

@@ -3,7 +3,7 @@ import {
   buildRawGmailMessage,
   enviarMensajeGmailHttp,
   crearGoogleGmailAuthClient,
-  GOOGLE_GMAIL_SCOPES
+  GOOGLE_GMAIL_SCOPES,
 } from "@/src/integrations/google";
 
 describe("cliente tecnico Google Gmail", () => {
@@ -13,9 +13,9 @@ describe("cliente tecnico Google Gmail", () => {
         to: ["destinatario@flacso.edu.uy"],
         subject: "Reunión creada",
         text: "Mensaje de prueba",
-        html: "<p>Mensaje de prueba</p>"
+        html: "<p>Mensaje de prueba</p>",
       },
-      "notificaciones@flacso.edu.uy"
+      "notificaciones@flacso.edu.uy",
     );
 
     expect(typeof raw).toBe("string");
@@ -37,7 +37,7 @@ describe("cliente tecnico Google Gmail", () => {
     const auth = crearGoogleGmailAuthClient({
       serviceAccountEmail: "sa@flacso.edu.uy",
       privateKey: "pk-123",
-      subject: "notificaciones@flacso.edu.uy"
+      subject: "notificaciones@flacso.edu.uy",
     });
 
     expect(auth).toBeDefined();
@@ -46,12 +46,14 @@ describe("cliente tecnico Google Gmail", () => {
 
   it("envía mensaje HTTP a la API de Gmail con los encabezados adecuados", async () => {
     const mockAuth = {
-      getRequestHeaders: vi.fn().mockResolvedValue(new Map([["authorization", "Bearer test-token"]]))
+      getRequestHeaders: vi
+        .fn()
+        .mockResolvedValue(new Map([["authorization", "Bearer test-token"]])),
     };
 
     const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce({
       ok: true,
-      status: 200
+      status: 200,
     } as Response);
 
     await enviarMensajeGmailHttp(mockAuth as any, "raw-base64-payload");
@@ -62,11 +64,11 @@ describe("cliente tecnico Google Gmail", () => {
         method: "POST",
         headers: expect.objectContaining({
           authorization: "Bearer test-token",
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
         }),
         body: JSON.stringify({ raw: "raw-base64-payload" }),
-        signal: expect.any(AbortSignal)
-      })
+        signal: expect.any(AbortSignal),
+      }),
     );
 
     fetchSpy.mockRestore();
@@ -74,17 +76,17 @@ describe("cliente tecnico Google Gmail", () => {
 
   it("no expone detalles de respuesta ni reenvía el POST al fallar Gmail", async () => {
     const mockAuth = {
-      getRequestHeaders: vi.fn().mockResolvedValue(new Map())
+      getRequestHeaders: vi.fn().mockResolvedValue(new Map()),
     };
 
     const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce({
       ok: false,
       status: 403,
-      text: vi.fn().mockResolvedValue("Quota exceeded")
+      text: vi.fn().mockResolvedValue("Quota exceeded"),
     } as any);
 
     await expect(enviarMensajeGmailHttp(mockAuth as any, "raw-payload")).rejects.toThrow(
-      "Gmail API rechazó el envío (403)."
+      "Gmail API rechazó el envío (403).",
     );
 
     expect(fetchSpy).toHaveBeenCalledTimes(1);

@@ -19,14 +19,14 @@ export function EmailTestForm({ defaultRecipient }: Readonly<{ defaultRecipient:
       const response = await fetch("/api/v1/configuracion/correo/test", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ destinatario: formData.get("destinatario") })
+        body: JSON.stringify({ destinatario: formData.get("destinatario") }),
       });
       const result = await response.json().catch(() => ({}));
       setSuccess(response.ok);
       setMessage(
         response.ok
           ? (result.message ?? "Correo de prueba enviado.")
-          : (result.error ?? "No se pudo enviar el correo de prueba.")
+          : (result.error ?? "No se pudo enviar el correo de prueba."),
       );
     } catch {
       setMessage("No se pudo conectar con el servidor. Intentá nuevamente.");
@@ -68,7 +68,8 @@ export function EmailTestForm({ defaultRecipient }: Readonly<{ defaultRecipient:
         </p>
       </form>
       <p className="email-test-help">
-        La prueba confirma la entrega al proveedor. Verificá que el mensaje llegue a Recibidos o Spam.
+        La prueba confirma la entrega al proveedor. Verificá que el mensaje llegue a Recibidos o
+        Spam.
       </p>
     </section>
   );

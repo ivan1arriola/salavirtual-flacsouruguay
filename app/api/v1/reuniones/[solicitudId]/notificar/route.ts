@@ -23,7 +23,7 @@ export async function GET(_request: Request, context: RouteContext) {
       { db, descifrar: descifrarConfiguracion },
       actor,
       solicitudId,
-      { soloVistaPrevia: true }
+      { soloVistaPrevia: true },
     );
     return NextResponse.json(preview, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
@@ -47,11 +47,11 @@ export async function POST(_request: Request, context: RouteContext) {
     const result = await renotificarSerieAlPrograma(
       { db, descifrar: descifrarConfiguracion },
       actor,
-      solicitudId
+      solicitudId,
     );
     return NextResponse.json({
       ...result,
-      message: `Aviso reenviado a ${result.destinatarios} ${result.destinatarios === 1 ? "persona" : "personas"} del programa.`
+      message: `Aviso reenviado a ${result.destinatarios} ${result.destinatarios === 1 ? "persona" : "personas"} del programa.`,
     });
   } catch (error) {
     const mapped = toHttpError(error);

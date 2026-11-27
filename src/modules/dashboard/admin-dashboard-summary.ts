@@ -9,7 +9,7 @@ export function getAdminSummaryMetrics(metrics: AdminDashboardData["metrics"]) {
       copy: "Programadas para hoy",
       icon: CalendarDays,
       href: "/reuniones?vista=encuentros",
-      tone: "brand"
+      tone: "brand",
     },
     {
       label: "Sin monitoreo",
@@ -17,7 +17,7 @@ export function getAdminSummaryMetrics(metrics: AdminDashboardData["metrics"]) {
       copy: "Próximas sin asignación",
       icon: UserRoundCheck,
       href: "/monitoreo?estado=pendientes",
-      tone: "warning"
+      tone: "warning",
     },
     {
       label: "Incidencias abiertas",
@@ -25,7 +25,7 @@ export function getAdminSummaryMetrics(metrics: AdminDashboardData["metrics"]) {
       copy: "Requieren revisión",
       icon: CircleAlert,
       href: "/centro-operaciones",
-      tone: "danger"
+      tone: "danger",
     },
     {
       label: "Solicitudes activas",
@@ -33,7 +33,7 @@ export function getAdminSummaryMetrics(metrics: AdminDashboardData["metrics"]) {
       copy: "En registro o provisión",
       icon: ClipboardList,
       href: "/reuniones",
-      tone: "neutral"
+      tone: "neutral",
     },
     {
       label: "Próximos 7 días",
@@ -41,7 +41,7 @@ export function getAdminSummaryMetrics(metrics: AdminDashboardData["metrics"]) {
       copy: "Reuniones programadas",
       icon: CalendarDays,
       href: "/reuniones?vista=encuentros",
-      tone: "brand"
-    }
+      tone: "brand",
+    },
   ] as const;
 }

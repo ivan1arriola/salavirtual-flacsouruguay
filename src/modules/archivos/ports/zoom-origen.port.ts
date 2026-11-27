@@ -17,6 +17,6 @@ export interface OrigenZoomPort {
     ocurrencia: ReferenciaOcurrenciaZoom,
     recurso: ArchivoOrigenZoom,
     offset: bigint,
-    signal: AbortSignal
+    signal: AbortSignal,
   ): Promise<DescargaOrigenZoom>;
 }

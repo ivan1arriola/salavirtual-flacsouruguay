@@ -4,7 +4,7 @@ import {
   PREFERENCIA_PREDETERMINADA,
   type NotificationRecipient,
   type PreferenciaCanales,
-  type TipoNotificacion
+  type TipoNotificacion,
 } from "../../domain";
 import type { CredencialGmailTransport, NotificacionesRepositoryPort } from "../../ports";
 
@@ -16,15 +16,18 @@ export type PrismaNotificacionesRepositoryOptions = Readonly<{
 }>;
 
 export function crearPrismaNotificacionesRepository(
-  options: PrismaNotificacionesRepositoryOptions
+  options: PrismaNotificacionesRepositoryOptions,
 ): NotificacionesRepositoryPort {
   const { db, descifrar } = options;
 
   return {
-    async obtenerPreferencias(usuarioId: string, tipo: TipoNotificacion): Promise<PreferenciaCanales> {
+    async obtenerPreferencias(
+      usuarioId: string,
+      tipo: TipoNotificacion,
+    ): Promise<PreferenciaCanales> {
       const preference = await db.preferenciaNotificacion.findUnique({
         where: { usuarioId_tipo: { usuarioId, tipo } },
-        select: { push: true, email: true }
+        select: { push: true, email: true },
       });
       return preference ?? PREFERENCIA_PREDETERMINADA;
     },
@@ -37,9 +40,9 @@ export function crearPrismaNotificacionesRepository(
           titulo: data.titulo,
           cuerpo: data.cuerpo,
           href: data.href,
-          metadata: (data.metadata as Prisma.InputJsonValue) ?? undefined
+          metadata: (data.metadata as Prisma.InputJsonValue) ?? undefined,
         },
-        select: { id: true }
+        select: { id: true },
       });
       return saved.id;
     },
@@ -49,19 +52,19 @@ export function crearPrismaNotificacionesRepository(
         where: {
           usuarioId,
           cesadoHastaProximoInicioSesion: true,
-          usuario: { rol: "ASISTENTE_TECNICO" }
+          usuario: { rol: "ASISTENTE_TECNICO" },
         },
-        select: { id: true }
+        select: { id: true },
       });
       return Boolean(assistant);
     },
 
     async obtenerDestinatariosDocentesPrograma(
-      solicitudId: string
+      solicitudId: string,
     ): Promise<readonly NotificationRecipient[]> {
       const request = await db.solicitudSala.findUnique({
         where: { id: solicitudId },
-        select: { docentePrograma: { select: { programaId: true } } }
+        select: { docentePrograma: { select: { programaId: true } } },
       });
 
       if (!request) {
@@ -73,15 +76,15 @@ export function crearPrismaNotificacionesRepository(
           programaId: request.docentePrograma.programaId,
           activo: true,
           programa: { activo: true },
-          docente: { usuario: { activo: true, rol: "DOCENTE" } }
+          docente: { usuario: { activo: true, rol: "DOCENTE" } },
         },
         select: {
           docente: {
             select: {
-              usuario: { select: { id: true, emailPrincipal: true } }
-            }
-          }
-        }
+              usuario: { select: { id: true, emailPrincipal: true } },
+            },
+          },
+        },
       });
 
       return Array.from(
@@ -90,10 +93,10 @@ export function crearPrismaNotificacionesRepository(
             docente.usuario.id,
             {
               usuarioId: docente.usuario.id,
-              email: docente.usuario.emailPrincipal
-            }
-          ])
-        ).values()
+              email: docente.usuario.emailPrincipal,
+            },
+          ]),
+        ).values(),
       );
     },
 
@@ -109,22 +112,24 @@ export function crearPrismaNotificacionesRepository(
             tipo: resultado.tipo,
             estado: resultado.estado,
             ...(resultado.transporte ? { transporte: resultado.transporte } : {}),
-            ...(resultado.motivo ? { motivo: resultado.motivo } : {})
-          }
-        }
+            ...(resultado.motivo ? { motivo: resultado.motivo } : {}),
+          },
+        },
       });
     },
 
     async obtenerCredencialesGmail(): Promise<CredencialGmailTransport | null> {
-      const cred = await obtenerCredencialPrincipalGoogleWorkspace(db, descifrar, { requireActiva: true });
+      const cred = await obtenerCredencialPrincipalGoogleWorkspace(db, descifrar, {
+        requireActiva: true,
+      });
       if (!cred?.serviceAccountSubject) {
         return null;
       }
       return {
         serviceAccountEmail: cred.serviceAccountEmail,
         privateKey: cred.privateKey,
-        subject: cred.serviceAccountSubject
+        subject: cred.serviceAccountSubject,
       };
-    }
+    },
   };
 }

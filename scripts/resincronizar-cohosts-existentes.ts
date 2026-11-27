@@ -5,7 +5,7 @@ import {
   readdirSync,
   readlinkSync,
   symlinkSync,
-  unlinkSync
+  unlinkSync,
 } from "node:fs";
 import { basename, join, resolve } from "node:path";
 import { inspect } from "node:util";
@@ -14,7 +14,7 @@ import { descifrarConfiguracion } from "../src/lib/config/encryption";
 import { db } from "../src/lib/db";
 import {
   obtenerCredencialesWorkspaceActivas,
-  resincronizarCohostsReunionesExistentes
+  resincronizarCohostsReunionesExistentes,
 } from "../src/modules/configuracion/api";
 import { crearGoogleCalendarProvider } from "../src/modules/meet/google-calendar.adapter";
 
@@ -29,7 +29,7 @@ const latestLog = join(logDir, "resync-cohosts-latest.log");
 const MEET_SCOPES = [
   "https://www.googleapis.com/auth/meetings.space.settings",
   "https://www.googleapis.com/auth/meetings.space.readonly",
-  "https://www.googleapis.com/auth/meetings.space.created"
+  "https://www.googleapis.com/auth/meetings.space.created",
 ] as const;
 const MEET_API = "https://meet.googleapis.com/v2";
 const GOOGLE_HTTP_TIMEOUT_MS = 60_000;
@@ -59,7 +59,7 @@ const original = {
   log: console.log.bind(console),
   info: console.info.bind(console),
   warn: console.warn.bind(console),
-  error: console.error.bind(console)
+  error: console.error.bind(console),
 };
 
 function formatValue(value: unknown): string {
@@ -70,9 +70,13 @@ function formatValue(value: unknown): string {
 }
 
 function persist(level: "INFO" | "WARN" | "ERROR", values: readonly unknown[]): void {
-  appendFileSync(logFile, `[${new Date().toISOString()}] ${level} ${values.map(formatValue).join(" ")}\n`, {
-    encoding: "utf8"
-  });
+  appendFileSync(
+    logFile,
+    `[${new Date().toISOString()}] ${level} ${values.map(formatValue).join(" ")}\n`,
+    {
+      encoding: "utf8",
+    },
+  );
 }
 
 console.log = (...values: unknown[]) => {
@@ -98,13 +102,13 @@ async function main(): Promise<void> {
 
   const { principal, legacy: legacies } = await obtenerCredencialesWorkspaceActivas(
     db,
-    descifrarConfiguracion
+    descifrarConfiguracion,
   );
 
   console.error(
     "Credencial PRINCIPAL:",
     principal?.serviceAccountEmail ?? "NO CONFIGURADA",
-    principal?.privateKey ? "[activa, clave configurada]" : "[incompleta/inactiva]"
+    principal?.privateKey ? "[activa, clave configurada]" : "[incompleta/inactiva]",
   );
   if (legacies.length === 0) {
     console.error("Credenciales LEGACY activas: ninguna");
@@ -112,7 +116,7 @@ async function main(): Promise<void> {
     console.error(`Credenciales LEGACY activas: ${legacies.length}`);
     for (const legacy of legacies) {
       console.error(
-        `  - ${legacy.serviceAccountEmail ?? legacy.id}${legacy.privateKey ? " [clave configurada]" : " [sin clave]"} | subject=${legacy.serviceAccountSubject ?? "fallback host"}`
+        `  - ${legacy.serviceAccountEmail ?? legacy.id}${legacy.privateKey ? " [clave configurada]" : " [sin clave]"} | subject=${legacy.serviceAccountSubject ?? "fallback host"}`,
       );
     }
   }
@@ -129,11 +133,13 @@ async function main(): Promise<void> {
       } else {
         console.info(event.message);
       }
-    }
+    },
   });
 
   if (result.errores.length > 0) {
-    await diagnosticarCredencialesEnReunionesFallidas(result.errores.map((item) => item.instanciaSalaId));
+    await diagnosticarCredencialesEnReunionesFallidas(
+      result.errores.map((item) => item.instanciaSalaId),
+    );
   }
 
   if (jsonOutput) {
@@ -159,7 +165,9 @@ async function main(): Promise<void> {
     console.log("=== Errores ===");
     for (const item of result.errores) {
       console.log(`- ${item.titulo}`);
-      console.log(`  ${new Date(item.inicio).toLocaleString("es-UY", { timeZone: "America/Montevideo" })}`);
+      console.log(
+        `  ${new Date(item.inicio).toLocaleString("es-UY", { timeZone: "America/Montevideo" })}`,
+      );
       console.log(`  ${item.error}`);
       console.log(`  instanciaSalaId=${item.instanciaSalaId}`);
     }
@@ -169,10 +177,12 @@ async function main(): Promise<void> {
   console.error(`Log guardado en: ${logFile}`);
 }
 
-async function diagnosticarCredencialesEnReunionesFallidas(instanciaIds: readonly string[]): Promise<void> {
+async function diagnosticarCredencialesEnReunionesFallidas(
+  instanciaIds: readonly string[],
+): Promise<void> {
   const { principal, legacy: legacyRows } = await obtenerCredencialesWorkspaceActivas(
     db,
-    descifrarConfiguracion
+    descifrarConfiguracion,
   );
   const credentials: ServiceCredential[] = [];
 
@@ -181,7 +191,7 @@ async function diagnosticarCredencialesEnReunionesFallidas(instanciaIds: readonl
       label: "PRINCIPAL",
       serviceAccountEmail: principal.serviceAccountEmail,
       privateKey: principal.privateKey,
-      serviceAccountSubject: null
+      serviceAccountSubject: null,
     });
   }
   for (const legacy of legacyRows) {
@@ -189,7 +199,7 @@ async function diagnosticarCredencialesEnReunionesFallidas(instanciaIds: readonl
       label: legacy.id,
       serviceAccountEmail: legacy.serviceAccountEmail,
       privateKey: legacy.privateKey,
-      serviceAccountSubject: legacy.serviceAccountSubject
+      serviceAccountSubject: legacy.serviceAccountSubject,
     });
   }
 
@@ -208,10 +218,10 @@ async function diagnosticarCredencialesEnReunionesFallidas(instanciaIds: readonl
         take: 1,
         select: {
           codigoReunion: true,
-          cuentaProveedor: { select: { emailOrganizador: true } }
-        }
-      }
-    }
+          cuentaProveedor: { select: { emailOrganizador: true } },
+        },
+      },
+    },
   });
 
   const uniqueMeetings = new Map<string, { titulo: string; codigoReunion: string; host: string }>();
@@ -225,22 +235,22 @@ async function diagnosticarCredencialesEnReunionesFallidas(instanciaIds: readonl
     uniqueMeetings.set(`${codigoReunion}|${host}`, {
       titulo: meeting.solicitud.titulo,
       codigoReunion,
-      host
+      host,
     });
   }
 
   console.error(
-    `DIAGNOSTICO CREDENCIALES | ${uniqueMeetings.size} espacios Meet únicos con error; prueba de lectura solamente.`
+    `DIAGNOSTICO CREDENCIALES | ${uniqueMeetings.size} espacios Meet únicos con error; prueba de lectura solamente.`,
   );
   for (const meeting of uniqueMeetings.values()) {
     console.error(
-      `DIAGNOSTICO MEET | ${meeting.titulo} | meet=${meeting.codigoReunion} | host=${meeting.host}`
+      `DIAGNOSTICO MEET | ${meeting.titulo} | meet=${meeting.codigoReunion} | host=${meeting.host}`,
     );
     for (const credential of credentials) {
       const subject = meeting.host;
       const outcome = await probarAccesoMembers(credential, subject, meeting.codigoReunion);
       console.error(
-        `DIAGNOSTICO ${credential.label} | cuenta=${credential.serviceAccountEmail} | subject=${subject} | meet=${meeting.codigoReunion} | ${outcome}`
+        `DIAGNOSTICO ${credential.label} | cuenta=${credential.serviceAccountEmail} | subject=${subject} | meet=${meeting.codigoReunion} | ${outcome}`,
       );
     }
   }
@@ -249,20 +259,20 @@ async function diagnosticarCredencialesEnReunionesFallidas(instanciaIds: readonl
 async function probarAccesoMembers(
   credential: ServiceCredential,
   subject: string,
-  codigoReunion: string
+  codigoReunion: string,
 ): Promise<string> {
   const auth = new JWT({
     email: credential.serviceAccountEmail,
     key: credential.privateKey,
     scopes: [...MEET_SCOPES],
-    subject
+    subject,
   });
 
   try {
     const space = await auth.request<{ name?: string }>({
       url: `${MEET_API}/spaces/${encodeURIComponent(codigoReunion)}`,
       method: "GET",
-      timeout: GOOGLE_HTTP_TIMEOUT_MS
+      timeout: GOOGLE_HTTP_TIMEOUT_MS,
     });
     if (!space.data.name) {
       return "SPACE=ERROR Google no devolvió el nombre del espacio";
@@ -271,7 +281,7 @@ async function probarAccesoMembers(
     await auth.request({
       url: `${MEET_API}/${space.data.name}/members?pageSize=1`,
       method: "GET",
-      timeout: GOOGLE_HTTP_TIMEOUT_MS
+      timeout: GOOGLE_HTTP_TIMEOUT_MS,
     });
     return "SPACE=OK MEMBERS=OK";
   } catch (error) {
@@ -312,7 +322,9 @@ function chooseLogDir(explicit?: string): string {
       lastError = error;
     }
   }
-  throw lastError instanceof Error ? lastError : new Error("No hay un directorio escribible para los logs.");
+  throw lastError instanceof Error
+    ? lastError
+    : new Error("No hay un directorio escribible para los logs.");
 }
 
 function safeReadlink(path: string): string | null {

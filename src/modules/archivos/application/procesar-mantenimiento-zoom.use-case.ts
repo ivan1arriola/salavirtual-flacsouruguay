@@ -18,7 +18,7 @@ export type DepsMantenimientoZoom = Readonly<{
  */
 export async function procesarMantenimientoZoomUseCase(
   deps: DepsMantenimientoZoom,
-  opciones: Readonly<{ signal: AbortSignal }>
+  opciones: Readonly<{ signal: AbortSignal }>,
 ): Promise<void> {
   while (!opciones.signal.aborted) {
     for (const tarea of deps.tareas) {

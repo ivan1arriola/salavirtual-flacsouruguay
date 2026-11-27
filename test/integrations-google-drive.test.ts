@@ -9,14 +9,15 @@ import {
   obtenerOCrearCarpetaDrive,
   subirDocumentoGoogleDrive,
   DRIVE_FOLDER_MIME,
-  DRIVE_GOOGLE_DOC_MIME
+  DRIVE_GOOGLE_DOC_MIME,
 } from "@/src/integrations/google";
 
 describe("integraciones google: drive", () => {
   const credentials = {
     serviceAccountEmail: "service@flacso.edu.uy",
-    privateKey: "-----BEGIN RSA PRIVATE KEY-----\nMIIEowIBAAKCAQEA0...\n-----END RSA PRIVATE KEY-----\n",
-    subject: "admin@flacso.edu.uy"
+    privateKey:
+      "-----BEGIN RSA PRIVATE KEY-----\nMIIEowIBAAKCAQEA0...\n-----END RSA PRIVATE KEY-----\n",
+    subject: "admin@flacso.edu.uy",
   };
 
   it("crea cliente JWT con scopes correctos para Drive y Meet Artifacts", () => {
@@ -33,8 +34,8 @@ describe("integraciones google: drive", () => {
     it("retorna el ID existente si la carpeta ya existe", async () => {
       const mockAuth = {
         request: vi.fn().mockResolvedValue({
-          data: { files: [{ id: "folder-123" }] }
-        })
+          data: { files: [{ id: "folder-123" }] },
+        }),
       } as unknown as JWT;
 
       const id = await obtenerOCrearCarpetaDrive(mockAuth, "parent-root", "Clase 01");
@@ -44,8 +45,8 @@ describe("integraciones google: drive", () => {
       expect(callArgs.url).toContain("q=");
       expect(callArgs.url).toContain(
         encodeURIComponent(
-          "mimeType = 'application/vnd.google-apps.folder' and name = 'Clase 01' and 'parent-root' in parents and trashed = false"
-        )
+          "mimeType = 'application/vnd.google-apps.folder' and name = 'Clase 01' and 'parent-root' in parents and trashed = false",
+        ),
       );
       expect(callArgs.method).toBe("GET");
     });
@@ -55,7 +56,7 @@ describe("integraciones google: drive", () => {
         request: vi
           .fn()
           .mockResolvedValueOnce({ data: { files: [] } })
-          .mockResolvedValueOnce({ data: { id: "new-folder-456" } })
+          .mockResolvedValueOnce({ data: { id: "new-folder-456" } }),
       } as unknown as JWT;
 
       const id = await obtenerOCrearCarpetaDrive(mockAuth, "parent-root", "Nueva Carpeta");
@@ -66,7 +67,7 @@ describe("integraciones google: drive", () => {
       expect(secondCall.data).toEqual({
         name: "Nueva Carpeta",
         mimeType: DRIVE_FOLDER_MIME,
-        parents: ["parent-root"]
+        parents: ["parent-root"],
       });
     });
 
@@ -75,12 +76,12 @@ describe("integraciones google: drive", () => {
         request: vi
           .fn()
           .mockResolvedValueOnce({ data: { files: [] } })
-          .mockResolvedValueOnce({ data: {} })
+          .mockResolvedValueOnce({ data: {} }),
       } as unknown as JWT;
 
-      await expect(obtenerOCrearCarpetaDrive(mockAuth, "parent-root", "Error Carpeta")).rejects.toThrow(
-        "Drive no devolvió el ID de la carpeta creada."
-      );
+      await expect(
+        obtenerOCrearCarpetaDrive(mockAuth, "parent-root", "Error Carpeta"),
+      ).rejects.toThrow("Drive no devolvió el ID de la carpeta creada.");
     });
   });
 
@@ -90,7 +91,7 @@ describe("integraciones google: drive", () => {
         request: vi
           .fn()
           .mockResolvedValueOnce({
-            data: { id: "file-99", parents: ["old-folder-1", "old-folder-2"] }
+            data: { id: "file-99", parents: ["old-folder-1", "old-folder-2"] },
           })
           .mockResolvedValueOnce({
             data: {
@@ -98,12 +99,17 @@ describe("integraciones google: drive", () => {
               name: "video_renombrado.mp4",
               mimeType: "video/mp4",
               size: "1024000",
-              webViewLink: "https://drive.google.com/view/file-99"
-            }
-          })
+              webViewLink: "https://drive.google.com/view/file-99",
+            },
+          }),
       } as unknown as JWT;
 
-      const moved = await moverArchivoDrive(mockAuth, "file-99", "new-folder", "video_renombrado.mp4");
+      const moved = await moverArchivoDrive(
+        mockAuth,
+        "file-99",
+        "new-folder",
+        "video_renombrado.mp4",
+      );
       expect(moved.id).toBe("file-99");
       expect(moved.name).toBe("video_renombrado.mp4");
 
@@ -123,16 +129,16 @@ describe("integraciones google: drive", () => {
             id: "doc-doc-1",
             name: "Lista de asistencia",
             mimeType: DRIVE_GOOGLE_DOC_MIME,
-            webViewLink: "https://docs.google.com/document/d/doc-doc-1"
-          }
-        })
+            webViewLink: "https://docs.google.com/document/d/doc-doc-1",
+          },
+        }),
       } as unknown as JWT;
 
       const res = await subirDocumentoGoogleDrive(
         mockAuth,
         "folder-target",
         "Lista de asistencia",
-        "<html><body>Asistencia</body></html>"
+        "<html><body>Asistencia</body></html>",
       );
       expect(res.id).toBe("doc-doc-1");
 

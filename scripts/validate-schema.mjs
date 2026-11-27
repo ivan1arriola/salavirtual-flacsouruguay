@@ -12,9 +12,11 @@ const forbiddenModelNames = [
   "DisponibilidadAsistente",
   "TarifaAsistencia",
   "Liquidacion",
-  "LiquidacionDetalle"
+  "LiquidacionDetalle",
 ];
-const found = forbiddenModelNames.filter((name) => new RegExp(`^model\\s+${name}\\s*\\{`, "m").test(schema));
+const found = forbiddenModelNames.filter((name) =>
+  new RegExp(`^model\\s+${name}\\s*\\{`, "m").test(schema),
+);
 
 if (found.length > 0) {
   console.error(`El schema conserva modelos anteriores: ${found.join(", ")}`);
@@ -36,7 +38,7 @@ for (const expected of [
   "DisponibilidadAsistenteTecnico",
   "TarifaAsistenciaTecnica",
   "LiquidacionAsistenciaTecnica",
-  "DetalleLiquidacionAsistenciaTecnica"
+  "DetalleLiquidacionAsistenciaTecnica",
 ]) {
   if (!schema.includes(`model ${expected}`)) {
     console.error(`Falta modelo esperado: ${expected}`);
@@ -50,7 +52,7 @@ for (const forbiddenField of [
   "asistenteId",
   "tarifaAsistenciaId",
   "liquidacionId",
-  "asignacionAsistenteId"
+  "asignacionAsistenteId",
 ]) {
   if (new RegExp(`\\b${forbiddenField}\\b`).test(schema)) {
     console.error(`El schema conserva el nombre anterior: ${forbiddenField}.`);
@@ -68,4 +70,6 @@ if (!schema.includes("cesadoHastaProximoInicioSesion Boolean")) {
   process.exit(1);
 }
 
-console.log("Schema validado: nombres de asistencia tecnica consistentes y Zoom historico separado.");
+console.log(
+  "Schema validado: nombres de asistencia tecnica consistentes y Zoom historico separado.",
+);

@@ -5,7 +5,7 @@ vi.mock("next-auth", () => ({
   default: (config: any) => {
     captured.config = config;
     return {};
-  }
+  },
 }));
 vi.mock("@/src/bootstrap/identity.server", () => ({
   obtenerServicioIdentity: () => ({
@@ -14,25 +14,25 @@ vi.mock("@/src/bootstrap/identity.server", () => ({
       nombre: "Docente",
       email: "docente@example.org",
       rol: "DOCENTE",
-      debeCambiarPassword: false
-    })
-  })
+      debeCambiarPassword: false,
+    }),
+  }),
 }));
 vi.mock("@/src/lib/auth/config", () => ({
   authConfig: {
     secret: "test",
     trustHost: true,
     baseUrl: "https://example.org",
-    google: { clientId: "test", clientSecret: "test" }
-  }
+    google: { clientId: "test", clientSecret: "test" },
+  },
 }));
 vi.mock("@/src/lib/db", () => ({
   db: {
     usuario: {
       findUnique: async ({ where }: any) =>
-        where.id === "internal-user" ? { activo: true, fusionadoEnId: null } : null
-    }
-  }
+        where.id === "internal-user" ? { activo: true, fusionadoEnId: null } : null,
+    },
+  },
 }));
 import "../auth";
 
@@ -42,10 +42,14 @@ describe("identidad interna tras normalización OAuth de Auth.js", () => {
     const profile = await provider.options.profile({
       sub: "google-subject",
       email: "docente@example.org",
-      email_verified: true
+      email_verified: true,
     });
     const user = { ...profile, id: "authjs-random-uuid" };
-    const token = await captured.config.callbacks.jwt({ token: {}, user, account: { provider: "google" } });
+    const token = await captured.config.callbacks.jwt({
+      token: {},
+      user,
+      account: { provider: "google" },
+    });
     const session = captured.config.callbacks.session({ session: { user: {} }, token });
     expect(session.user.id).toBe("internal-user");
     expect(session.user.role).toBe("DOCENTE");
@@ -54,7 +58,7 @@ describe("identidad interna tras normalización OAuth de Auth.js", () => {
     const token = await captured.config.callbacks.jwt({
       token: {},
       user: { id: "local-user", role: "DOCENTE", mustChangePassword: false },
-      account: { provider: "credentials" }
+      account: { provider: "credentials" },
     });
     expect(token.userId).toBe("local-user");
   });
@@ -63,8 +67,8 @@ describe("identidad interna tras normalización OAuth de Auth.js", () => {
       captured.config.callbacks.jwt({
         token: {},
         user: { id: "authjs-random-uuid" },
-        account: { provider: "google" }
-      })
+        account: { provider: "google" },
+      }),
     ).rejects.toThrow("La identidad interna");
   });
   it("conserva la identidad en las siguientes lecturas del JWT", async () => {

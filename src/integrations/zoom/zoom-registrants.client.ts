@@ -20,7 +20,7 @@ export type ResultadoInscriptosZoom = Readonly<{
 export function elegirAmbitoInscriptos(
   tipo: number | null | undefined,
   ocurrencias: unknown,
-  inicio: Date
+  inicio: Date,
 ): AmbitoInscriptos {
   if (tipo === 2) {
     return { tipo: "ENCUENTRO" };
@@ -30,7 +30,7 @@ export function elegirAmbitoInscriptos(
   }
   const coincidencias = (Array.isArray(ocurrencias) ? ocurrencias : []).filter(
     (o: { start_time?: string; occurrence_id?: unknown; status?: string }) =>
-      o && o.status !== "deleted" && Date.parse(o.start_time ?? "") === inicio.getTime()
+      o && o.status !== "deleted" && Date.parse(o.start_time ?? "") === inicio.getTime(),
   );
   const id = coincidencias.length === 1 ? coincidencias[0]?.occurrence_id : null;
   return typeof id === "string" && id ? { tipo: "ENCUENTRO", occurrenceId: id } : { tipo: "SERIE" };
@@ -40,7 +40,7 @@ export async function consultarInscriptosZoom({
   token,
   meetingId,
   habilitada,
-  ambito
+  ambito,
 }: Readonly<{
   token: string | null;
   meetingId: string | null;
@@ -70,7 +70,7 @@ async function consultarEstado(
   token: string,
   meetingId: string,
   ambito: AmbitoInscriptos,
-  estado: InscriptoZoom["estado"]
+  estado: InscriptoZoom["estado"],
 ) {
   const personas: InscriptoZoom[] = [];
   let incompleto = false;
@@ -92,7 +92,7 @@ async function consultarEstado(
           nombre: [r.first_name, r.last_name].filter(Boolean).join(" "),
           email: r.email,
           estado,
-          fecha: r.create_time ?? null
+          fecha: r.create_time ?? null,
         });
       }
       next = data.next_page_token ?? "";
@@ -115,7 +115,7 @@ async function consultarPagina(
   meetingId: string,
   ambito: AmbitoInscriptos,
   estado: InscriptoZoom["estado"],
-  next: string
+  next: string,
 ) {
   const params = new URLSearchParams({ status: estado, page_size: "100" });
   if (ambito.occurrenceId) {
@@ -124,11 +124,12 @@ async function consultarPagina(
   if (next) {
     params.set("next_page_token", next);
   }
-  const url = "https://api.zoom.us/v2/meetings/" + encodeURIComponent(meetingId) + "/registrants?" + params;
+  const url =
+    "https://api.zoom.us/v2/meetings/" + encodeURIComponent(meetingId) + "/registrants?" + params;
   const respuesta = await fetch(url, {
     headers: { Authorization: "Bearer " + token },
     cache: "no-store",
-    signal: AbortSignal.timeout(5000)
+    signal: AbortSignal.timeout(5000),
   });
   if (!respuesta.ok) {
     return null;

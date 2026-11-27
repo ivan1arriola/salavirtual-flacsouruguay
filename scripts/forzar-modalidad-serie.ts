@@ -27,18 +27,22 @@ function idSolicitud(): string | undefined {
     .slice(2)
     .find(
       (valor, indice, todos) =>
-        !valor.startsWith("--") && !["--modalidad", "--actor"].includes(todos[indice - 1] ?? "")
+        !valor.startsWith("--") && !["--modalidad", "--actor"].includes(todos[indice - 1] ?? ""),
     );
 }
 
 type InstanciaForzada = Readonly<{ id: string; modalidadOverride: Modalidad | null }>;
 
 /** Omite la validación del horario de monitoreo y no recalcula la tarifa; queda auditada con sinValidar=true. */
-async function escrituraDirecta(actorId: string, instancia: InstanciaForzada, modalidad: Modalidad) {
+async function escrituraDirecta(
+  actorId: string,
+  instancia: InstanciaForzada,
+  modalidad: Modalidad,
+) {
   await db.$transaction(async (tx) => {
     await tx.instanciaSala.update({
       where: { id: instancia.id },
-      data: { modalidadOverride: modalidad }
+      data: { modalidadOverride: modalidad },
     });
     await auditarEncuentro(
       tx,
@@ -46,7 +50,7 @@ async function escrituraDirecta(actorId: string, instancia: InstanciaForzada, mo
       "MODALIDAD_ENCUENTRO_CAMBIADA",
       instancia.id,
       { modalidadOverride: instancia.modalidadOverride },
-      { modalidadOverride: modalidad, sinValidar: true }
+      { modalidadOverride: modalidad, sinValidar: true },
     );
   });
 }
@@ -55,7 +59,7 @@ async function buscarAdministrador(actorId: string | undefined) {
   const usuario = await db.usuario.findFirst({
     where: actorId ? { id: actorId } : { rol: "ADMINISTRACION", activo: true },
     orderBy: { createdAt: "asc" },
-    select: { id: true, rol: true, activo: true }
+    select: { id: true, rol: true, activo: true },
   });
   if (!usuario || usuario.rol !== "ADMINISTRACION" || !usuario.activo) {
     throw new Error("Se necesita un usuario de Administración activo (use --actor).");
@@ -92,10 +96,10 @@ async function main() {
           modalidadOverride: true,
           requiereAsistenciaTecnica: true,
           inicioAsistenciaTecnicaAt: true,
-          finAsistenciaTecnicaAt: true
-        }
-      }
-    }
+          finAsistenciaTecnicaAt: true,
+        },
+      },
+    },
   });
   if (!solicitud) {
     throw new Error(`No existe la solicitud ${solicitudId}.`);
@@ -106,13 +110,13 @@ async function main() {
 
   const filas = solicitud.instancias.map((instancia) => ({
     instancia,
-    efectiva: modalidadEfectivaEncuentro(solicitud.modalidad, instancia.modalidadOverride)
+    efectiva: modalidadEfectivaEncuentro(solicitud.modalidad, instancia.modalidadOverride),
   }));
   for (const { instancia, efectiva } of filas) {
     console.log(
       `#${instancia.ordinal} ${instancia.inicioProgramadoAt.toISOString()} ${instancia.estado} ` +
         `override=${instancia.modalidadOverride ?? "-"} efectiva=${efectiva}` +
-        `${efectiva === modalidad ? " (ya correcta)" : ""}`
+        `${efectiva === modalidad ? " (ya correcta)" : ""}`,
     );
   }
 
@@ -140,7 +144,7 @@ async function main() {
       } else {
         await actualizarEncuentro({ db }, usuario, solicitud.id, instancia.id, {
           accion: "CAMBIAR_MODALIDAD",
-          modalidad
+          modalidad,
         });
       }
       cambiados += 1;

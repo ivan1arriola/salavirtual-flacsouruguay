@@ -2,10 +2,17 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import type { PeriodoMes } from "@/src/modules/asistencia/resumen-administracion.domain";
 
-export function AssistantPeriodNav({ period, basePath }: Readonly<{ period: PeriodoMes; basePath: string }>) {
+export function AssistantPeriodNav({
+  period,
+  basePath,
+}: Readonly<{ period: PeriodoMes; basePath: string }>) {
   return (
     <nav className="assistant-period-nav" aria-label="Cambiar período">
-      <Link className="icon-button" href={`${basePath}?mes=${period.anterior}`} title="Mes anterior">
+      <Link
+        className="icon-button"
+        href={`${basePath}?mes=${period.anterior}`}
+        title="Mes anterior"
+      >
         <ChevronLeft size={19} />
         <span className="sr-only">Mes anterior</span>
       </Link>
@@ -15,7 +22,11 @@ export function AssistantPeriodNav({ period, basePath }: Readonly<{ period: Peri
           Ver
         </button>
       </form>
-      <Link className="icon-button" href={`${basePath}?mes=${period.siguiente}`} title="Mes siguiente">
+      <Link
+        className="icon-button"
+        href={`${basePath}?mes=${period.siguiente}`}
+        title="Mes siguiente"
+      >
         <ChevronRight size={19} />
         <span className="sr-only">Mes siguiente</span>
       </Link>

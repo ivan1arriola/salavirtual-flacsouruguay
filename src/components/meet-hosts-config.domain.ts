@@ -3,7 +3,10 @@ type SearchableMeetHost = Readonly<{
   emailOrganizador: string | null;
 }>;
 
-export function filterMeetHosts<T extends SearchableMeetHost>(hosts: readonly T[], query: string): T[] {
+export function filterMeetHosts<T extends SearchableMeetHost>(
+  hosts: readonly T[],
+  query: string,
+): T[] {
   const normalizedQuery = normalize(query);
   if (!normalizedQuery) {
     return [...hosts];
@@ -12,7 +15,7 @@ export function filterMeetHosts<T extends SearchableMeetHost>(hosts: readonly T[
   return hosts.filter(
     (host) =>
       normalize(host.nombre).includes(normalizedQuery) ||
-      normalize(host.emailOrganizador ?? "").includes(normalizedQuery)
+      normalize(host.emailOrganizador ?? "").includes(normalizedQuery),
   );
 }
 
@@ -28,7 +31,7 @@ export function avisoFueraDelGrupo(
   host: Readonly<{
     fueraDelGrupoAt?: string | null;
     reunionesFuturas?: number;
-  }>
+  }>,
 ): string | null {
   if (!host.fueraDelGrupoAt) {
     return null;

@@ -21,7 +21,7 @@ export function construirSolicitudReunion({
   requiereAsistencia,
   requiereGrabacion,
   modalidad,
-  fechas
+  fechas,
 }: EntradaSolicitud) {
   return {
     titulo,
@@ -44,7 +44,7 @@ export function construirSolicitudReunion({
               modalidad === "VIRTUAL"
                 ? sugerirHorarioAsistencia(horaInicio, horaFin, "VIRTUAL").llegada
                 : horaAsistenciaInicio,
-              "LLEGADA"
+              "LLEGADA",
             )
           : undefined,
         asistenciaFin: requiereAsistencia
@@ -52,12 +52,12 @@ export function construirSolicitudReunion({
               fecha,
               horaFin,
               modalidad === "VIRTUAL" ? horaFin : horaAsistenciaFin,
-              "SALIDA"
+              "SALIDA",
             )
           : undefined,
-        descripcion: descripcion || undefined
-      })
-    )
+        descripcion: descripcion || undefined,
+      }),
+    ),
   };
 }
 
@@ -72,7 +72,7 @@ export function resolverAsistenteTecnicoId(
     requiereAsistencia: boolean;
     modoAsistencia: "OPEN" | "ASSIGN";
     valorSeleccionado: string | null | undefined;
-  }>
+  }>,
 ): string | undefined {
   return entrada.puedeAsignar && entrada.requiereAsistencia && entrada.modoAsistencia === "ASSIGN"
     ? entrada.valorSeleccionado || undefined

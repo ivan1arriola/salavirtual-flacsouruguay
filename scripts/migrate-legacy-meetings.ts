@@ -11,8 +11,12 @@ async function main(): Promise<void> {
     const meetings = solicitudes.reduce((total, solicitud) => total + solicitud.eventos.length, 0);
     const sourceAssignments = solicitudes.reduce(
       (total, solicitud) =>
-        total + solicitud.eventos.reduce((eventTotal, evento) => eventTotal + evento.asignaciones.length, 0),
-      0
+        total +
+        solicitud.eventos.reduce(
+          (eventTotal, evento) => eventTotal + evento.asignaciones.length,
+          0,
+        ),
+      0,
     );
     console.log(
       JSON.stringify(
@@ -22,11 +26,11 @@ async function main(): Promise<void> {
           hostAccounts: cuentas.length,
           requests: solicitudes.length,
           meetings,
-          sourceAssignments
+          sourceAssignments,
         },
         null,
-        2
-      )
+        2,
+      ),
     );
     if (!applyChanges) {
       return;
@@ -42,11 +46,11 @@ async function main(): Promise<void> {
         {
           importedPrograms: programas.length,
           importedRequests: solicitudes.length,
-          importedMeetings: meetings
+          importedMeetings: meetings,
         },
         null,
-        2
-      )
+        2,
+      ),
     );
   } finally {
     await disconnectClients();

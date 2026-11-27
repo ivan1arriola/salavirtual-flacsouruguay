@@ -7,7 +7,7 @@ import { resolverEstadoSolicitudPorIntegraciones } from "./encuentros.domain";
 export async function cargarCredencialesEncuentro(
   db: PrismaClient,
   descifrar: (value: string) => string,
-  subject?: string | null
+  subject?: string | null,
 ): Promise<GoogleCalendarCredentials> {
   if (!subject) {
     throw new Error("Google Workspace no está configurado para modificar el encuentro.");
@@ -19,7 +19,10 @@ export async function cargarCredencialesEncuentro(
   return salaCred;
 }
 
-export async function recalcularSolicitud(tx: Prisma.TransactionClient, solicitudId: string): Promise<void> {
+export async function recalcularSolicitud(
+  tx: Prisma.TransactionClient,
+  solicitudId: string,
+): Promise<void> {
   const meetings = await tx.instanciaSala.findMany({
     where: { solicitudSalaId: solicitudId, estado: { not: "CANCELADA" } },
     orderBy: { inicioProgramadoAt: "asc" },
@@ -33,19 +36,21 @@ export async function recalcularSolicitud(tx: Prisma.TransactionClient, solicitu
           estadoIntegracion: true,
           joinUrl: true,
           codigoReunion: true,
-          errorIntegracion: true
-        }
-      }
-    }
+          errorIntegracion: true,
+        },
+      },
+    },
   });
   if (meetings.length === 0) {
     // Normal flows protect this invariant with the solicitud advisory lock.
     // Silently preserving aggregate values would hide a migration/manual-data
     // corruption and make later decisions use stale dates and flags.
-    throw new Error(`La solicitud ${solicitudId} no tiene instancias activas; requiere reparación de datos.`);
+    throw new Error(
+      `La solicitud ${solicitudId} no tiene instancias activas; requiere reparación de datos.`,
+    );
   }
   const estadosIntegracion = meetings.flatMap(({ eventosProveedor }) =>
-    eventosProveedor.map((event) => estadoIntegracionEfectivo(event))
+    eventosProveedor.map((event) => estadoIntegracionEfectivo(event)),
   );
   const estado = resolverEstadoSolicitudPorIntegraciones(estadosIntegracion);
   await tx.solicitudSala.update({
@@ -59,11 +64,13 @@ export async function recalcularSolicitud(tx: Prisma.TransactionClient, solicitu
       fechaInicioSolicitada: meetings[0].inicioProgramadoAt,
       fechaFinSolicitada: meetings.reduce(
         (latest, item) => (item.finProgramadoAt > latest ? item.finProgramadoAt : latest),
-        meetings[0].finProgramadoAt
+        meetings[0].finProgramadoAt,
       ),
-      requiereAsistenciaTecnica: meetings.some(({ requiereAsistenciaTecnica }) => requiereAsistenciaTecnica),
-      requiereGrabacion: meetings.some(({ requiereGrabacion }) => requiereGrabacion)
-    }
+      requiereAsistenciaTecnica: meetings.some(
+        ({ requiereAsistenciaTecnica }) => requiereAsistenciaTecnica,
+      ),
+      requiereGrabacion: meetings.some(({ requiereGrabacion }) => requiereGrabacion),
+    },
   });
 }
 
@@ -73,7 +80,7 @@ export async function auditarEncuentro(
   accion: string,
   entidadId: string,
   valorAnterior: Prisma.InputJsonValue | null,
-  valorNuevo: Prisma.InputJsonValue | null
+  valorNuevo: Prisma.InputJsonValue | null,
 ): Promise<void> {
   await tx.auditoria.create({
     data: {
@@ -82,7 +89,7 @@ export async function auditarEncuentro(
       entidadTipo: "InstanciaSala",
       entidadId,
       valorAnterior: valorAnterior ?? Prisma.JsonNull,
-      valorNuevo: valorNuevo ?? Prisma.JsonNull
-    }
+      valorNuevo: valorNuevo ?? Prisma.JsonNull,
+    },
   });
 }

@@ -20,7 +20,7 @@ export function AttendanceRawDownloads({ instanciaId }: Readonly<{ instanciaId: 
     try {
       const response = await fetch(
         `/api/v1/reuniones/instancias/${encodeURIComponent(instanciaId)}/asistencia/exportar/${fuente}?formato=${formato}`,
-        { credentials: "same-origin", cache: "no-store" }
+        { credentials: "same-origin", cache: "no-store" },
       );
       if (!response.ok) {
         const body = await response.json().catch(() => ({}));
@@ -30,7 +30,8 @@ export function AttendanceRawDownloads({ instanciaId }: Readonly<{ instanciaId: 
       const contentDisposition = response.headers.get("Content-Disposition") ?? "";
       const match = /filename="([a-zA-Z0-9_.-]+)"/.exec(contentDisposition);
       const filename =
-        match?.[1] ?? `asistencia_${instanciaId.replace(/[^a-zA-Z0-9_-]/g, "")}_${fuente}.${formato}`;
+        match?.[1] ??
+        `asistencia_${instanciaId.replace(/[^a-zA-Z0-9_-]/g, "")}_${fuente}.${formato}`;
       const url = URL.createObjectURL(blob);
       try {
         const anchor = document.createElement("a");
@@ -54,8 +55,8 @@ export function AttendanceRawDownloads({ instanciaId }: Readonly<{ instanciaId: 
       <div className="attendance-raw-export-intro">
         <h2 id="attendance-raw-export-title">Descargar datos por API</h2>
         <p>
-          Exportá por separado todos los registros disponibles en la última planilla sincronizada. CSV para
-          Excel o JSON para análisis técnico. No se agrupan ni concilian los eventos.
+          Exportá por separado todos los registros disponibles en la última planilla sincronizada.
+          CSV para Excel o JSON para análisis técnico. No se agrupan ni concilian los eventos.
         </p>
       </div>
       <div className="attendance-raw-export-buttons">

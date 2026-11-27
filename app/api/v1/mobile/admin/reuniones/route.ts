@@ -8,8 +8,10 @@ export async function GET(request: Request) {
     await requireMobileActor(request, ["ADMINISTRACION"]);
     const url = new URL(request.url);
     const today = new Date();
-    const from = url.searchParams.get("from") ?? new Date(today.getTime() - 7 * 24 * 3600_000).toISOString();
-    const to = url.searchParams.get("to") ?? new Date(today.getTime() + 90 * 24 * 3600_000).toISOString();
+    const from =
+      url.searchParams.get("from") ?? new Date(today.getTime() - 7 * 24 * 3600_000).toISOString();
+    const to =
+      url.searchParams.get("to") ?? new Date(today.getTime() + 90 * 24 * 3600_000).toISOString();
     const limitParam = url.searchParams.get("limit");
     const limit = limitParam === null ? 40 : Number(limitParam);
     const page = await listAdminMeetings(db, {
@@ -18,9 +20,10 @@ export async function GET(request: Request) {
       q: url.searchParams.get("q") || undefined,
       programId: url.searchParams.get("programId") || undefined,
       state: url.searchParams.get("state") || undefined,
-      coverage: (url.searchParams.get("coverage") || undefined) as "assigned" | "unassigned" | undefined,
+      coverage: (url.searchParams.get("coverage") || undefined) as
+        "assigned" | "unassigned" | undefined,
       cursor: url.searchParams.get("cursor") || undefined,
-      limit
+      limit,
     });
     return NextResponse.json(page);
   } catch (error) {

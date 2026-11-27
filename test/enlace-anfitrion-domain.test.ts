@@ -15,7 +15,9 @@ describe("quién puede ver el enlace de anfitrión de Zoom", () => {
   });
 
   it("un asistente técnico no, aunque comparta id con el titular por error de datos", () => {
-    expect(puedeVerEnlaceAnfitrion({ id: "docente-1", rol: "ASISTENTE_TECNICO" }, "docente-1")).toBe(false);
+    expect(
+      puedeVerEnlaceAnfitrion({ id: "docente-1", rol: "ASISTENTE_TECNICO" }, "docente-1"),
+    ).toBe(false);
   });
 
   it("cualquier otro rol no", () => {

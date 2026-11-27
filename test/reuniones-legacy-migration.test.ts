@@ -4,7 +4,7 @@ import {
   mapearEstadoInstanciaLegacy,
   mapearEstadoSolicitudLegacy,
   mapearTipoInstanciasLegacy,
-  normalizarNombrePrograma
+  normalizarNombrePrograma,
 } from "../src/modules/migracion/reuniones-legacy.domain";
 
 describe("mapeo funcional de reuniones Zoom", () => {
@@ -19,7 +19,7 @@ describe("mapeo funcional de reuniones Zoom", () => {
     ["CANCELADA", "CANCELADA"],
     ["PROVISIONANDO", "PROVISIONANDO"],
     ["REGISTRADA", "REQUIERE_REVISION"],
-    ["ESTADO_DESCONOCIDO", "REQUIERE_REVISION"]
+    ["ESTADO_DESCONOCIDO", "REQUIERE_REVISION"],
   ] as const)("mapea solicitud legacy %s a %s", (legacy, expected) => {
     expect(mapearEstadoSolicitudLegacy(legacy)).toBe(expected);
   });
@@ -29,7 +29,7 @@ describe("mapeo funcional de reuniones Zoom", () => {
     ["CANCELADO", "CANCELADA"],
     ["NO_REALIZADO", "NO_REALIZADA"],
     ["PROGRAMADO", "PROGRAMADA"],
-    ["DESCONOCIDO", "PROGRAMADA"]
+    ["DESCONOCIDO", "PROGRAMADA"],
   ] as const)("mapea instancia legacy %s a %s", (legacy, expected) => {
     expect(mapearEstadoInstanciaLegacy(legacy)).toBe(expected);
   });
@@ -40,7 +40,7 @@ describe("mapeo funcional de reuniones Zoom", () => {
     ["CANCELADO", "CANCELADO"],
     ["REASIGNADO", "CANCELADO"],
     ["ASIGNADO", "ASIGNADO"],
-    ["DESCONOCIDO", "ASIGNADO"]
+    ["DESCONOCIDO", "ASIGNADO"],
   ] as const)("mapea asignación legacy %s a %s", (legacy, expected) => {
     expect(mapearEstadoAsignacionLegacy(legacy)).toBe(expected);
   });

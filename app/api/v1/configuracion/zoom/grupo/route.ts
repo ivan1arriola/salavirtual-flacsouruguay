@@ -9,7 +9,7 @@ import {
   elegirGrupoZoom,
   listarGruposZoom,
   previsualizarSincronizacionConGrupo,
-  sincronizarCuentasZoomConGrupo
+  sincronizarCuentasZoomConGrupo,
 } from "@/src/modules/configuracion/api";
 
 export const runtime = "nodejs";
@@ -21,18 +21,23 @@ const ERROR_GRUPOS =
 const ERROR_GUARDAR = "No se pudo guardar el grupo de Zoom. Probá de nuevo.";
 const ERROR_SINCRONIZAR = "No se pudo sincronizar con el grupo de Zoom. Probá de nuevo más tarde.";
 const GRUPO_INVALIDO = "Elegí un grupo de Zoom válido.";
-const OPCIONES_INVALIDAS = "El pedido de sincronización no es válido. Recargá la página y probá de nuevo.";
+const OPCIONES_INVALIDAS =
+  "El pedido de sincronización no es válido. Recargá la página y probá de nuevo.";
 
 const grupoSchema = z.object(
   {
-    grupoId: z.string({ error: GRUPO_INVALIDO }).trim().min(1, GRUPO_INVALIDO).max(200, GRUPO_INVALIDO),
+    grupoId: z
+      .string({ error: GRUPO_INVALIDO })
+      .trim()
+      .min(1, GRUPO_INVALIDO)
+      .max(200, GRUPO_INVALIDO),
     grupoNombre: z
       .string({ error: "El nombre del grupo de Zoom es obligatorio." })
       .trim()
       .min(1, "El nombre del grupo de Zoom es obligatorio.")
-      .max(200, "El nombre del grupo de Zoom es demasiado largo.")
+      .max(200, "El nombre del grupo de Zoom es demasiado largo."),
   },
-  { error: GRUPO_INVALIDO }
+  { error: GRUPO_INVALIDO },
 );
 
 /** Cuerpo opcional del POST. El actor sale siempre de la sesión: cualquier otro campo se descarta. */
@@ -43,9 +48,9 @@ const sincronizarSchema = z.object(
     revision: z
       .string({ error: OPCIONES_INVALIDAS })
       .regex(/^[0-9a-f]{64}$/, OPCIONES_INVALIDAS)
-      .optional()
+      .optional(),
   },
-  { error: OPCIONES_INVALIDAS }
+  { error: OPCIONES_INVALIDAS },
 );
 
 export async function GET() {
@@ -74,13 +79,20 @@ export async function PUT(request: Request) {
 
   const parsed = grupoSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.issues[0]?.message ?? GRUPO_INVALIDO }, { status: 400 });
+    return NextResponse.json(
+      { error: parsed.error.issues[0]?.message ?? GRUPO_INVALIDO },
+      { status: 400 },
+    );
   }
 
   try {
     const { grupoId, grupoNombre } = parsed.data;
     await elegirGrupoZoom(db, { grupoId, grupoNombre, actorId: actor.id });
-    return NextResponse.json({ grupoId, grupoNombre, message: `Grupo de Zoom «${grupoNombre}» guardado.` });
+    return NextResponse.json({
+      grupoId,
+      grupoNombre,
+      message: `Grupo de Zoom «${grupoNombre}» guardado.`,
+    });
   } catch (error) {
     console.error("[zoom] No se pudo guardar el grupo de Zoom elegido", error);
     return NextResponse.json({ error: ERROR_GUARDAR }, { status: 500 });
@@ -103,7 +115,7 @@ export async function POST(request: Request) {
   if (!parsed.success) {
     return NextResponse.json(
       { error: parsed.error.issues[0]?.message ?? OPCIONES_INVALIDAS },
-      { status: 400 }
+      { status: 400 },
     );
   }
   const { vistaPrevia, confirmar, revision } = parsed.data;
@@ -111,14 +123,19 @@ export async function POST(request: Request) {
   try {
     if (vistaPrevia) {
       return NextResponse.json(
-        await previsualizarSincronizacionConGrupo(db, descifrarConfiguracion, new Date())
+        await previsualizarSincronizacionConGrupo(db, descifrarConfiguracion, new Date()),
       );
     }
-    const { ok, resumen } = await sincronizarCuentasZoomConGrupo(db, descifrarConfiguracion, new Date(), {
-      actorId: actor.id,
-      confirmar: confirmar ?? false,
-      ...(revision ? { revision } : {})
-    });
+    const { ok, resumen } = await sincronizarCuentasZoomConGrupo(
+      db,
+      descifrarConfiguracion,
+      new Date(),
+      {
+        actorId: actor.id,
+        confirmar: confirmar ?? false,
+        ...(revision ? { revision } : {}),
+      },
+    );
     return NextResponse.json({ ok, resumen });
   } catch (error) {
     console.error("[zoom] Falló la sincronización a pedido de las cuentas Zoom", error);
@@ -148,7 +165,7 @@ async function requireAdmin(): Promise<{ id: string } | NextResponse> {
   if (!actor?.activo || actor.rol !== "ADMINISTRACION") {
     return NextResponse.json(
       { error: "La sesión está desactualizada. Volvé a iniciar sesión." },
-      { status: 401 }
+      { status: 401 },
     );
   }
   return { id: actor.id };

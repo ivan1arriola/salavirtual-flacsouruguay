@@ -8,7 +8,7 @@ const google = vi.hoisted(() => ({
   rejectPost: false,
   rejectPatch: false,
   ignorePost: false,
-  code: "abc-defg-hij" as string | null
+  code: "abc-defg-hij",
 }));
 vi.mock("google-auth-library", () => ({
   JWT: class {
@@ -18,41 +18,44 @@ vi.mock("google-auth-library", () => ({
     }
     async request(options: Record<string, any>) {
       google.calls.push({ ...options, subject: this.subject });
-      const url = new URL(options.url);
+      const url = new URL(options["url"]);
       if (url.hostname === "www.googleapis.com") {
         return {
           data: {
             id: "event",
             attendees: [],
             hangoutLink: `https://meet.google.com/${google.code}`,
-            conferenceData: google.code ? { conferenceId: google.code } : null
-          }
+            conferenceData: google.code ? { conferenceId: google.code } : null,
+          },
         };
       }
-      if (url.pathname.endsWith("/members") && options.method === "GET") {
+      if (url.pathname.endsWith("/members") && options["method"] === "GET") {
         // Deliberately paginate. Confirmation must inspect all pages.
         return {
           data: url.searchParams.has("pageToken")
             ? { members: google.members.slice(1) }
             : {
                 members: google.members.slice(0, 1),
-                ...(google.members.length > 1 ? { nextPageToken: "next" } : {})
-              }
+                ...(google.members.length > 1 ? { nextPageToken: "next" } : {}),
+              },
         };
       }
-      if (url.pathname.endsWith("/members") && options.method === "POST") {
+      if (url.pathname.endsWith("/members") && options["method"] === "POST") {
         if (google.rejectPost) {
           throw new Error("403: insufficient authentication scopes");
         }
-        if (google.members.some((member) => member.email === options.data.email)) {
+        if (google.members.some((member) => member.email === options["data"].email)) {
           throw { code: 409 };
         }
         if (!google.ignorePost) {
-          google.members.push({ name: `spaces/space/members/${google.members.length + 1}`, ...options.data });
+          google.members.push({
+            name: `spaces/space/members/${google.members.length + 1}`,
+            ...options["data"],
+          });
         }
-        return { data: options.data };
+        return { data: options["data"] };
       }
-      if (options.method === "PATCH" && url.pathname.includes("/members/")) {
+      if (options["method"] === "PATCH" && url.pathname.includes("/members/")) {
         if (google.rejectPatch) {
           const err = new Error("No tenés permisos para modificar el rol de este miembro.");
           (err as any).code = 403;
@@ -62,35 +65,35 @@ vi.mock("google-auth-library", () => ({
         if (!member) {
           throw { code: 404 };
         }
-        member.role = options.data.role;
+        member.role = options["data"].role;
         return { data: member };
       }
-      if (options.method === "DELETE") {
+      if (options["method"] === "DELETE") {
         google.members = google.members.filter((member) => `/v2/${member.name}` !== url.pathname);
         return { data: {} };
       }
       return { data: { name: "spaces/space", config: { moderation: google.moderation } } };
     }
-  }
+  },
 }));
 
 import {
   configurarGoogleMeetExistente,
   crearGoogleCalendarProvider,
-  sincronizarCohostsGoogleExistente
+  sincronizarCohostsGoogleExistente,
 } from "../src/modules/meet/google-calendar.adapter";
 import {
   cohostsConfirmados,
   detalleCohostsVerificados,
   invalidarVerificacionCohosts,
-  registrarVerificacionCohosts
+  registrarVerificacionCohosts,
 } from "../src/modules/meet/cohost-verification.domain";
 import { requiereAtencionIntegracionMeet } from "../src/modules/meet/integration-health.domain";
 
 const credentials = {
   serviceAccountEmail: "service@example.iam.gserviceaccount.com",
   privateKey: "test-only",
-  subject: "sala01@flacso.edu.uy"
+  subject: "sala01@flacso.edu.uy",
 };
 const teacher = "docente@gmail.com";
 const assistant = "tecnico@otra.edu.uy";
@@ -108,58 +111,64 @@ beforeEach(() => {
 describe("asignación real de cohosts", () => {
   it("usa la API estable v2 de members para asignar cohosts inmediatamente", async () => {
     await configurarGoogleMeetExistente(credentials, "abc-defg-hij", { cohostEmails: [teacher] });
-    const memberCalls = google.calls.filter((call) => new URL(call.url).pathname.includes("/members"));
+    const memberCalls = google.calls.filter((call) =>
+      new URL(call["url"]).pathname.includes("/members"),
+    );
     assert.ok(memberCalls.length > 0);
-    assert.ok(memberCalls.every((call) => new URL(call.url).pathname.startsWith("/v2/")));
+    assert.ok(memberCalls.every((call) => new URL(call["url"]).pathname.startsWith("/v2/")));
   });
 
   it("asigna docentes Gmail y asistentes externos, manteniendo la sala como organizadora", async () => {
     await configurarGoogleMeetExistente(credentials, "abc-defg-hij", {
-      cohostEmails: [teacher, assistant, credentials.subject, ` ${teacher.toUpperCase()} `]
+      cohostEmails: [teacher, assistant, credentials.subject, ` ${teacher.toUpperCase()} `],
     });
     assert.deepEqual(
       google.members.map(({ email, role }) => ({ email, role })),
       [
         { email: teacher, role: "COHOST" },
-        { email: assistant, role: "COHOST" }
-      ]
+        { email: assistant, role: "COHOST" },
+      ],
     );
-    assert.ok(google.calls.every((call) => call.subject === credentials.subject));
-    assert.ok(google.calls.some((call) => call.url.includes("pageToken=next")));
+    assert.ok(google.calls.every((call) => call["subject"] === credentials.subject));
+    assert.ok(google.calls.some((call) => call["url"].includes("pageToken=next")));
   });
 
   it("promueve un miembro existente en lugar de aceptar 409 como prueba de cohost", async () => {
-    google.members = [{ name: "spaces/space/members/teacher", email: teacher, role: "ROLE_UNSPECIFIED" }];
+    google.members = [
+      { name: "spaces/space/members/teacher", email: teacher, role: "ROLE_UNSPECIFIED" },
+    ];
     await configurarGoogleMeetExistente(credentials, "abc-defg-hij", { cohostEmails: [teacher] });
     assert.equal(google.members[0].role, "COHOST");
     assert.equal(
       google.calls.filter(
-        (call) => call.method === "PATCH" && new URL(call.url).pathname.includes("/members/")
+        (call) => call["method"] === "PATCH" && new URL(call["url"]).pathname.includes("/members/"),
       ).length,
-      1
+      1,
     );
-    assert.equal(google.calls.filter((call) => call.method === "DELETE").length, 0);
+    assert.equal(google.calls.filter((call) => call["method"] === "DELETE").length, 0);
   });
 
   it("recrea el miembro con DELETE+POST si Google Meet rechaza PATCH con 'No tenés permisos para modificar el rol de este miembro.'", async () => {
-    google.members = [{ name: "spaces/space/members/teacher", email: teacher, role: "ROLE_UNSPECIFIED" }];
+    google.members = [
+      { name: "spaces/space/members/teacher", email: teacher, role: "ROLE_UNSPECIFIED" },
+    ];
     google.rejectPatch = true;
     await configurarGoogleMeetExistente(credentials, "abc-defg-hij", { cohostEmails: [teacher] });
     assert.equal(google.members[0].role, "COHOST");
-    assert.equal(google.calls.filter((call) => call.method === "DELETE").length, 1);
+    assert.equal(google.calls.filter((call) => call["method"] === "DELETE").length, 1);
   });
 
   it("no borra un miembro que ya tiene el rol correcto", async () => {
     google.members = [{ name: "spaces/space/members/teacher", email: teacher, role: "COHOST" }];
     await configurarGoogleMeetExistente(credentials, "abc-defg-hij", { cohostEmails: [teacher] });
-    assert.equal(google.calls.filter((call) => call.method === "DELETE").length, 0);
+    assert.equal(google.calls.filter((call) => call["method"] === "DELETE").length, 0);
   });
 
   it("rechaza una respuesta exitosa si Google no guardó el rol", async () => {
     google.ignorePost = true;
     await assert.rejects(
       configurarGoogleMeetExistente(credentials, "abc-defg-hij", { cohostEmails: [teacher] }),
-      /no confirmó los cohosts/
+      /no confirmó los cohosts/,
     );
   });
 
@@ -167,7 +176,7 @@ describe("asignación real de cohosts", () => {
     google.rejectPost = true;
     await assert.rejects(
       configurarGoogleMeetExistente(credentials, "abc-defg-hij", { cohostEmails: [teacher] }),
-      /insufficient authentication scopes/
+      /insufficient authentication scopes/,
     );
   });
 
@@ -175,7 +184,7 @@ describe("asignación real de cohosts", () => {
     google.moderation = "OFF";
     await assert.rejects(
       configurarGoogleMeetExistente(credentials, "abc-defg-hij", { cohostEmails: [teacher] }),
-      /administración de anfitriones/
+      /administración de anfitriones/,
     );
     assert.equal(google.members.length, 0);
   });
@@ -192,16 +201,16 @@ describe("asignación real de cohosts", () => {
           timezone: "UTC",
           calendarId: credentials.subject,
           calendarEventId: "id",
-          cohostEmails: [teacher]
+          cohostEmails: [teacher],
         },
         {
           externalEventId: "event",
           codigoReunion: "abc-defg-hij",
           joinUrl: "https://meet.google.com/abc-defg-hij",
-          payload: {}
-        }
+          payload: {},
+        },
       ),
-      /no confirmó los cohosts/
+      /no confirmó los cohosts/,
     );
   });
 
@@ -211,10 +220,10 @@ describe("asignación real de cohosts", () => {
       externalEventId: "event",
       codigoReunion: "old-code",
       cohostsAnteriores: [],
-      cohostsDeseados: [teacher]
+      cohostsDeseados: [teacher],
     });
-    assert.ok(google.calls.some((call) => call.url.endsWith("/spaces/abc-defg-hij")));
-    assert.ok(!google.calls.some((call) => call.url.includes("old-code")));
+    assert.ok(google.calls.some((call) => call["url"].endsWith("/spaces/abc-defg-hij")));
+    assert.ok(!google.calls.some((call) => call["url"].includes("old-code")));
     assert.equal(cohostsConfirmados(payload, google.code, credentials.subject, [teacher]), true);
   });
 
@@ -225,9 +234,9 @@ describe("asignación real de cohosts", () => {
         calendarId: credentials.subject,
         externalEventId: "event",
         cohostsAnteriores: [],
-        cohostsDeseados: [teacher]
+        cohostsDeseados: [teacher],
       }),
-      /no confirmó el espacio Meet/
+      /no confirmó el espacio Meet/,
     );
   });
 });
@@ -235,40 +244,52 @@ describe("asignación real de cohosts", () => {
 describe("estado visible de los cohosts", () => {
   it("no confunde datos locales o invitaciones Calendar con permisos verificados", () => {
     assert.equal(
-      cohostsConfirmados({ attendees: [{ email: teacher }] }, google.code, credentials.subject, [teacher]),
-      false
+      cohostsConfirmados({ attendees: [{ email: teacher }] }, google.code, credentials.subject, [
+        teacher,
+      ]),
+      false,
     );
     assert.equal(cohostsConfirmados(null, google.code, credentials.subject, [teacher]), false);
   });
   it("conserva metadatos y exige evidencia del mismo espacio, host y correos", () => {
     const payload = registrarVerificacionCohosts(
       { salaVirtual: { invitadosEmails: ["alumno@gmail.com"] } },
-      google.code!,
+      google.code,
       credentials.subject,
       [teacher],
-      "2026-09-11T15:00:00Z"
+      "2026-09-11T15:00:00Z",
     );
-    assert.deepEqual((payload.salaVirtual as Record<string, unknown>).invitadosEmails, ["alumno@gmail.com"]);
+    assert.deepEqual((payload["salaVirtual"] as Record<string, unknown>)["invitadosEmails"], [
+      "alumno@gmail.com",
+    ]);
     assert.equal(cohostsConfirmados(payload, google.code, credentials.subject, [teacher]), true);
     assert.equal(cohostsConfirmados(payload, "otro", credentials.subject, [teacher]), false);
-    assert.equal(cohostsConfirmados(payload, google.code, "sala02@flacso.edu.uy", [teacher]), false);
-    assert.equal(cohostsConfirmados(payload, google.code, credentials.subject, [teacher, assistant]), false);
     assert.equal(
-      cohostsConfirmados(invalidarVerificacionCohosts(payload), google.code, credentials.subject, [teacher]),
-      false
+      cohostsConfirmados(payload, google.code, "sala02@flacso.edu.uy", [teacher]),
+      false,
+    );
+    assert.equal(
+      cohostsConfirmados(payload, google.code, credentials.subject, [teacher, assistant]),
+      false,
+    );
+    assert.equal(
+      cohostsConfirmados(invalidarVerificacionCohosts(payload), google.code, credentials.subject, [
+        teacher,
+      ]),
+      false,
     );
   });
   it("discrimina cohosts confirmados de pendientes cuando se agrega un nuevo cohost no verificado", () => {
     const payload = registrarVerificacionCohosts(
       {},
-      google.code!,
+      google.code,
       credentials.subject,
       [teacher],
-      "2026-09-11T15:00:00Z"
+      "2026-09-11T15:00:00Z",
     );
     const detalle = detalleCohostsVerificados(payload, google.code, credentials.subject, [
       teacher,
-      assistant
+      assistant,
     ]);
     assert.equal(detalle.confirmados, false);
     assert.deepEqual(detalle.emailsConfirmados, [teacher]);
@@ -280,9 +301,9 @@ describe("estado visible de los cohosts", () => {
         requiereAtencionIntegracionMeet({
           estadoIntegracion,
           joinUrl: "https://meet.google.com/abc-defg-hij",
-          errorIntegracion: "insufficient authentication scopes"
+          errorIntegracion: "insufficient authentication scopes",
         }),
-        true
+        true,
       );
     }
   });

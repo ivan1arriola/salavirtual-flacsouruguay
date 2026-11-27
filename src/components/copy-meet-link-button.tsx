@@ -5,7 +5,7 @@ import { useState } from "react";
 
 export function CopyMeetLinkButton({
   url,
-  title = "Copiar enlace de la reunión"
+  title = "Copiar enlace de la reunión",
 }: Readonly<{ url: string; title?: string }>) {
   const [copied, setCopied] = useState(false);
 
@@ -32,7 +32,7 @@ export function MeetLinkActions({
   openClassName = "text-link",
   iconOnly = false,
   className = "",
-  provider = "GOOGLE_MEET"
+  provider = "GOOGLE_MEET",
 }: Readonly<{
   url: string;
   openClassName?: string;
@@ -40,7 +40,8 @@ export function MeetLinkActions({
   className?: string;
   provider?: "GOOGLE_MEET" | "ZOOM" | "ZOOM_HISTORICO";
 }>) {
-  const openLabel = provider === "ZOOM" || provider === "ZOOM_HISTORICO" ? "Abrir Zoom" : "Abrir Meet";
+  const openLabel =
+    provider === "ZOOM" || provider === "ZOOM_HISTORICO" ? "Abrir Zoom" : "Abrir Meet";
   return (
     <span className={`meet-link-actions ${className}`.trim()}>
       <a className={openClassName} href={url} rel="noreferrer" target="_blank" title={openLabel}>

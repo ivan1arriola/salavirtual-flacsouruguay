@@ -1,54 +1,51 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
-  session: { user: { id: "user-1", email: "admin@example.org" } } as null | {
-    user: { id: string; email: string };
-  },
-  actor: { id: "user-1", activo: true, rol: "ADMINISTRACION" } as {
-    id: string;
-    activo: boolean;
-    rol: string;
-  } | null,
+  session: { user: { id: "user-1", email: "admin@example.org" } },
+  actor: { id: "user-1", activo: true, rol: "ADMINISTRACION" },
   findUnique: vi.fn(),
   canAccess: vi.fn(),
   config: vi.fn(),
   readSheet: vi.fn(),
-  jwt: vi.fn()
+  jwt: vi.fn(),
 }));
 
 vi.mock("next/server", () => ({
   NextResponse: {
     json: (body: unknown, init?: { status?: number; headers?: Record<string, string> }) =>
-      new Response(JSON.stringify(body), { status: init?.status ?? 200, headers: init?.headers })
-  }
+      new Response(JSON.stringify(body), { status: init?.status ?? 200, headers: init?.headers }),
+  },
 }));
 vi.mock("@/auth", () => ({ auth: async () => mocks.session }));
 vi.mock("@/src/lib/db", () => ({
-  db: { instanciaSala: { findUnique: (...args: unknown[]) => mocks.findUnique(...args) } }
+  db: { instanciaSala: { findUnique: (...args: unknown[]) => mocks.findUnique(...args) } },
 }));
 vi.mock("@/src/lib/auth/session-actor.adapter", () => ({
-  resolveSessionActor: async () => mocks.actor
+  resolveSessionActor: async () => mocks.actor,
 }));
 vi.mock("@/src/lib/config/encryption", () => ({ descifrarConfiguracion: () => "private" }));
 vi.mock("@/src/bootstrap/archivos.server", () => ({
-  crearArchivosRepository: () => ({ obtenerConfiguracionWorkspacePrincipal: () => mocks.config() })
+  crearArchivosRepository: () => ({ obtenerConfiguracionWorkspacePrincipal: () => mocks.config() }),
 }));
 vi.mock("@/src/modules/reuniones/permisos-programa.service", () => ({
-  puedeGestionarPrograma: (...args: unknown[]) => mocks.canAccess(...args)
+  puedeGestionarPrograma: (...args: unknown[]) => mocks.canAccess(...args),
 }));
 vi.mock("@/src/integrations/google", () => ({
   crearGoogleAuthJwt: (...args: unknown[]) => mocks.jwt(...args),
-  conReintentosGoogleLectura: vi.fn()
+  conReintentosGoogleLectura: vi.fn(),
 }));
-vi.mock("@/src/modules/archivos/infrastructure/google/google-attendance-sheet-reader.client", () => ({
-  leerPlanillaAsistenciaGoogle: (...args: unknown[]) => mocks.readSheet(...args)
-}));
+vi.mock(
+  "@/src/modules/archivos/infrastructure/google/google-attendance-sheet-reader.client",
+  () => ({
+    leerPlanillaAsistenciaGoogle: (...args: unknown[]) => mocks.readSheet(...args),
+  }),
+);
 
 import { GET } from "../app/api/v1/reuniones/instancias/[instanciaId]/asistencia/exportar/[fuente]/route";
 
 const url = (fuente: string, formato = "csv") =>
   new Request(
-    `https://flacso.test/api/v1/reuniones/instancias/inst-1/asistencia/exportar/${fuente}?formato=${formato}`
+    `https://flacso.test/api/v1/reuniones/instancias/inst-1/asistencia/exportar/${fuente}?formato=${formato}`,
   );
 const ctx = (fuente: string) => ({ params: Promise.resolve({ instanciaId: "inst-1", fuente }) });
 
@@ -64,16 +61,16 @@ beforeEach(() => {
       {
         codigoReunion: "abc-def-ghi",
         cuentaProveedor: { emailOrganizador: "host@flacso.edu.uy" },
-        archivos: [{ driveFileId: "sheet-1", mimeType: "application/vnd.google-apps.spreadsheet" }]
-      }
-    ]
+        archivos: [{ driveFileId: "sheet-1", mimeType: "application/vnd.google-apps.spreadsheet" }],
+      },
+    ],
   });
   mocks.canAccess.mockResolvedValue(true);
   mocks.jwt.mockReturnValue({});
   mocks.config.mockResolvedValue({
     activa: true,
     serviceAccountEmail: "service@example.org",
-    privateKeyCifrada: "encrypted"
+    privateKeyCifrada: "encrypted",
   });
   mocks.readSheet.mockResolvedValue({
     asistencia: [],
@@ -90,7 +87,7 @@ beforeEach(() => {
         "2026-10-21T12:20:00Z",
         1200,
         "conf-1",
-        "session-1"
+        "session-1",
       ],
       [
         "REPORTS",
@@ -102,9 +99,9 @@ beforeEach(() => {
         "2026-10-21T12:30:00Z",
         1800,
         "audit",
-        "endpoint"
-      ]
-    ]
+        "endpoint",
+      ],
+    ],
   });
 });
 
@@ -128,7 +125,7 @@ describe("descargas por encuentro y API", () => {
     expect(res.status).toBe(200);
     expect(res.headers.get("content-type")).toContain("text/csv");
     expect(res.headers.get("content-disposition")).toMatch(
-      /attachment; filename="asistencia_\d+_inst-1_meet.csv"/
+      /attachment; filename="asistencia_\d+_inst-1_meet.csv"/,
     );
     expect(res.headers.get("cache-control")).toContain("no-store");
     const body = await res.text();
@@ -155,7 +152,7 @@ describe("descargas por encuentro y API", () => {
     mocks.readSheet.mockResolvedValue({
       asistencia: [],
       responsables: [],
-      datosBrutos: [["Fuente"], ["MEET", "Alumno"]]
+      datosBrutos: [["Fuente"], ["MEET", "Alumno"]],
     });
     const res = await GET(url("reports"), ctx("reports"));
     expect(res.status).toBe(409);
@@ -165,9 +162,9 @@ describe("descargas por encuentro y API", () => {
   it("no admite identificadores de hojas elegidos desde el navegador", async () => {
     const response = await GET(
       new Request(
-        "https://flacso.test/api/v1/reuniones/instancias/inst-1/asistencia/exportar/meet?spreadsheetId=other"
+        "https://flacso.test/api/v1/reuniones/instancias/inst-1/asistencia/exportar/meet?spreadsheetId=other",
       ),
-      ctx("meet")
+      ctx("meet"),
     );
     expect(response.status).toBe(200);
     expect(mocks.readSheet).toHaveBeenCalledWith(expect.anything(), "sheet-1");

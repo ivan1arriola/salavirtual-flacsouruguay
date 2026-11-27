@@ -3,6 +3,9 @@ export {
   construirCorreoReporteMensual,
   etiquetaMes,
   formatearDuracion,
-  periodoMesAnteriorUtc3
+  periodoMesAnteriorUtc3,
 } from "@/src/modules/liquidaciones/domain";
-export type { CorreoReporteMensual, PeriodoReporteMensual } from "@/src/modules/liquidaciones/domain";
+export type {
+  CorreoReporteMensual,
+  PeriodoReporteMensual,
+} from "@/src/modules/liquidaciones/domain";

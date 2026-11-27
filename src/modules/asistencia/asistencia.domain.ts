@@ -11,6 +11,6 @@ export {
   postulacionAsistenciaSchema,
   puedeAsignarAsistencia,
   puedeGestionarPostulacion,
-  reporteDuracionSchema
+  reporteDuracionSchema,
 } from "./domain/asistencia.domain";
 export type { PeriodoAsistencia } from "./domain/asistencia.types";

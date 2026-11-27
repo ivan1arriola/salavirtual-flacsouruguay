@@ -4,7 +4,9 @@ import type { AuditoriaRepository } from "../ports/auditoria.port";
 
 type PrismaAuditoriaClient = Pick<PrismaClient, "auditoria">;
 
-export function crearPrismaAuditoriaAdapter(prismaOrTx: PrismaAuditoriaClient): AuditoriaRepository {
+export function crearPrismaAuditoriaAdapter(
+  prismaOrTx: PrismaAuditoriaClient,
+): AuditoriaRepository {
   return {
     async registrar(evento: EventoAuditoria): Promise<void> {
       await prismaOrTx.auditoria.create({
@@ -16,9 +18,9 @@ export function crearPrismaAuditoriaAdapter(prismaOrTx: PrismaAuditoriaClient): 
           valorAnterior: (evento.valorAnterior as any) ?? undefined,
           valorNuevo: (evento.valorNuevo as any) ?? undefined,
           correlacionId: evento.correlacionId ?? null,
-          createdAt: evento.timestamp
-        }
+          createdAt: evento.timestamp,
+        },
       });
-    }
+    },
   };
 }

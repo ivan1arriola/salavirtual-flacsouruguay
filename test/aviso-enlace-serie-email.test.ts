@@ -8,10 +8,10 @@ const base = {
   encuentros: [
     { fecha: "martes 10 de noviembre", horario: "10:00–12:00 h" },
     { fecha: "martes 17 de noviembre", horario: "10:00–12:00 h" },
-    { fecha: "martes 24 de noviembre", horario: "10:00–12:00 h" }
+    { fecha: "martes 24 de noviembre", horario: "10:00–12:00 h" },
   ],
   urlZoom: "https://flacso.zoom.us/j/123456789?pwd=abc",
-  tipo: "MIGRACION_SERIE" as const
+  tipo: "MIGRACION_SERIE" as const,
 };
 
 describe("correo de cambio de enlace por serie", () => {

@@ -11,8 +11,8 @@ describe("pestañas Meet y Zoom", () => {
     const html = renderToStaticMarkup(
       createElement(ProveedorTabs, {
         activo: "ZOOM",
-        filtros: { vista: "encuentros", q: "Brou", periodo: "anteriores" }
-      })
+        filtros: { vista: "encuentros", q: "Brou", periodo: "anteriores" },
+      }),
     );
     expect(html).toContain("proveedor=meet&amp;vista=encuentros&amp;q=Brou&amp;periodo=anteriores");
   });
@@ -24,7 +24,7 @@ describe("pestañas Meet y Zoom", () => {
     expect(html).toContain('href="/reuniones?proveedor=meet"');
     expect(html).toContain('href="/reuniones?proveedor=zoom"');
     expect(html.indexOf('href="/reuniones?proveedor=zoom"')).toBeLessThan(
-      html.indexOf('href="/reuniones?proveedor=meet"')
+      html.indexOf('href="/reuniones?proveedor=meet"'),
     );
     const activa = html.match(/aria-current="page"[^>]*>[\s\S]*?<\/a>/)?.[0] ?? "";
     expect(activa).toContain("Zoom");
@@ -38,8 +38,8 @@ describe("aviso de encuentros en el otro proveedor", () => {
       createElement(OtroProveedorAviso, {
         proveedor: "GOOGLE_MEET",
         cantidad: 3,
-        href: "/reuniones/s1?proveedor=meet"
-      })
+        href: "/reuniones/s1?proveedor=meet",
+      }),
     );
     expect(html).toContain("3 encuentros");
     expect(html).toContain("Meet");
@@ -51,8 +51,8 @@ describe("aviso de encuentros en el otro proveedor", () => {
       createElement(OtroProveedorAviso, {
         proveedor: "ZOOM",
         cantidad: 1,
-        href: "/reuniones/s1?proveedor=zoom"
-      })
+        href: "/reuniones/s1?proveedor=zoom",
+      }),
     );
     expect(html).toContain("1 encuentro ");
     expect(html).toContain("Zoom");
@@ -82,12 +82,17 @@ describe("rutas de reuniones con las dos pestañas", () => {
   });
 
   it("el detalle elige el panel por proveedor, filtra los encuentros y muestra el aviso", () => {
-    expect(leer("app/(gestion)/reuniones/[solicitudId]/page.tsx")).toContain("reunion-detalle-page.server");
+    expect(leer("app/(gestion)/reuniones/[solicitudId]/page.tsx")).toContain(
+      "reunion-detalle-page.server",
+    );
     const despachador = leer("src/bootstrap/ui/reuniones/reunion-detalle-page.server.tsx");
     expect(despachador).toContain("elegirProveedorDetalle");
     expect(despachador).toContain("ReunionZoomDetailPage");
     expect(despachador).toContain("ReunionDetailPage");
-    for (const archivo of ["reunion-zoom-detail-page.server.tsx", "reunion-detail-page.server.tsx"]) {
+    for (const archivo of [
+      "reunion-zoom-detail-page.server.tsx",
+      "reunion-detail-page.server.tsx",
+    ]) {
       const fuente = leer(`src/bootstrap/ui/reuniones/${archivo}`);
       expect(fuente, archivo).toContain("proveedorActivoDeInstancia");
       expect(fuente, archivo).toContain("OtroProveedorAviso");

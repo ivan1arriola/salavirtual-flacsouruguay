@@ -4,5 +4,5 @@ export {
   esCorreoAcceso,
   evaluarAccesoLocal,
   type UsuarioCredenciales,
-  type UsuarioAutenticado
+  type UsuarioAutenticado,
 } from "@/src/modules/identity/api";

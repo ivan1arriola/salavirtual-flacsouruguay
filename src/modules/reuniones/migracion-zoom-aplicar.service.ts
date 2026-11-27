@@ -3,14 +3,17 @@ import { ForbiddenApiError, ValidationApiError } from "@/src/lib/http/api-error"
 import { seleccionarEventoProveedorActivo } from "./evento-proveedor-activo.domain";
 import { CUENTA_ZOOM_ASIGNABLE } from "./cuenta-asignable.domain";
 import { prepararCambioEnlaceCalendarZoom } from "./migracion-zoom-calendar.domain";
-import { meetPreparadoParaMigracion, planificarMigracionZoom } from "./migracion-zoom-preview.domain";
+import {
+  meetPreparadoParaMigracion,
+  planificarMigracionZoom,
+} from "./migracion-zoom-preview.domain";
 import { bloquearReservaSalas } from "./reserva-salas.adapter";
 import { construirFiltroSerieSolicitud } from "./serie-reunion.domain";
 import { esUrlZoom } from "./migracion-zoom-aviso-email.domain";
 import {
   notificarMigracionZoom,
   type EnviarCorreoMigracion,
-  type ResumenAvisosMigracion
+  type ResumenAvisosMigracion,
 } from "./migracion-zoom-avisos.service";
 
 type Actor = Readonly<{ id: string; rol: string }>;
@@ -33,15 +36,21 @@ export type DependenciasMigracionZoom = Readonly<{
   db: PrismaClient;
   /** Provisión Zoom existente (reutiliza el externalEventId persistido). */
   sincronizarEventos: (
-    ids: readonly string[]
+    ids: readonly string[],
   ) => Promise<readonly Readonly<{ estado: string; error?: string }>[]>;
   /** GET real a Zoom; devuelve el join_url vigente. */
   verificarReunionZoom: (meetingId: string) => Promise<Readonly<{ joinUrl: string }>>;
   calendar: Readonly<{
-    obtener: (input: Readonly<{ calendarId: string; eventId: string }>) => Promise<EventoCalendarMigracion>;
+    obtener: (
+      input: Readonly<{ calendarId: string; eventId: string }>,
+    ) => Promise<EventoCalendarMigracion>;
     /** PATCH con conferenceDataVersion=1 y sendUpdates=none. */
     actualizar: (
-      input: Readonly<{ calendarId: string; eventId: string; cambio: Readonly<Record<string, unknown>> }>
+      input: Readonly<{
+        calendarId: string;
+        eventId: string;
+        cambio: Readonly<Record<string, unknown>>;
+      }>,
     ) => Promise<void>;
   }>;
   /** Transporte de correo para los avisos posteriores al cambio. Sin él no se avisa. */
@@ -64,7 +73,7 @@ class FalloEtapa extends Error {
     public readonly etapa: ResultadoMigracionInstancia["etapa"],
     message: string,
     public readonly reintentable = true,
-    public readonly omitida = false
+    public readonly omitida = false,
   ) {
     super(message);
   }
@@ -79,7 +88,9 @@ const seleccionInstancia = {
   finProgramadoAt: true,
   proveedorActivoTipo: true,
   conservarGoogleMeet: true,
-  solicitud: { select: { serieReunionId: true, docenteProgramaId: true, titulo: true, createdAt: true } },
+  solicitud: {
+    select: { serieReunionId: true, docenteProgramaId: true, titulo: true, createdAt: true },
+  },
   eventosProveedor: {
     select: {
       id: true,
@@ -89,9 +100,9 @@ const seleccionInstancia = {
       operacionPendiente: true,
       cuentaProveedorId: true,
       cuentaProveedor: { select: { emailOrganizador: true } },
-      proveedor: { select: { tipo: true } }
-    }
-  }
+      proveedor: { select: { tipo: true } },
+    },
+  },
 } satisfies Prisma.InstanciaSalaSelect;
 
 /**
@@ -102,7 +113,7 @@ const seleccionInstancia = {
 export async function aplicarMigracionZoom(
   deps: DependenciasMigracionZoom,
   actor: Actor,
-  input: Readonly<{ modo: ModoMigracionZoom; instanciaIds: readonly string[] }>
+  input: Readonly<{ modo: ModoMigracionZoom; instanciaIds: readonly string[] }>,
 ): Promise<readonly ResultadoMigracionInstancia[]> {
   if (actor.rol !== "ADMINISTRACION") {
     throw new ForbiddenApiError("Solo Administración puede aplicar la migración a Zoom.");
@@ -129,7 +140,7 @@ export async function aplicarMigracionZoom(
           resultado: error.omitida ? "OMITIDA" : "ERROR",
           etapa: error.etapa,
           mensaje: error.message,
-          reintentable: error.reintentable
+          reintentable: error.reintentable,
         });
       } else {
         resultados.push({
@@ -137,7 +148,7 @@ export async function aplicarMigracionZoom(
           resultado: "ERROR",
           etapa: "FINAL",
           mensaje: error instanceof Error ? error.message : "Error inesperado.",
-          reintentable: true
+          reintentable: true,
         });
       }
     }
@@ -157,26 +168,32 @@ type PreparacionMigracion = Readonly<{
 /** Revalida bajo bloqueo y deja la fila Zoom lista (pendiente o reanudable). */
 async function prepararBajoBloqueo(
   deps: DependenciasMigracionZoom,
-  instanciaId: string
+  instanciaId: string,
 ): Promise<PreparacionMigracion> {
   const ahora = (deps.ahora ?? (() => new Date()))();
   return deps.db.$transaction(async (tx) => {
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${lockKey(instanciaId)}))`;
     const instancia = await tx.instanciaSala.findUnique({
       where: { id: instanciaId },
-      select: seleccionInstancia
+      select: seleccionInstancia,
     });
     if (!instancia) {
       throw new FalloEtapa("VALIDACION", "El encuentro no existe.", false, true);
     }
 
-    const meet = instancia.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "GOOGLE_MEET");
+    const meet = instancia.eventosProveedor.find(
+      ({ proveedor }) => proveedor.tipo === "GOOGLE_MEET",
+    );
     const zoom = instancia.eventosProveedor.find(({ proveedor }) => proveedor.tipo === "ZOOM");
     const activo = seleccionarEventoProveedorActivo(instancia)?.proveedor.tipo ?? null;
 
     if (activo === "ZOOM") {
       if (!zoom) {
-        throw new FalloEtapa("VALIDACION", "El proveedor activo es Zoom pero falta su evento.", false);
+        throw new FalloEtapa(
+          "VALIDACION",
+          "El proveedor activo es Zoom pero falta su evento.",
+          false,
+        );
       }
       return {
         yaZoom: true,
@@ -184,15 +201,20 @@ async function prepararBajoBloqueo(
         calendarId: "",
         calendarEventId: "",
         meetJoinUrl: "",
-        meetEventoId: meet?.id ?? ""
+        meetEventoId: meet?.id ?? "",
       };
     }
-    if (!meet || !meet.joinUrl || !meet.externalEventId || !meet.cuentaProveedor?.emailOrganizador) {
+    if (
+      !meet ||
+      !meet.joinUrl ||
+      !meet.externalEventId ||
+      !meet.cuentaProveedor?.emailOrganizador
+    ) {
       throw new FalloEtapa(
         "VALIDACION",
         "El evento Meet no tiene calendario, evento o enlace verificables.",
         false,
-        true
+        true,
       );
     }
 
@@ -207,7 +229,7 @@ async function prepararBajoBloqueo(
     const hostsDb = await tx.cuentaProveedor.findMany({
       where: { ...CUENTA_ZOOM_ASIGNABLE, proveedor: { tipo: "ZOOM" } },
       orderBy: [{ prioridad: "asc" }, { id: "asc" }],
-      select: { id: true, emailOrganizador: true, prioridad: true, limiteConcurrente: true }
+      select: { id: true, emailOrganizador: true, prioridad: true, limiteConcurrente: true },
     });
     const hosts = zoom?.cuentaProveedorId
       ? hostsDb.filter(({ id }) => id === zoom.cuentaProveedorId)
@@ -220,27 +242,29 @@ async function prepararBajoBloqueo(
       where: {
         estado: "PROGRAMADA",
         inicioProgramadoAt: { gt: ahora },
-        solicitud: construirFiltroSerieSolicitud(instancia.solicitud)
-      }
+        solicitud: construirFiltroSerieSolicitud(instancia.solicitud),
+      },
     });
     const reservas = await tx.eventoProveedor.findMany({
       where: {
         proveedor: { tipo: "ZOOM" },
         cuentaProveedorId: { not: null },
         instanciaSalaId: { not: instanciaId },
-        instancia: { estado: { in: ["PROGRAMADA", "EN_CURSO"] }, finProgramadoAt: { gt: ahora } }
+        instancia: { estado: { in: ["PROGRAMADA", "EN_CURSO"] }, finProgramadoAt: { gt: ahora } },
       },
       select: {
         cuentaProveedorId: true,
-        instancia: { select: { inicioProgramadoAt: true, finProgramadoAt: true } }
-      }
+        instancia: { select: { inicioProgramadoAt: true, finProgramadoAt: true } },
+      },
     });
     const [fila] = planificarMigracionZoom({
       ahora,
       margenSeguridadHoras: MARGEN_SEGURIDAD_HORAS_APLICAR,
       hosts: hosts.map((host) => ({ ...host, limiteConcurrente: 1 })),
       reservasZoom: reservas.flatMap(({ cuentaProveedorId, instancia: i }) =>
-        cuentaProveedorId ? [{ cuentaProveedorId, inicio: i.inicioProgramadoAt, fin: i.finProgramadoAt }] : []
+        cuentaProveedorId
+          ? [{ cuentaProveedorId, inicio: i.inicioProgramadoAt, fin: i.finProgramadoAt }]
+          : [],
       ),
       candidatos: [
         {
@@ -252,21 +276,21 @@ async function prepararBajoBloqueo(
           conservarGoogleMeet: instancia.conservarGoogleMeet,
           meetPreparado: meetPreparadoParaMigracion({
             ...meet,
-            emailOrganizador: meet.cuentaProveedor?.emailOrganizador ?? null
+            emailOrganizador: meet.cuentaProveedor?.emailOrganizador ?? null,
           }),
           meetJoinUrl: meet.joinUrl,
           cuentaZoomPreferidaId,
           zoomSincronizado: false,
-          encuentrosSerie
-        }
-      ]
+          encuentrosSerie,
+        },
+      ],
     });
     if (fila?.estado === "SERIE") {
       throw new FalloEtapa(
         "VALIDACION",
         "La serie tiene varios encuentros: la migración debe hacerse por serie completa y todavía no está disponible.",
         false,
-        true
+        true,
       );
     }
     if (fila?.estado !== "MIGRABLE" || !fila.hostId) {
@@ -274,7 +298,7 @@ async function prepararBajoBloqueo(
         "VALIDACION",
         `El encuentro ya no es migrable (${fila?.estado ?? "sin datos"}).`,
         false,
-        true
+        true,
       );
     }
 
@@ -290,7 +314,11 @@ async function prepararBajoBloqueo(
         // Conserva externalEventId: la reanudación consulta la reunión existente.
         await tx.eventoProveedor.update({
           where: { id: zoom.id },
-          data: { operacionPendiente: "PROVISIONAR", estadoIntegracion: "PENDIENTE", errorIntegracion: null }
+          data: {
+            operacionPendiente: "PROVISIONAR",
+            estadoIntegracion: "PENDIENTE",
+            errorIntegracion: null,
+          },
         });
       }
     } else {
@@ -299,9 +327,9 @@ async function prepararBajoBloqueo(
           instanciaSalaId: instanciaId,
           proveedorId: proveedorZoom.id,
           cuentaProveedorId: fila.hostId,
-          operacionPendiente: "PROVISIONAR"
+          operacionPendiente: "PROVISIONAR",
         },
-        select: { id: true }
+        select: { id: true },
       });
       zoomEventoId = creado.id;
     }
@@ -312,7 +340,7 @@ async function prepararBajoBloqueo(
       calendarId: meet.cuentaProveedor.emailOrganizador,
       calendarEventId: meet.externalEventId,
       meetJoinUrl: meet.joinUrl,
-      meetEventoId: meet.id
+      meetEventoId: meet.id,
     };
   });
 }
@@ -320,15 +348,19 @@ async function prepararBajoBloqueo(
 async function migrarInstancia(
   deps: DependenciasMigracionZoom,
   actor: Actor,
-  instanciaId: string
+  instanciaId: string,
 ): Promise<ResultadoMigracionInstancia> {
   const prep = await prepararBajoBloqueo(deps, instanciaId);
   if (prep.yaZoom) {
     // Reintento tras un cambio hecho por esta migración: completa solo los avisos
     // pendientes. Un encuentro que nació en Zoom (sin auditoría) no recibe aviso.
     const migrado = await deps.db.auditoria.findFirst({
-      where: { accion: "MIGRACION_ZOOM_APLICADA", entidadTipo: "InstanciaSala", entidadId: instanciaId },
-      select: { id: true }
+      where: {
+        accion: "MIGRACION_ZOOM_APLICADA",
+        entidadTipo: "InstanciaSala",
+        entidadId: instanciaId,
+      },
+      select: { id: true },
     });
     if (!migrado) {
       return { instanciaId, resultado: "YA_ZOOM", etapa: "FINAL", reintentable: false };
@@ -339,7 +371,7 @@ async function migrarInstancia(
       resultado: "YA_ZOOM",
       etapa: "FINAL",
       reintentable: avisos.estado === "PARCIAL",
-      avisos
+      avisos,
     };
   }
 
@@ -347,7 +379,10 @@ async function migrarInstancia(
   try {
     await deps.sincronizarEventos([prep.zoomEventoId]);
   } catch (error) {
-    throw new FalloEtapa("ZOOM", error instanceof Error ? error.message : "Falló la provisión de Zoom.");
+    throw new FalloEtapa(
+      "ZOOM",
+      error instanceof Error ? error.message : "Falló la provisión de Zoom.",
+    );
   }
   const zoom = await deps.db.eventoProveedor.findUnique({
     where: { id: prep.zoomEventoId },
@@ -356,8 +391,8 @@ async function migrarInstancia(
       joinUrl: true,
       estadoIntegracion: true,
       operacionPendiente: true,
-      errorIntegracion: true
-    }
+      errorIntegracion: true,
+    },
   });
   if (
     !zoom ||
@@ -365,13 +400,19 @@ async function migrarInstancia(
     zoom.operacionPendiente ||
     !zoom.externalEventId
   ) {
-    throw new FalloEtapa("ZOOM", zoom?.errorIntegracion || "La reunión Zoom todavía no quedó sincronizada.");
+    throw new FalloEtapa(
+      "ZOOM",
+      zoom?.errorIntegracion || "La reunión Zoom todavía no quedó sincronizada.",
+    );
   }
   let joinUrl: string;
   try {
     joinUrl = (await deps.verificarReunionZoom(zoom.externalEventId)).joinUrl;
   } catch (error) {
-    throw new FalloEtapa("ZOOM", error instanceof Error ? error.message : "No se pudo verificar Zoom.");
+    throw new FalloEtapa(
+      "ZOOM",
+      error instanceof Error ? error.message : "No se pudo verificar Zoom.",
+    );
   }
   if (!esUrlZoom(joinUrl)) {
     throw new FalloEtapa("ZOOM", "Zoom devolvió un enlace de acceso inválido.", false);
@@ -400,7 +441,7 @@ async function migrarInstancia(
   } catch (error) {
     throw new FalloEtapa(
       "CALENDAR",
-      error instanceof Error ? error.message : "Falló la actualización de Google Calendar."
+      error instanceof Error ? error.message : "Falló la actualización de Google Calendar.",
     );
   }
 
@@ -414,14 +455,14 @@ async function migrarInstancia(
           id: instanciaId,
           estado: "PROGRAMADA",
           conservarGoogleMeet: false,
-          OR: [{ proveedorActivoTipo: null }, { proveedorActivoTipo: "GOOGLE_MEET" }]
+          OR: [{ proveedorActivoTipo: null }, { proveedorActivoTipo: "GOOGLE_MEET" }],
         },
-        data: { proveedorActivoTipo: "ZOOM" }
+        data: { proveedorActivoTipo: "ZOOM" },
       });
       if (cambio.count !== 1) {
         throw new FalloEtapa(
           "CAMBIO_PROVEEDOR",
-          "El encuentro cambió durante la conversión; revisá Calendar y reintentá."
+          "El encuentro cambió durante la conversión; revisá Calendar y reintentá.",
         );
       }
       await tx.auditoria.create({
@@ -430,19 +471,22 @@ async function migrarInstancia(
           accion: "MIGRACION_ZOOM_APLICADA",
           entidadTipo: "InstanciaSala",
           entidadId: instanciaId,
-          valorAnterior: { proveedorActivoTipo: "GOOGLE_MEET", meetEventoProveedorId: prep.meetEventoId },
+          valorAnterior: {
+            proveedorActivoTipo: "GOOGLE_MEET",
+            meetEventoProveedorId: prep.meetEventoId,
+          },
           valorNuevo: {
             proveedorActivoTipo: "ZOOM",
             zoomEventoProveedorId: prep.zoomEventoId,
-            zoomMeetingId: zoom.externalEventId
-          }
-        }
+            zoomMeetingId: zoom.externalEventId,
+          },
+        },
       });
     })
     .catch((error: unknown) => {
       throw new FalloEtapa(
         "CAMBIO_PROVEEDOR",
-        error instanceof Error ? error.message : "No se pudo cambiar el proveedor activo."
+        error instanceof Error ? error.message : "No se pudo cambiar el proveedor activo.",
       );
     });
 
@@ -454,13 +498,13 @@ async function migrarInstancia(
     resultado: "MIGRADA",
     etapa: "FINAL",
     reintentable: avisos.estado === "PARCIAL",
-    avisos
+    avisos,
   };
 }
 
 async function enviarAvisos(
   deps: DependenciasMigracionZoom,
-  instanciaId: string
+  instanciaId: string,
 ): Promise<ResumenAvisosMigracion> {
   if (!deps.enviarCorreo) {
     return {
@@ -471,7 +515,7 @@ async function enviarAvisos(
       yaEnviados: 0,
       enCurso: 0,
       errores: 0,
-      detalle: []
+      detalle: [],
     };
   }
   try {
@@ -480,10 +524,12 @@ async function enviarAvisos(
         db: deps.db,
         enviarCorreo: deps.enviarCorreo,
         leerInvitadosCalendar: async (calendarId, eventId) =>
-          (await deps.calendar.obtener({ calendarId, eventId })).attendees?.map(({ email }) => email) ?? [],
-        ahora: deps.ahora
+          (await deps.calendar.obtener({ calendarId, eventId })).attendees?.map(
+            ({ email }) => email,
+          ) ?? [],
+        ahora: deps.ahora,
       },
-      instanciaId
+      instanciaId,
     );
   } catch (error) {
     return {
@@ -494,7 +540,7 @@ async function enviarAvisos(
       yaEnviados: 0,
       enCurso: 0,
       errores: 1,
-      detalle: []
+      detalle: [],
     };
   }
 }

@@ -9,12 +9,16 @@ const ARCHIVOS = [
   "src/modules/reuniones/migracion-zoom-aplicar.service.ts",
   "src/modules/reuniones/migracion-zoom-serie-aplicar.service.ts",
   "src/modules/reuniones/migracion-zoom.service.ts",
-  "app/api/v1/reuniones/migracion-zoom/series-enlaces/route.ts"
+  "app/api/v1/reuniones/migracion-zoom/series-enlaces/route.ts",
 ];
 
 describe("cuenta Zoom asignable", () => {
   it("excluye cuentas inactivas, sin licencia o fuera del grupo", () => {
-    expect(CUENTA_ZOOM_ASIGNABLE).toEqual({ activa: true, tieneLicencia: true, fueraDelGrupoAt: null });
+    expect(CUENTA_ZOOM_ASIGNABLE).toEqual({
+      activa: true,
+      tieneLicencia: true,
+      fueraDelGrupoAt: null,
+    });
   });
 
   it.each(ARCHIVOS)("%s usa CUENTA_ZOOM_ASIGNABLE", (archivo) => {
