@@ -41,7 +41,7 @@ export function SettingsNotices({
   estado,
   error,
   mensajes,
-}: Readonly<{ estado?: string; error?: string; mensajes: Readonly<Record<string, string>> }>) {
+}: Readonly<{ estado?: string | undefined; error?: string | undefined; mensajes: Readonly<Record<string, string>> }>) {
   const mensaje = estado ? mensajes[estado] : undefined;
   return (
     <>
