@@ -55,7 +55,7 @@ export function extraerCohostsUnificadosDeInstancia(
       [c.cuentaGoogle?.user?.nombres, c.cuentaGoogle?.user?.apellidos].filter(Boolean).join(" ").trim() ||
       undefined;
     const cuentaGoogleId = c.cuentaGoogleId ?? c.cuentaGoogle?.id ?? undefined;
-    return [{ email, name, cuentaGoogleId }];
+    return [{ email, ...(name === undefined ? {} : { name }), ...(cuentaGoogleId === undefined ? {} : { cuentaGoogleId }) }];
   });
 
   const fromEmails: readonly CohostUnificado[] = (meeting.cohostEmails ?? []).flatMap((ce) => {
@@ -67,7 +67,7 @@ export function extraerCohostsUnificadosDeInstancia(
     if (!email) {
       return [];
     }
-    return [{ email, name: undefined, cuentaGoogleId: null }];
+    return [{ email, cuentaGoogleId: null }];
   });
 
   const all = [...fromCohosts, ...fromEmails];
