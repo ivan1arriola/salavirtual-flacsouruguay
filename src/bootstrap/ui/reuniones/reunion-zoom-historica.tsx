@@ -420,64 +420,64 @@ export function ReunionZoomHistorica({
         </div>
         {seccion === "actividad" ? (
           <aside className={styles.historicalSidebar} aria-label="Detalles y acciones de Zoom">
-            <section className={styles.card} aria-labelledby="zoom-identificacion">
-              <h2 id="zoom-identificacion" className={styles.sectionTitle}>
-                <Info size={20} aria-hidden="true" />
-                Detalles de la reunión
-              </h2>
-              <dl className={styles.facts}>
+              <section className={styles.card} aria-labelledby="zoom-identificacion">
+                <h2 id="zoom-identificacion" className={styles.sectionTitle}>
+                  <Info size={20} aria-hidden="true" />
+                  Detalles de la reunión
+                </h2>
+                <dl className={styles.facts}>
+                  <div>
+                    <dt>
+                      <Video size={17} aria-hidden="true" /> Meeting ID (compartido por la serie)
+                    </dt>
+                    <dd className={styles.mono}>
+                      {reunion.zoom.id ?? "No disponible"}
+                      {reunion.zoom.id ? (
+                        <ZoomCopyIdButton meetingId={reunion.zoom.id} contexto={reunion.titulo} />
+                      ) : null}
+                  </dd>
+                </div>
                 <div>
                   <dt>
-                    <Video size={17} aria-hidden="true" /> Meeting ID (compartido por la serie)
+                    <UserRound size={17} aria-hidden="true" /> Cuenta anfitriona
                   </dt>
-                  <dd className={styles.mono}>
-                    {reunion.zoom.id ?? "No disponible"}
-                    {reunion.zoom.id ? (
-                      <ZoomCopyIdButton meetingId={reunion.zoom.id} contexto={reunion.titulo} />
-                    ) : null}
-                </dd>
+                  <dd>{reunion.zoom.anfitrion ?? "Sin asignar"}</dd>
+                </div>
+                <div>
+                  <dt>
+                    <CheckCircle2 size={17} aria-hidden="true" /> Integración
+                  </dt>
+                  <dd>{reunion.zoom.estadoIntegracion ?? "Sin verificar"}</dd>
+                </div>
+                <div>
+                  <dt>
+                    <Repeat2 size={17} aria-hidden="true" /> Ejecución
+                  </dt>
+                  <dd>
+                    {ocurrencias.length
+                      ? `${ocurrencias.length} vinculada(s)`
+                      : "Sin ejecución de Zoom vinculada"}
+                  </dd>
+                </div>
+              </dl>
+            </section>
+            <section className={styles.card} aria-labelledby="zoom-acciones">
+              <h2 id="zoom-acciones" className={styles.sectionTitle}>
+                <ExternalLink size={20} aria-hidden="true" /> Acciones rápidas
+              </h2>
+              <div className={styles.quickActions}>
+                {reunion.zoom.joinUrl ? (
+                  <a href={reunion.zoom.joinUrl} target="_blank" rel="noreferrer">
+                    <ExternalLink size={18} aria-hidden="true" /> Abrir en Zoom
+                  </a>
+                ) : null}
+                {!esAsistente ? (
+                  <Link href={`/reuniones/${reunion.solicitudId}`}>
+                    <Repeat2 size={18} aria-hidden="true" /> Ver serie completa de Zoom
+                  </Link>
+                ) : null}
               </div>
-              <div>
-                <dt>
-                  <UserRound size={17} aria-hidden="true" /> Cuenta anfitriona
-                </dt>
-                <dd>{reunion.zoom.anfitrion ?? "Sin asignar"}</dd>
-              </div>
-              <div>
-                <dt>
-                  <CheckCircle2 size={17} aria-hidden="true" /> Integración
-                </dt>
-                <dd>{reunion.zoom.estadoIntegracion ?? "Sin verificar"}</dd>
-              </div>
-              <div>
-                <dt>
-                  <Repeat2 size={17} aria-hidden="true" /> Ejecución
-                </dt>
-                <dd>
-                  {ocurrencias.length
-                    ? `${ocurrencias.length} vinculada(s)`
-                    : "Sin ejecución de Zoom vinculada"}
-                </dd>
-              </div>
-            </dl>
-          </section>
-          <section className={styles.card} aria-labelledby="zoom-acciones">
-            <h2 id="zoom-acciones" className={styles.sectionTitle}>
-              <ExternalLink size={20} aria-hidden="true" /> Acciones rápidas
-            </h2>
-            <div className={styles.quickActions}>
-              {reunion.zoom.joinUrl ? (
-                <a href={reunion.zoom.joinUrl} target="_blank" rel="noreferrer">
-                  <ExternalLink size={18} aria-hidden="true" /> Abrir en Zoom
-                </a>
-              ) : null}
-              {!esAsistente ? (
-                <Link href={`/reuniones/${reunion.solicitudId}`}>
-                  <Repeat2 size={18} aria-hidden="true" /> Ver serie completa de Zoom
-                </Link>
-              ) : null}
-            </div>
-          </section>
+            </section>
           </aside>
         ) : null}
       </div>
