@@ -194,18 +194,21 @@ export function normalizarInventarioZoom(
     new Map()
   );
 
-  const grupos = [...porClave.values()];
+  const grupos = [...porClave.values()].flatMap((grupo) => {
+    const primero = grupo[0];
+    return primero ? [{ primero, multiplicidad: grupo.length }] : [];
+  });
   const ambiguos = grupos
-    .filter((grupo) => grupo[0].recurso.archivoZoomId === null && grupo.length > 1)
-    .map((grupo): ObservacionInventarioZoom => ({
+    .filter(({ primero, multiplicidad }) => primero.recurso.archivoZoomId === null && multiplicidad > 1)
+    .map(({ primero, multiplicidad }): ObservacionInventarioZoom => ({
       tipo: "IDENTIDAD_AMBIGUA",
-      coleccion: grupo[0].recurso.coleccion,
-      claveOrigen: grupo[0].recurso.claveOrigen,
-      multiplicidad: grupo.length
+      coleccion: primero.recurso.coleccion,
+      claveOrigen: primero.recurso.claveOrigen,
+      multiplicidad,
     }));
 
   return {
-    recursos: grupos.map((grupo) => grupo[0].recurso),
+    recursos: grupos.map(({ primero }) => primero.recurso),
     observaciones: [...invalidos, ...candidatos.flatMap((c) => c.observaciones), ...ambiguos],
     procesamientoPendiente: pendientes.length > 0
   };
