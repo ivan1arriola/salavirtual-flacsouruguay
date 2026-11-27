@@ -227,7 +227,6 @@ export default async function ReunionesZoomPage({
   const esAdmin = actor.rol === "ADMINISTRACION";
   const datos = await obtenerDatosPaginaReuniones(db, actor, {
     ...params,
-    vista: params.vista,
     proveedor: "zoom",
   });
   const { q, programaId, periodo, isHistory, pagination, programs, desdeParam, hastaParam } = datos;

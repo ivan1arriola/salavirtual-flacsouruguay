@@ -31,12 +31,18 @@ export function normalizarCodigoReunionBuscado(value: string): string {
 export function agruparEncuentrosPorSerie<T extends EncuentroAgrupable>(
   meetings: readonly T[],
   esHistorial = false,
-): readonly (readonly T[])[] {
-  const groups = meetings.reduce<Readonly<Record<string, readonly T[]>>>((result, meeting) => {
+): readonly (readonly [T, ...T[]])[] {
+  const groups = new Map<string, [T, ...T[]]>();
+  for (const meeting of meetings) {
     const key = claveSerieReunion(meeting.solicitud);
-    return { ...result, [key]: [...(result[key] ?? []), meeting] };
-  }, {});
-  const grouped = Object.values(groups);
+    const group = groups.get(key);
+    if (group) {
+      group.push(meeting);
+    } else {
+      groups.set(key, [meeting]);
+    }
+  }
+  const grouped = [...groups.values()];
 
   if (!esHistorial) {
     return grouped;
@@ -46,9 +52,9 @@ export function agruparEncuentrosPorSerie<T extends EncuentroAgrupable>(
 }
 
 function ordenarPorRecencia<T extends EncuentroAgrupable>(
-  groups: readonly (readonly T[])[],
-): readonly (readonly T[])[] {
-  return groups.reduce<readonly (readonly T[])[]>((ordered, group) => {
+  groups: readonly (readonly [T, ...T[]])[],
+): readonly (readonly [T, ...T[]])[] {
+  return groups.reduce<readonly (readonly [T, ...T[]])[]>((ordered, group) => {
     const timestamp = fechaMasReciente(group);
     const insertionIndex = ordered.findIndex(
       (candidate) => fechaMasReciente(candidate) < timestamp,

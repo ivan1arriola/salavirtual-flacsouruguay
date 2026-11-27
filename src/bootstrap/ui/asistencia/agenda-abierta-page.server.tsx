@@ -432,7 +432,9 @@ export default async function AgendaAbiertaPage({
                         estadoDisponibilidad: conf.estado,
                         etiquetaDisponibilidad: conf.etiqueta,
                         minutosMensuales: monthlyMinutes,
-                        detalleConflicto: conf.estado !== "DISPONIBLE" ? conf.detalle : undefined,
+                        ...(conf.estado !== "DISPONIBLE" && conf.detalle !== undefined
+                          ? { detalleConflicto: conf.detalle }
+                          : {}),
                       };
                     })
                     .filter((item): item is NonNullable<typeof item> => Boolean(item));
@@ -443,7 +445,9 @@ export default async function AgendaAbiertaPage({
                     name: a.name,
                     status: a.estadoDisponibilidad,
                     monthlyMinutes: a.minutosMensuales,
-                    conflictDetail: a.detalleConflicto,
+                    ...(a.detalleConflicto !== undefined
+                      ? { conflictDetail: a.detalleConflicto }
+                      : {}),
                   }));
 
                   return (
