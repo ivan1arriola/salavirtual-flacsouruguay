@@ -41,7 +41,13 @@ import {
 import { formatDate, formatTime } from "@/src/lib/ui/format";
 import styles from "./reunion-zoom-operativa.module.css";
 
-export const SECCIONES_FICHA_ZOOM = ["resumen", "inscripciones", "asistencia", "grabaciones", "actividad"] as const;
+export const SECCIONES_FICHA_ZOOM = [
+  "resumen",
+  "inscripciones",
+  "asistencia",
+  "grabaciones",
+  "actividad"
+] as const;
 export type SeccionFichaZoom = (typeof SECCIONES_FICHA_ZOOM)[number];
 const NOMBRE_SECCION: Record<SeccionFichaZoom, string> = {
   resumen: "Resumen",
@@ -472,7 +478,7 @@ export function ReunionZoomHistorica({
               ) : null}
             </div>
           </section>
-        </aside>
+          </aside>
         ) : null}
       </div>
     </main>
