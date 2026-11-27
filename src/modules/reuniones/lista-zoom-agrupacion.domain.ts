@@ -68,7 +68,7 @@ export function colorCuentaZoom(correo: string | null | undefined): number | nul
 
   const coincidenciaSala = PATRON_SALA.exec(normalizado);
   if (coincidenciaSala) {
-    const numero = Number.parseInt(coincidenciaSala[1], 10);
+    const numero = Number.parseInt(coincidenciaSala[1] ?? "", 10);
     if (Number.isFinite(numero) && numero >= 1) {
       return (numero - 1) % TAMANO_PALETA_CUENTAS;
     }
