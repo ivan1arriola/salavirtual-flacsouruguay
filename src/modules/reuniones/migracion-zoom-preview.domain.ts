@@ -222,10 +222,11 @@ export function planificarMigracionZoomPorSerie(
         return agregar({ ...conEncuentros, estado: "CERCANO" });
       }
 
+      const idCompartido = enZoom[0]?.reunionCompartidaId;
       const compartida =
         enZoom.length === 0 ||
-        (Boolean(enZoom[0].reunionCompartidaId) &&
-          enZoom.every(({ reunionCompartidaId }) => reunionCompartidaId === enZoom[0].reunionCompartidaId));
+        (Boolean(idCompartido) &&
+          enZoom.every(({ reunionCompartidaId }) => reunionCompartidaId === idCompartido));
       const sinPreparar = aMigrar.some(
         (encuentro) => !encuentro.meetPreparado || !encuentro.meetJoinUrl || encuentro.zoomSincronizado
       );
