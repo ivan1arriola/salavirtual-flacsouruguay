@@ -16,7 +16,9 @@ export function SelectorSeccionZoom({
       Sección de la reunión
       <select
         value={seccion}
-        onChange={(event) => router.push("?vista=historial&seccion=" + encodeURIComponent(event.target.value))}
+        onChange={(event) =>
+          router.push("?vista=historial&seccion=" + encodeURIComponent(event.target.value))
+        }
       >
         {opciones.map((opcion) => (
           <option key={opcion.id} value={opcion.id}>
