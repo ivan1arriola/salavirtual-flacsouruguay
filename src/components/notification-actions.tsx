@@ -4,6 +4,17 @@ import { Check, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 
+async function notificationError(response: Response, fallback: string): Promise<string> {
+  const result: unknown = await response.json().catch(() => null);
+  if (typeof result === "object" && result !== null && "error" in result) {
+    const message = result.error;
+    if (typeof message === "string" && message.trim()) {
+      return message;
+    }
+  }
+  return fallback;
+}
+
 export function NotificationMarkReadOnOpen({ unreadCount }: Readonly<{ unreadCount: number }>) {
   const router = useRouter();
   const sent = useRef(false);
@@ -37,7 +48,7 @@ export function NotificationMarkReadOnOpen({ unreadCount }: Readonly<{ unreadCou
 export function NotificationReadButton({
   notificationId,
   className,
-}: Readonly<{ notificationId: string; className: string }>) {
+}: Readonly<{ notificationId: string; className: string | undefined }>) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState("");
@@ -45,17 +56,21 @@ export function NotificationReadButton({
   function markRead() {
     setError("");
     startTransition(async () => {
-      const response = await fetch("/api/v1/notificaciones", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ notificationId }),
-      });
-      if (!response.ok) {
-        const result = await response.json().catch(() => ({}));
-        setError(result.error ?? "No se pudo marcar como leída.");
-        return;
+      try {
+        const response = await fetch("/api/v1/notificaciones", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ notificationId }),
+          signal: AbortSignal.timeout(15000),
+        });
+        if (!response.ok) {
+          setError(await notificationError(response, "No se pudo marcar como leída."));
+          return;
+        }
+        router.refresh();
+      } catch {
+        setError("No se pudo marcar como leída. Verificá tu conexión e intentá nuevamente.");
       }
-      router.refresh();
     });
   }
 
@@ -83,7 +98,7 @@ export function NotificationReadButton({
 export function NotificationDeleteButton({
   notificationId,
   className,
-}: Readonly<{ notificationId: string; className: string }>) {
+}: Readonly<{ notificationId: string; className: string | undefined }>) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState("");
@@ -94,17 +109,21 @@ export function NotificationDeleteButton({
     }
     setError("");
     startTransition(async () => {
-      const response = await fetch("/api/v1/notificaciones", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ notificationId }),
-      });
-      if (!response.ok) {
-        const result = await response.json().catch(() => ({}));
-        setError(result.error ?? "No se pudo borrar la notificación.");
-        return;
+      try {
+        const response = await fetch("/api/v1/notificaciones", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ notificationId }),
+          signal: AbortSignal.timeout(15000),
+        });
+        if (!response.ok) {
+          setError(await notificationError(response, "No se pudo borrar la notificación."));
+          return;
+        }
+        router.refresh();
+      } catch {
+        setError("No se pudo borrar la notificación. Verificá tu conexión e intentá nuevamente.");
       }
-      router.refresh();
     });
   }
 
