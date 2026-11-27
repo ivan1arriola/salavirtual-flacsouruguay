@@ -29,7 +29,19 @@ jobs:
         with:
           persist-credentials: false
       - uses: ./.github/actions/preparar-entorno
-      - run: npm run lint
+      - id: lint_check
+        run: npm run lint
+      - name: Inventario JSON de ESLint
+        if: failure() && steps.lint_check.outcome == 'failure'
+        run: npm run lint -- --format json --output-file "$RUNNER_TEMP/eslint-debt.json"
+      - name: Publicar inventario ESLint
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: eslint-debt-${{ github.sha }}
+          path: ${{ runner.temp }}/eslint-debt.json
+          if-no-files-found: ignore
+          retention-days: 14
 
   prettier:
     name: "Prettier"
@@ -46,7 +58,16 @@ jobs:
         if: failure() && steps.format_check.outcome == 'failure'
         run: |
           npm run format
-          git --no-pager diff -- .
+          git --no-pager diff --binary -- . > "$RUNNER_TEMP/prettier-debt.patch"
+          git --no-pager diff --stat
+      - name: Publicar parche de formato
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: prettier-debt-${{ github.sha }}
+          path: ${{ runner.temp }}/prettier-debt.patch
+          if-no-files-found: ignore
+          retention-days: 14
 
   knip:
     name: "Knip"
@@ -58,6 +79,20 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/preparar-entorno
       - run: npm run deadcode
+      - name: Bloquear código muerto en producción
+        if: always()
+        run: npm run deadcode:production
+      - name: Inventario de código muerto
+        if: always()
+        run: npm run --silent deadcode:report > "$RUNNER_TEMP/knip-debt.json"
+      - name: Publicar inventario Knip
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: knip-debt-${{ github.sha }}
+          path: ${{ runner.temp }}/knip-debt.json
+          if-no-files-found: ignore
+          retention-days: 14
 
   architecture:
     name: "Dependency Cruiser"
@@ -68,14 +103,25 @@ jobs:
         with:
           persist-credentials: false
       - uses: ./.github/actions/preparar-entorno
-      - run: npm run architecture
+      - name: Validar arquitectura completa
+        run: |
+          set -o pipefail
+          npm run architecture 2>&1 | tee "$RUNNER_TEMP/architecture-debt.txt"
+      - name: Publicar inventario de arquitectura
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: architecture-debt-${{ github.sha }}
+          path: ${{ runner.temp }}/architecture-debt.txt
+          if-no-files-found: ignore
+          retention-days: 14
 
   tests:
     name: "Pruebas"
     uses: ./.github/workflows/check-tests.yml
 
   security:
-    name: "Auditoría crítica"
+    name: "Auditoría alta y crítica"
     uses: ./.github/workflows/check-security.yml
 
   build:
