@@ -26,7 +26,7 @@ const PATRONES_NO_REINTENTABLES: readonly RegExp[] = [
   /menos de 24 horas/i
 ];
 
-const MENSAJES_POR_RESULTADO: Readonly<Record<string, PlantillaMensaje>> = {
+const MENSAJES_POR_RESULTADO: Readonly<Record<string, PlantillaMensaje> & { OMITIDA: PlantillaMensaje }> = {
   MIGRADA: {
     titulo: "Serie convertida a Zoom",
     detalle:
@@ -62,7 +62,7 @@ const MENSAJES_POR_RESULTADO: Readonly<Record<string, PlantillaMensaje>> = {
   }
 };
 
-const MENSAJES_ERROR_POR_ETAPA: Readonly<Record<string, PlantillaMensaje>> = {
+const MENSAJES_ERROR_POR_ETAPA: Readonly<Record<string, PlantillaMensaje> & { FINAL: PlantillaMensaje }> = {
   VALIDACION: {
     titulo: "No se pudo validar la serie",
     detalle:
