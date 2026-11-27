@@ -118,14 +118,15 @@ export default async function ReunionOperativaPage({
       const actividad = reunion.zoom.eventoProveedorId
         ? await leerActividadEncuentroZoom(reunion.zoom.eventoProveedorId)
         : [];
-      const inscriptosZoom = seccion === "inscripciones"
-        ? await consultarInscriptosZoom({
-            token,
-            meetingId: reunion.zoom.id,
-            habilitada: api?.configuracion.inscripcion ?? null,
-            ambito: elegirAmbitoInscriptos(api?.tipoReunion, api?.ocurrencias, reunion.inicioProgramadoAt)
-          })
-        : undefined;
+      const inscriptosZoom =
+        seccion === "inscripciones"
+          ? await consultarInscriptosZoom({
+              token,
+              meetingId: reunion.zoom.id,
+              habilitada: api?.configuracion.inscripcion ?? null,
+              ambito: elegirAmbitoInscriptos(api?.tipoReunion, api?.ocurrencias, reunion.inicioProgramadoAt)
+            })
+          : undefined;
       return (
         <ReunionZoomHistorica
           reunion={reunion}
