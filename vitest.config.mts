@@ -16,18 +16,8 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       reporter: ["text", "json-summary", "lcov"],
-      include: [
-        "src/modules/**/*.domain.ts",
-        "src/modules/usuarios/roles.ts",
-        "src/modules/meet/google-api-retry.adapter.ts",
-        "src/modules/meet/provisionar-eventos.service.ts",
-        "src/modules/configuracion/google-workspace-test.adapter.ts",
-        "src/modules/asistencia/asignacion-sugerencias.service.ts",
-        "src/modules/usuarios/estado-asistente.service.ts",
-        "src/lib/http/api-error.ts",
-        "src/lib/ui/*.ts",
-        "src/lib/config/encryption.ts"
-      ],
+      include: ["src/**/*.{ts,tsx}", "app/**/*.{ts,tsx}"],
+      exclude: ["**/*.d.ts"],
       thresholds: {
         lines: 95,
         statements: 95,
