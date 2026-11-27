@@ -1,13 +1,10 @@
 name: "Quality · Remediación mecánica"
 on:
-  push:
-    branches:
-      - ci/strict-quality-debt
-    paths:
-      - .github/workflows/quality-remediation.yml
+  pull_request:
+    types: [synchronize]
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: quality-remediation-strict-debt
@@ -15,13 +12,16 @@ concurrency:
 
 jobs:
   mechanical:
-    if: github.ref == 'refs/heads/ci/strict-quality-debt'
+    if: github.event.pull_request.number == 290 && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'ci/strict-quality-debt'
+    permissions:
+      contents: write
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: ci/strict-quality-debt
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: true
       - uses: ./.github/actions/preparar-entorno
       - name: Corregir accesos de TypeScript TS4111
         run: |
@@ -81,7 +81,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git branch --show-current)" = "ci/strict-quality-debt"
+          test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha }}"
+          git fetch origin refs/heads/ci/strict-quality-debt
+          test "$(git rev-parse FETCH_HEAD)" = "$(git rev-parse HEAD)"
           git add -u -- . ':!.github/workflows/**'
           git diff --cached --check
           if git diff --cached --quiet; then
