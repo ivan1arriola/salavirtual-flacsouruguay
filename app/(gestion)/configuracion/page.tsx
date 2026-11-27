@@ -16,8 +16,8 @@ export default async function ConfiguracionInicioPage({
   await requireAdminPage();
   const query = await searchParams;
   const legacy = legacySettingsRedirect(query.seccion, {
-    busqueda: query.busqueda,
-    pagina: query.pagina,
+    ...(query.busqueda !== undefined ? { busqueda: query.busqueda } : {}),
+    ...(query.pagina !== undefined ? { pagina: query.pagina } : {}),
   });
   if (legacy) {
     redirect(legacy);
@@ -49,7 +49,9 @@ export default async function ConfiguracionInicioPage({
           integrationActive: configuration?.activa ?? false,
           zoomAvailableHosts,
           zoomCredentialsAvailable: credenciales.disponible,
-          zoomCredentialsDiagnostic: credenciales.disponible ? undefined : credenciales.diagnostico,
+          ...(!credenciales.disponible
+            ? { zoomCredentialsDiagnostic: credenciales.diagnostico }
+            : {}),
           totalHosts: hosts.length,
           activePrograms: activeProgramCount,
           totalPrograms: programCount,
