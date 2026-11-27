@@ -56,7 +56,8 @@ export function calcularMonto(
 export function resolverPeriodoMes(valor: string | undefined, ahora: Date): PeriodoMes {
   const fallback = claveMesUtc3(ahora);
   const clave = valor && /^\d{4}-(0[1-9]|1[0-2])$/.test(valor) ? valor : fallback;
-  const [year, month] = clave.split("-").map(Number);
+  const year = Number(clave.slice(0, 4));
+  const month = Number(clave.slice(5, 7));
   return {
     clave,
     desdeMs: Date.UTC(year, month - 1, 1, 3),
