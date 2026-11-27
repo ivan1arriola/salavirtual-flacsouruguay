@@ -97,8 +97,9 @@ function asignarNombre(
     nombreArchivoZoom(ocurrencia, recurso, recurso.claveOrigen)
   ];
   const libre = candidatos.findIndex((c) => !tomados.has(claveComparable(c)));
-  return libre >= 0
-    ? { nombre: candidatos[libre], desambiguado: libre > 0, colision: false }
+  const nombreLibre = candidatos[libre];
+  return nombreLibre !== undefined
+    ? { nombre: nombreLibre, desambiguado: libre > 0, colision: false }
     : { nombre: nombreConContador(ocurrencia, recurso, tomados, 2), desambiguado: true, colision: true };
 }
 
@@ -259,14 +260,16 @@ export function evaluarCupoTransferenciaZoom(
   const disponibleBytes = limiteBytes > usadoBytes ? limiteBytes - usadoBytes : 0n;
   // Bytes que salen de la ventana a medida que vencen las reservas más antiguas.
   const liberados = vigentes.reduce<readonly bigint[]>(
-    (acumulado, r) => [...acumulado, (acumulado.length > 0 ? acumulado[acumulado.length - 1] : 0n) + r.bytes],
+    (acumulado, r) => [...acumulado, (acumulado.at(-1) ?? 0n) + r.bytes],
     []
   );
   const indice =
     bytes <= limiteBytes
       ? liberados.findIndex((liberado) => usadoBytes - liberado + bytes <= limiteBytes)
       : -1;
-  const liberacionEstimadaAt =
-    indice >= 0 ? new Date(vigentes[indice].reservadoAt.getTime() + limites.ventanaMs) : null;
+  const reserva = vigentes[indice];
+  const liberacionEstimadaAt = reserva
+    ? new Date(reserva.reservadoAt.getTime() + limites.ventanaMs)
+    : null;
   return { cabe: false, usadoBytes, limiteBytes, disponibleBytes, liberacionEstimadaAt };
 }
