@@ -342,7 +342,6 @@ export function crearGoogleArtifactsProviderAdapter(
             startTime: inicioDia.toISOString(),
             endTime: finDia.toISOString()
           });
-          const conferenceStart = Date.parse(actual.startTime);
           const conferenceEnd = actual.endTime
             ? Date.parse(actual.endTime)
             : Date.parse(actual.startTime) + 4 * 60 * 60 * 1000;
