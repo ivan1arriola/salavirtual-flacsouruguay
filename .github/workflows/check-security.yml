@@ -15,6 +15,6 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 24
-      - name: Auditoría crítica de dependencias de producción
+      - name: Auditoría alta y crítica de dependencias de producción
         # npm audit solo necesita package-lock.json: no hace falta instalar dependencias.
-        run: npm audit --omit=dev --audit-level=critical
+        run: npm audit --omit=dev --audit-level=high
