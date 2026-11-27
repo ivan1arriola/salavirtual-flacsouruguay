@@ -188,7 +188,7 @@ export function evaluarDisponibilidad(
 }
 
 function ordenarArray<T>(items: readonly T[], compare: (a: T, b: T) => number): readonly T[] {
-  return [...items].sort(compare);
+  return items.toSorted(compare);
 }
 
 function dateKey(date: Date, timezone: string): string {
