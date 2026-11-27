@@ -13,7 +13,7 @@ export const runtime = "nodejs";
 type RouteContext = Readonly<{ params: Promise<{ instanciaId: string }> }>;
 
 /** Redirige al anfitrión a su enlace de inicio de Zoom, siempre vigente y fuera del HTML. */
-export async function GET(request: Request, context: RouteContext) {
+export async function GET(_request: Request, context: RouteContext) {
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
