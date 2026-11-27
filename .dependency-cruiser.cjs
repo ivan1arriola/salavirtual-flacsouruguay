@@ -41,6 +41,10 @@ module.exports = {
   options: {
     doNotFollow: { path: "node_modules" },
     tsConfig: { fileName: "tsconfig.json" },
+    enhancedResolveOptions: {
+      exportsFields: ["exports"],
+      conditionNames: ["import", "require", "node", "default", "types"],
+    },
     tsPreCompilationDeps: "specify",
     exclude: "(^|/)(node_modules|\\.next|coverage|generated|legacy-meetings)/"
   }
