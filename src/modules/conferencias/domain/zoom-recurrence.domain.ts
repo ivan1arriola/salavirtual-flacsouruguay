@@ -104,7 +104,10 @@ export function calcularRecurrenciaZoom(
 
   const ordenadas = ordenarInstancias(instancias);
   const primera = ordenadas[0];
-  const ultima = ordenadas[ordenadas.length - 1];
+  const ultima = ordenadas.at(-1);
+  if (!primera || !ultima) {
+    throw new Error("La lista de instancias no puede estar vacía.");
+  }
   const duracionMs = primera.fin.getTime() - primera.inicio.getTime();
   const durationMinutes = Math.max(1, Math.round(duracionMs / 60_000));
 
