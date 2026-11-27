@@ -1,0 +1,97 @@
+name: "Quality · Remediación mecánica"
+on:
+  push:
+    branches:
+      - ci/strict-quality-debt
+    paths:
+      - .github/workflows/quality-remediation.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: quality-remediation-strict-debt
+  cancel-in-progress: false
+
+jobs:
+  mechanical:
+    if: github.ref == 'refs/heads/ci/strict-quality-debt'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ci/strict-quality-debt
+      - uses: ./.github/actions/preparar-entorno
+      - name: Corregir accesos de TypeScript TS4111
+        run: |
+          node --input-type=module <<'NODE'
+          import ts from "typescript";
+          import fs from "node:fs";
+          import path from "node:path";
+          const config = ts.readConfigFile("tsconfig.json", ts.sys.readFile);
+          if (config.error) throw new Error("No se pudo leer tsconfig");
+          const parsed = ts.parseJsonConfigFileContent(config.config, ts.sys, process.cwd());
+          const program = ts.createProgram(parsed.fileNames, parsed.options);
+          const errors = program.getSemanticDiagnostics().filter((d) => d.code === 4111 && d.file && d.start !== undefined);
+          const byFile = new Map();
+          for (const error of errors) {
+            const filename = path.relative(process.cwd(), error.file.fileName);
+            if (!/^(app|src|scripts|test)\//.test(filename) && filename !== "auth.ts") continue;
+            let target;
+            function visit(node) {
+              if (ts.isPropertyAccessExpression(node) && node.name.getStart(error.file) === error.start) {
+                target = node;
+              }
+              ts.forEachChild(node, visit);
+            }
+            visit(error.file);
+            if (!target || !ts.isIdentifier(target.name)) continue;
+            const start = target.expression.end;
+            const end = target.name.end;
+            const original = error.file.text.slice(start, end);
+            if (!/^\s*(?:\?\.)?\.?\s*[$\w]+$/.test(original)) continue;
+            const replacement = (target.questionDotToken ? "?." : "") + "[" + JSON.stringify(target.name.text) + "]";
+            const edits = byFile.get(filename) ?? new Map();
+            edits.set(start, { start, end, replacement });
+            byFile.set(filename, edits);
+          }
+          let total = 0;
+          for (const [filename, edits] of byFile) {
+            let source = fs.readFileSync(filename, "utf8");
+            for (const { start, end, replacement } of [...edits.values()].sort((a, b) => b.start - a.start)) {
+              source = source.slice(0, start) + replacement + source.slice(end);
+              total++;
+            }
+            fs.writeFileSync(filename, source);
+          }
+          console.log("Accesos corregidos:", total, "en", byFile.size, "archivos");
+          NODE
+      - name: Aplicar reglas autofijables de ESLint
+        run: |
+          status=0
+          npm run lint:fix || status=$?
+          if [ "$status" -gt 1 ]; then
+            echo "ESLint no pudo completar el análisis; código $status"
+            exit "$status"
+          fi
+      - name: Formatear con Prettier
+        if: always()
+        run: npm run format
+      - name: Guardar cambios mecánicos solo en la rama de deuda
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git branch --show-current)" = "ci/strict-quality-debt"
+          git add -u -- . ':!.github/workflows/**'
+          git diff --cached --check
+          if git diff --cached --quiet; then
+            echo "Sin cambios mecánicos"
+            exit 0
+          fi
+          git diff --cached --stat
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "style: aplicar Prettier y correcciones mecánicas de TypeScript y ESLint"
+          git push origin HEAD:refs/heads/ci/strict-quality-debt
