@@ -15,7 +15,8 @@ function minutos(value: string): number | null {
   if (!/^\d{2}:\d{2}$/.test(value)) {
     return null;
   }
-  const [horas, minutos] = value.split(":").map(Number);
+  const horas = Number(value.slice(0, 2));
+  const minutos = Number(value.slice(3, 5));
   return horas >= 0 && horas < 24 && minutos >= 0 && minutos < 60 ? horas * 60 + minutos : null;
 }
 
