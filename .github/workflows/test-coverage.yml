@@ -40,7 +40,13 @@ jobs:
         with:
           persist-credentials: false
       - uses: ./.github/actions/preparar-entorno
-      - run: npm run format:check
+      - id: format_check
+        run: npm run format:check
+      - name: Mostrar correcciones de formato
+        if: failure() && steps.format_check.outcome == 'failure'
+        run: |
+          npm run format
+          git --no-pager diff -- .
 
   knip:
     name: "Knip"

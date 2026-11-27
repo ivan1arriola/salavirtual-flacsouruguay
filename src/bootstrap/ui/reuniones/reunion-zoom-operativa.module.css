@@ -1334,3 +1334,56 @@
   outline: 3px solid #d69c13;
   outline-offset: 2px;
 }
+
+/* Ficha histórica: cada sección ocupa el espacio disponible sin paneles repetidos. */
+.historicalLayout:not(:has(.historicalSidebar)) {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.sectionSelector {
+  display: none;
+}
+
+.page:has(.historicalLayout) .tabs a {
+  font-weight: 600;
+  min-height: 48px;
+}
+
+.sectionSelector select {
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 12px;
+  border: 1px solid #becfe5;
+  border-radius: 8px;
+  background: #fff;
+  color: #20395e;
+  font: inherit;
+}
+
+.sectionSelector select:focus-visible,
+.page:has(.historicalLayout) .tabs a:focus-visible {
+  outline: 3px solid #d69c13;
+  outline-offset: 2px;
+}
+
+@media (max-width: 750px) {
+  .sectionSelector {
+    display: grid;
+    gap: 8px;
+    font-weight: 600;
+  }
+  .page:has(.historicalLayout) > .tabs {
+    display: none;
+  }
+}
+
+.directoryFilters input,
+.directoryFilters select {
+  min-height: 48px;
+  font-size: 1rem;
+}
+
+.historicalMain .registeredList {
+  max-height: none;
+  overflow: visible;
+}
