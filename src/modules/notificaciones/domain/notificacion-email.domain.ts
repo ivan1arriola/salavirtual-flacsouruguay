@@ -42,7 +42,7 @@ export function construirCorreoNotificacion(
         resumen: message.cuerpo,
         variante: varianteNotificacion(message.tipo),
         contenidoHtml: detail ? renderDetailHtml(detail, message.tipo) : "",
-        accion: actionUrl ? { texto: actionLabel, url: actionUrl } : undefined,
+        ...(actionUrl ? { accion: { texto: actionLabel, url: actionUrl } } : {}),
         preferenciasUrl: preferencesUrl
       })
   };
@@ -195,13 +195,15 @@ function renderStructuredLines(raw: string): string {
         );
       }
       const matched = line.match(/^(?:•\s*)?([\p{L}\s/()]+):\s*(.*)$/u);
-      if (matched && matched[1].length < 38) {
+      const label = matched?.[1];
+      const content = matched?.[2];
+      if (label !== undefined && content !== undefined && label.length < 38) {
         return (
           '<p style="margin:0 0 9px;font-size:13px;line-height:20px;color:#526277">' +
           '<strong style="color:#192b44">' +
-          escapeHtml(matched[1].trim()) +
+          escapeHtml(label.trim()) +
           ":</strong> " +
-          linkifyEscaped(escapeHtml(matched[2])) +
+          linkifyEscaped(escapeHtml(content)) +
           "</p>"
         );
       }
