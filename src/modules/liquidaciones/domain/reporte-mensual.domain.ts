@@ -33,11 +33,12 @@ export function construirCorreoReporteMensual(
     "Este resumen fue generado automáticamente a partir de las asistencias registradas en el sistema.",
     "Si detectás una diferencia, respondé a todos para que Administración pueda revisarla."
   ].join("\n");
-  const detalle = [
+  const filas: readonly (readonly [string, string])[] = [
     ["Reuniones", String(input.resumen.reuniones)],
     ["Modalidad virtual", virtual],
     ["Modalidad híbrida", hibrida]
-  ]
+  ];
+  const detalle = filas
     .map(
       ([etiqueta, valor]) =>
         '<tr><td style="padding:10px 0;border-bottom:1px solid #e4eaf0;color:#526277;font-size:13px">' +
@@ -77,5 +78,5 @@ export function construirCorreoReporteMensual(
 }
 
 function capitalizar(value: string): string {
-  return value ? value[0].toUpperCase() + value.slice(1) : value;
+  return value.charAt(0).toUpperCase() + value.slice(1);
 }
