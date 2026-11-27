@@ -531,7 +531,6 @@ export default async function ReunionesZoomPage({
                   const contexto = `${encuentro.solicitud.titulo}, ${formatShortDate(
                     encuentro.inicioProgramadoAt
                   )} ${formatTime(encuentro.inicioProgramadoAt)}`;
-                  const serieClave = claveSerieReunion(encuentro.solicitud);
                   const zoomId = idReunionZoom(encuentro);
                   return (
                     <li
