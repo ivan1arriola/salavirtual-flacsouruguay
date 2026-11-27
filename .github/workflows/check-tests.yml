@@ -33,7 +33,7 @@ jobs:
         shell: bash
         run: |
           if [[ -f coverage/coverage-summary.json ]]; then
-            node -e '
+            node <<'NODENODE
               const report = JSON.parse(require("fs").readFileSync("coverage/coverage-summary.json", "utf8"));
               const t = report.total;
               const fila = (n, k) => `| ${n} | ${t[k].pct}% | ${t[k].covered}/${t[k].total} |`;
