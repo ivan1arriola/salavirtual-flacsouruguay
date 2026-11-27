@@ -188,14 +188,7 @@ export function evaluarDisponibilidad(
 }
 
 function ordenarArray<T>(items: readonly T[], compare: (a: T, b: T) => number): readonly T[] {
-  if (items.length <= 1) {
-    return items;
-  }
-  const pivot = items[0];
-  const rest = items.slice(1);
-  const left = rest.filter((item) => compare(item, pivot) < 0);
-  const right = rest.filter((item) => compare(item, pivot) >= 0);
-  return [...ordenarArray(left, compare), pivot, ...ordenarArray(right, compare)];
+  return [...items].sort(compare);
 }
 
 function dateKey(date: Date, timezone: string): string {
