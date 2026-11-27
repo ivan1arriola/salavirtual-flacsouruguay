@@ -13,7 +13,7 @@ module.exports = {
     },
     {
       name: "no-orphans",
-      severity: "warn",
+      severity: "error",
       from: {
         orphan: true,
         path: "^(app|src)/",
@@ -24,6 +24,12 @@ module.exports = {
         ]
       },
       to: {}
+    },
+    {
+      name: "no-unresolved",
+      severity: "error",
+      from: { path: "^(app|src|scripts|test)/" },
+      to: { couldNotResolve: true }
     },
     {
       name: "no-deprecated-core",
