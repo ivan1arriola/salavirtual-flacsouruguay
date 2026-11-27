@@ -17,8 +17,8 @@ export function MeetingScheduleTimes({
 }: Readonly<{
   startsAt: Instant;
   endsAt: Instant;
-  assistanceStartsAt?: Instant | null;
-  assistanceEndsAt?: Instant | null;
+  assistanceStartsAt?: Instant | null | undefined;
+  assistanceEndsAt?: Instant | null | undefined;
   requiresAssistance?: boolean;
   modality?: "VIRTUAL" | "HIBRIDA";
   viewerIsAssistant?: boolean;

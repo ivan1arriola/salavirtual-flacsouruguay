@@ -21,10 +21,8 @@ export function detectarSolapamientos(
     fechas.filter((f) => f.fecha && f.horaInicio && f.horaFin > f.horaInicio),
   );
   const pares: [number, number][] = [];
-  for (let i = 0; i < validas.length; i++) {
-    for (let j = i + 1; j < validas.length; j++) {
-      const a = validas[i];
-      const b = validas[j];
+  for (const [i, a] of validas.entries()) {
+    for (const b of validas.slice(i + 1)) {
       if (a.fecha !== b.fecha || b.horaInicio >= a.horaFin) {
         break;
       }
@@ -69,7 +67,8 @@ function describirFecha(fecha: MeetingDate): string {
   }
   // Offset explícito también al construir el instante: no interviene la zona del navegador.
   const dia = formatoFecha.format(new Date(`${fecha.fecha}T12:00:00-03:00`));
-  if (!/^\d{2}:\d{2}$/.test(fecha.horaInicio) || !/^\d{2}:\d{2}$/.test(fecha.horaFin)) {
+  const horaValida = /^(?:[01]\d|2[0-3]):[0-5]\d$/;
+  if (!horaValida.test(fecha.horaInicio) || !horaValida.test(fecha.horaFin)) {
     return `${dia}, horario pendiente`;
   }
   const inicio = formatoHora.format(new Date(`${fecha.fecha}T${fecha.horaInicio}:00-03:00`));
@@ -81,10 +80,12 @@ export function resumirFechas(
   fechas: readonly MeetingDate[],
 ): Readonly<{ primera: string; ultima: string }> {
   const ordenadas = ordenarEncuentros(fechas.filter((f) => f.fecha));
-  return ordenadas.length
+  const primera = ordenadas[0];
+  const ultima = ordenadas.at(-1);
+  return primera && ultima
     ? {
-        primera: describirFecha(ordenadas[0]),
-        ultima: describirFecha(ordenadas[ordenadas.length - 1]),
+        primera: describirFecha(primera),
+        ultima: describirFecha(ultima),
       }
     : { primera: "Pendiente", ultima: "Pendiente" };
 }

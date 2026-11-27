@@ -31,7 +31,7 @@ export function ProfileMenu({
         data-tour={notificationTourForRole(user.role)}
       >
         <span className="avatar" aria-hidden="true">
-          <UserAvatarContent imageUrl={user.image} name={displayName} />
+          <UserAvatarContent imageUrl={user.image ?? null} name={displayName} />
         </span>
         {!compact ? (
           <>
@@ -52,7 +52,7 @@ export function ProfileMenu({
       <div className="profile-menu-card">
         <div className="profile-menu-identity">
           <span className="avatar profile-menu-avatar" aria-hidden="true">
-            <UserAvatarContent imageUrl={user.image} name={displayName} />
+            <UserAvatarContent imageUrl={user.image ?? null} name={displayName} />
           </span>
           <span>
             <strong>{displayName}</strong>

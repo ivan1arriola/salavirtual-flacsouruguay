@@ -99,7 +99,9 @@ export async function crearWorkerZoomArchivos(
     ? crearGoogleDriveAuthClient({
         serviceAccountEmail: workspace.serviceAccountEmail,
         privateKey: workspace.privateKey,
-        subject: workspace.serviceAccountSubject ?? undefined,
+        ...(workspace.serviceAccountSubject != null
+          ? { subject: workspace.serviceAccountSubject }
+          : {}),
       })
     : null;
 

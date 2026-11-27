@@ -68,7 +68,9 @@ export async function generarPlanillaAsistenciaOcurrenciaZoom(ocurrenciaId: stri
     {
       serviceAccountEmail: workspace.serviceAccountEmail,
       privateKey: workspace.privateKey,
-      subject: workspace.serviceAccountSubject ?? undefined,
+      ...(workspace.serviceAccountSubject != null
+        ? { subject: workspace.serviceAccountSubject }
+        : {}),
     },
     ["https://www.googleapis.com/auth/drive", "https://www.googleapis.com/auth/spreadsheets"],
   );
