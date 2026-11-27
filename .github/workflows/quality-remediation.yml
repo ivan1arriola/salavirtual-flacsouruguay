@@ -76,10 +76,8 @@ jobs:
             exit "$status"
           fi
       - name: Formatear con Prettier
-        if: always()
         run: npm run format
       - name: Guardar cambios mecánicos solo en la rama de deuda
-        if: always()
         shell: bash
         run: |
           set -euo pipefail
