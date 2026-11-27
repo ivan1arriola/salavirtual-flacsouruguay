@@ -48,6 +48,29 @@
 .heading p {
   margin: 0;
 }
+.monitoring {
+  margin: 0;
+  padding: 0.75rem 1rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.75rem;
+}
+.monitoring dt {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+.monitoring dd {
+  margin: 0.25rem 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.75rem;
+}
+.monitoring dd strong {
+  font-weight: 600;
+}
+.monitoring [data-state="pendiente"] dd {
+  font-weight: 600;
+}
 .metadata {
   display: flex;
   gap: 2rem;
