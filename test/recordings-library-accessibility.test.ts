@@ -12,7 +12,7 @@ const stylesheet = readFileSync(
 
 describe("accesibilidad de filtros de grabaciones", () => {
   it("usa grupo de filtros y botones con estado anunciado, no pestañas simuladas", () => {
-    expect(source).toContain('role="group" aria-label="Filtrar por tipo de archivo"');
+    expect(source).toMatch(/role="group"\s+aria-label="Filtrar por tipo de archivo"/);
     expect(source).toContain('aria-pressed={filtro === "TODOS"}');
     expect(source).toContain('aria-pressed={filtro === "GRABACIONES"}');
     expect(source).toContain('aria-pressed={filtro === "ASISTENCIAS"}');

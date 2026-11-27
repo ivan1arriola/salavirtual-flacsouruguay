@@ -50,9 +50,9 @@ describe("dashboard administración en teléfonos", () => {
   it("usa tarjetas accesibles y lista legible sin tablas desplazables", () => {
     const upcoming = component("admin-upcoming-list.tsx");
     expect(upcoming).toContain('aria-labelledby="admin-upcoming-title"');
-    expect(upcoming).toContain("<ol className={styles.list}>");
-    expect(upcoming).toContain("<time className={styles.when}");
-    expect(upcoming).toContain("styles.hybrid");
+    expect(upcoming).toMatch(/<ol\s+className=\{styles(?:\.list|\["list"\])\}>/);
+    expect(upcoming).toMatch(/<time\s+className=\{styles(?:\.when|\["when"\])\}/);
+    expect(upcoming).toMatch(/styles(?:\.hybrid|\["hybrid"\])/);
     expect(upcomingStyles).toContain("grid-template-columns: 76px minmax(0, 1fr)");
     expect(styles).toContain("button:focus-visible");
     expect(styles).toContain("min-height: 44px");
