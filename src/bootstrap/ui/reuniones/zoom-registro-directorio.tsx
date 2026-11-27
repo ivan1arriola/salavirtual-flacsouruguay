@@ -68,7 +68,9 @@ export function ZoomRegistroDirectorio({ resultado }: Readonly<{ resultado: Resu
                   <strong>{p.nombre || p.email}</strong>
                   <span>{p.email}</span>
                   {p.fecha && Number.isFinite(Date.parse(p.fecha)) ? (
-                    <small>Inscripción: {formatDate(new Date(p.fecha))} · {formatTime(new Date(p.fecha))}</small>
+                    <small>
+                      Inscripción: {formatDate(new Date(p.fecha))} · {formatTime(new Date(p.fecha))}
+                    </small>
                   ) : null}
                 </div>
                 <span className={styles.registeredStatus}>{etiquetas[p.estado]}</span>
