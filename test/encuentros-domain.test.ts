@@ -241,6 +241,64 @@ describe("gestión funcional de encuentros", () => {
     ).toBe("sala01");
   });
 
+  describe("balanceo de cuentas Zoom", () => {
+    const fecha = (hora: string) => new Date(`2030-10-12T${hora}:00Z`);
+    const hosts = [
+      { id: "s1", prioridad: 1, limiteConcurrente: 1 },
+      { id: "s2", prioridad: 2, limiteConcurrente: 1 },
+      { id: "s3", prioridad: 3, limiteConcurrente: 1 }
+    ];
+    const solicitado = [{ inicio: fecha("16:00"), fin: fecha("17:00") }];
+    const reserva = (cuentaProveedorId: string, inicio: string, fin: string) => ({
+      cuentaProveedorId,
+      inicio: fecha(inicio),
+      fin: fecha(fin)
+    });
+
+    it("distribuye reuniones consecutivas entre cuentas, incluso sin solapamiento", () => {
+      const primera = elegirCuentaHostParaPeriodos(null, hosts, [], solicitado, "MENOR_CARGA");
+      expect(primera).toBe("s1");
+      const existentes = [reserva("s1", "09:00", "10:00")];
+      expect(elegirCuentaHostParaPeriodos(null, hosts, existentes, solicitado, "MENOR_CARGA")).toBe("s2");
+      expect(
+        elegirCuentaHostParaPeriodos(
+          null,
+          hosts,
+          [...existentes, reserva("s2", "10:00", "11:00")],
+          solicitado,
+          "MENOR_CARGA"
+        )
+      ).toBe("s3");
+    });
+
+    it("desempata por duración antes que prioridad y respeta una cuenta preferida disponible", () => {
+      const existentes = [
+        reserva("s1", "09:00", "12:00"),
+        reserva("s2", "09:00", "10:00"),
+        reserva("s3", "09:00", "10:00")
+      ];
+      expect(elegirCuentaHostParaPeriodos(null, hosts, existentes, solicitado, "MENOR_CARGA")).toBe("s2");
+      expect(elegirCuentaHostParaPeriodos("s1", hosts, existentes, solicitado, "MENOR_CARGA")).toBe("s1");
+    });
+
+    it("descarta una sala si cualquiera de los encuentros de la serie se solapa", () => {
+      const existentes = [
+        reserva("s1", "16:00", "17:00"),
+        reserva("s2", "09:00", "10:00"),
+        reserva("s2", "11:00", "12:00"),
+        reserva("s3", "18:00", "19:00")
+      ];
+      const serie = [...solicitado, { inicio: fecha("18:00"), fin: fecha("19:00") }];
+      expect(elegirCuentaHostParaPeriodos(null, hosts, existentes, serie, "MENOR_CARGA")).toBe("s2");
+    });
+
+    it("conserva la prioridad en los flujos que no solicitan balanceo", () => {
+      expect(
+        elegirCuentaHostParaPeriodos(null, hosts, [reserva("s1", "09:00", "10:00")], solicitado)
+      ).toBe("s1");
+    });
+  });
+
   it("descarta salas con una capacidad configurada inválida", () => {
     const fecha = (hora: string) => new Date(`2026-10-12T${hora}:00Z`);
     expect(
