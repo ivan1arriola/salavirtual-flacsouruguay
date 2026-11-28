@@ -293,9 +293,9 @@ describe("gestión funcional de encuentros", () => {
     });
 
     it("conserva la prioridad en los flujos que no solicitan balanceo", () => {
-      expect(
-        elegirCuentaHostParaPeriodos(null, hosts, [reserva("s1", "09:00", "10:00")], solicitado)
-      ).toBe("s1");
+      expect(elegirCuentaHostParaPeriodos(null, hosts, [reserva("s1", "09:00", "10:00")], solicitado)).toBe(
+        "s1"
+      );
     });
   });
 
