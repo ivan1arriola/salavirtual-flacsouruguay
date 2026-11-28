@@ -129,8 +129,30 @@ export function elegirCuentaHostParaPeriodos(
     limiteConcurrente: number | null;
   }>[],
   reservas: readonly Readonly<Periodo & { cuentaProveedorId: string }>[],
-  periodos: readonly Periodo[]
+  periodos: readonly Periodo[],
+  criterio: "PRIORIDAD" | "MENOR_CARGA" = "PRIORIDAD"
 ): string | null {
+  const cargas = new Map(
+    cuentas.map(({ id }) => {
+      const asignadas = reservas.filter(({ cuentaProveedorId }) => cuentaProveedorId === id);
+      return [
+        id,
+        {
+          encuentros: asignadas.length,
+          duracion: asignadas.reduce(
+            (total, { inicio, fin }) => total + Math.max(0, fin.getTime() - inicio.getTime()),
+            0
+          )
+        }
+      ] as const;
+    })
+  );
+  const compararCarga = (left: string, right: string): number => {
+    if (criterio !== "MENOR_CARGA") return 0;
+    const a = cargas.get(left);
+    const b = cargas.get(right);
+    return a && b ? a.encuentros - b.encuentros || a.duracion - b.duracion : 0;
+  };
   const disponibles = cuentas
     .filter((cuenta) => {
       const reservasCuenta = reservas.filter(
@@ -142,8 +164,9 @@ export function elegirCuentaHostParaPeriodos(
     .reduce<typeof cuentas>((ordered, cuenta) => {
       const position = ordered.findIndex(
         (item) =>
-          cuenta.prioridad < item.prioridad ||
-          (cuenta.prioridad === item.prioridad && cuenta.id.localeCompare(item.id) < 0)
+          (compararCarga(cuenta.id, item.id) ||
+            cuenta.prioridad - item.prioridad ||
+            cuenta.id.localeCompare(item.id)) < 0
       );
       return position < 0
         ? [...ordered, cuenta]
