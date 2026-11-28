@@ -221,6 +221,40 @@ describe("crearReuniones - cohosts e invitados", () => {
     });
     const admin = { id: "actor-user-admin", rol: "ADMINISTRACION" as const };
 
+    it("elige la sala menos cargada aunque la primera esté libre en las fechas solicitadas", async () => {
+      const { db, tx, createdEventos } = createMockDb();
+      tx.cuentaProveedor.findMany.mockResolvedValue([
+        { id: "sala-01", prioridad: 1, limiteConcurrente: 1 },
+        { id: "sala-02", prioridad: 2, limiteConcurrente: 1 }
+      ]);
+      tx.eventoProveedor.findMany.mockResolvedValue([
+        {
+          cuentaProveedorId: "sala-01",
+          instancia: {
+            inicioProgramadoAt: new Date("2027-09-30T14:00:00-03:00"),
+            finProgramadoAt: new Date("2027-09-30T16:00:00-03:00")
+          }
+        }
+      ]);
+
+      await crearReuniones(db as never, admin, input(3));
+
+      expect(tx.eventoProveedor.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            instancia: expect.objectContaining({
+              inicioProgramadoAt: { lt: expect.any(Date) },
+              finProgramadoAt: { gt: expect.any(Date) }
+            })
+          })
+        })
+      );
+      expect(createdEventos).toHaveLength(3);
+      for (const evento of createdEventos) {
+        expect(evento).toMatchObject({ cuentaProveedorId: "sala-02", reunionProveedorId: "reunion-1" });
+      }
+    });
+
     it("siempre crea una sola reunión y todos los encuentros la comparten con la misma sala", async () => {
       const { db, tx, createdEventos } = createMockDb();
       await crearReuniones(db as never, admin, input(3));
