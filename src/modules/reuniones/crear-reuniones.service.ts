@@ -179,6 +179,14 @@ export async function crearReuniones(
       : null;
     const assistant = reservaAsistente?.assistant ?? null;
 
+    // Balancear la carga futura durante al menos 90 días y cubrir toda la serie solicitada.
+    const desdeCarga = new Date();
+    const hastaCarga = new Date(
+      Math.max(
+        desdeCarga.getTime() + 90 * 24 * 60 * 60 * 1000,
+        ...input.instancias.map(({ fin }) => fin.getTime())
+      )
+    );
     const [hosts, occupiedHosts] = await Promise.all([
       tx.cuentaProveedor.findMany({
         where: { proveedorId: proveedor.id, ...CUENTA_ZOOM_ASIGNABLE },
@@ -191,10 +199,8 @@ export async function crearReuniones(
           cuentaProveedorId: { not: null },
           instancia: {
             estado: { in: ["PROGRAMADA", "EN_CURSO"] },
-            OR: input.instancias.map(({ inicio, fin }) => ({
-              inicioProgramadoAt: { lt: fin },
-              finProgramadoAt: { gt: inicio }
-            }))
+            inicioProgramadoAt: { lt: hastaCarga },
+            finProgramadoAt: { gt: desdeCarga }
           }
         },
         select: {
@@ -231,8 +237,8 @@ export async function crearReuniones(
       tipoProveedor === "ZOOM"
         ? await reservasZoomExternas(tx, {
             cuentaIds: hosts.map(({ id }) => id),
-            desde: new Date(Math.min(...input.instancias.map(({ inicio }) => inicio.getTime()))),
-            hasta: new Date(Math.max(...input.instancias.map(({ fin }) => fin.getTime())))
+            desde: desdeCarga,
+            hasta: hastaCarga
           })
         : [];
     const cuentaHostId = elegirCuentaHostParaPeriodos(
@@ -252,7 +258,8 @@ export async function crearReuniones(
         ),
         ...reunionesExternasZoom
       ],
-      input.instancias
+      input.instancias,
+      "MENOR_CARGA"
     );
     if (!cuentaHostId) {
       throw new ConflictApiError(
