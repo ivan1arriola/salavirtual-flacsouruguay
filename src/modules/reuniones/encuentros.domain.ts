@@ -148,7 +148,9 @@ export function elegirCuentaHostParaPeriodos(
     })
   );
   const compararCarga = (left: string, right: string): number => {
-    if (criterio !== "MENOR_CARGA") return 0;
+    if (criterio !== "MENOR_CARGA") {
+      return 0;
+    }
     const a = cargas.get(left);
     const b = cargas.get(right);
     return a && b ? a.encuentros - b.encuentros || a.duracion - b.duracion : 0;
